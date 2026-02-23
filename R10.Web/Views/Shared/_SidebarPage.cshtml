@@ -1,0 +1,65 @@
+﻿@model SidebarPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var title = Localizer[Model.Title];
+    var pageId = Model.PageId;
+    var sidebarNav = Model.SideBarPartialView;
+    var partialView = Model.MainPartialView;
+    var labelShow = title;
+    var labelHide = Localizer["Hide"];
+    var pageHeaderClass = partialView.ToLower().StartsWith("_sidebardetailpage") ? "detail-page" : "";
+    var pageWarningMessage = ViewData["PageWarningMessage"]?.ToString();
+}
+
+<div id="@pageId" class="page-main-flex">
+    <div class="page-sidebar" data-show-filters="@labelShow" data-hide-filters="@labelHide">
+        <div class="header">
+            <div class="d-flex justify-content-between">
+                <div class="title">@title</div>
+                <div class="show-results" role="button" title="@labelHide" aria-label="@labelHide"><i aria-hidden="true">&times;</i></div>
+            </div>
+        </div>        
+        <!-- SIDEBAR -->           
+        @if (!string.IsNullOrEmpty(sidebarNav))
+        {
+            @await Html.PartialAsync(sidebarNav, Model.SideBarViewModel)   
+        } 
+    </div>
+    <div class="page-main">
+        @if (!string.IsNullOrEmpty(pageWarningMessage))
+        {
+            <div class="alert alert-danger boxy" role="alert">@pageWarningMessage</div>
+        }
+        <div class="page-message"></div>
+        <div class="page-header @pageHeaderClass page-crumbs">
+        </div>
+        <div class="page-sidebar-content @pageHeaderClass">
+            <div class="sidebar-link default"></div><div style="clear: both"></div>
+            <!-- CONTENT -->
+            @if (!string.IsNullOrEmpty(partialView))
+            {
+                @await Html.PartialAsync(partialView, Model.MainViewModel)   
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-sidebar .show-results i {
+        cursor: pointer;
+        float: right;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--link-nav);
+        text-shadow: 0 1px 0 #fff;
+        opacity: .5;
+    }
+</style>
+
+@*<script>
+    $(document).ready(function () {
+        pageHelper.initializeSidebarPage("#@pageId .page-sidebar", "#@pageId .page-main");
+    });
+</script>*@
+    

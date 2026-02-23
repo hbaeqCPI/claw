@@ -1,0 +1,73 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var detailsLinkTemplate = "<a href='../#:System#/#:IdType#/detail/#:Id#' target='_blank' rel='noopener noreferrer'>#: CaseNumber#</a>";
+
+    var toolbarTemplate = Model.ToolbarTemplate("","",Localizer["Export to Excel"]);
+    toolbarTemplate = toolbarTemplate.Replace("k-grid-excel", "k-grid-excel-server");
+    var exportToExcelUrl = Url.Action("ExportToExcel");
+    
+}
+@(Html.Kendo().Grid<RecentViewedViewModel>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.ActivityDate).Format("{0:dd-MMM-yyyy h:mm:ss tt}").Width(200);
+        columns.Bound(m => m.UserId).Width(90);
+        columns.Bound(m => m.System).Width(120);
+        columns.Bound(m => m.CaseNumber).Title(caseNumberLabel).ClientTemplate(detailsLinkTemplate).Width(150);
+        columns.Bound(m => m.Country).Width(90);
+        columns.Bound(m => m.SubCase).Width(100);
+        columns.Bound(m => m.Status).Width(120);
+        columns.Bound(m => m.Title).ClientTemplate("<div class='col' style='padding-right: 0; padding-left: 0;'><div class='recentViewed-collapsible'>#: Title ?? ''#</div></div>");
+        columns.Bound(m => m.AppNumber).Width(120);
+        columns.Bound(m => m.FilDate).Format("{0:dd-MMM-yyyy}").Width(125);
+        columns.Bound(m => m.PatRegNumber).Width(150);
+        columns.Bound(m => m.IssRegDate).Format("{0:dd-MMM-yyyy}").Width(150);
+    })
+    .ToolBar(tools => tools.ClientTemplate(toolbarTemplate))
+    .AutoBind(false)
+    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+    .Sortable(sort => sort.AllowUnsort(false))
+    //.Excel(excel => excel.FileName("RecentlyViewedList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "RecentViewed")))
+    
+    .DataSource(dataSource => dataSource
+        .Ajax().Events(events => events.Error("recentViewedPage.searchResultGridError"))
+        .Events(events => events.RequestEnd("recentViewedPage.searchResultGridRequestEnd"))
+        .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+        .Read(read => read.Action("PageRead", "RecentViewed")
+            .Data("recentViewedPage.gridMainSearchFilters")
+        )
+        .Sort(sort => sort.Add(a => a.ActivityDate).Descending())        
+    )    
+    .HtmlAttributes(new { @class = "kendo-Grid", data_export_excel_url = @exportToExcelUrl })
+)
+<script>
+    var parentGridExpandedRows;
+
+    $(document).ready(function () {
+        var grid = $("#recentViewedSearchResults-Grid").data("kendoGrid");        
+        grid.bind("dataBound", onDataBound);
+    });
+
+    function onDataBound(e) {
+        const data = e.sender.dataSource.data();
+
+        if (data.length > 0) {
+            const listView = e.sender.element;
+
+            //Weird issue with rendering page on different browsers/computers
+            //Set delay to ensure the tag exists before run textOverflow()
+            setTimeout(
+                function () {
+                    //collapsible container
+                    $.each(listView.find(".recentViewed-collapsible"), function () {
+                        $(this).textOverflow();
+                    });
+                }, 150);
+        }
+    }    
+</script>

@@ -1,0 +1,60 @@
+﻿@using R10.Web.Areas.Shared.ViewModels.ReportScheduler
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    //var taskIdParam = $"{{taskId: {Model.TaskId}}}";
+    //var permission = Model.Permission;
+    //bool addMode = Model.TaskId == 0;
+    //var detailsUrl = Url.Action("Detail", "ReportScheduler", new { taskId = "#: TaskId#" });
+    //var detailsAddUrl = Url.Action("Detail", "ReportScheduler", new { taskId = 0 });
+    //var detailsLinkTemplate = $"<a href={detailsUrl} class='details-link' >#: Schedule#</a>";
+
+    var pageName = ViewBag.ActivePage;
+}
+
+@(Html.Kendo().Grid<RSPrintOptionHistoryViewModel>()
+                                .Name("rSPrintOptionHistoryGrid")
+                                .Columns(columns =>
+                                {
+
+                                    columns.Bound(a => a.OptionName);
+                        columns.Bound(a => a.OptionValue).ClientTemplate("<i class='fa fal #: OptionValue ? 'fa-check' : ''#'></i>")
+                                                .EditorTemplateName("CheckBox");
+                                })
+                                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                                .Editable(editable => editable.Enabled(false)
+                                                .Mode(GridEditMode.InCell).
+                                                ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+
+                                //.Pageable()
+                                //.AutoBind(false)
+                                .DataSource(dataSource => dataSource
+                                    .Ajax()
+                                    .Batch(true)
+                                    //.PageSize(10)
+                                    //.ServerOperation(false)
+                                    .Model(model =>
+                                    {
+                                        model.Field(s => s.OptionName).Editable(false);
+                                        model.Field(s => s.OptionValue).Editable(false);
+                                    })
+                                    .Read(read => read.Action("GridPrintOptionHistoryRead", Model.Controller, new { parentId = Model.ParentId }))
+                                    .Events(events =>
+                                    {
+                                        events.Error("pageHelper.onGridError");
+                                    })
+                                )
+                                .HtmlAttributes(new { @class = "k-grid-border" })
+)
+
+@*@(Html.Kendo().Sortable()
+                            .For("#inventionOwnerGrid")
+                            .Filter("table > tbody > tr:not(.k-grid-edit-row)")
+                            .Cursor("grabbing")
+                            .Handler(".owner-item-handler")
+                            .HintHandler("pageHelper.hint")
+                            .PlaceholderHandler("pageHelper.placeholder")
+                            .ContainerSelector("#inventionOwnerGrid tbody")
+                            .Events(events => events.Change($"function (e) {{ inventionPage.onGridReorder(e, '{Url.Action("GridReorder", "PatOwnerInv")}') }}"))
+    )*@

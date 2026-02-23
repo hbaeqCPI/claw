@@ -1,0 +1,18 @@
+﻿@model string
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var userId = ViewData["UserId"].ToString();
+}
+@(Html.Kendo().DropDownListFor(m => m)
+    .HtmlAttributes(new { 
+        style = $"width: 450px;", 
+        //data_val_required = Localizer["The User field is required."].ToString() //data_val_required will trigger default validation
+    })
+    .DataValueField("Id")
+    .DataTextField("Name")
+    .AutoBind(false)
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Read(read => read.Action("UserGroups", "Groups", new { area = "Admin", userId = userId }).Data("userGroupsReadData"))
+    )
+)

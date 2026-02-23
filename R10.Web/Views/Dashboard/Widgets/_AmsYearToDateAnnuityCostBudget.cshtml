@@ -1,0 +1,505 @@
+﻿@model ChartViewModel
+@using Newtonsoft.Json.Linq;
+@using Newtonsoft.Json.Serialization;
+@using Microsoft.EntityFrameworkCore;
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@inject IStringLocalizer<PatentResource> Localizer
+@inject IClientService ClientService
+@inject ISystemSettings<AMSSetting> Settings
+@{
+    var amsSettings = await Settings.GetSetting();
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var clientLabel = Localizer[amsSettings.LabelClient ?? "Client"];
+    var clientNameLabel = Localizer[amsSettings.LabelClientName ?? "Client Name"];
+    var caseNumberLabel = Localizer[amsSettings.LabelCaseNumber ?? "Case Number"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = Localizer[widget.Title + " - {0}"];
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var settings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var currencyFormat = string.Empty;
+    var currencyString = string.Empty;
+    if (!string.IsNullOrEmpty(amsSettings.WidgetCurrencyFormat))
+    {
+        currencyFormat = amsSettings.WidgetCurrencyFormat.Split("|")[0];
+        currencyString = amsSettings.WidgetCurrencyFormat.Split("|")[1];
+    }
+
+    var isCorporation = amsSettings.IsCorporation;
+    var currentExpenseLabel = Localizer["Current Month"];
+    var previousExpenseLabel = Localizer["Previous Month"];
+    var actualExpenseLabel = Localizer["Actual Expenses"];
+
+    if (isCorporation)
+    {
+        currentExpenseLabel = Localizer["Current Quarter"];
+        previousExpenseLabel = Localizer["Previous Quarter"];
+    }
+
+    var isCurrentLessThanPrevious = Model.Value1 < Model.Value2;
+    var currentEqPrevious = Model.Value1 == Model.Value2;
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    var countrySettings = settings.Property("Countries");
+    if (countrySettings != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)countrySettings.Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    var clientSettings = settings.Property("Clients");
+    if (clientSettings != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)clientSettings.Value).Select(a => a.ToString()).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+}
+<style>
+    #countryFilter_@userWidgetId .country-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var selectedExpense = "";
+
+    $(document).ready(function () {
+        var refresh = false;
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        if ('@(widget.IsDetail)' === '@true') {
+            $("#@userWidgetId-grid-header").hide();
+
+            var gridName = "#@userWidgetId-" + "@Model.Name" + "-grid";
+            var grid = $(gridName).data("kendoGrid");
+            grid.dataSource.read();
+        }
+
+        $(document).off("click", "#actual-expense-@userWidgetId");
+        $(document).on("click", "#actual-expense-@userWidgetId", function (e) {
+            if ("@widget.IsDetail" === "False") {
+                return;
+            }
+
+            onExpenseClick("actual");
+        });
+
+        $(document).off("click", "#current-expense-@userWidgetId");
+        $(document).on("click", "#current-expense-@userWidgetId", function (e) {
+            if ("@widget.IsDetail" === "False") {
+                return;
+            }
+            onExpenseClick("current");
+        });
+
+        $(document).off("click", "#previous-expense-@userWidgetId");
+        $(document).on("click", "#previous-expense-@userWidgetId", function (e) {
+            if ("@widget.IsDetail" === "False") {
+                return;
+            }
+            onExpenseClick("previous");
+        });
+
+        $(document).off("click", "#gaugeChart-@userWidgetId");
+        $(document).on("click", "#gaugeChart-@userWidgetId", function (e) {
+            if ("@widget.IsDetail" === "False") {
+                return;
+            }
+            onExpenseClick("actual");
+        });
+    });
+
+    function onExpenseClick(expenseType) {
+        selectedExpense = expenseType;
+        
+        var gridName = "#@userWidgetId-" + "@Model.Name" + "-grid";
+        var grid = $(gridName).data("kendoGrid");
+        grid.dataSource.read({ userWidgetId: @widget.Id, expenseType: expenseType, dataType: "@Model.Name" });
+
+        var gridTitle = "@gridDetailTitle";
+
+        var titleLabel = "@actualExpenseLabel";
+        if (expenseType === "current") {
+            titleLabel = "@currentExpenseLabel";
+        }
+        else if (expenseType === "previous"){
+            titleLabel = "@previousExpenseLabel";
+        }
+
+        $("#@userWidgetId-grid-title").text(gridTitle.replace("{0}", titleLabel));
+        $("#@userWidgetId-grid-header").show();
+    };
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("AMSYearToDateAnnuityCostBudgetDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id, expenseType: selectedExpense, dataType: "@Model.Name" });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+
+    function gridDetailSearchFilters() {
+        return { userWidgetId: @widget.Id, expenseType: selectedExpense, dataType: "@Model.Name" };
+    };
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "AnnuitiesDue", "AMS", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+<style>
+    .expenses-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: left;
+        gap: 25px;
+        font-family: Arial, sans-serif;
+        width: @(widget.IsDetail ? "35%" : "100%");
+    }
+
+    .gauge-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        cursor: @(widget.IsDetail ? "pointer" : "");
+    }
+
+    .expense-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .actual-expenses {
+        font-size: @(widget.IsDetail ? "2rem" : (Model.Value3 < 100000 ? "2rem" : Model.Value3 < 1000000 ? "1.6rem" : "1.2rem"));
+        display: flex;
+        align-items: center;
+        cursor: @(widget.IsDetail ? "pointer" : "");
+    }
+
+    .negative-expense {
+        color: rgb(215 105 105);
+    }
+
+    .positive-expense {
+        color: rgb(95 211 95);
+    }
+
+    .neutral-expense {
+        color: #666 !important;
+    }
+
+    .actual-expenses-text {
+        font-size: 1rem;
+        font-weight: normal;
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .expenses-text {
+        font-size: 0.9rem;
+        color: #666;
+        white-space: nowrap;
+    }
+    
+    .actual-expense-arrow {
+        margin-right: 5px;
+        font-size: 1.2rem;
+    }
+
+    .actual-expense-arrow.neutral-expense {
+        display: none;
+    }
+
+    .current-expense, .previous-expense {
+        font-size: 1rem;
+        margin-top: 15px;
+        cursor: @(widget.IsDetail ? "pointer" : "");
+    }
+</style>
+<div style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%">
+    <div class="expenses-container">
+        <div class="expense-info">
+            <div id="actual-expense-@(userWidgetId)" class="actual-expenses @(isCurrentLessThanPrevious ? "positive-expense" : "negative-expense") @(currentEqPrevious ? "neutral-expense" : "")">
+                <span class="actual-expense-arrow @(isCurrentLessThanPrevious ? "positive-expense" : "negative-expense")  @(currentEqPrevious ? "neutral-expense" : "")">
+                    @Html.Raw(isCurrentLessThanPrevious ? "&#9660;" : "&#9650;")
+                </span>
+                <span style="font-weight:700 !important;">
+                    @($"{currencyFormat}{Model.Value3.ToString("N0")}")
+                </span>
+            </div>
+            <div class="actual-expenses-text">@Localizer["Actual Expenses"]</div>
+            <hr style="width: 100%; border-top: 1px solid #ddd; margin: 15px 0;">
+            <div id="current-expense-@(userWidgetId)" class="current-expense">
+                <span style="font-weight:600 !important; color: #666;">
+                    @($"{currencyFormat}{Model.Value1.ToString("N0")}")
+                </span>
+                <br>
+                <span class="expenses-text">@currentExpenseLabel</span>
+            </div>
+            <div id="previous-expense-@(userWidgetId)" class="previous-expense">
+                <span style="font-weight:600 !important; color: #666;">
+                    @($"{currencyFormat}{Model.Value2.ToString("N0")}")
+                </span>
+                <br>
+                <span class="expenses-text">@previousExpenseLabel</span>
+            </div>
+        </div>
+        <div class="gauge-container">
+            <span style="font-weight:700; padding-top:45px; padding-bottom:0; color: #666;">
+                @Localizer["Expense % of Budget"]
+            </span>
+            <div id="gaugeChart-@userWidgetId" style="width: 100%; height: 100%;">
+                @(Html.Kendo().ArcGauge()
+                            .Name(userWidgetId)
+                            .GaugeArea(gauge => gauge.Height(320).Border(border => border.Width(100)))
+                            .Value((double)(Model.Value))
+                            .Scale(x => x.Min(0).Max((double)(Model.Value > 100 ? Model.Value : 100)).StartAngle(90).EndAngle(360 + 90).RangeSize(25).RangeLineCap("butt"))
+                            .CenterTemplate("<span style='color: #: color #; font-size: 55px; font-weight: 500;'>#: value #%</span>")
+                            .Color(widget.SeriesColors[0])
+                            .HtmlAttributes(new { style = "height: 100% !important;" })
+                            )
+            </div>
+        </div>
+    </div>
+</div>
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title"></span></h4>
+    </div>
+
+    @if (Model.Name == "ams")
+    {
+        @(Html.Kendo().Grid<AmsCaseListDrillDownViewModel>()
+            .Name(userWidgetId + "-ams-grid")
+            .Columns(columns =>
+            {
+                columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                columns.Bound(a => a.Country);
+                columns.Bound(a => a.SubCase);
+                columns.Bound(a => a.CPICaseType);
+                columns.Bound(a => a.CPITitle);
+                columns.Bound(a => a.CPIAppNo);
+                columns.Bound(a => a.CPIPatNo);
+                columns.Bound(a => a.CPIExpireDate).Format("{0:dd-MMM-yyyy}");
+                columns.Bound(a => a.AnnuityDueDate).Format("{0:dd-MMM-yyyy}");
+                columns.Bound(a => a.AnnuityCost).Format("{0:n}");
+            })
+            .ToolBar(tools => tools.Excel())
+            .AutoBind(false)
+            .Pageable(page => page.PageSizes(amsSettings.SearchResultsPageSizeOptions))
+            .Sortable(sort => sort.AllowUnsort(false))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .PageSize(amsSettings.SearchResultsPageSize)
+                .Read(read => read.Action("AMSYearToDateAnnuityCostBudgetDetailRead", "Dashboard", new { userWidgetId = widget.Id, expenseType = "", dataType = Model.Name })
+                .Data("gridDetailSearchFilters"))
+            )
+            .Events(e => e.ExcelExport("gridExcelExport"))
+                .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" }))
+    }
+    else
+    {
+        @(Html.Kendo().Grid<CostTrackingDrillDownViewModel>()
+            .Name(userWidgetId + "-costtracking-grid")
+            .Columns(columns =>
+            {
+                columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                columns.Bound(a => a.Country);
+                columns.Bound(a => a.SubCase);
+                columns.Bound(a => a.CaseType);
+                columns.Bound(a => a.Status);
+                columns.Bound(a => a.CostType);                
+                columns.Bound(a => a.InvoiceDate).Format("{0:dd-MMM-yyyy}");
+                columns.Bound(a => a.PayDate).Format("{0:dd-MMM-yyyy}");
+                columns.Bound(a => a.InvoiceAmount).Format("{0:n}");
+            })
+            .ToolBar(tools => tools.Excel())
+            .AutoBind(false)
+            .Pageable(page => page.PageSizes(amsSettings.SearchResultsPageSizeOptions))
+            .Sortable(sort => sort.AllowUnsort(false))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .PageSize(amsSettings.SearchResultsPageSize)
+                .Read(read => read.Action("AMSYearToDateAnnuityCostBudgetDetailRead", "Dashboard", new { userWidgetId = widget.Id, expenseType = "", dataType = Model.Name })
+                .Data("gridDetailSearchFilters"))
+            )
+            .Events(e => e.ExcelExport("gridExcelExport"))
+                .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" }))
+    }
+}

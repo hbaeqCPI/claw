@@ -1,0 +1,601 @@
+﻿@using R10.Web.Areas.Shared.ViewModels.ReportScheduler
+@model RSMainDetailViewModel
+@inject ISystemSettings<PatSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+
+    var id = Model.TaskId;
+    var pageId = ViewData["PageId"];
+
+    var addMode = id == 0;
+    var addFromSearch = ViewBag.FromSearch != null && (bool)ViewBag.FromSearch;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+
+    var childViewModel = new ChildViewModel { Id = id, Code = Model.Name, Permission = detailPagePermission };
+    var isReadOnly = !detailPagePermission.CanEditRecord && !addMode;
+
+    var title = "Report Scheduler";
+    ViewData["Title"] = title;
+
+    var screen = "ReportScheduler";
+
+    if (ViewBag.ReportId != null && ViewBag.ReportId !=0)
+    {
+        Model.ReportId = ViewBag.ReportId;
+    }
+    else
+    {
+        Model.ReportId = 2;
+    }
+
+    var defaultTextForReportField = Model.ReportId == 0 ? "Due Date List" : (Model.ReportId == 2 ? "Due Date List" : Model.ReportId == 1 ? "Patent List" : Model.ReportId == 5 ? "Trademark List" : Model.ReportId == 6 ? "Matter List" : Model.ReportId == 8 ? "AMS Reminder" : "");
+    var defaultTextForFreqTypeField = Model.FreqTypeId == 1 ? "Daily" : (Model.FreqTypeId == 2 ? "Weekly" : (Model.FreqTypeId == 3 ? "Monthly" : ""));
+    //var defaultTextForDateTypeField = Model.ReportId == 0 ? "Due Date" : (Model.ReportId == 2 ? "Due Date" : Model.ReportId == 1 ? "Filing Date" : "");
+
+    var hidePrintOptions = ViewBag.ReportId == 8;
+    var hideDateCriteria = ViewBag.ReportId == 8;
+    var hideRecordsAffected = ViewBag.ReportId == 8;
+}
+
+<form cpi-detail-form action="@("Save")" delete-message="You are about to delete this record and all its related information. This operation cannot be undone."
+      data-date-type-url="@Url.Action("GetDateTypeList", "ReportScheduler", new { Area="Shared"})"
+      >
+    
+
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="@Model.Name" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="page-content">
+        <div class="cpiMainEntry">
+            <input type="hidden" asp-for="TaskId" />
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label class="required" for="Name">@Localizer["Schedule Name"]</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Name" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    </div>
+                    <span asp-validation-for="Name"></span>
+                </div>
+
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="ReportId">@Localizer["Report"]</label>
+                        @if (addMode)
+                        {
+                            @await Component.InvokeAsync("ComboBox", new { name = "ReportId", controller = "ReportScheduler", action = "GetReportList", area = "Shared", textProperty = "Report", valueProperty = "ReportId", defaultValue = Model.ReportId.ToString().Equals("0") ? "2" : Model.ReportId.ToString(), defaultText = defaultTextForReportField, screen = screen })
+                        }
+                        else
+                        {
+                            <input asp-for="ReportId" hidden value="@Model.ReportId" />
+                            <input disabled type="text" class="form-control form-control-sm" value="@defaultTextForReportField" style="width:100%" />
+                        }
+
+                    </div>
+                </div>
+                <div class="row col-sm-6">
+                <div class="col-sm-4">
+                    <div class="form-group float-label">
+                        <div class=" custom-control custom-checkbox">
+                            <input asp-for="IsEnabled" class="custom-control-input" asp-is-readonly="@isReadOnly"/>
+                            <label asp-for="IsEnabled" class="custom-control-label">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-4">
+                <div class="form-group float-label">
+                    <div class="custom-control custom-checkbox">
+                        <input asp-for="IsShared" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                        <label asp-for="IsShared" class="custom-control-label">
+                            @Localizer["Share Report"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col col-4">
+                <div class="form-group float-label">
+                    <div class="custom-control custom-checkbox">
+                        <input asp-for="IsEditable" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                        <label asp-for="IsEditable" class="custom-control-label">@Localizer["Allow Others to Edit"]</label>
+                    </div>
+                </div>
+            </div>
+            <div><i class="fa fa-exclamation-circle pr-2"></i><b>@Localizer["This schedule will run on Coordinated Universal Time(UTC)"]</b></div>
+            </div>
+        </div>
+
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="Description">@Localizer["Description"]</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly"/>
+                    </div>
+                </div>
+
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label class="required" for="FreqTypeId">@Localizer["Frequency"]</label>
+                        @if (isReadOnly)
+                        {
+                            <input id="FreqTypeId_ReportScheduler" asp-for="FreqTypeId" hidden value="@Model.FreqTypeId" />
+                            <input disabled type="text" class="form-control form-control-sm" value="@defaultTextForFreqTypeField" style="width:100%" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", new { name = "FreqTypeId", controller = "ReportScheduler", action = "GetFrequencyList", area = "Shared", textProperty = "Frequency", valueProperty = "FreqTypeId", defaultValue = Model.FreqTypeId != 0 ? Model.FreqTypeId.ToString() : "1", defaultText = Model.FreqTypeId <= 1 ? "Daily" : (Model.FreqTypeId == 2 ? "Weekly" : (Model.FreqTypeId == 3 ? "Monthly" : "")), onChange = "FrequencyChange", screen = screen })
+                        }
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="TaskStartDateTime">@Localizer["Task Start"]</label>
+                        @if (isReadOnly)
+                        {
+                            <input disabled type="text" class="form-control form-control-sm" value="@(((DateTime?) Model.TaskStartDateTime).FormatToDisplay())" style="width:100%" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("TaskStartDateTime") { Value = Model.TaskStartDateTime })
+                        }
+                    </div>
+                </div>
+
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="TaskExpireDateTime">@Localizer["Task Expire"]</label>
+                        @if (isReadOnly)
+                        {
+                            <input disabled type="text" class="form-control form-control-sm" value="@(Model.TaskExpireDateTime.FormatToDisplay())" style="width:100%" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("TaskExpireDateTime") { Value = Model.TaskExpireDateTime })
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-3">
+                </div>
+
+                <div id="weeklyOptions" class="col-sm-6">
+                    <div class="row">&nbsp;</div>
+                    <div class="form-group row">
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Sun" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Sun" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Mon" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Mon" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Tue" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Tue" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Wed" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Wed" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Thu" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Thu" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Fri" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Fri" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                        <div class="form-group float-label">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="Sat" class="custom-control-input" asp-is-readonly="@isReadOnly" />
+                                <label asp-for="Sat" class="custom-control-label">
+                                </label>&nbsp;&nbsp;&nbsp;&nbsp;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="monthlyOptions" class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="DayOfMonth">@Localizer["Day of the Month"]</label>
+                        @if (isReadOnly)
+                        {
+                            <input disabled type="text" class="form-control form-control-sm" value="@Model.DayOfMonth" style="width:100%" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", new { name = "DayOfMonth", controller = "ReportScheduler", action = "GetDayOfMonthList", area = "Shared", defaultValue = Model.DayOfMonth != null ? Model.DayOfMonth : "First", defaultText = Model.DayOfMonth != null ? Model.DayOfMonth : "First", screen = screen })
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+
+            </div>
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="LastRunResult">@Localizer["Last Run Result"]</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="LastRunResult" disabled="disabled" />
+                    </div>
+                </div>
+
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="LastRunTime">@Localizer["Last Run Time"]</label>
+                        <input type="datetime" class="form-control form-control-sm" asp-for="LastRunTime" disabled="disabled" />
+                    </div>
+                </div>
+                @*pattern="dd-MMM-yyyy hh:mm tt"*@
+
+                <div class="col-sm-3">
+                    <div class="form-group float-label">
+                        <label for="NextRunTime">@Localizer["Next Run Time"]</label>
+                        <input type="datetime" class="form-control form-control-sm" asp-for="NextRunTime" disabled="disabled" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="form-group float-label">
+                        <label for="SchedCompleteRecipient">@Localizer["Email Address to notify for successful FTP Uploads. Separate mutiple email addresses by comma."]</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="SchedCompleteRecipient"  asp-is-readonly="@isReadOnly"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        .
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="dueDateListTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link @(addMode ? "d-none" : "active")" id="actionTab" data-toggle="tab" href="#actionTabContent" role="tab" aria-controls="actionTabContent" aria-selected="true">@Localizer["Actions"]</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(addMode || hidePrintOptions ? "d-none" : null)" id="printOptionTab" data-toggle="tab" href="#printOptionTabContent" role="tab" aria-controls="printOptionTabContent" aria-selected="true">@Localizer["Print Options"]</a>
+            </li>
+            <li class="nav-item @(addMode ? "d-none" : null)">
+                <a class="nav-link" id="criteriaTab" data-toggle="tab" href="#criteriaTabContent" role="tab" aria-controls="criteriaTabContent" aria-selected="true">@Localizer["Criteria"]</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(addMode || hideRecordsAffected ? "d-none" : null)" id="recordsAffectedTab" data-toggle="tab" href="#recordsAffectedTabContent" role="tab" aria-controls="recordsAffectedTabContent" aria-selected="true">@Localizer["Records Affected"]</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(addMode ? "d-none" : null)" id="historyTab" data-toggle="tab" href="#historyTabContent" role="tab" aria-controls="historyTabContent" aria-selected="false">@Localizer["History"]</a>
+            </li>
+        </ul>
+
+        <div class="tab-content tab-pane">
+            <div class="tab-pane page-content @(addMode ? null : "show active")" id="actionTabContent" role="tabpanel" aria-labelledby="actionTab">
+                <div class="col-sm-12">
+                    <div class="form-control-grid">
+                        @await Component.InvokeAsync("GridScheduleActions", new GridOptions { Controller = "RSAction", ParentId = id })
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="tab-pane page-content" id="printOptionTabContent" role="tabpanel" aria-labelledby="printOptionTab">
+                <div class="row">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-6">
+                        <div class="form-control-grid">
+                            @await Component.InvokeAsync("GridSchedulePrintOptions", new GridOptions { Controller = "RSPrintOption", ParentId = id })
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="tab-pane page-content  @(addMode ? "hidden" : null)" id="criteriaTabContent" role="tabpanel" aria-labelledby="criteriaTab">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-control-grid">
+                            @await Component.InvokeAsync("GridScheduleCriteria", new GridOptions { Controller = "RSCriteria", ParentId = id })
+                        </div>
+                    </div>
+                    <div class="col-sm-6 cpiMainEntry @(hideDateCriteria ? "d-none" : null)">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label for="LastRunResult">@Localizer["Date Range"]</label>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group float-label">
+                                    <label for="DayOfMonth">@Localizer["Date Type"]</label>
+                                    @if (isReadOnly)
+                                    {
+                                        <input disabled type="text" class="form-control form-control-sm" value="@Model.DateType" style="width:100%" />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("ComboBox", new { name = "DateType", controller = "ReportScheduler", action = "GetDateTypeList", area = "Shared", defaultValue = Model.DateType != null ? Model.DateType : "Due Date", defaultText = Model.DateType != null ? Model.DateType : "Due Date", limitToList=true, screen = screen })
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-12">
+                            <div class="form-group">
+                                <input id="RelativeFixedRange" asp-for="IsFixedRange" type="radio" value="0" onchange="FixedRangeChange()" asp-is-readonly="@isReadOnly"><Label>@Localizer["Relative to Current Date"]</Label><br />
+                                <input id="FixedFixedRange" asp-for="IsFixedRange" type="radio" value="1" onchange="FixedRangeChange()" asp-is-readonly="@isReadOnly"><Label>@Localizer["Specific Time Frame"]</Label><br />
+                                @if (Model.ReportId != 2)
+                                {
+                                    <input id="NoneFixedRange" asp-for="IsFixedRange" type="radio" value="2" onchange="FixedRangeChange()" asp-is-readonly="@isReadOnly"><Label>@Localizer["None"]</Label>
+                                }
+                            </div>
+                        </div>
+                        <div id="relativeRangeOptions" class="col-sm-12">
+                            <div class="row">
+                                <div class="col-sm-2">
+                                    <label>@Localizer["Start Date"]</label>
+                                </div>
+                                <div class="col-sm-2">
+                                    <div class="form-group float-label">
+                                        <label for="StartDateOperator">@Localizer["From Today"]</label>
+                                        @if (isReadOnly)
+                                        {
+                                            <input disabled type="text" class="form-control form-control-sm" value="@Model.StartDateOperator" style="width:100%" />
+                                        }
+                                        else
+                                        {
+                                            @await Component.InvokeAsync("ComboBox", new { name = "StartDateOperator", controller = "ReportScheduler", action = "GetStartDateOperatorList", area = "Shared", defaultValue = Model.StartDateOperator != null ? Model.StartDateOperator : "-", defaultText = Model.StartDateOperator != null ? Model.StartDateOperator : "-", screen = screen, limitToList=true})
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group float-label">
+                                        <label for="StartDateOffSet">@Localizer["Number Of"]</label>
+                                        <input class="form-control form-control-sm" asp-for="StartDateOffSet" asp-is-readonly="@isReadOnly" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group float-label">
+                                        <label for="StartDateUnit">@Localizer["Date Unit"]</label>
+                                        @if (isReadOnly)
+                                        {
+                                            <input disabled type="text" class="form-control form-control-sm" value="@Model.StartDateUnit" style="width:100%" />
+                                        }
+                                        else
+                                        {
+                                            @await Component.InvokeAsync("ComboBox", new { name = "StartDateUnit", textProperty = "DateUnit", valueProperty = "DateUnitValue", controller = "ReportScheduler", action = "GetDateUnitList", area = "Shared", defaultValue = Model.StartDateUnit != null ? Model.StartDateUnit : "0", defaultText = Model.StartDateUnit != null ? (Model.StartDateUnit.Equals("0") ? "Days" : (Model.StartDateUnit.Equals("1") ? "Weeks" : (Model.StartDateUnit.Equals("2") ? "Months" : "Years"))) : "Days", screen = screen })
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-2">
+                                    <label>@Localizer["End Date"]</label>
+                                </div>
+                                <div class="col-sm-2">
+                                    <label>@Localizer["Start Date Plus"]</label>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group float-label">
+                                        <label for="EndDateOffSet">@Localizer["Number Of"]</label>
+                                        <input class="form-control form-control-sm" asp-for="EndDateOffSet" asp-is-readonly="@isReadOnly" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group float-label">
+                                        <label for="StartDateUnit">@Localizer["Date Unit"]</label>
+                                        @if (isReadOnly)
+                                        {
+                                            <input disabled type="text" class="form-control form-control-sm" value="@Model.EndDateUnit" style="width:100%" />
+                                        }
+                                        else
+                                        {
+                                            @await Component.InvokeAsync("ComboBox", new { name = "EndDateUnit", textProperty = "DateUnit", valueProperty = "DateUnitValue", controller = "ReportScheduler", action = "GetDateUnitList", area = "Shared", defaultValue = Model.EndDateUnit != null ? Model.EndDateUnit : "0", defaultText = Model.EndDateUnit != null ? (Model.EndDateUnit.Equals("0") ? "Days" : (Model.EndDateUnit.Equals("1") ? "Weeks" : (Model.EndDateUnit.Equals("2") ? "Months" : "Years"))) : "Days", screen = screen })
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="fixedRangeOptions" class="col-sm-12">
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <div class="form-group float-label">
+                                        <label for="FixedRange">@Localizer["Range"]</label>
+                                        @await Component.InvokeAsync("ComboBox", new { name = "FixedRange", textProperty = "FixedRangeText", valueProperty = "FixedRange", controller = "ReportScheduler", action = "GetFixedRangeList", area = "Shared", defaultValue = Model.FixedRange != null ? Model.FixedRange : "0", defaultText = Model.FixedRange != null ? (Model.FixedRange.Equals("0") ? "This Week" : "This Month") : "This Week", screen = screen })
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="tab-pane page-content" id="recordsAffectedTabContent" role="tabpanel" aria-labelledby="recordsAffectedTab">
+                <div class="col-12">
+                    <div class="form-control-grid">
+                        @if (Model.ReportId == 1)//Patent List
+                        {
+                            @await Html.PartialAsync("_RecordAffectedPatentList", new GridOptions { Controller = "ReportScheduler", ParentId = id })
+                        }
+                        else if (Model.ReportId == 5)//Trademark List
+                        {
+                            @await Html.PartialAsync("_RecordAffectedTrademarkList", new GridOptions { Controller = "ReportScheduler", ParentId = id })
+                        }
+                        else if (Model.ReportId == 6)//Matter List
+                        {
+                            @await Html.PartialAsync("_RecordAffectedMatterList", new GridOptions { Controller = "ReportScheduler", ParentId = id })
+                        }
+                        else
+                        {
+                            //Due Date as Default
+                            @await Html.PartialAsync("_RecordAffectedDueDate", new GridOptions { Controller = "ReportScheduler", ParentId = id })
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane page-content" id="historyTabContent" role="tabpanel" aria-labelledby="historyTab">
+                <div class="col-12">
+                    <div class="form-control-grid">
+                        @await Component.InvokeAsync("GridScheduleHistory", new GridOptions { Controller = "RSHistory", ParentId = id })
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (!addMode)
+        {
+            <div class="content-stamp">
+                <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            </div>
+        }
+    </div>
+</form>
+<div class="cpiContainerPopup"></div>
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var frequency = document.getElementById("FreqTypeId_ReportScheduler");
+        var relativeFixedRange = document.getElementById("RelativeFixedRange");
+        var fixedFixedRange = document.getElementById("FixedFixedRange");
+        var noneFixedRange = document.getElementById("NoneFixedRange");
+
+        frequency.setAttribute("onchange", "FrequencyChange();");
+
+        relativeFixedRange.checked = @(Model.IsFixedRange == null ? "true": Model.IsFixedRange.Equals("0").ToString().ToLower());
+        fixedFixedRange.checked = @(Model.IsFixedRange == null ? "false" : Model.IsFixedRange.Equals("1").ToString().ToLower());
+        if (noneFixedRange != null) {
+            noneFixedRange.checked = @(Model.IsFixedRange == null ? "false" : Model.IsFixedRange.Equals("2").ToString().ToLower());
+        }
+
+        FrequencyChange();
+        FixedRangeChange();
+
+        SetDateTypeDataSource();
+
+        ReportSchedulerPage.editableGrids = [
+            {
+                name: 'scheduleActionGrid', isDirty: false, filter: { parentId: @id}, afterSubmit: ReportSchedulerPage.updateRecordStamps
+            },
+            {
+                name: 'schedulePrintOptionGrid', isDirty: false, filter: { parentId: @id}, afterSubmit: ReportSchedulerPage.updateRecordStamps
+            },
+            {
+                name: 'scheduleCriteriaGrid', isDirty: false, filter: { parentId: @id}, afterSubmit: ReportSchedulerPage.updateRecordStamps
+            }
+        ];
+
+        ReportSchedulerPage.tabsLoaded = [];
+        ReportSchedulerPage.tabChangeSetListener();
+
+        setTimeout(function () { PrepareBreadcrumb(@Model.ReportId); }, 100);
+    });
+
+    function FrequencyChange() {
+        var frequencyChanged = document.getElementById("FreqTypeId_ReportScheduler");
+        var weeklyOptions = document.getElementById("weeklyOptions");
+        var monthlyOptions = document.getElementById("monthlyOptions");
+
+        if (frequencyChanged.value == 1) {//daily
+            weeklyOptions.setAttribute("hidden", "hidden");
+            monthlyOptions.setAttribute("hidden", "hidden");
+        } else if (frequencyChanged.value == 2) {//weekly
+            weeklyOptions.removeAttribute("hidden");
+            monthlyOptions.setAttribute("hidden", "hidden");
+        } else {//monthly
+            weeklyOptions.setAttribute("hidden", "hidden");
+            monthlyOptions.removeAttribute("hidden");
+        }
+    }
+
+    function FixedRangeChange() {
+
+        var relativeFixedRange = document.getElementById("RelativeFixedRange");
+        var fixedFixedRange = document.getElementById("FixedFixedRange");
+        var relativeOptions = document.getElementById("relativeRangeOptions");
+        var fixedOptions = document.getElementById("fixedRangeOptions");
+
+        if (relativeFixedRange.checked) {//relative
+            relativeOptions.removeAttribute("hidden");
+            fixedOptions.setAttribute("hidden", "hidden");
+        } else if (fixedFixedRange.checked) {//fixed
+            fixedOptions.removeAttribute("hidden");
+            relativeOptions.setAttribute("hidden", "hidden");
+        } else {//none
+            fixedOptions.setAttribute("hidden", "hidden");
+            relativeOptions.setAttribute("hidden", "hidden");
+        }
+    }
+
+    function goBack() {
+        window.history.back();
+    }
+
+    function SetDateTypeDataSource() {
+        var taskId = @Model.TaskId;
+        var sortOrderDataSourceUrl = $("#detailForm").data("date-type-url");
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: sortOrderDataSourceUrl + "?taskId=" + taskId,
+                }
+            }
+        });
+        $("#DateType_ReportScheduler").data("kendoComboBox").setDataSource(dataSource);
+    }
+
+    function PrepareBreadcrumb(reportId) {
+        //if (reportId != null && reportId != 0) {
+        //    return;
+        //}
+        var BreadcrumbName = "";
+        var BreadcrumbUrl = "";
+        if (reportId == 1) {
+            BreadcrumbName = "@Localizer["Patent Status List Report"]";
+            BreadcrumbUrl = "@Url.Action("PatPatentList", "Report", new { Area = "Patent" })";
+        } else if (reportId == 2) {
+            BreadcrumbName = "@Localizer["Due Date List Report"]";
+            BreadcrumbUrl = "@Url.Action("DueDate", "Report", new { Area = "Shared" })";
+        } else if (reportId == 5) {
+            BreadcrumbName = "@Localizer["Trademark List Report"]";
+            BreadcrumbUrl = "@Url.Action("TmkTrademarkList", "Report", new { Area = "Trademark" })";
+        } else if (reportId == 6) {
+            BreadcrumbName = "@Localizer["Matter List Report"]";
+            BreadcrumbUrl = "@Url.Action("GMMatterList", "Report", new { Area = "GeneralMatter" })";
+        } else {
+            return;
+        }
+
+        var breadcrumbActive = document.getElementsByClassName("breadcrumb-item active")[0];
+        if (breadcrumbActive == null)
+            return;
+        var breadcrumbContainer = document.getElementsByClassName("page-header page-crumbs")[0];
+        var breadcrumbOL = document.createElement("ol");
+        breadcrumbOL.setAttribute("class", "breadcrumb bg-transparent")
+        var breadcrumbParent = breadcrumbActive.parentElement;
+        var breadcrumbReportLI = document.createElement("li");
+        breadcrumbReportLI.classList.add("breadcrumb-item");
+        var breadcrumbReportA = document.createElement("a");
+        breadcrumbReportA.setAttribute("href", BreadcrumbUrl);
+        breadcrumbReportA.innerHTML = BreadcrumbName;
+        breadcrumbReportLI.appendChild(breadcrumbReportA);
+        breadcrumbContainer.removeChild(breadcrumbParent.parentElement);
+        breadcrumbOL.appendChild(breadcrumbReportLI);
+        breadcrumbOL.appendChild(breadcrumbActive);    
+        breadcrumbContainer.appendChild(breadcrumbOL);
+    }
+</script>

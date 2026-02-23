@@ -1,0 +1,19 @@
+﻿@model DocPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    ViewData["Title"] = Localizer["Documents"];
+}
+<div>
+    @await Html.PartialAsync("_SearchIndex", Model)
+</div>
+
+
+
+<style>
+    .cut-off {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+</style>

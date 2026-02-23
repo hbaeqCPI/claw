@@ -1,0 +1,160 @@
+﻿@model ChildImageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var treeName = $"documentTree_{ViewData["PageId"]}";
+    var menuName = $"documentTreeMenu_{ViewData["PageId"]}";
+    var target = $"#{treeName}";
+
+    var labelMenuNew = Localizer["New Folder"].ToString();
+    var labelMenuRename = Localizer["Rename"].ToString();
+    var labelMenuDelete = Localizer["Delete"].ToString();
+
+    var permission = Model.Permission;
+    
+    var spDocumentLink = SharePointViewModelService.BuildFolders(Model.SharePointDocLibrary, Model.SharePointDocLibraryFolder, Model.SharePointRecKey);
+    var settings = await Settings.GetSetting();
+
+}
+
+<div class="doc-tree-container"
+     data-error-message="@Localizer["An error occurred. No updates were made."]"
+     data-label-new="@labelMenuNew" data-label-rename="@labelMenuRename" data-label-delete="@labelMenuDelete"
+     data-add-folder-url="@Url.Action("AddFolder", "SharePointGraph",new {area="Shared",docLibrary=Model.SharePointDocLibrary,docLibraryFolder=Model.SharePointDocLibraryFolder,recKey=Model.SharePointRecKey})" data-add-folder-label="@Localizer["Enter Folder Name"]"
+     data-rename-url="@Url.Action("RenameFolderDoc", "SharePointGraph",new {area="Shared",docLibrary=Model.SharePointDocLibrary})" data-rename-label="@Localizer["Enter New Name"]"
+     data-delete-title="@Localizer["Confirm Delete"]" data-delete-message="@Localizer["You are about to delete this record and all its related information. This operation cannot be undone."]"
+     data-delete-url="@Url.Action("DeleteFolderDoc", "SharePointGraph",new {area="Shared",docLibrary=Model.SharePointDocLibrary})" data-delete-confirm-url="@Url.Action("ConfirmationCode", "DeleteConfirmation", new { Area = "" })"
+     data-drop-url="@Url.Action("MoveFolderDoc", "SharePointGraph",new {area="Shared",docLibrary=Model.SharePointDocLibrary})">
+    <div class="row">
+        <div class="col">
+            <input type="hidden" class="sp-doc-tree-node" />
+            @(Html.Kendo().TreeView()
+                .HtmlAttributes(new { @class = "doc-treeview" })
+                .Name(treeName)
+                .DataTextField("text")
+                .DataSpriteCssClassField("iconClass")
+                .TemplateId("documentTree-template")
+                .LoadOnDemand(true)
+                .DragAndDrop(permission.CanUploadDocuments)
+                .AutoBind(false)
+                .AutoScroll(true)
+                .DataSource(dataSource => dataSource
+                .Read(read => read
+                .Action(settings.IsSharePointIntegrationByMetadataOn ? "GetApplicableDocTreeByMetadata" : "GetApplicableDocTree", "SharePointGraph", new { Area = "Shared", documentLink = spDocumentLink, parentId = Model.ParentId })
+                )
+                .Events(events =>
+                {
+                    //events.Error("sharePointGraphHelper.imageReadErrorHandler");
+                })
+                )
+                .Events(events => events
+                .Select("documentHelper.spTreeNodeSelect")
+                .Drop("documentHelper.spTreeNodeDrop")
+                .DragStart("documentHelper.treeNodeDragStart")
+                )
+                )
+            @if (permission.CanUploadDocuments && SharePointViewModelService.IsSharePointIntegrationCanAddFolder)
+            {
+                @(Html.Kendo().ContextMenu()
+                    .Name(menuName)
+                    .Target(target)
+                    .Filter(".k-in .node-menu")
+                    .Orientation(ContextMenuOrientation.Horizontal)
+                    .Animation(animation =>
+                    {
+                        animation.Open(open =>
+                        {
+                            open.Fade(FadeDirection.In);
+                            open.Duration(500);
+                        });
+                    })
+                    .Events(e => e.Open("documentHelper.treeMenuOpen").Select("documentHelper.treeMenuSelect"))
+                    .Items(items =>
+                    {
+                        items.Add().Text("");
+                    })
+                    )
+            }
+        </div>
+    </div>
+
+    <script id="documentTree-template" type="text/kendo-ui-template">
+        # if (!item.isReadOnly || item.id.includes("|doc|")) { #
+        <span class="node-menu">
+            # } #
+
+            #: item.text #
+
+            # if (!item.isReadOnly || item.id.includes("|doc|")) { #
+        </span>
+        # } #
+    </script>
+
+    <input type="hidden" id="treeNodeAddName" value="" />
+    <script id="treeNodeAddTemplate" type="text/x-kendo-template">
+        <input class="k-textbox tree-node-input" value="#= folderName.val() #" />
+        <button class="k-button k-primary">#=getSaveLabel()#</button>
+    </script>
+
+    <script id="treeNodeRenameTemplate" type="text/x-kendo-template">
+        <input class="k-textbox tree-node-input" value="#= node.text #" />
+        <button class="k-button k-primary">#=getSaveLabel()#</button>
+    </script>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        const maxHeight = ($(window).height() - $(".site-header").height()) * 0.4;
+        $("div.k-treeview").css("max-height", maxHeight);
+    });
+</script>
+
+@*to fix issue with ja language*@
+<script>
+    function getSaveLabel(type) {
+        return '@Localizer["Save"].ToString()';
+    }
+</script>
+
+<style>
+    div.k-treeview {
+        min-height: 100px;
+        /*max-height: 375px;*/
+        overflow-y: scroll !important;
+    }
+
+    .k-treeview .k-item {
+        font-size: small;
+    }
+
+    .k-treeview .k-state-selected {
+        /*border-color: #0072c6;*/
+    }
+
+    .fa.k-sprite,
+    .fa.k-sprite::before,
+    .fad.k-sprite,
+    .fad.k-sprite::before,
+    .fas.k-sprite,
+    .fas.k-sprite::before,
+    .far.k-sprite,
+    .far.k-sprite::before,
+    .fal.k-sprite,
+    .fal.k-sprite::before,
+    .fab.k-sprite,
+    .fab.k-sprite::before {
+        font-size: 12px;
+        line-height: 14px;
+        vertical-align: middle;
+    }
+
+        .fad.k-sprite,
+        .fad.k-sprite::before {
+            font-size: 12px;
+            line-height: 14px;
+            vertical-align: middle;
+        }
+</style>
+
+

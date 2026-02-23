@@ -1,0 +1,62 @@
+﻿@model DefaultImageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var pageName = ViewBag.ActivePage;
+    var docLibrary = ViewBag.SharePointDocLibrary;
+    var folders = ViewBag.SharePointFolders;
+    var parentId = ViewBag.ParentId;
+
+    var imageUrl = "";
+
+    if (!string.IsNullOrEmpty(Model?.SharePointDriveItemId))
+    {
+        imageUrl = Url.Action("DownloadFile", "SharePointGraph", new { Area = "Shared",docLibrary=Model.SharePointDocLibrary,name=Model.ImageFile,id=Model.SharePointDriveItemId });
+    }
+    
+}
+
+<div class="default-image" id="dropZoneElement_@pageName">
+    <div class="content">
+        @if (string.IsNullOrEmpty(imageUrl))
+        {
+            <span class="no-image" title="@Localizer["No image"]"><i class="fas fa-camera-alt fa-3x"></i></span>
+
+            @if ((bool)ViewBag.CanUploadImage)
+            {
+                <p class="pt-5" style="font-size: 12px">@Localizer["DRAG AND DROP DEFAULT IMAGE"]</p>
+                <div id="UploadDefaultImageZone" class="d-none">
+                    @(
+                        Html.Kendo().Upload()
+                        .Name($"droppedFile")
+                        .Async(a => a
+                        .Save("SaveDroppedDefaultImage", "SharePointGraph", new { Area = "Shared", docLibrary = docLibrary, folders = folders,parentId=parentId})
+                        .AutoUpload(true)
+                        .Batch(true)
+                        )
+                        .DropZone($"#dropZoneElement_{pageName}")
+                        .ShowFileList(false)
+                        .Multiple(false)
+                        .Events(e => e.Error($"{pageName}.image.onUploadAsyncFail").Success($"function(e) {{{pageName}.image.onUploadDefaultImageSuccess(e,{pageName});}}"))
+                        )
+                </div>
+            }
+        }
+        else
+        {
+            <img class="type-image" title="@Model?.ImageTitle" src="@imageUrl" />
+        }
+        <div class="title">@Model?.ImageTitle</div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var defaultImage = $(`#${@(pageName).detailContentContainer}`).find(".default-image");
+        if (defaultImage.length > 0) {
+            var image = defaultImage.find("img.type-image");
+            if (image.length > 0)
+                image.lightBox();
+        }
+    });
+</script>
+

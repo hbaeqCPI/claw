@@ -1,0 +1,45 @@
+﻿@model CountryLookupViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var countryLabel = Localizer["Country"];
+    var id = ViewData["id"].ToString();
+    var area = ViewData["area"].ToString();
+
+    var linkUrl = Url.Action("DetailLink", "Country", new
+    {
+        Area = area,
+        id = "actualValue"
+    });
+
+    var headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Country"], @Localizer["Country Name"]);
+    var template = ComboBoxHelper.GetItemTemplate("Country", "CountryName");
+    
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                .DataTextField("Country")
+                .DataValueField("Country")
+                .AutoBind(false)
+                .AutoWidth(true)
+                .DataSource(source =>
+                {
+                    source.Read(read =>
+                    {
+                        read.Action("GetCountryList", "Country", new { area = area, property = "Country" });
+                    })
+                    .ServerFiltering(true);
+                })
+                .Template(template)
+                .HeaderTemplate(headerTemplate)
+                .HtmlAttributes(new { style = "width: 80%", id = @id })
+
+)
+
+<button type="button" class="btn">
+    <i class="fal fa-search-plus btn-link cpiDetailsLink" id="@id" data-source="@id" data-url="@linkUrl"></i>
+</button>
+
+
+
+
+

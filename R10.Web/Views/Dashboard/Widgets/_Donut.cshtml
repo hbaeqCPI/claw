@@ -1,0 +1,35 @@
+﻿@model IEnumerable<ChartDTO>
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+}
+
+@(Html.Kendo().Chart(Model)
+                            .Name(widget.Id.ToString() + "-chart")
+                            .ChartArea(chartArea => chartArea
+                                .Background("transparent"))
+                            .Title(title => title
+                                .Text("")
+                                .Position(ChartTitlePosition.Top)
+                            )
+                            .Legend(legend => legend
+                                .Visible(true)
+                                .Position(ChartLegendPosition.Bottom)
+                            )
+                            .Series(series => series
+                                .Donut(m => m.Value, m => m.Category)
+                                .StartAngle(-45)
+                                .ColorField("Color")
+                                .ExplodeField("Explode")
+                                .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+                                .Labels(labels => labels
+                                    .Visible(true)
+                                    .Template("#= value#%")
+                                    .Background("transparent")
+                                )
+                            )
+                            .SeriesColors(widget.SeriesColors)
+                            .Tooltip(tooltip => tooltip
+                                .Visible(true)
+                                .Template("#= category #: #= value #%")
+                            )
+)

@@ -1,0 +1,190 @@
+﻿@model QELog
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var idParam = Model.LogID;
+    var system = ImageHelper.GetSystemName(Model.SystemType);
+    var viewUrl = @Url.Content("~/FileViewer/ViewLogImage?system=" + system);
+    var thumbnailUrl = @Url.Content("~/FileViewer/GetThumbnail?system=" + system);
+    var logoThumbnailUrl = @Url.Content("~/images/");
+
+    var docLink = ViewBag.Key.Split("|");
+    var systemType = docLink[0];
+    var parentKey = docLink[1];
+    var parentValue = docLink[2];
+    var screenCode = ImageHelper.GetScreenCode(parentKey);
+    
+    var openTemplate = $"<a target='_blank' rel='noopener' href='{viewUrl}&fileId=#=FileName#&screenCode={screenCode}&key={parentValue}'>" +
+           "#if(data.Thumbnail.startsWith('logo')) {#" +
+           $"   <img src='{logoThumbnailUrl}#=Thumbnail#' alt='#=FileTitle#' asp-append-version='true' />" +
+           "#}" +
+           "else" +
+           "{#" +
+           $" <img src='{thumbnailUrl}&thumbnailFile=#=Thumbnail#&inline=1&screenCode={screenCode}&key={parentValue}&fileType=9' alt='#=FileTitle#' />" +
+           "#}#" +
+           "</a>";
+
+    var settings = await Settings.GetSetting();
+    switch (settings.DocumentStorage)
+    {
+        case DocumentStorageOptions.iManage:
+            openTemplate = $"<a href='{Url.Action("Open", "iManageWork", new { Area = "" })}/#=ItemId#' title='#=FileTitle#' alt='#=FileTitle#' target='_blank' rel='noopener'>#if (Thumbnail) {{#<img src='#=Thumbnail#' title='#=FileTitle#' alt='#=FileTitle#' height='62' width='62'>#}} else {{#<i class='#=IconClass# fa-2x'>#}}#</i></a>";
+            break;
+
+        case DocumentStorageOptions.NetDocuments:
+            openTemplate = $"<a href='{Url.Action("Open", "NetDocs", new { Area = "" })}/#=ItemId#' title='#=FileTitle#' alt='#=FileTitle#' target='_blank' rel='noopener'>#if (Thumbnail) {{#<img src='#=Thumbnail#' title='#=FileTitle#' alt='#=FileTitle#' height='62' width='62'>#}} else {{#<i class='#=IconClass# fa-2x'>#}}#</i></a>";
+            break;
+    }
+}
+
+<script type="text/x-kendo-tmpl" id="listViewTemplate">
+    <div class="thumbnail">
+        @Html.Raw(openTemplate)
+        <input type="hidden" id="FileId" value="#=FileId#" />
+        <input type="hidden" id="FileName" value="#=FileName#" />
+        <p>#:FileTitle#</p>
+    </div>
+</script>
+
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        @(Html.Kendo().ListView<AttachedFileDTO>()
+                      .Name("qeAttachmentListView")
+                      .TagName("div")
+                      .ClientTemplateId("listViewTemplate")
+                      .Selectable(ListViewSelectionMode.Single)
+                      .AutoBind(false)
+                      .DataSource(dataSource => dataSource
+                          .Ajax()
+                          .Read(read => read.Action("QEAttachmentsRead", "DocsOut", new { system = system, id = idParam }))
+                          .PageSize(10)
+                      )
+                      .Pageable(pageable => pageable
+                          .Refresh(true)
+                          .ButtonCount(5)
+                          .PageSizes(new[] { 10, 20, 30 })
+                      )
+                      .HtmlAttributes(new { style = "height:160px; background-color: #f5f5f5;" })
+
+        )
+
+    </div>
+
+</div>
+
+<style>
+
+    #qeImageListView {
+        margin-bottom: -1px;
+        min-height: 160px;
+    }
+
+    .thumbnail {
+        float: left;
+        position: relative;
+        margin-top: 12px;
+        margin-left: 10px;
+        cursor: pointer;
+        border: 1px solid #e7e7e7;
+        border-radius: 3px;
+        height: 140px;
+        width: 140px;
+        background-color: white;
+    }
+
+        .thumbnail img {
+            width: 80px;
+            height: 80px;
+            display: block;
+            margin-top: 5px;
+            margin-left: auto;
+            margin-right: auto;
+            /*max-width: 100%;
+                margin: 5px 5px 5px 5px;*/
+        }
+
+        .thumbnail i {
+            width: 80px;
+            display: block;
+            margin-top: 30px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+            .thumbnail i:before {
+                padding-left: 25px;
+            }
+
+        .thumbnail p {
+            display: block !important;
+            margin: 5px 5px 5px 5px;
+            max-width: 130px;
+            overflow: hidden;
+            line-height: 1.1em;
+            font-size: .7em;
+            font-weight: normal;
+            text-align: center;
+            /*text-transform: uppercase;*/
+        }
+
+    .edit-buttons {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: right;
+        padding: 5px;
+    }
+
+    .k-state-selected {
+        color: #333;
+        background-color: none;
+        border-color: darkgrey;
+    }
+
+    .dropZoneElement {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        height: 70px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 24px;
+        line-height: 1.2em;
+        font-family: Arial,Helvetica,sans-serif;
+        color: var(--text-body);
+    }
+
+    .dropImageHereText {
+        /*color: #c7c7c7;*/
+        color: var(--text-body);
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .wrapper:after {
+        content: ".";
+        display: block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
+    }
+
+    .file {
+        float: left;
+        margin: 20px 30px;
+        text-align: center;
+    }
+
+        .file img {
+            display: block;
+            margin-bottom: 10px;
+        }
+</style>

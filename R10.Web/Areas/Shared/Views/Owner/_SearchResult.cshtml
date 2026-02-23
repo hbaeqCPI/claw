@@ -1,0 +1,72 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var ownerLabel = settings.LabelOwner;
+    var ownerNameLabel = settings.LabelOwnerName;
+
+    ViewBag.Title = SharedLocalizer["Search Results"];
+    ViewBag.Url = Url.Action("Search", "Owner").ToLower();
+    var detailsUrl = Url.Action("Detail", "Owner", new { id = "#: OwnerID#", fromSearch = true });
+    var detailsLinkTemplate = string.Format("<a href='{0}' class='details-link' data-id='#: OwnerID#'>#: OwnerCode#</a>", detailsUrl);
+    var resultsGrid = "ownerSearchResultGrid";
+    var container = "ownerSearchResult";
+
+}
+
+<div id="@container">
+    <div class="mb-md-2 text-right">
+        <div class="row">
+            <div class="col-md-4 text-left">
+                <h3 class="page-title">@ViewData["Title"]</h3>
+            </div>
+            <div class="col-md mb-md-2 ml-md-3 pt-3 text-right cpiButtonsSearch">
+                <button class="btn btn-link cpiButtonSearch" data-url="@ViewBag.SearchUrl"><span class="fas fa-binoculars"></span> @SharedLocalizer["Back to Search"]</button>
+            </div>
+        </div>
+    </div>
+    @(Html.Kendo().Grid<OwnerSearchResultViewModel>()
+                            .Name(resultsGrid)
+                            .Columns(columns =>
+                            {
+                                columns.Bound(c => c.OwnerCode).Title(SharedLocalizer[ownerLabel]).ClientTemplate(detailsLinkTemplate).Width(200);
+                                columns.Bound(c => c.OwnerName).Title(SharedLocalizer[ownerNameLabel]);
+                                columns.Bound(c => c.CreatedBy).Hidden();
+                                columns.Bound(c => c.UpdatedBy).Hidden();
+                                columns.Bound(c => c.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
+                                columns.Bound(c => c.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
+                            })
+                            .ToolBar(tools => tools.Excel())
+                            .AutoBind(false)
+                            .Pageable(page => page.PageSizes(true).Refresh(true))
+                            .Sortable(sort => sort.AllowUnsort(false))
+                            //.Selectable(selectable=>selectable.Mode(GridSelectionMode.Single))
+                            //.ColumnMenu()
+                            .Excel(excel => excel.FileName($"{ownerLabel}List.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Owner")))
+                            .DataSource(dataSource => dataSource
+                                .Ajax()
+                                .Events(events => events.RequestEnd("ownerPage.searchResultGridRequestEnd"))
+                                .PageSize((int)ViewBag.PageSize)
+                                .Read(read => read.Action("PageRead", "Owner")
+                                .Data("page.gridMainSearchFilters('#ownerSearchForm')"))
+                            .Sort(sort => sort.Add(c => c.OwnerName))
+                        )
+                        .HtmlAttributes(new { @class = "kendo-Grid" })
+    )
+
+    <script>
+        $(document).ready(function () {
+            var title = '@ViewBag.Title';
+            var url = '@ViewBag.Url';
+
+            page.initializeSearchResultGrid(ownerPage, "@resultsGrid");
+            page.breadCrumbs.addNode({
+                  name: '@container', label: title, url: url, refresh: true, updateHistory: true, refreshHandler: ownerPage.refreshSearchResultGrid
+            });
+            $("#@container").find(".cpiButtonsSearch").cpiMainButtons();
+
+        });
+    </script>
+</div>

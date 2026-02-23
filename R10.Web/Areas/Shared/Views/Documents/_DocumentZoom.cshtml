@@ -1,0 +1,50 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var system = ViewBag.System;
+    var screenCode = ViewBag.ScreenCode;
+    var key = ViewBag.Key;
+    var fileType = ViewBag.FileType;
+
+
+    var viewerAction = ViewBag.FromTemp != null && (bool)ViewBag.FromTemp ? "GetTempFileDocumentViewer" : "GetDocumentViewer";
+    var docUrl = Url.Action(viewerAction, "DocViewer", new { Area = "Shared", docFileName = Model, system,screenCode,key,fileType });
+}
+
+<div id="documentZoomDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="documentZoomDialogTitle" aria-hidden="true">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentZoomDialogTitle">@Localizer["Document Viewer"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="@Localizer["Close"]">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid">
+                <div id="docViewerContainer" data-viewer-url="@docUrl">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel" type="button" class="btn btn-secondary  float-right" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+
+    $(document).ready(function () {
+        documentPage.initializeDocumentZoom({
+            modalDialog: "documentZoomDialog",
+            docViewerContainer: "docViewerContainer"
+        });
+    });
+</script>

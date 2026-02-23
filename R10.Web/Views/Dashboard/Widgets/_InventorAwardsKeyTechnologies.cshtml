@@ -1,0 +1,306 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@using System.Globalization; 
+@inject IStringLocalizer<PatentResource> Localizer
+@inject IClientService ClientService
+@inject ISystemSettings<PatSetting> Settings
+@inject IPatInventorService InventorService
+@inject IEntityService<PatInventorAwardType> AwardTypeService
+@{ 
+    var settings = await Settings.GetSetting();
+    var clientLabel = Localizer[settings.LabelClient];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;    
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                                {
+                                                    ClientID = c.ClientID,
+                                                    ClientCode = c.ClientCode,
+                                                    ClientName = c.ClientName
+                                                })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    List<string> awardTypes = new List<string>();
+    if (userSettings.Property("AwardTypes") != null)
+    {
+        try
+        {
+            string[] awardTypeFilter = ((JArray)userSettings.Property("AwardTypes").Value).Select(a => (string)a).Where(a => !string.IsNullOrEmpty(a)).ToArray();
+
+            if (awardTypeFilter.Count() > 0)
+            {
+                awardTypes = new List<string>(awardTypeFilter);
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    string awardDateFromStr = userSettings.Property("AwardDateFrom") != null ? userSettings["AwardDateFrom"].Value<string>() : "";
+    DateTime? awardDateFrom = !string.IsNullOrEmpty(awardDateFromStr) ? DateTime.ParseExact(awardDateFromStr, "MM/dd/yyyy", CultureInfo.InvariantCulture) : null;
+    string awardDateToStr = userSettings.Property("AwardDateTo") != null ? userSettings["AwardDateTo"].Value<string>() : "";
+    DateTime? awardDateTo = !string.IsNullOrEmpty(awardDateToStr) ? DateTime.ParseExact(awardDateToStr, "MM/dd/yyyy", CultureInfo.InvariantCulture) : null;
+
+}
+
+<script>
+    var refresh = false;
+
+    function saveAwardDateRange(e) {                
+        var widgetId = parseInt('@widget.Id');
+        var dateRange = this.range();
+        var selectedStartDate = "";
+        var selectedEndDate = "";
+        if (dateRange) {
+            if (dateRange.start) {
+                selectedStartDate = kendo.toString(dateRange.start, 'MM/dd/yyyy');
+            }
+            if (dateRange.end) {
+                selectedEndDate = kendo.toString(dateRange.end, 'MM/dd/yyyy');
+            }
+        }       
+
+        saveSetting(widgetId, `{ AwardDateFrom: "${selectedStartDate}", AwardDateTo: "${selectedEndDate}" }`, function () { refresh = true; });        
+    }
+
+    function awardDateRangeOnClose(e) {        
+        $("#AwardDateRange_@userWidgetId input").blur();  
+    }
+
+    $(document).ready(function () {
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];        
+        var awardTypeList = "@String.Join(",", awardTypes.Select(a => (string)a).ToList())".split(",").filter(item => item);
+
+        $(document).on("click", ".clearAwardDateRange_@userWidgetId", function (e) {            
+            var daterangepicker = $("#AwardDateRange_" + '@userWidgetId').data("kendoDateRangePicker");
+            daterangepicker.range({
+                start: null,
+                end: null
+            });
+            daterangepicker.trigger('change');
+        });
+
+        $("#AwardDateRange_@userWidgetId input").addClass("non-sortable");
+        var awardDateRange = { start: null, end: null };        
+        if ('@awardDateFrom') {            
+            awardDateRange.start = new Date('@awardDateFrom');
+        }  
+        if ('@awardDateTo') {            
+            awardDateRange.end = new Date('@awardDateTo');
+        }   
+        var drPicker = $("#AwardDateRange_@userWidgetId").data("kendoDateRangePicker");
+        drPicker.range(awardDateRange);
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#awardTypeFilter_@userWidgetId .delete-awardType");
+        $(document).off("change", "#AwardType_@userWidgetId");
+        $(document).on("click", "#awardTypeFilter_@userWidgetId .delete-awardType", function (e) {
+            var item = $.inArray($(this).data("id"), awardTypeList);
+
+            if (item !== -1) {
+                awardTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ AwardTypes: ['${awardTypeList.join("','")}'] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#AwardType_@userWidgetId", function (e) {
+            var updated = $(this).data("kendoComboBox");
+
+            if (updated.selectedIndex >= 0) {
+                var dataItem = updated.dataItem(updated.selectedIndex);
+                var awardType = dataItem.AwardType;
+
+                if ($.inArray(awardType, awardTypeList) == -1) {
+                    awardTypeList.push(awardType);
+                    $("#awardTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="awardType">${awardType}</span></div><div class="delete-filter delete-awardType" data-id="${awardType}" title="Remove ${awardType}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ AwardTypes: ['${awardTypeList.join("','")}'] }`, function () { refresh = true; });
+                }
+            }
+
+            updated.value("");
+        });
+    });
+</script>
+<style>
+    .clearAwardDateRange_@userWidgetId {      
+        color: dimgray;
+        padding: 8px 10px;
+    }
+
+    .clearAwardDateRange_@userWidgetId:hover {
+        cursor: pointer;
+        color: black;
+        background-color: #e7e7e7;
+    }
+</style>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul class="list-group">
+           <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Award Date Range"]</span>
+                <span style="display:flex;">                    
+                    @(Html.Kendo().DateRangePicker()
+                      .Name("AwardDateRange_" + userWidgetId)                       
+                      .Format("dd-MMM-yyyy")    
+                      .Range(r => r.Start(awardDateFrom).End(awardDateTo))
+                      .Labels(false)
+                      .Events(e => e.Change("saveAwardDateRange").Close("awardDateRangeOnClose"))                        
+                      .HtmlAttributes(new { style = "width: 100%" })
+                    )                       
+                    <i class="fal fa-times clearAwardDateRange_@userWidgetId" title=@Localizer["Remove"]></i>
+                </span>               
+                
+            </li>
+            
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", @clientLabel, @clientNameLabel, "Client", "Shared", userWidgetId))</span>
+            </li>
+            @foreach (ClientListViewModel client in clients)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>       
+        <ul id="awardTypeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Award Type"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AwardType", controller = "InventorAwardCriteria", area = "Patent", screen = userWidgetId, valueProperty = "AwardType", textProperty = "AwardType", listWidth = 350 })
+                </span>
+            </li>
+            @foreach (string awardType in awardTypes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="awardType">@awardType</span>
+                    </div>
+                    <div class="delete-filter delete-awardType" data-id="@awardType" title="Remove @awardType"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+
+@(Html.Kendo().Chart(Model)
+    .Name(userWidgetId)
+    .Title("")
+    .Legend(legend => legend
+        .Visible(false)
+    //.Position(ChartLegendPosition.Top)
+    )
+    .ChartArea(chartArea => chartArea
+        .Background("transparent")
+    )
+    .Series(series => series
+        .Bar(model => model.Value, model => model.Category)
+        //.ColorField("Color")
+        .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+        .Labels(labels => labels
+            .Visible(true)
+            .Template("#= value == null ? '' : dataItem.Color #")
+            .Background("transparent")
+            .Position(ChartBarLabelsPosition.OutsideEnd)
+        )
+        .Name("#: group.items[0].Group #")
+    )
+    .DataSource(dataSource => dataSource
+        .Group(group => group.Add(model => model.Group))
+    )
+    .SeriesColors((string[])widget.SeriesColors)
+    .Tooltip(tooltip => tooltip
+        .Visible(true)
+        .Template("#= category #: #= value == null ? 0 : dataItem.Color #")
+    )
+    //Settings for PDF export using kendo built-in function
+    .Pdf(pdf => pdf
+        .FileName(@widget.Title.ToString())
+        //.PaperSize("A4")
+        .Landscape(false)
+        .Margin(m => m
+            .Left(10)
+            .Right(10)
+            .Top(10)
+            .Bottom(10))
+    )
+)

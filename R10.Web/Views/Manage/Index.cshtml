@@ -1,0 +1,22 @@
+﻿@model SidebarPageViewModel
+@{
+    ViewData["Title"] = Model.PageTitle;
+}
+
+@await Html.PartialAsync("_SidebarPage", Model)
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {        
+            pageHelper.moveBreadcrumbs("#@Model.PageId");
+            window.cpiBreadCrumbs.addNode({
+                name: "@Model.PageId",
+                label: "@Model.PageTitle",
+                url: "@Context.Request.PathBase@Context.Request.Path",
+                updateHistory: true
+            });
+            
+            pageHelper.initializeSidebarPage("#@Model.PageId .page-sidebar", "#@Model.PageId .page-main");
+        });
+    </script>
+}

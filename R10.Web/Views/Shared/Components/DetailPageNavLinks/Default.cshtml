@@ -1,0 +1,100 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@model DetailPagePermission
+@{
+    var addMode = (bool)ViewBag.AddMode;
+
+    var showTradeSecretRequest = Model.ShowTradeSecretRequest;
+    var tsRequest = Model.TradeSecretUserRequest;
+}
+<div class="detail-page-nav">
+    <div id="editActionButtons" class="page-header @(addMode ? "":"d-none")">
+        <nav class="nav nav-left">
+            <a class="nav-link save-changes" href="#" title="Save" role="button"><i class="fal fa-save pr-2"></i><span>@Localizer["Save"]</span></a>
+            <a class="nav-link cancel-changes" href="#" title="Cancel" role="button"><i class="fal fa-undo pr-2"></i><span>@Localizer["Cancel"]</span></a>
+        </nav>
+    </div>
+    @if (!addMode)
+    {
+    <div class="page-header cpiButtonsDetail">
+        @*remove search screen*@
+        @*@if (Context.Request.IsAjax())
+        {
+            <a href="#" class="back-to-results" title="@Localizer["Back to search results"]"><span><i class="fal fa-arrow-left pr-2"></i>@Localizer["Back to search results"]</span></a>
+        }*@
+        @*<div class="page-title">
+            @ViewBag.Title&nbsp;
+        </div>*@
+        <nav class="nav nav-left">
+            @*remove search screen*@
+            @*<a class="nav-link page-nav show-search" data-url="@Model.SearchScreenUrl" href="#" title="Search" role="button"><i class="fal fa-search pr-2"></i><span>@Localizer["Search"]</span></a>*@
+            <div class="sidebar-link"></div>
+            @if (Model.CanSearch)
+            {
+                <a class="nav-link back-to-results" href="#" title="Search" role="button"><i class="fal fa-search pr-2"></i><span>@Localizer["Search"]</span></a>
+            }
+
+            @if (Model.CanRefreshRecord)
+            {
+                <a class="nav-link page-nav refresh-record" data-url="@Model.RefreshRecordUrl" href="#" title="Refresh" role="button"><i class="fal fa-sync pr-2"></i><span>@Localizer["Refresh"]</span></a>
+            }
+
+            @if (Model.CanAddRecord)
+            {
+                <a class="nav-link page-nav add-record" href="#" title="Add" role="button" data-url="@Model.AddScreenUrl" data-container="@Model.Container"><i class="fal fa-plus pr-2"></i><span>@Localizer["Add"]</span></a>
+            }
+            @if (Model.CanCopyRecord)
+            {
+                <a class="nav-link page-nav copy-record" href="#" title="Copy record" role="button" data-url="@Model.CopyScreenUrl" @(Model.IsCopyScreenPopup ? "data-popup=true" : "") data-container="@Model.Container"><i class="fal fa-copy pr-2"></i><span>@Localizer["Copy"]</span></a>
+            }
+            @if (Model.CanPrintRecord)
+            {
+                <a class="nav-link print-record" href="#" title="Print record" role="button" data-url="@Model.PrintScreenUrl" data-popup="true"
+                   data-container="@Model.Container" data-confirm-url="@Model.PrintScreenUrl"
+                   data-confirm-message="@Localizer["Please check to confirm"]"><i class="fal fa-file-arrow-down pr-2"></i><span>@Localizer["Print View"]</span></a>
+            }
+
+            @if (Model.CanEmail)
+            {
+                <a class="nav-link page-nav email-record" href="#" title="Email" role="button" data-url="@Model.EmailScreenUrl" data-popup="true" data-container="@Model.Container"><i class="fal fa-envelope pr-2"></i><span>@Localizer["Email"]</span></a>
+            }
+
+            @if (Model.CanGenerateLetter)
+            {
+                <a class="nav-link page-nav" href="#" title="Letter" role="button" data-url="@Model.LetterScreenUrl" data-popup="true" data-container="@Model.Container"><i class="fal fa-file-word pr-2"></i><span>@Localizer["Letter"]</span></a>
+            }
+
+            @foreach (var action in Model.PageActions)
+            {
+                <a @(string.IsNullOrEmpty(action.ControlId) ? "" : $"id={action.ControlId}")  href="#" title="@Localizer[action.Label]" role="button" 
+                    class="nav-link @(action.IsPageNav ? "page-nav" : "") @(action.Class ?? "")" 
+                    @(string.IsNullOrEmpty(action.Url) ? "" : $"data-url={action.Url}") 
+                    @(action.IsPopup ? "data-popup=true" : "") 
+                    @(action.AppendContent ? "" : $"data-container={@Model.Container}") 
+                    @foreach (var data in action.Data ?? new Dictionary<string, string>()) 
+                    {
+                        @: data-@data.Key="@data.Value"
+                    }
+                ><i class="fal @action.IconClass pr-2"></i><span>@Localizer[action.Label]</span></a>
+            }
+            @if (Model.CanDeleteRecord && (!Model.IsTradeSecret || (Model.IsTradeSecret && Model.CanDeleteTradeSecret)))
+            {
+                <a class="nav-link delete-record" href="#" title="Delete record" role="button" data-url="@Model.DeleteScreenUrl" data-popup="true" data-container="@Model.Container" data-confirm-url="@Model.DeleteConfirmationUrl" data-confirm-message="@Localizer["Please check to confirm"]"><i class="fal fa-trash-alt pr-2"></i><span>@Localizer["Delete"]</span></a>
+            }
+            @if (Model.CanViewMap)
+            {
+                <a class="nav-link page-nav" href="#" title="View map" role="button" data-url="@Model.MapScreenUrl"><i class="far fa-map-marker pr-2"></i><span>@Localizer["Map"]</span></a>
+            }
+            @if (showTradeSecretRequest) {
+                @if (tsRequest != null && tsRequest.IsCleared)
+                {
+                        <a class="nav-link page-nav trade-secret ts-cleared" data-revoke-url="@Url.Action("Revoke", "TradeSecret", new { area = "Admin" })" data-locator="@Model.TradeSecretLocator" href="#" title="@Localizer["Trade secret cleared"]" role="button"><i class="far fa-lock-keyhole-open pr-2"></i><span>@Localizer["Trade Secret"]</span></a>
+                }
+                else
+                {
+                        <a class="nav-link page-nav trade-secret ts-view @(tsRequest != null && tsRequest.IsGranted ? "ts-granted" : "")" data-status-url="@Url.Action("GetRequestStatus", "TradeSecret", new { area = "Admin" })" data-locator="@Model.TradeSecretLocator" href="#" title="@Localizer["View trade secret"]" role="button"><i class="far fa-lock-keyhole pr-2"></i><span>@Localizer["Trade Secret"]</span></a>
+                }
+            }
+        </nav>
+    </div>
+    }
+</div>

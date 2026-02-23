@@ -1,0 +1,111 @@
+﻿@model TmkCountry
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.CountryID;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord;
+    bool isReadOnly = !fullModify;
+}
+
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="CountryID" />
+    <input type="hidden" asp-for="Latitude" />
+    <input type="hidden" asp-for="Longitude" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Country" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Country"></span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label asp-for="CountryName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CountryName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="CountryName"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-5"></div>
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="CPICode"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CPICode" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="CPICode"></span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-8 col-md-7 col-lg-6 col-xl-5 mt-4">
+                <div class="form-group float-label">
+                     <div class=" custom-control custom-checkbox">
+                        <input class="custom-control-input" type="checkbox" checked="@(Model.SingleClassApplication ?? false)" name="SingleClassApplication" id="SingleClassApplication" />
+                        <label asp-for="SingleClassApplication" class="custom-control-label">
+                        </label>
+                     </div>
+                     <span asp-validation-for="SingleClassApplication"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2 order-sm-3 order-lg-last">
+                <div class="form-group float-label">
+                    <label asp-for="CurrencyType"></label>
+                    @if (isReadOnly)
+                    {
+                        <div class="d-flex">
+                            <input type="text" class="form-control form-control-sm" asp-for="CurrencyType" disabled />
+                            <i cpi-button-link url="@Url.Action("DetailLink", "CurrencyType", new { area = "shared", id = Model.CurrencyType })"></i>
+                        </div>
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CurrencyWithLink("CurrencyType", SharedLocalizer["Currency Type"], SharedLocalizer["Description"], Model.CurrencyType))
+                        <span asp-validation-for="CurrencyType"></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="tmkCountryDetailAreaTab" href="#tmkCountryDetailAreaTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="tmkCountryDetailAreaTabContent" title="@SharedLocalizer["Areas"]">@SharedLocalizer["Areas"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="tmkCountryDetailAreaTabContent" role="tabpanel" aria-labelledby="tmkCountryDetailAreaTab">
+                @await Component.InvokeAsync("GridAreas", new AreaGridOptions { Country = Model.Country, Area = "Trademark" })
+            </div>
+        </div>
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    tmkCountryPage.editableGrids = [
+            {
+             title: '@SharedLocalizer["Areas"]', name: 'areasGrid', isDirty: false, filter: { country: '@Model.Country'},
+             afterSubmit: tmkCountryPage.updateRecordStamps
+            }
+    ];
+
+    $(document).ready(() => {
+        const areasGrid = $("#areasGrid");
+        areasGrid.on("click", ".areaLink", (e) => {
+            e.stopPropagation();
+
+            let url = $(e.target).data("url");
+            const row = $(e.target).closest("tr");
+            const dataItem = areasGrid.data("kendoGrid").dataItem(row);
+            console.log(dataItem);
+            const linkUrl = url.replace("actualValue", dataItem.AreaID);
+            pageHelper.openLink(linkUrl, false);
+        });
+    })
+</script>
+

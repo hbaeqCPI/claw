@@ -1,0 +1,195 @@
+﻿@model R10.Core.CountryLawRetroParam
+@inject IStringLocalizer<CountryLawResource> Localizer
+@inject ISystemSettings<TmkSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var clientLabel = Localizer[settings.LabelClient];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+
+    var attorneyLabel = Localizer["Attorney"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+}
+
+<div class="modal fade" id="tmkCountryDueComputeDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="GenerateCountryLawActions"
+                  data-save-message="@Localizer["Process completed successfully."]">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Retroactive Country Law Generation"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body py-1">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="CDueId" />
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="Country"></label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Country" readonly="readonly" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="CaseType"></label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" readonly="readonly" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="ActionType"></label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="ActionType" readonly="readonly" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="ActionDue"></label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="ActionDue" readonly="readonly" />
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="FilDateFrom"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FilDateFrom") { })
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="FilDateTo"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FilDateTo") { })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="PubDateFrom"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PubDateFrom") { })
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="PubDateTo"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PubDateTo") { })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="RegDateFrom"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("RegDateFrom") { })
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="RegDateTo"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("RegDateTo") { })
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label>@caseNumberLabel</label>
+                                    @await Component.InvokeAsync("ComboBox", new { name = "CaseNumber", controller = "TmkTrademarkLookup", enablePaging = enableComboPaging, pagingSize = comboPagingSize })
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label>@clientLabel</label>
+                                    @await Component.InvokeAsync("MultiSelect", MultiSelectOptions.ClientCode("ClientCode", clientLabel, clientNameLabel, "TmkTrademarkLookup"))
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label>@attorneyLabel</label>
+                                    @await Component.InvokeAsync("MultiSelect", MultiSelectOptions.AttorneyCode("AttorneyCode", attorneyLabel, attorneyNameLabel, "TmkTrademarkLookup"))
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-inline">
+                                    <div class="form-check form-check-inline">
+                                        <label class="form-check-label mr-1" for="AttorneyFilter1">@Localizer["Filter by Attorney [1]"]</label>
+                                        <input class="form-check-input" type="checkbox" id="AttorneyFilter1" name="AttorneyFilter1" checked>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <label class="form-check-label mr-1" for="AttorneyFilter2">@Localizer["[2]"]</label>
+                                        <input class="form-check-input" type="checkbox" id="AttorneyFilter2" name="AttorneyFilter2" checked>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <label class="form-check-label mr-1" for="AttorneyFilter3">@Localizer["[3]"]</label>
+                                        <input class="form-check-input" type="checkbox" id="AttorneyFilter3" name="AttorneyFilter3" checked>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <label class="form-check-label mr-1" for="AttorneyFilter4">@Localizer["[4]"]</label>
+                                        <input class="form-check-input" type="checkbox" id="AttorneyFilter4" name="AttorneyFilter4" checked>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <label class="form-check-label mr-1" for="AttorneyFilter5">@Localizer["[5]"]</label>
+                                        <input class="form-check-input" type="checkbox" id="AttorneyFilter5" name="AttorneyFilter5" checked>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="DueDateCutOff"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DueDateCutOff") { })
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                @(Html.Kendo().CheckBoxFor(m => m.ActiveOnly).Label(Localizer["Active applications only?"]))
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                            </div>
+                            <div class="col-md-6 app-status">
+                                <div class="form-group float-label">
+                                    <label asp-for="Status"></label>
+                                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions { Name = "Status", DataTextProperty="TrademarkStatus", Controller = "TrademarkStatus", Action = "GetStatusBySwitch", Data = "function() {return {activeSwitch:1}}" })
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="d-none modal-footer-status"><span class="font-weight-bold pr-2">@Localizer["Processing..."]</span><i class="far fa-spinner fa-spin fa-2x"></i></div>
+                    <div class="modal-footer-buttons">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Generate"]</button>
+                    </div>
+                  
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+

@@ -1,0 +1,54 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    string product = Model;
+    var Link = $"<a href = '{Url.Action("Detail", "CountryApplication", new { area = "Patent", id = "#: AppId#", fromSearch = true })}' class='details-link'>#: RelatedPatCountry#</a>";
+    var detailsLinkTemplate = $"#if (!(RelatedPatCountry===null || RelatedPatCountry==='')) {{# {Link} #}}#";
+
+    var toolbarTemplate = $"<nav class='nav nav-left'><a class='k-button k-button-icontext k-grid-excel no-results-hide' href='\\#'><i class='fal fa-file-excel pr-2'></i>{Localizer["Export to Excel"]}</a></nav>";
+   
+    var parentIdParam = $"{{systemType: '{SystemType.Patent}', productCode: '{product}'}}";
+}
+@(Html.Kendo().Grid<ProductPatentViewModel>()
+          .Name("prodRelatedPatentsGrid")
+          .Columns(columns =>
+          {
+              columns.Bound(r => r.RelatedPatCaseNumber).Width(300).Title(caseNumberLabel).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedPatCountry).ClientTemplate(detailsLinkTemplate).Width(150).HtmlAttributes(new { @class = "country-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedPatSubCase).Width(180).HtmlAttributes(new { @class = "subCase-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedPatCaseType).Width(180).HtmlAttributes(new { @class = "caseType-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedPatStatus).Width(180).HtmlAttributes(new { @class = "status-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedPatAppNumber).Width(180).HtmlAttributes(new { @class = "appNumber-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.PatNumber).Width(180).HtmlAttributes(new { @class = "patNumber-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(a => a.ExpDate).Width(180).Format("{0:dd-MMM-yyyy}").Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.AppTitle).HtmlAttributes(new { @class = "title-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+          })
+          .ToolBar(tools => 
+          { 
+              tools.ClientTemplate(toolbarTemplate);                
+          })
+          .Filterable(ftb => ftb.Enabled(true))
+          .Excel(excel => excel.FileName($"ExportList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Product")))
+          .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+          .Sortable(sort => sort.AllowUnsort(false))
+          .Pageable()
+          .DataSource(dataSource => dataSource
+              .Ajax()
+              .Batch(true)
+              .PageSize(settings.SubFormPageSize)
+              .ServerOperation(false)
+              .Model(model =>
+              {
+                  model.Id(r => r.AppId);
+              })              
+              .Read(read => read.Action("RelatedPatentsRead", "Product", new { product = product }))
+              .Events(events =>
+              {
+                  events.Error("pageHelper.onGridError");
+              })
+          )
+          .HtmlAttributes(new {@class = "kendo-Grid" })
+          )

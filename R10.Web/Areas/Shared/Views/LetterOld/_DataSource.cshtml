@@ -1,0 +1,197 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model DetailPagePermission
+
+@{
+    var systemType = ViewBag.SystemType;
+    var systemCriteria = $"{{systemType: '{systemType}'}}";
+    var permission = Model;
+    var instrx = "Build your letter data source as a tree structure. To ADD a new data source, drag a 'Data Source' to its proper place on the tree. " +
+                   "To DELETE a node, right-click on the node and select 'Remove'. To MOVE nodes around, drag and drop from within the tree.";
+}
+
+<script>
+    function letIdFilter() {
+        return {
+            letId: ($("#selLetId").val())
+        };
+    }
+    function dataFieldsFilter() {
+        var grid = $("#recSourceFilterGrid").data("kendoGrid");
+        var selectedItem = grid.dataItem(grid.select());
+        return {
+            recSourceId: selectedItem.RecSourceId
+        };
+    }
+    function actualDataFilter() {
+        var grid = $("#recSourceFilterGrid").data("kendoGrid");
+        var selectedItem = grid.dataItem(grid.select());
+        return {
+            recSourceId: selectedItem.RecSourceId,
+            fieldName: selectedItem.FieldName
+        };
+    }
+</script>
+
+<script id="treeview-template" type="text/kendo-ui-template">
+    #: '(' + item.id + ') ' + item.text #
+    @*<style>
+        li[data-uid='#=item.uid#'] span.k-state-hover {
+            background: silver !important;
+        }
+
+        li[data-uid='#=item.uid#'] span.k-state-selected {
+            background: lightblue;
+            box-shadow: inset 0 0 1px 1px gray;
+        }
+    </style>*@
+</script>
+
+<div>
+    <p>@SharedLocalizer[instrx]</p>
+</div>
+
+<div class="row" style="height:350px;">
+    <div class="col-md-2 h-100">
+        @(Html.Kendo().Grid<LetterDataSource>()
+              .Name("availableDataSourceGrid")
+              .Columns(column =>
+              {
+                  column.Bound(ds => ds.DataSourceId).Hidden();
+                  column.Bound(ds => ds.DataSourceDescMain).Width(150);
+              })
+              .AutoBind(true)
+              .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+              .Scrollable(scrollable => scrollable.Enabled(false))
+              .DataSource(dataSource => dataSource
+                  .Ajax()
+
+                  .Model(model =>
+                  {
+                      model.Id(ds => ds.DataSourceId);
+                  })
+                  .Read(read => read.Action("ReadDataSourceGrid", "LetterDataSource").Data(systemCriteria))
+              )
+                //.HtmlAttributes(new { @class = "kendo-Grid" })
+                //.HtmlAttributes(new { style = "height:100px;" })
+        )
+
+    </div>
+    <div class="col-md-2 h-100">
+        <div class="row">
+            <span style="font-weight: bold;">Selected Letter Data Source</span>
+        </div>
+        <div class="row border h-75">
+            @(Html.Kendo().TreeView()
+                                  .Name("letterDataSourceTree")
+                                  .ExpandAll(true)
+                                  .HtmlAttributes(new { style = "display: inline-block;" })
+                                  .DragAndDrop(true)
+                                  .TemplateId("treeview-template")
+                                  .DataTextField("text")
+                                  .DataSource(dataSource => dataSource
+                                      .Read(read => read
+                                          .Action("GetRecSourceTree", "Letter").Data("letIdFilter")
+                                      )
+                                  )
+                    //.Events(events => events
+                    //    .Select("onTreeNodeSelect")
+                    //    .Drop("onTreeNodeDrop")
+                    //)
+            )
+        </div>
+
+    </div>
+    <div class="col-md-8 h-100 px-5">
+        <div class="row">
+            <span style="font-weight: bold;">Selected Letter Filter</span>
+        </div>
+        <div class="row border h-75">
+            @(Html.Kendo().Grid<LetterRecordSourceFilterViewModel>()
+                  .Name("recSourceFilterGrid")
+                  .Columns(column =>
+                  {
+                      column.Bound(f => f.LetFilterId).Hidden();
+                      //column.Bound(f => f.LetterRecordSource.LetterDataSource).ClientTemplate("#= RecordSourceMain #").EditorTemplateName("ComboBox")
+                      //column.Bound(f => f.LetterRecordSource).ClientTemplate("#= RecordSourceMain #").EditorTemplateName("ComboBox")
+                      column.Bound(f => f.RecSourceId).ClientTemplate("#=RecordSourceMain#").EditorTemplateName("ComboBox")
+                          .EditorViewData(new
+                          {
+                              action = "GetRecordSourceList", controller = "LetterRecordSource", area = "Shared",
+                              dataValueField = "RecSourceId", dataTextField = "DataSourceDescMain", readData = "letterGen.gridFilter('letId')",
+                              template = "<span class='k-state-default'>#: data.DataSourceDescMain #</span>"
+                          })
+                          .Width(250);
+                      column.Bound(f => f.FieldName).Width(250).EditorTemplateName("ComboBox")
+                          .EditorViewData(new
+                          {
+                              action = "GetFilterFieldsList", controller = "LetterFilter", area = "Shared",
+                              dataValueField = "Value", dataTextField = "Value", readData = "dataFieldsFilter", property = "FieldName",
+                          }).Width(250);
+                      column.Bound(f => f.Operator).EditorTemplateName("LetterFilterOperators").Width(50);
+
+                      column.Bound(f => f.Operand1).EditorTemplateName("ComboBox")
+                          .EditorViewData(new
+                          {
+                              action = "GetFilterDataList", controller = "LetterFilter", area = "Shared",
+                              dataValueField = "Value", dataTextField = "Value", readData = "actualDataFilter", property = "Operand1",
+                              enablePaging = true, valueMapper = "letterGen.valueMapperFilterData"
+                          }).Width(250);
+
+                      column.Bound(f => f.Operand2)
+                          .EditorViewData(new
+                          {
+                              action = "GetFilterDataList", controller = "LetterFilter", area = "Shared",
+                              dataValueField = "Value", dataTextField = "Value", readData = "actualDataFilter", property = "Operand2",
+                              enablePaging = true, valueMapper = "letterGen.valueMapperFilterData"
+                          }).Width(250);
+
+                      column.Command(command =>
+                      {
+                          if (permission.CanDeleteRecord)
+                              command.Custom("Delete").Click("function(e) {letterGen.deleteGridRow(e,this)}").IconClass("k-icon fas fa-trash");
+
+                      }).Width(10);
+                  })
+                  .AutoBind(false)
+                  .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                  .ToolBar(toolbar =>
+                  {
+                      if (permission.CanAddRecord)
+                      {
+                          toolbar.Create().IconClass("k-icon fas fa-plus").Text(SharedLocalizer["Add"]).HtmlAttributes(new { @class = "d-none" });
+                      }
+                      if (permission.CanEditRecord && !permission.CanEditRemarksOnly)
+                      {
+                          toolbar.Custom().Name("Save").IconClass("k-icon fas fa-save").Text(SharedLocalizer["Save"]).HtmlAttributes(new {@class = "d-none"});
+                          toolbar.Custom().Name("Cancel").IconClass("k-icon fas fa-times").Text(SharedLocalizer["Cancel"]).HtmlAttributes(new {@class = "d-none"});
+                      }
+                  })
+                  .Editable(editable => editable.Enabled(permission.CanEditRecord && !permission.CanEditRemarksOnly)
+                      .Mode(GridEditMode.InCell).ConfirmDelete(@SharedLocalizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                  .DataSource(dataSource => dataSource
+                      .Ajax()
+                      .Batch(true)
+                      .PageSize(10)
+                      .Model(model =>
+                      {
+                          model.Id(f => f.LetFilterId);
+                      })
+                      .Read(read => read.Action("ReadRecFilterGrid", "LetterFilter").Data("letterGen.gridFilter('letId')"))
+                      .Update(update => update.Action("RecFilterUpdate", "LetterFilter"))
+                      .Destroy(update => update.Action("RecFilterDelete", "LetterFilter"))
+                      .Events(events =>
+                      {
+                          events.Error("pageHelper.gridErrorHandler");
+                      })
+                  )
+                  .HtmlAttributes(new {@class = "kendo-Grid"})
+                  )
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        letterGen.configureGrid("recSourceFilterGrid", "letId");
+    });
+</script>

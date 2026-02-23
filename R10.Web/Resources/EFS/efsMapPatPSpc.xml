@@ -1,0 +1,112 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for Certification & Request for Prioritized Exam under 37 CFR 1.102(e) - AIA/424 -->
+  <PDFFieldMapping>
+    <PdfField>Attorney Docket No</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>First Named Inventor</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Title</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Title</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Applicant asserts small entity status</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SmallEntity</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Applicant certifies micro entity status</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>MicroEntity</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Address</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Address</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>City</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>City</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>State</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>State</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Country</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Country</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Zip Code</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>ZipCode</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Telephone</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>PhoneNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Email</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Email</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Name PrintType</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Date</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CurrentDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+</NewDataSet>

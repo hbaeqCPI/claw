@@ -1,0 +1,59 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["eSignature Review"];
+}
+
+<h5 class="pl-3 mb-4">@ViewData["Title"]</h5>
+
+<ul class="nav nav-tabs detail nav-tabs-horizontal flush-left" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="docReviewTab" data-toggle="tab" role="tab" aria-controls="docReviewTabContent" aria-selected="true" href="#docReviewTabContent">@Localizer["For Review"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="docSendTab" data-toggle="tab" role="tab" aria-controls="docSendTabContent" href="#docSendTabContent">
+            @Localizer["For Sending"]
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="docSentTab" data-toggle="tab" role="tab" aria-controls="docSentTabContent" href="#docSentTabContent">
+            @Localizer["Sent to DocuSign"]
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="docCompletedTab" data-toggle="tab" role="tab" aria-controls="docCompletedTabContent" href="#docCompletedTabContent">
+            @Localizer["Signature Completed"]
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane show active" id="docReviewTabContent" role="tabpanel" aria-labelledby="docReviewTab">
+        @await Html.PartialAsync("_SignatureReview")
+    </div>
+    <div class="tab-pane show" id="docSendTabContent" role="tabpanel" aria-labelledby="docSendTab">
+        @await Html.PartialAsync("_SignatureSend")
+    </div>
+    <div class="tab-pane show" id="docSentTabContent" role="tabpanel" aria-labelledby="docSentTab">
+        @await Html.PartialAsync("_SignatureSent")
+    </div>
+    <div class="tab-pane show" id="docCompletedTabContent" role="tabpanel" aria-labelledby="docCompletedTab">
+        @await Html.PartialAsync("_SignatureCompleted")
+    </div>
+</div>
+<script>
+    function viewDocuSignRecipients(e, grid) {
+        const dataItem = grid.dataItem($(e.currentTarget).closest("tr"));
+        const baseUrl = $("body").data("base-url");
+        const url = `${baseUrl}/Shared/Signature/DisplayRecipients`;
+
+        $.get(url, { Source: dataItem.Source, QESetupId: dataItem.QESetupId, RoleLink: dataItem.RoleLink, Role: dataItem.SignerRole, Name: dataItem.SignerName, Email: dataItem.SignerEmail, envelopeId: dataItem.EnvelopeId }).done((result) => {
+            const popupContainer = $(".site-content .popup").last();
+            popupContainer.html(result);
+            const dialog = $("#signatoryDialog");
+            dialog.modal("show");
+
+        }).fail(function (error) {
+            pageHelper.showErrors(error.responseText);
+        });
+    }
+</script>

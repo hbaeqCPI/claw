@@ -1,0 +1,40 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    string pagerContainer = $"{Model.PageId}-Pager";
+    string contentContainer = $"{Model.PageId}-Content";
+}
+
+<script>
+    if (typeof @ViewBag.ActivePage === 'undefined') {
+        var @ViewBag.ActivePage = new ActivePage();
+    }
+    $(document).ready(function () {
+        var pageReady = function () {
+            @(ViewBag.ActivePage).initializeDetailPage({
+                mainDetailContainer: "@Model.PageId",
+                recordNavigatorContainer: "@pagerContainer",
+                detailContentContainer: "@contentContainer",
+                detailUrl: "@Url.Action("Detail", new { id = "recid" })",
+                searchUrl: "@Url.Action("Index")",
+                title: "@Html.Raw(Model.Title)",
+                recordId: @Model.RecordId,
+                singleRecord: @(Model.SingleRecord ? "true" : "false"),
+                recordNavigateHandler: @(ViewBag.ActivePage).recordNavigateHandler
+            });
+        };
+
+        pageReady();
+    })
+</script>
+
+<div class="detail-page-wrap">
+    <div class="page-main">
+        <div id="@contentContainer" class="cpiDataContainer detail-page-content-wrap">
+            @await Html.PartialAsync("_DetailContentPage", Model)
+        </div>
+        <div id="@pagerContainer" class="record-navigator" style="@(@Model.RecordId == 0 ? "display: none" : "")">
+            @await Html.PartialAsync("_RecordNavigator")
+        </div>
+    </div>
+</div>

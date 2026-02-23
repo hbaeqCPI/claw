@@ -1,0 +1,351 @@
+﻿@model PatFamilyTreePrintViewModel
+@inject IStringLocalizer<CountryApplicationResource> CaLocalizer
+@inject IStringLocalizer<TrademarkResource> TmkLocalizer
+@{
+    Layout = "_Page"; // Make sure this path points to your main layout file
+
+    var recordId = ViewData["RecordId"];
+    var recordType = ViewData["RecordType"];
+    var system = ViewData["System"];
+
+    IStringLocalizer<Object> Localizer = system == "patent" ? CaLocalizer : TmkLocalizer;
+}
+<input type="hidden" id="familyTreeParamType" value="@recordType" />
+<input type="hidden" id="familyTreeParamValue" value="@recordId" />
+<input type="hidden" id="familyTreeSystem" value="@system" />
+<input type="hidden" id="familyTreeSelectedValue" value="" />
+
+<div class="detail-page-wrap mainContainer">
+    <div id="FTTreeView" class="mainView">
+        <div id="FTViewToggle" class="container-fluid">
+            <div class="row justify-content-end align-items-center">
+                <div class="col-auto FamilyTreeExport">
+                    <i class="fal fa-file-pdf exportPDF me-3"
+                       data-toggle="tooltip"
+                       data-placement="bottom"
+                       style="cursor: pointer;"
+                       title="@Localizer["Export to PDF"]"></i>
+                </div>
+                <div class="col-auto FamilyTreeExport">
+                    <i class="fal fa-file-powerpoint exportPPT me-3"
+                       data-toggle="tooltip"
+                       data-placement="bottom"
+                       style="cursor: pointer;"
+                       title="@Localizer["Export to PowerPoint"]"></i>
+                </div>
+                <div class="col-auto">
+                    <i id="FTViewToggleFull"
+                       class="fas fa-expand fullscreenToggle"
+                       data-toggle="tooltip"
+                       data-placement="bottom"
+                       title="Hide Settings Bar"></i>
+                </div>
+            </div>
+        </div>
+        <div id="d3-tree" class="flex-grow-1" data-settings-url="@ViewBag.DataSettingsUrl"
+             data-settings-dialog-url="@ViewBag.DataSettingsDialogUrl"
+             data-remarks-url="@ViewBag.RemarksUrl"
+             data-data-url="@ViewBag.DataUrl"
+             data-dialog-url="@ViewBag.DialogUrl">
+            <svg id="familyTreeSvg" class="w-100 h-100"></svg>
+        </div>
+    </div>
+    <div id="InfoSideBar" class="mainSideBar" style="border-left: solid; border-width: thin ; border-color: var(--bg-page-detail-header);">
+        <br>
+        <div class="pb-2">
+            <div id="info">
+            </div>
+            <div class="mt-1">
+                <button id="dataSettings" type="button" class="btn btn-primary w-100">
+                    Edit Data Display Options
+                </button>
+            </div>
+        </div>
+
+        <div class="pt-2">
+            <div class="row">
+                <div class="col-12 col-md-6 mb-2">
+                    <label for="graphDirection">Direction</label>
+                    <select id="graphDirection" name="graphDirection" class="form-control">
+                        <option value="LR" selected>Left to right (default)</option>
+                        <option value="TB">Top to bottom</option>
+                        <option value="RL">Right to left</option>
+                        <option value="BT">Bottom to top</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6 mb-2">
+                    <label for="graphLayout">Layout</label>
+                    <select id="graphLayout" name="graphLayout" class="form-control">
+                        <option value="network-simplex" selected>Leveled layout (default)</option>
+                        <option value="longest-path">Critical path layout</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="d-flex flex-wrap">
+            <div class="col-12 mb-1 px-0">
+                <h5>Basic Controls</h5>
+                <ul class="list-unstyled">
+                    <li><b>Scroll Wheel:</b> Zoom in and out</li>
+                    <li><b>Drag:</b> Move around the Family Tree</li>
+                    <li><b>Click on Cards:</b> Highlight a record and display relevant information</li>
+                </ul>
+            </div>
+                    
+
+            <div class="col-12 col-md-6 mb-2 px-0">
+                <h5>Status Indicators</h5>
+                <ul class="list-unstyled legend-list">
+                    <li>
+                        <span class="legendcard activeNode"></span>
+                        <span class="legend-text">Active</span>
+                    </li>
+                    <li>
+                        <span class="legendcard inactiveNode"></span>
+                        <span class="legend-text">Inactive</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-12 col-md-6 mb-3 px-0">
+                <h5>Highlights</h5>
+                <ul class="list-unstyled legend-list">
+                    <li>
+                        <i class="fas fa-arrows-alt-h legend-icon" style="color: #ff6d53;"></i>
+                        <span class="legend-text">Child Relationship</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-arrows-alt-h legend-icon" style="color: #5398ff;"></i>
+                        <span class="legend-text">Parent Relationship</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+
+</div>
+    <div id="familyTreeInventionApplicationGrid" style="display: none"></div>
+</div>
+
+<script>
+     $(document).ready(function() {
+        try{
+            familyTreeLinkPage.renderTree(familyTreePage.dataFilter());
+
+            // Data setting section
+            const dataSettingButton = $("#dataSettings");
+            dataSettingButton.on('click', (e) => {
+                e.preventDefault();
+                cpiLoadingSpinner.show();
+                dataSettingButton.prop('disabled', true);
+
+                const modal = $("#familyTreeDataSettingDialog");
+                if (modal.length > 0) {     // Saved in cache
+                    modal.modal("show");
+                    cpiLoadingSpinner.hide();
+                    dataSettingButton.prop('disabled', false);
+                }else{  // Get fresh data setting
+                    const url = $("#d3-tree").data("settings-dialog-url");
+                    $.ajax({
+                        url: url,
+                        type: "GET",
+                        success: function (result) {
+                            const popupContainer = $(".site-content .popup");
+                            popupContainer.empty();
+                            popupContainer.html(result);
+
+                            const dialogContainer = popupContainer.find(".modal");
+                            dialogContainer.modal("show");
+
+                        },
+                        error: function (error) {
+                            pageHelper.showErrors(error);
+                        },
+                        complete: () => {
+                            cpiLoadingSpinner.hide();
+                            dataSettingButton.prop('disabled', false);
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            pageHelper.showErrors("Rendering tree error. Please report this issue");
+        }
+    })
+
+</script>
+<style>
+    #InfoSideBar > div {
+        border-bottom: 1px solid var(--bg-page-detail-header);
+        font-size: 14px;
+    }
+
+    #info:empty:before {
+        content: "Click on an application to see information here";
+    }
+
+    .legend {
+        width: 20px;
+        height: 20px;
+        display: inline-block;
+    }
+
+    .legend-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px; 
+        padding: 5px 0;
+    }
+
+    .legendcard {
+        width: 20px;
+        height: 20px;
+        display: inline-block;
+        border-radius: 4px;
+    }
+
+    .unknown {
+        background-color: gray;
+    }
+
+    .legend-icon {
+        font-size: 18px;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .legend-text {
+        flex-grow: 1;
+    }
+
+
+    .mainContainer {
+        display: flex;
+        align-items: stretch;
+    }
+
+    .mainView {
+        display: flex;
+        flex-direction: column;
+        flex: 8;
+        padding: 0;
+        background-color: #fff;
+    }
+
+    .mainSideBar {
+        background-color: #f9f9f9;
+        padding-left: 20px;
+        padding-right: 20px;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        flex: 2;
+    }
+
+    li[data-uid='#=item.uid#'] span.k-state-hover {
+        background: silver !important;
+    }
+
+    li[data-uid='#=item.uid#'] span.k-state-selected {
+        background: lightblue;
+        box-shadow: inset 0 0 1px 1px gray;
+    }
+
+    .link {
+        stroke-linecap: round;
+    }
+
+    .node:hover {
+        cursor: pointer;
+        stroke-opacity: 0.5;
+        fill-opacity: 0.7;
+    }
+
+    .fullscreenToggle {
+        color: #337ab7;
+        font-size: 20px;
+        cursor: pointer;
+        margin-right: 5px;
+        margin-top: 5px;
+    }
+
+    .edgePath {
+        stroke: #333;
+        stroke-width: 1px;
+        fill: none;
+    }
+
+    marker path {
+        fill: black; /* Fill inside */
+        stroke: none; /* Remove border if needed */
+    }
+
+    .parentEdge {
+        fill: #5398ff;
+        stroke: #5398ff;
+        stroke-width: 1px;
+    }
+
+    .childEdge {
+        fill: #ff6d53;
+        stroke: #ff6d53;
+        stroke-width: 1px;
+    }
+
+    .activeNode {
+        background-color: lightgreen;
+        fill: lightgreen;
+    }
+
+    .inactiveNode {
+        background-color: indianred;
+        fill: indianred;
+    }
+
+    .selectedNode {
+        stroke-width: 5px;
+    }
+
+    .selectedNode path {
+        stroke: #ffcb2e
+    }
+
+    :not(.selectedNode).mainNode path {
+        stroke: #9370DB !important;
+    }
+
+    .infoDetails {
+        padding: 8px;
+        border: 1px solid lightgrey;
+        border-radius: 4px;
+        background-color: white;
+    }
+
+    .infoDetailsTitle {
+        border-bottom: 1px solid lightgrey;
+        padding: 8px;
+        margin-right: -8px;
+        margin-left: -8px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .infoDetailsContent{
+        font-size: 14px;
+        margin: 0px;
+        display: block;
+        word-break: break-word;
+    }
+
+    .ForeignIconComment::before {
+        font-family: "Font Awesome 5 Pro";
+        content: "\f4a3";
+    }
+
+    a {
+        color: #337ab7;
+    }
+
+</style>

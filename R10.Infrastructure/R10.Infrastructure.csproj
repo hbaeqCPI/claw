@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageActMap.cs" />
+    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageCostMap.cs" />
+    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageMap.cs" />
+    <Compile Remove="Data\Patent\mappings\PatImageActMap.cs" />
+    <Compile Remove="Data\Patent\mappings\PatImageAppMap.cs" />
+    <Compile Remove="Data\Patent\mappings\PatImageCostMap.cs" />
+    <Compile Remove="Data\Patent\mappings\PatImageInvMap.cs" />
+    <Compile Remove="Data\Trademark\mappings\TmkImageActMap.cs" />
+    <Compile Remove="Data\Trademark\mappings\TmkImageCostMap.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.0.0" />
+    <PackageReference Include="System.Formats.Asn1" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\R10.Core\R10.Core.csproj" />
+  </ItemGroup>
+
+</Project>

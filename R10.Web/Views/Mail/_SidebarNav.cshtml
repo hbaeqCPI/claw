@@ -1,0 +1,42 @@
+﻿@using R10.Web.Services;
+@inject IStringLocalizer<SharedResource> Localizer
+@model string
+
+<div class="mail-nav sidebar-nav p-3" data-mailbox="@Model" data-get-mail-folders-url="@Url.Action("GetMailFolders")">
+</div>
+<style>
+    .mail-nav .folders .child-folders {
+        padding-left: 10px;
+    }
+    .mail-nav .folders .save-button {
+        border: 0;
+        background-color: transparent;
+        margin-left: 2px;
+    }
+    .mail-nav .folders .new-name {
+        padding: 2px !important;
+        margin: unset !important;
+        display: inline;
+        height: unset !important;
+        width: unset !important;
+        font-size: unset !important;
+        font-weight: unset !important;
+    }
+    .mail-nav .folder-toggle {
+        display: inline-block;
+        width: 10px;
+    }
+</style>
+@(Html.Kendo().ContextMenu()
+                    .Name("Folder-Menu")
+                    .Target(".mail-nav")
+                    .Filter(".folder.breeder")
+                    .Events(e => e.Open($"{ViewBag.ActivePage}.folderMenuOnOpen").Select($"{ViewBag.ActivePage}.folderMenuOnSelect"))
+                    .Items(items =>
+                    {
+                        items.Add().Text(Localizer["Create new subfolder"]).HtmlAttributes(new { @id = "create" }).Action("CreateFolder", "Mail");
+                        items.Add().Text(Localizer["Delete folder"]).HtmlAttributes(new { @id = "delete", data_confirm_move = Localizer[$"Are you sure you want to move the folder {{0}} and all its contents to {MailGraphService.DeletedItemsFolder}?"], data_confirm_delete = Localizer["Are you sure you want to permanently delete the folder {0} and all its contents?"] }).Action("DeleteFolder", "Mail");
+                        items.Add().Text(Localizer["Rename"]).HtmlAttributes(new { @id = "rename" }).Action("RenameFolder", "Mail");
+                    })
+                    .HtmlAttributes(new { @class = "context-menu" })
+)

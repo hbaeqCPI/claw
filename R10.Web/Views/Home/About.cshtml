@@ -1,0 +1,126 @@
+﻿@using System.Net;
+@using Microsoft.AspNetCore.Hosting.Server;
+@using Microsoft.AspNetCore.Hosting.Server.Features;
+@using Microsoft.AspNetCore.Hosting;
+@using Microsoft.Extensions.Configuration;
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IServer Server
+@inject ScheduledTaskService ScheduledTaskService
+@inject BackgroundTaskService BackgroundTaskService
+@inject IWebHostEnvironment Environment
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "System Info";
+
+    var settings = await Settings.GetSetting();
+
+    var hostName = Dns.GetHostName();
+    var ipHostEntry = Dns.GetHostEntry(hostName);
+    var ipAddressList = (object[])ipHostEntry.AddressList;
+
+    var addresses = Server.Features.Get<IServerAddressesFeature>()?.Addresses;
+    var connectionString = Configuration.GetConnectionString("DefaultConnection");
+
+    var secureConnectionString = "";
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        try
+        {
+            var connectionDict = new Dictionary<string, string>();
+            connectionDict = connectionString.Split(';').Where(s => !string.IsNullOrEmpty(s) && s.Contains('=')).Select(x => x.Split('=')).ToDictionary(x => x[0], x => x[1]);
+
+            var secureKeys = new List<string>() { "password", "pwd" };
+            if (connectionDict != null)
+                secureConnectionString = string.Join(";", connectionDict.Select(d => $"{d.Key}={(secureKeys.Contains(d.Key.ToLower()) ? "****" : d.Value)}"));
+        }
+        catch
+        {
+            secureConnectionString = connectionString;
+        }
+    }
+
+    var encryptionKey = "";
+    if (!string.IsNullOrEmpty(EncryptionHelper.Key))
+    {
+        encryptionKey = $"{EncryptionHelper.Key?.Left(5)}{new string('*', 27)}";        
+    }
+}
+<h4>@ViewData["Title"]</h4>
+
+<h5>Version</h5>
+<ul>
+    <li>R10 @(string.IsNullOrEmpty(settings.ReleaseVersion) ? "v2" : settings.ReleaseVersion) (@(settings?.ReleaseDate?.Replace("-", "."))) <span class="badge badge-pill badge-info">@Environment.EnvironmentName</span></li>
+</ul>
+<p></p>
+
+<h5>Connection String</h5>
+<ul>
+    <li>@secureConnectionString</li>
+</ul>
+<p></p>
+
+<h5>Reports</h5>
+<ul>
+    <li>Client Folder: @Configuration["Report:ClientFolder"]</li>
+    <li>Client API URL: @Configuration["Report:ClientApiUrl"]</li>
+</ul>
+<p></p>
+
+<h5>Task Scheduler</h5>
+<ul>
+    <li>Background Service: @(BackgroundTaskService.IsRunning ? "Running" : "Stopped")</li>
+    <li>Sheduled Task Service: @(TaskSchedulerSettings.Enabled? "Enabled" : "Disabled")</li>
+    <li>Base URL: @ScheduledTaskService.BaseUrl</li>
+</ul>
+<p></p>
+
+<h5>Encryption Key</h5>
+<ul>
+    <li>@encryptionKey</li>
+</ul>
+
+@if (addresses != null)
+{
+    <h5>Server Addresses</h5>
+    <ul>
+        @foreach (var address in addresses)
+        {
+            <li>@address</li>
+        }
+    </ul>
+    <p></p>
+}
+
+<h5>Host Name</h5>
+<ul>
+    <li>@hostName</li>
+</ul>
+<p></p>
+
+<h5>IP Addresses</h5>
+<ul>
+    @foreach (var ip in ipAddressList)
+    {
+        <li>@ip</li>
+    }
+</ul>
+<p></p>
+
+<h5>User Claims (@User.Claims.Count())</h5>
+<ul>
+    @foreach (var claim in User.Claims)
+    {
+        <li><strong>@claim.Type</strong>: @claim.Value</li>
+    }
+    @{ 
+        var userType = User.GetUserType();
+        var modules = User.GetModules();
+        var defaultPage = User.GetDefaultPage();
+    }
+    <li><strong>@CPiClaimTypes.UserType</strong>: @((int)userType) (@userType)</li>
+    <li><strong>@CPiClaimTypes.Modules</strong>: @string.Join(", ", modules)</li>
+    @if(defaultPage != null)
+    {        
+    <li><strong>@CPiClaimTypes.DefaultPage</strong>: @Url.Action(defaultPage.Action, defaultPage.Controller, defaultPage.Route)</li>
+    }
+</ul>

@@ -1,0 +1,37 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+}
+
+<div class="tab-content search page-content">
+
+    <div class="tab-pane show active" id="errorLogMainInfoTabContent" role="tabpanel" aria-labelledby="errorLogMainInfoTab">
+        <div class="form-row group">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="TimeStampFrom">@Localizer["Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("TimeStampFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="TimeStampTo">@Localizer["Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("TimeStampTo"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Level">@Localizer["Level"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Level" })
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group float-label">
+                    <label for="Message">@Localizer["Message"]</label>
+                    <input type="text" class="form-control" id="Remarks" name="Message" />
+                    @*@await Component.InvokeAsync("ComboBox", new { name = "Message" })*@
+                </div>
+            </div>
+        </div>
+    </div>        
+</div>

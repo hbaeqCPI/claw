@@ -1,0 +1,550 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for PTO/AIA/82A (07-13) - Transmittal for Power of Attorney to One or More Registered Practitioners -->
+  
+  <!-- Header Section -->
+  <PDFFieldMapping>
+    <PdfField>Application Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Filing Date</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>First Named Inventor</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Title</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>PatentTitle</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Art Unit</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>GroupArtUnit</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Examiner Name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Examiner</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Attorney Docket Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- Section: SIGNATURE of Applicant or Patent Practitioner -->
+  <!-- below are fields with no match in CPI
+ <PDFFieldMapping>
+    <PdfField>Signature</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+ </PDFFieldMapping>
+ <PDFFieldMapping>
+    <PdfField>Registration Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI_AttorneyRegNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+ 
+  <PDFFieldMapping>
+    <PdfField>Number of forms</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Number of forms being submitted</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI_Yes_or_blank</SourceField>    note: checkbox; value = Yes if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  -->
+
+  <PDFFieldMapping>
+    <PdfField>Date Optional</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CurrentDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Title if Applicant is a juristic entity</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryTitle</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Applicant Name if Applicant is a juristic entity</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>ApplicantName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Registration Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>RegistrationNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <!-- Section: I hereby revoked all previous powers of attorney given... -->
+  <!-- below are fields with no match in CPI
+  <PDFFieldMapping>
+      <PdfField>Appoint attorneys listed under customer number</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Appoint attorneys listed on the attached list</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>The address with the above mentioned customer number</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>The address associated with customer number</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Box for Firm or Individual Name</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+ -->
+  
+  <PDFFieldMapping>
+    <PdfField>Application Number on 82B</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Filing Date on 82B</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Customer Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CustomerNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Customer Number2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CustomerNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Firm or Individual Name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Street Address</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryAddress</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>City</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryCity</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>State_2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryState</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Zip</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryZipCode</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Country</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryCountry</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Telephone Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryPhoneNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Email Address</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryEmail</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Applicant Name (if applicant is a juristic entity)</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>ApplicantName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>0</SourceValue>
+  </PDFFieldMapping>
+
+  <!-- below are fields with no match in CPI
+  <PDFFieldMapping>
+      <PdfField>Inventor or Joint inventor</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Legal Representative of a deceased or legally incapacitated inventor</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Assignee</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Person who otherwise sufficient proprietary interest</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   
+   SECTION: SIGNATURE of Applicant for Patent ... The undersignated (whose title is supplied below) is authorized to act on behalf of the applicant ...
+   <PDFFieldMapping>
+      <PdfField>Signature of the applicant for patent</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Date Optional_2</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Name of the Signer</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Title of the Signer</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Number of Forms</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+   <PDFFieldMapping>
+      <PdfField>Total number of forms are submitted</PdfField>
+      <SourceTable>0</SourceTable>
+      <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>   note: checkbox; value = Yes if checked, else blank
+      <SourceRow>0</SourceRow>
+      <SourceValue />
+   </PDFFieldMapping>
+  -->
+  
+  
+  <!-- SECTION: List of Appointed Patent Practitioners -->
+  <PDFFieldMapping>
+    <PdfField>NameRow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney1Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Registration NumberRow1</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney1RegNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney2Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Registration NumberRow2</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney2RegNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>	
+  <PDFFieldMapping>
+    <PdfField>NameRow3</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney3Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Registration NumberRow3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney3RegNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>NameRow4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney4Name</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Registration NumberRow4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney4RegNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>NameRow5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney5Name</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Registration NumberRow5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Attorney5RegNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<!-- below are fields with no match in CPI
+  <PDFFieldMapping>
+    <PdfField>NameRow4</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow5</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    <PDFFieldMapping>
+    <PdfField>NameRow6</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow7</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow8</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow9</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>NameRow10</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow3</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow4</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow5</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow6</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow7</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow8</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow9</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration NumberRow10</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  -->
+
+</NewDataSet>

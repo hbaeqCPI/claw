@@ -1,0 +1,55 @@
+﻿@model List<R10.Web.Areas.Shared.ViewModels.DocVerificationSearchFieldViewModel>
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var customOrder = new List<string>() { "P", "T", "G" };
+    var systemTypes = Model.Select(d => new { System = d.System, SystemName = d.System == SystemTypeCode.Patent ? SystemType.Patent : d.System == SystemTypeCode.Trademark ? SystemType.Trademark : d.System == SystemTypeCode.GeneralMatter ? SystemType.GeneralMatter : "" }).Distinct().OrderBy(o => customOrder.IndexOf(o.System)).ToList();
+}
+<div class="container-fluid">
+    <ul class="nav nav-tabs  nav-tabs-horizontal mt-4" id="searchSettings-tab" role="tablist">
+        @{
+            for (var tabNo = 0; tabNo < systemTypes.Count; tabNo++)
+            {
+                <li class="nav-item">
+                    <a class='nav-link @(tabNo == 0 ? "active" : "")' id="system_@tabNo-tab" data-toggle="tab" role="tab" aria-controls="system_@tabNo" aria-selected="true"
+                       href="#system_@tabNo">@Localizer[systemTypes[tabNo].SystemName]</a>
+                </li>
+            }
+        }
+    </ul>
+    <div class="tab-content" id="searchAllSystems">
+        @{
+            var recNo = 0;
+            var recCount = Model.Count;
+
+            for (var tabNo = 0; tabNo < systemTypes.Count; tabNo++)
+            {
+                <div class='tab-pane page-content @(tabNo == 0 ? "active" : "")' id="system_@tabNo" role="tabpanel" aria-labelledby="system_@tabNo-tab">
+                    <div id="systemGroup_@tabNo" class="container-fluid">
+                        <div class="row mt-4">
+                            <h5>@Localizer["Search Fields:"]</h5>
+                        </div>
+                        <div class="row">
+                            @{
+                                foreach (var setting in Model.Where(d => d.System == systemTypes[tabNo].System).ToList())
+                                {
+                                    var id = setting.KeyId;
+                                    var fieldDesc = setting.FieldLabel;
+
+                                    <div class="col-3">
+                                        <input type="checkbox" class="k-checkbox" id="@id" name="searchField" @(setting.IsEnabled ? "checked" : "")>
+                                        <label class="k-checkbox-label" for="@id">
+                                            @fieldDesc
+                                        </label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <br />
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

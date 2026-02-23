@@ -1,0 +1,91 @@
+﻿@using R10.Web.Areas.Shared.ViewModels.ReportScheduler
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    //var taskIdParam = $"{{taskId: {Model.TaskId}}}";
+    //var permission = Model.Permission;
+    //bool addMode = Model.TaskId == 0;
+    //var detailsUrl = Url.Action("Detail", "ReportScheduler", new { taskId = "#: TaskId#" });
+    //var detailsAddUrl = Url.Action("Detail", "ReportScheduler", new { taskId = 0 });
+    //var detailsLinkTemplate = $"<a href={detailsUrl} class='details-link' >#: Schedule#</a>";
+
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+    var id = Model.ParentId;
+    bool addMode = id == 0;
+    var isReadOnly = !detailPagePermission.CanEditRecord;
+
+    var detailsAddUrl = Url.Action("ActionAdd", Model.Controller , new { actionId = 0 });
+    var detailsEditUrl = Url.Action("ActionEdit", Model.Controller, new { actionId = Model.ParentId });
+
+    //var pageName = ViewBag.ActivePage;
+}
+<div data-parentid="@Model.ParentId" data-url-add="@Url.Action("ActionAdd", Model.Controller)"
+     data-url-edit="@Url.Action("ActionEdit", Model.Controller)">
+    @(Html.Kendo().Grid<RSActionViewModel>()
+                                    .Name("scheduleActionGrid")
+                                    .Columns(columns =>
+                                    {
+                                        columns.Bound(a => a.ActionTypeId).ClientTemplate("#: rSActionType.Name#");
+                                        columns.Bound(a => a.IsEnabled).ClientTemplate("#: Status#");
+                                        columns.Bound(a => a.OutputFormat);
+                                        columns.Bound(a => a.SortOrder);
+                                        columns.Command(command =>
+                                        {
+                                            if (!isReadOnly)
+                                                command.Custom("Edit").Click("function(e) {ReportSchedulerPage.editActionRecord(e,this)}").IconClass("k-icon fal fa-edit");
+                                        }).Width(10);
+                                        columns.Command(command =>
+                                        {
+                                            if (!isReadOnly)
+                                                command.Custom("Delete").Click("function(e) {ReportSchedulerPage.deleteGridRow(e,this)}").IconClass("k-icon fal fa-trash-alt");
+
+                                        }).Width(10);
+                                    })
+                                    .Sortable(sort => sort.AllowUnsort(false))
+                                    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                                    .ToolBar(toolbar =>
+                                    {
+                                        if (!isReadOnly)
+                                            toolbar.Custom().Name("AddNewAction").IconClass("k-icon fal fa-plus").Text(Localizer["Add"]);
+                                    })
+                                    .Editable(editable => editable.Enabled(true)
+                                                    .Mode(GridEditMode.InCell).
+                                                    ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+
+                                    //.Pageable()
+                                    //.AutoBind(false)
+                                    .AutoBind(true)
+                                    .DataSource(dataSource => dataSource
+                                        .Ajax()
+                                        .Batch(true)
+                                        //.PageSize(10)
+                                        //.ServerOperation(false)
+                                        .Model(model =>
+                                        {
+                                            model.Id(s => s.ActionId);
+                                            model.Field(s => s.ActionTypeId).Editable(false);
+                                            model.Field(s => s.IsEnabled).Editable(false);
+                                            model.Field(s => s.OutputFormat).Editable(false);
+                                            model.Field(s => s.SortOrder).Editable(false);
+                                            //model.Field(s => s.EmailTo).Editable(false);
+                                            //model.Field(s => s.EmailCopyTo).Editable(false);
+                                            //model.Field(s => s.EmailSubject).Editable(false);
+                                            //model.Field(s => s.EmailBody).Editable(false);
+                                            //model.Field(s => s.FTPAddress).Editable(false);
+                                            //model.Field(s => s.FTPUserID).Editable(false);
+                                            //model.Field(s => s.FTPPassword).Editable(false);
+                                        })
+                                        .Read(read => read.Action("GridRead", Model.Controller, new { parentId = Model.ParentId }))
+                                        .Update(update => update.Action("GridUpdate", Model.Controller))
+                                        .Destroy(update => update.Action("GridDelete", Model.Controller))
+                                        .Events(events =>
+                                        {
+                                            events.Error("pageHelper.onGridError");
+                                        })
+                                    )
+                                    .HtmlAttributes(new { @class = "k-grid-border" })
+    )
+    </div>

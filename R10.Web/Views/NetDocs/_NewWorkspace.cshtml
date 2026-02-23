@@ -1,0 +1,25 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@model string
+@{
+
+}
+<div class="form-row new-workspace">
+    <div class="col-12">
+        <div class="float-label">
+            <label class="required" for="WorkspaceName">@Localizer["Workspace Name"]</label>
+            <input id="WorkspaceName" name="WorkspaceName" type="text" class="form-control form-control-sm" value="@Model" required readonly/>
+            <span class="field-validation-error" data-valmsg-for="WorkspaceName" style="display:none;">
+                <span id="WorkspaceName-error">Please enter workspace name.</span>
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $(".new-workspace").floatLabels();
+        var input = $(".new-workspace").find("#WorkspaceName");
+        var name = input.val();
+        input.val('').val(name);
+    });
+</script>

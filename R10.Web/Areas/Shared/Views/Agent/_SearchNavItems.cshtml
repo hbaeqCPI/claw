@@ -1,0 +1,26 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();    
+    var agentLabel = settings.LabelAgent;
+    var customFieldsLabel = settings.AuxCustomFieldsTabLabel;
+
+}
+<li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" id="agentSearchMainTab" href="#agentSearchMainTabContent" role="tab" aria-controls="agentSearchMainTabContent" aria-selected="true">@SharedLocalizer[agentLabel]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="agentSearchAddressTab" href="#agentSearchAddressTabContent" role="tab" aria-controls="agentSearchAddressTabContent" aria-selected="false">@SharedLocalizer["Address"]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="agentSearchPOBoxTab" href="#agentSearchPOBoxTabContent" role="tab" aria-controls="agentSearchPOBoxTabContent" aria-selected="false">@SharedLocalizer["PO Box"]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="agentSearchOtherInfoTab" href="#agentSearchOtherInfoTabContent" role="tab" aria-controls="agentSearchOtherInfoTabContent" aria-selected="false">@SharedLocalizer["Other Info"]</a>
+</li>
+@if (settings.IsShowCustomFieldOn)
+{
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" id="agentSearchCustomFieldsTab" href="#agentSearchCustomFieldsTabContent" role="tab" aria-controls="agentSearchCustomFieldsTabContent" aria-selected="false">@SharedLocalizer[customFieldsLabel]</a>
+    </li>
+}

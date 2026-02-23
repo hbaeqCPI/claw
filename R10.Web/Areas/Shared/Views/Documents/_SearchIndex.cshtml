@@ -1,0 +1,19 @@
+﻿@model DocPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var formId = $"{Model.PageId}-RefineSearch";
+    var gridId = $"{Model.PageId}-SearchGrid";
+
+    ViewData["PagePermission"] = Model.PagePermission;
+}
+
+<div id="@Model.PageId" class="page-main-flex">
+    @await Html.PartialAsync("_SearchTab", Model)
+
+    @await Html.PartialAsync("_SearchResults")
+
+    @await Html.PartialAsync("_DocumentDetail")
+
+
+</div>
+

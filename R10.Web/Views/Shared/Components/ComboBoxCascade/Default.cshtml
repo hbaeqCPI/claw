@@ -1,0 +1,50 @@
+﻿@model ComboBoxCascadeOptions
+@{
+    var template = $"<span class='k-state-default'>#: data.{Model.DataTextProperty} #</span>";
+    if (string.IsNullOrEmpty(Model.DataTextProperty))
+    {
+        template = "<span class='k-state-default'>#: data #</span>";
+    }
+
+    template = Model.ItemTemplate.Length > 0 ? Model.ItemTemplate : template;
+
+    var headerTemplate = Model.HeaderTemplate.Length > 0 ? Model.HeaderTemplate : "<span></span>";
+    var additionalData = Model.Data.Length > 0 ? Model.Data : "function() { { return page.getPagedComboBoxValue('" + Model.Id + "'); } }";
+    var textProperty = string.IsNullOrEmpty(Model.DataTextProperty) ? Model.DataValueProperty : Model.DataTextProperty;
+
+    var onChange = Model.OnChange.Length > 0 ? Model.OnChange : "function() {}";
+
+    IDictionary<string, object> htmlAttributes = new Dictionary<string, object>();
+    htmlAttributes.Add("style", "width: 100%");
+    htmlAttributes.Add("id", Model.Id);
+    if (Model.Required) { htmlAttributes.Add("required", "required"); }
+    //bootstrap
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val", "true"); }
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val-required", Model.ValidationMessage); }
+
+}
+<div class="cpi-combobox d-flex">
+    @(Html.Kendo().ComboBox()
+                .Name(Model.Property)
+                .DataTextField(Model.DataTextProperty)
+                .DataValueField(Model.DataValueProperty)
+                .AutoBind(false)
+                .Height(400)
+                .DataSource(source =>
+                {
+                    source.Read(read =>
+                    {
+                        read.Action(Model.Action, Model.Controller, new { Area = Model.Area, property = textProperty, filterType = Model.ListFilterType })
+                            .Data(additionalData);
+                    })
+                    .ServerFiltering(true);
+                })
+                .Template(template)
+                .HeaderTemplate(headerTemplate)
+                .HtmlAttributes(htmlAttributes)
+                .Events(e => e.Change(onChange))
+                .CascadeFrom(Model.CascadeFrom)
+                .Filter(Model.ListFilterType)
+                .AutoWidth(true)
+    )
+</div>

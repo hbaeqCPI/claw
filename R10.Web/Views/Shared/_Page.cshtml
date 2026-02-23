@@ -1,0 +1,28 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    Layout = "_Layout.cshtml";
+}
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+
+    @*<script>
+            $(document).ready(function () {
+                page.initializeBreadCrumbs();
+            });
+        </script>*@
+}
+
+<div id="page" class="site-content">
+    @await Component.InvokeAsync("StatusMessage")
+    <div class="page-crumbs">
+        <nav class="container-crumbs" aria-label="breadcrumb" role="navigation" data-dirty-page-title="@SharedLocalizer["Confirm Cancel Changes"]" data-dirty-page-msg="@SharedLocalizer["Changes will not be saved. Do you want to continue?"]"></nav>
+    </div>
+    @RenderBody()
+    <div class="popup"></div>
+</div>
+
+@await Component.InvokeAsync("AlertDialog")
+@await Component.InvokeAsync("ConfirmDialog")
+@await Component.InvokeAsync("PrintConfirmDialog")
+@await Component.InvokeAsync("LoadingSpinner")
+

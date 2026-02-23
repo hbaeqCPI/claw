@@ -1,0 +1,68 @@
+﻿@model List<ExportSettingViewModel>
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+
+    var showExport = (bool)ViewBag.ShowExport;
+    var defaultSetting = (bool)ViewBag.DefaultSetting;
+    var showDefaultCheckBox = (bool)(ViewBag.ShowDefaultCheckBox ?? true);
+}
+
+<div class="modal fade" id="exportSettingsDialog" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog  modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="SaveExportSettings">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Export Settings"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <div class="row mt-4" style="color: white; background-color: var(--btn-primary)">
+                            <div class="pl-3 pt-1">
+                                <input type="checkbox" class="k-checkbox" id="SelectAll" name="SelectAll">
+                            </div>
+                            <h5 class="pl-3">@Localizer["Select fields to export"]</h5>
+                        </div>
+                        <div class="row export-settings-fields">
+                            @foreach (var item in Model)
+                            {
+                                <div class="col-md-@(item.PropertyName == "ExportInBackground" ? "12": "4")">
+                                    @if (item.PropertyName == "ExportInBackground")
+                                    {
+                                        <p class="pt-3">@Localizer["For large data, it is recommended the system will email the download link when the process is completed."]</p>
+                                    }
+                                    <input type="checkbox" class="k-checkbox" id="@item.PropertyName" name="@item.PropertyName" @(item.Include ? "checked" : "")>
+                                    <label class="k-checkbox-label" for="@item.PropertyName">
+                                        @Localizer[@item.Label]
+                                    </label>
+                                </div>
+
+                            }
+                           
+                        </div>
+                        
+                        <div class="modal-footer" style="border-top:none">
+                            <input type="hidden" id="ScreenCode" value="@ViewBag.ScreenCode" >
+                            <input type="checkbox" class="k-checkbox @(showDefaultCheckBox == false ? "d-none" : "")" id="DefaultSetting" name="DefaultSetting" @(defaultSetting ? "checked" : "")>
+                            <label class="k-checkbox-label pr-3 @(showDefaultCheckBox == false ? "d-none" : "")" for="DefaultSetting">
+                                @Localizer["Set as default"]
+                            </label>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+                            @if (showExport)
+                            {
+                                <button type="submit" class="btn btn-primary"><i class="far fa-file-export pr-2"></i>@Localizer["Export"]</button>
+                            }
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+

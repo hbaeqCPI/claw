@@ -1,0 +1,55 @@
+﻿@model DataQueryPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var formId = $"{Model.PageId}-RefineSearch";
+    var gridId = $"{Model.PageId}-Grid";
+
+    ViewData["PagePermission"] = Model.PagePermission;
+    ViewData["PageId"] = Model.DetailPageId;
+
+    var dirtyMsg = Localizer["Changes to the current record will not be saved. Do you want to continue?"];
+}
+
+
+<div id="@Model.PageId" class="page-main-flex search-container" data-detail-url="@(Url.Action("Detail") + "/recId")" data-empty-detail-url="@Url.Action("EmptyDetail")"
+     data-dirty-record-msg="@dirtyMsg" data-dirty-record-title="@Localizer["Ignore Changes"]">
+    <div class="page-sidebar refine-search" data-show-filters="@Localizer["Show filters"]">
+        <form id="@formId" data-no-results="@Localizer["Your search did not match any records."]">
+            <div class="header">
+                <div class="title">@Localizer["Search"]</div>
+                <nav class="nav-right">
+                    <a href="#" class="nav-link show-results" title="@Localizer["Show results"]" role="button">@Localizer["Show results"]<span class="total-results-count"></span><i class="fal fa-long-arrow-right pl-1"></i></a>
+                </nav>
+                <nav class="nav">
+                    <a class="nav-link search-clear" href="#" title="@Localizer["Clear"]" role="button"><i class="fal fa-times pr-1"></i><span>@Localizer["Clear"]</span></a>
+                </nav>
+            </div>
+            @await Html.PartialAsync("_DataQuerySearch", Model)
+        </form>
+        <div class="header">
+            <div class="title">@Localizer["Search Results"]</div>
+        </div>
+        <div class="page-grid">
+            @await Html.PartialAsync("_DataQueryResultsGrid", Model)
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_DataQueryDetail", Model.AQBQueryInstance)
+
+</div>
+
+<script>
+        var gridPageSize = @Model.GridPageSize;
+
+        $(document).ready(function () {
+            dataQuery.initializeSearchPage({
+                container: "#@Model.PageId",
+                url: "@Context.Request.PathBase@Context.Request.Path",
+                title: "@Model.Title",
+                grid: "#@gridId",
+                form: "#@formId",
+                //gridPageSize: gridPageSize,
+                refineSearchContainer: "#@formId"
+            });
+        });
+</script>

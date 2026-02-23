@@ -1,0 +1,57 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+#Windows agents already include a .NET Core runtime
+#https://learn.microsoft.com/en-us/azure/devops/pipelines/ecosystems/dotnet-core?view=azure-devops&tabs=yaml-editor
+#comment below to use different SDK version
+#- task: UseDotNet@2
+#  displayName: 'Install .NET Core SDK'
+#  inputs:
+#    packageType: 'sdk'
+#    version: '7.0.103'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+#    projects: 'R10.Web/R10.Web.csproj'
+    projects: '**/*.csproj'
+    feedsToUse: 'config'
+    nugetConfigPath: 'nuget.config'
+
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'dotnet build $(buildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+
+- task: CopyFiles@2
+  inputs:
+    Contents: '*.sql'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: 'R10.Reports'
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\Reports'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'

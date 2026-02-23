@@ -1,0 +1,147 @@
+﻿@using R10.Web.Services
+@using R10.Web.Extensions
+@using Microsoft.Graph
+@model R10.Web.Models.MailViewModels.MailEditorViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var labelSend = Localizer["Send"].ToString();
+    var labelCancel = Localizer["Cancel"].ToString();
+
+    var hideCc = string.IsNullOrEmpty(Model.CcRecipients);
+    var hideBcc = string.IsNullOrEmpty(Model.BccRecipients);
+    var getSubject = string.IsNullOrEmpty(Model.Subject);
+
+    var originalMessage = Model.OriginalMessage;
+    var body = originalMessage.Body.Content;
+
+    foreach (var attachment in originalMessage.Attachments)
+    {
+       if (attachment.IsInline.HasValue && attachment.IsInline.Value)
+       {
+         if ((attachment is FileAttachment) &&(attachment.ContentType.Contains("image")))
+         {
+            var fileAttachment = attachment as FileAttachment;
+            var contentBytes = fileAttachment.ContentBytes;
+            var imageContentIDToReplace = "cid:" + fileAttachment.ContentId;
+            body = body.Replace(imageContentIDToReplace, String.Format("data:image;base64,{0}", Convert.ToBase64String(contentBytes as byte[])));
+         }
+      }
+    }
+}
+
+<div class="k-grid">@*use .k-grid .k-grid-toolbar pattern to inherit css*@
+    <div class="k-grid-toolbar toolbar">
+        <div class="mr-auto">
+        </div>
+        <a href="#" title="@labelSend" class="action send k-button"><i class="far fa-paper-plane pr-2"></i><span class="label">@labelSend</span></a>
+        <a href="#" title="@labelCancel" class="action cancel k-button"><i class="far fa-undo pr-2"></i><span class="label">@labelCancel</span></a>
+    </div>
+</div>
+<div class="details">
+    <div id="@Model.Id" class="message"
+        data-send-url="@Model.SendURL">
+        <form method="post" class="editor">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="MailboxName" />
+            <div class="d-flex">
+                <span class="mr-auto">                      
+                    @if(!getSubject)
+                    {
+                        <span class="h2 subject">@Model.Subject</span>
+                    }
+                </span>
+                <span class="more-recipients">
+                    @if(hideCc) {
+                        <a href="#" class="more-cc action">Cc</a>
+                    }
+                    @if(hideBcc)
+                    {
+                        <a href="#" class="more-bcc action">Bcc</a>   
+                    }
+                </span>
+            </div>
+            <div class="form-row recipients">
+                <div class="col col-12 to-recipients">                    
+                    <div class="form-group float-label">
+                        <label asp-for="ToRecipients"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="ToRecipients" />
+                        <span asp-validation-for="ToRecipients"></span>
+                    </div>
+                </div>
+                <div class="col col-12 cc-recipients" style="@(hideCc ? "display: none;" : "")">
+                    <div class="form-group float-label">
+                        <label asp-for="CcRecipients"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="CcRecipients" />
+                        <span asp-validation-for="CcRecipients"></span>
+                    </div>
+                </div>
+                <div class="col col-12 bcc-recipients" style="@(hideBcc ? "display: none;" : "")">                    
+                    <div class="form-group float-label">
+                        <label asp-for="BccRecipients"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="BccRecipients" />
+                        <span asp-validation-for="BccRecipients"></span>
+                    </div>
+                </div>
+                @if(getSubject)
+                {
+                    <div class="col col-12">                    
+                        <div class="form-group float-label">
+                            <label asp-for="Subject"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="Subject" />
+                            <span asp-validation-for="Subject"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+            @(Html.Kendo().Editor()
+                .Name("Body")
+                .HtmlAttributes(new { style = "width: 100%;" })
+                .Resizable(resizable => resizable.Content(true).Toolbar(false))
+                .Tools(tools => tools.Clear()
+                    .Bold().Italic().Underline().Strikethrough()
+                    .JustifyLeft().JustifyCenter().JustifyRight().JustifyFull().InsertUnorderedList().InsertOrderedList()
+                    .Outdent().Indent().CreateLink().Unlink().InsertImage()
+                    .Formatting().CleanFormatting()
+                    .FontName().FontSize().ForeColor().BackColor()
+                    .TableEditing()
+                )
+                .Events(events => events
+                    .Change("mailPage.resizeEditor")
+                    .Execute("mailPage.resizeEditor")
+                    .Select("mailPage.resizeEditor")
+                    .Paste("mailPage.resizeEditor")
+                )
+            )
+        </form>        
+        <hr />
+        <div class="header">
+            <div class="row">
+                <div class="col"><span class="h4 from">@originalMessage.From.EmailAddress.Name</span></div>
+                <div class="col text-right">@(((DateTimeOffset)originalMessage.ReceivedDateTime).DateTime.ToString("ddd dd-MMM-yyy hh:mm tt"))<span class="date"></span></div>
+            </div>
+            <div><span>@Localizer["To"]: </span>@(string.Join(", ", originalMessage.ToRecipients.Select(r => r.EmailAddress.Name).ToArray()))<span class="to"></span></div>
+            @if(originalMessage.CcRecipients.Count() > 0) {
+                <div><span>@Localizer["Cc"]: </span><span class="cc">@(string.Join(", ", originalMessage.CcRecipients.Select(r => r.EmailAddress.Name).ToArray()))</span></div>
+            }
+        </div>
+        @if (originalMessage.HasAttachments ?? false)
+        {
+            <div class="attachments">
+            @foreach(var attachment in originalMessage.Attachments.Where(a => !(a.IsInline ?? false) && (a is FileAttachment)))
+            {
+                <button type="button" class="btn btn-outline-secondary attachment" title="@attachment.Name" data-toggle="tooltip" data-placement="bottom" 
+                    data-message-id="@originalMessage.Id" data-attachment-id="@attachment.Id" data-name="@(attachment.HasPreview() ? "" : attachment.Name)">
+                    <span class="attachment-icon"><i class="@(attachment.GetIcon())"></i></span>
+                    <span class="attachment-file">
+                        <span class="attachment-name">@attachment.Name</span>
+                        <span class="attachment-size">@(((int)attachment.Size).ToSize())</span>
+                    </span>
+                </button>
+            }
+            </div>
+        }
+        <style-blocker>
+        <div class="body">@Html.Raw(body)</div>
+        </style-blocker>
+    </div>
+</div>

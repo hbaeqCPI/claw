@@ -1,0 +1,43 @@
+﻿@model Product
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = ViewData["id"].ToString();
+    var pageName = ViewData["pageName"].ToString();
+    var linkUrl = Url.Action("DetailLink", "Product", new
+    {
+        Area = "Shared",
+        name = "actualValue"
+    });
+
+    var headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Product Code"], @Localizer["Product Name"]);
+    var template = ComboBoxHelper.GetItemTemplate("ProductCode", "ProductName");
+    
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                                    .DataTextField("ProductName")
+                                    .DataValueField("ProductName")
+                                    .AutoBind(false)
+                                    .AutoWidth(true)
+                                    .HeaderTemplate(headerTemplate)
+                                    // .ValuePrimitive(true)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetProductList", "Product", new { area = "Shared", property = "ProductName" });
+                                        })
+                                        .ServerFiltering(true);
+                                    })
+                                    .Events(e =>
+                                    {
+                                        //e.Select($"{ pageName}.onChange_Product");
+                                        e.Change($"{ pageName}.onChange_Product");
+                                    })
+                                    .Filter(FilterType.Contains)
+                                    .Template(template)
+                                    .HtmlAttributes(new { style = "width: 80%", id = @id })
+
+)
+<button type="button" class="btn">
+    <i class="fal fa-search-plus btn-link cpiButtonLink" style="display:block !important" data-source="@id" data-url="@linkUrl"></i>
+</button>

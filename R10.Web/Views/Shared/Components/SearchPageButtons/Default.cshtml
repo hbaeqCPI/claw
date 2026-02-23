@@ -1,0 +1,18 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+<div class="mb-md-2 ml-md-3 text-right cpiButtonsSearch">
+    <div class="row pt-3 ">
+        <div class="col-md-4 text-left">
+            <h3 class="page-title">@ViewBag.Title</h3>
+        </div>
+        <div class="col-md mr-md-2">
+            <button class="btn btn-link" type="submit"><span class="far fa-search"></span> @SharedLocalizer["Search"]</button>
+            <button class="btn btn-link cpiButtonClear" type="button"><span class="far fa-eraser"></span> @SharedLocalizer["Clear"]</button>
+            @if (ViewBag.CanAddRecord)
+            {
+                <button class="btn btn-link" data-url="@ViewBag.AddScreenUrl" type="button"><span class="far fa-plus"></span> @SharedLocalizer["New"]</button>
+            }
+        </div>
+    </div>
+</div>
+

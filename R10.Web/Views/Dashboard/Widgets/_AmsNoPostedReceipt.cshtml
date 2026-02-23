@@ -1,0 +1,253 @@
+﻿@model IEnumerable<AmsCaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+
+@{
+    var settings = await Settings.GetSetting();
+    var clientLabel = Localizer[settings.LabelClient ?? ""];
+    var clientNameLabel = Localizer[settings.LabelClientName ?? ""];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-annuities-with-no-posted-receipt";
+
+    var template = string.IsNullOrEmpty(widget.Template) ? "<div class='name d-flex  justify-content-between'><span><a href='./#=System#/#=IdType#/DetailLink/#=Id#'>#= kendo.htmlEncode(CaseNumber)# #= Country == null ? '' :  kendo.htmlEncode(Country)# #= SubCase == null ? '' :  kendo.htmlEncode(SubCase)#</a></span><span>#= InstructionDate == null ? '' : kendo.format('{0:dd-MMM-yyyy}', InstructionDate)#</span></div><div class='title small ellipsis'>#= Title == null ? '&nbsp;' :  kendo.htmlEncode(Title) #</div><div class='title small ellipsis'>#= Action == null ? '&nbsp;' :  kendo.htmlEncode(Action)#&nbsp&nbsp<span class=>#= DueDate == null ? '' : kendo.format('{0:dd-MMM-yyyy}', DueDate)#</span></div>" : widget.Template;    
+    template = template.Replace("./#=System#/", $"{Url.ApplicationBaseUrl(Context.Request.Scheme)}/#=System#/");
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    bool showAllowPaging = userSettings.Property("ShowAllowPaging") != null ? (userSettings["ShowAllowPaging"] ?? false).Value<bool>() : false;
+
+    bool allowPaging = !showAllowPaging || userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? userSettings.Property("PageSize") != null ? (userSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (string)a).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+
+    if (userSettings.Property("Countries") != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)userSettings.Property("Countries").Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }    
+}
+
+<script>
+    $(document).ready(function () {
+        var refresh = false;
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });        
+    });
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">        
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "AnnuitiesDue", "AMS", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .ServerOperation(false)
+        )
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

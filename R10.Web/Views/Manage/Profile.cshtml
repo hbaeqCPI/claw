@@ -1,0 +1,59 @@
+﻿@using Microsoft.AspNetCore.Builder
+@using Microsoft.Extensions.Options
+
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IOptions<RequestLocalizationOptions> LocOptions
+@model ProfileViewModel
+@{
+    var cultureItems = LocOptions.Value.SupportedUICultures.Select(c => new SelectListItem { Value = c.Name, Text = c.DisplayName }).ToList();
+}
+
+<div class="page-content">
+    @await Html.PartialAsync("_StatusMessage", Model.StatusMessage)
+    <form method="post" class="needs-validation">
+        <div class="row">
+            <div class="col">
+                <div asp-validation-summary="ModelOnly" class="list-unstyled alert alert-danger alert-dismissible mb-4" role="alert">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Username"></label>
+                    <input asp-for="Username" class="form-control" type="hidden" />
+                    <input asp-for="Username" class="form-control form-control-sm" disabled />
+
+                </div>
+                <div class="form-group float-label">
+                    <label asp-for="FirstName"></label>
+                    <input asp-for="FirstName" class="form-control form-control-sm" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+                <div class="form-group float-label">
+                    <label asp-for="LastName"></label>
+                    <input asp-for="LastName" class="form-control form-control-sm" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+                <div class="form-group float-label">
+                    <label asp-for="Locale"></label>
+                    @(Html.Kendo().DropDownList()
+                                                .Name("Locale")
+                                                .DataTextField("Text")
+                                                .DataValueField("Value")
+                                                .Value(Model.Locale)
+                                                .BindTo(LocOptions.Value.SupportedUICultures.Select(c => new SelectListItem { Value = c.Name, Text = c.DisplayName }).ToList())
+                                                .HtmlAttributes(new { style = "width: 100%", @class = "k-control" })
+                    )
+                    <span asp-validation-for="Locale" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-primary mt-5">Update profile</button>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    $(document).ready(function () {
+        $("form").floatLabels();
+    })
+</script>

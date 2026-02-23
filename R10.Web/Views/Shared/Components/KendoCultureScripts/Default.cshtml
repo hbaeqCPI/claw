@@ -1,0 +1,31 @@
+﻿@model System.Globalization.CultureInfo
+
+@if (Model.Name != "en")
+{
+    var message = Model.Name == "zh" ? "CN" : (Model.Name == "ja" ? "JP" : Model.Name.ToUpper());
+    <script src="~/lib/kendo-ui/js/cultures/kendo.culture.@(Model.Name).min.js"></script>
+    @if (Model.Name != "ko")
+    {
+        if (Model.Name.Contains("-"))
+        {
+            <script src="~/lib/kendo-ui/js/messages/kendo.messages.@(Model.Name).min.js"></script>
+        }
+        else
+        {
+            <script src="~/lib/kendo-ui/js/messages/kendo.messages.@(Model.Name)-@(message).min.js"></script>
+        }
+    }
+    <script>kendo.culture("@Model.Name");</script>
+
+    @if (Model.Name == "ja" || Model.Name == "zh")
+    {
+        <style>
+            body {
+                font-family: Meiryo, Arial, Helvetica, sans-serif;
+            }
+        </style>
+    }
+}
+<script>kendo.culture().calendar.twoDigitYearMax = 2099;</script>        
+        
+

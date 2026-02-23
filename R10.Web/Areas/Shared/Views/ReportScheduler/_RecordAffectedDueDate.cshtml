@@ -1,0 +1,75 @@
+﻿@using R10.Core.Entities.ReportScheduler
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent) || User.IsRespOfficeOn(SystemType.Trademark) || User.IsRespOfficeOn(SystemType.GeneralMatter);
+}
+
+@(Html.Kendo().Grid<RSDueDate>()
+                        .Name("scheduleRecordsAffectedGrid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(p => p.CaseNumber)
+                            .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Country)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.CountryName)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.SubCase)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.ActionType)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.BaseDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.ActionDue)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.DueDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Indicator)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Responsible)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Status)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Type)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            if (isRespOfficeOn)
+                            {
+                                columns.Bound(p => p.RespOffice)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            }
+                            columns.Bound(p => p.CaseType)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                        })
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .Pageable()
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Batch(true)
+                            .PageSize(5)
+                            .Model(model =>
+                            {
+                                model.Field(s => s.CaseNumber).Editable(false);
+                                model.Field(s => s.Country).Editable(false);
+                                model.Field(s => s.CountryName).Editable(false);
+                                model.Field(s => s.SubCase).Editable(false);
+                                model.Field(s => s.ActionType).Editable(false);
+                                model.Field(s => s.BaseDate).Editable(false);
+                                model.Field(s => s.ActionDue).Editable(false);
+                                model.Field(s => s.DueDate).Editable(false);
+                                model.Field(s => s.Indicator).Editable(false);
+                                model.Field(s => s.Responsible).Editable(false);
+                                model.Field(s => s.Status).Editable(false);
+                                model.Field(s => s.Type).Editable(false);
+                                model.Field(s => s.RespOffice).Editable(false);
+                                model.Field(s => s.CaseType).Editable(false);
+                            })
+                            .Read(read => read.Action("GetDueDatesList", Model.Controller, new { parentId = Model.ParentId }))
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                        )
+                        .HtmlAttributes(new { @class = "k-grid-border" })
+)

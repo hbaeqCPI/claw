@@ -1,0 +1,11 @@
+﻿@model string
+@{
+    var rows = Convert.ToInt32(ViewData["rows"]);
+    if (rows == 0)
+    {
+        rows = 4;
+    }
+}
+@Html.TextAreaFor(m => m, new {  @rows = rows, @style="width:95%"})
+
+

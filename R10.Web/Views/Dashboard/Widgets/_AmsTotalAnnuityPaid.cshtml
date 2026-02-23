@@ -1,0 +1,504 @@
+﻿@model IEnumerable<ChartViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<AMSSetting> Settings
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@{
+    var amsSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[amsSettings.LabelClient ?? "Client"];
+    var clientNameLabel = Localizer[amsSettings.LabelClientName ?? "Client Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseNumberLabel = Localizer[amsSettings.LabelCaseNumber ?? "Case Number"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = widget.Title;
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var settings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (settings.Property("Clients") != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)settings.Property("Clients").Value).Select(a => (string)a).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    if (settings.Property("Countries") != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)settings.Property("Countries").Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<string> regions = new List<string>();
+    if (settings.Property("Regions") != null)
+    {
+        try
+        {
+            string[] regionFilter = ((JArray)settings.Property("Regions").Value).Select(a => (string)a).Where(a => !string.IsNullOrEmpty(a)).ToArray();
+
+            if (regionFilter.Count() > 0)
+            {
+                regions = new List<string>(regionFilter);
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<string> cpiClientCodes = new List<string>();
+    if (settings.Property("CPIClientCodes") != null)
+    {
+        try
+        {
+            string[] cpiClientCodeFilter = ((JArray)settings.Property("CPIClientCodes").Value).Select(a => (string)a).Where(a => !string.IsNullOrEmpty(a)).ToArray();
+
+            if (cpiClientCodeFilter.Count() > 0)
+            {
+                cpiClientCodes = new List<string>(cpiClientCodeFilter);
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+}
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+     #countryFilter_@userWidgetId .country-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var refresh = false;
+    var selectedYear = "";
+    var selectedType = "";
+
+    $(document).ready(function () {
+        setLabelColor();
+        $(document).on("click", ".widget .view", function (e) {
+            setLabelColor();
+        });
+
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var regionList = "@String.Join(",", regions.Select(a => (string)a).ToList())".split(",").filter(item => item);
+        var cpiClientCodeList = "@String.Join(",", cpiClientCodes.Select(a => (string)a).ToList())".split(",").filter(item => item);
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });      
+        
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+
+        $(document).off("click", "#regionFilter_@userWidgetId .delete-region");
+        $(document).off("change", "#Area_@userWidgetId");
+        $(document).on("click", "#regionFilter_@userWidgetId .delete-region", function (e) {
+            var item = $.inArray($(this).data("id"), regionList);
+
+            if (item !== -1) {
+                regionList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Regions: ['${regionList.join("','")}'] }`, function () { refresh = true; });
+                }
+        });
+        $(document).on("change", "#Area_@userWidgetId", function (e) {
+            var updated = $(this).data("kendoComboBox");
+
+            if (updated.selectedIndex >= 0) {
+                var dataItem = updated.dataItem(updated.selectedIndex);
+                var area = dataItem.Area;
+
+                if ($.inArray(updated, regionList) == -1) {
+                    regionList.push(area);
+                    $("#regionFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="region">${area}</span></div><div class="delete-filter delete-region" data-id="${area}" title="Remove ${area}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Regions: ['${regionList.join("','")}'] }`, function () { refresh = true; });
+                    }
+                }
+            updated.value("");
+        });
+
+        $(document).off("click", "#cpiClientCodeFilter_@userWidgetId .delete-cpiClientCode");
+        $(document).off("change", "#CPIClientCode_@userWidgetId");
+        $(document).on("click", "#cpiClientCodeFilter_@userWidgetId .delete-cpiClientCode", function (e) {
+            var item = $.inArray($(this).data("id"), cpiClientCodeList);
+
+            if (item !== -1) {
+                cpiClientCodeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ CPIClientCodes: ['${cpiClientCodeList.join("','")}'] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#CPIClientCode_@userWidgetId", function (e) {
+            var cpiClient = $(this).data("kendoComboBox");
+
+            if (cpiClient.selectedIndex >= 0) {
+                var dataItem = cpiClient.dataItem(cpiClient.selectedIndex);
+                var clientCode = dataItem.CPIClientCode;
+
+                if ($.inArray(cpiClient, cpiClientCodeList) == -1) {
+                    cpiClientCodeList.push(clientCode);
+                    $("#cpiClientCodeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="cpiClientCode">${clientCode}</span></div><div class="delete-filter delete-cpiClientCode" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ CPIClientCodes: ['${cpiClientCodeList.join("','")}'] }`, function () { refresh = true; });
+                }
+            }
+
+            cpiClient.value("");
+        });
+    
+        if ('@(widget.IsDetail)' === '@true') {
+            var chart = $("#@userWidgetId").data("kendoChart");
+            chart.bind("seriesClick", onSeriesClick);
+            $("#@userWidgetId").attr("style", "position: static !important;");
+            $("#@userWidgetId-grid-header").hide();
+
+            var grid = $("#@userWidgetId-grid").data("kendoGrid");
+            grid.dataSource.read();
+        }
+    });
+
+    function setLabelColor() {
+        var chart = $("#@userWidgetId");
+        var svg = chart.find("svg");
+        $.each(svg.find("g"), function () {
+            $.each(svg.find("text"), function () {
+                if (this.getAttribute("fill").includes("white")) {
+                    this.style.fill = 'white';
+                }
+            });
+        });
+    }
+
+    function onSeriesClick(e) {
+        var grid = $("#@userWidgetId-grid").data("kendoGrid");
+
+        if (e.dataItem) {
+            var tempYear = e.dataItem.Category;
+            var tempType = e.dataItem.Group;
+
+            grid.dataSource.read({ userWidgetId: @widget.Id, year: tempYear, type: tempType });
+
+            var gridTitle = "@gridDetailTitle";
+            if (tempYear && tempYear > "") {
+                gridTitle += " - " + tempYear;
+            }
+
+            if (tempType && tempType > "") {
+                gridTitle += " - " + tempType;
+            }
+
+            $("#@userWidgetId-grid-title").text(gridTitle);
+            $("#@userWidgetId-grid-header").show();
+
+            selectedYear = tempYear;
+            selectedType = tempType;
+        }
+    };
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("AMSTotalAnnuityPaidDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id, year: selectedYear, type: selectedType });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+
+    function gridDetailSearchFilters() {
+        return { userWidgetId: @widget.Id, year: selectedYear, type: selectedType };
+    };
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">        
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="regionFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Region"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Dashboard", action = "GetRegionList", screen = userWidgetId })
+                </span>
+            </li>
+            @foreach (string reg in regions)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="region">@reg</span>
+                    </div>
+                    <div class="delete-filter delete-region" data-id="@reg" title="Remove @reg"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "AnnuitiesDue", "AMS", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="cpiClientCodeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Annuity Code"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CPIClientCode", controller = "Dashboard", action = "GetAMSCPIClientCodeList", screen = userWidgetId })
+                </span>
+            </li>
+            @foreach (string code in cpiClientCodes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="cpiClientCode">@code</span>
+                    </div>
+                    <div class="delete-filter delete-cpiClientCode" data-id="@code" title="Remove @code"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Chart(Model)
+        .Name(userWidgetId)
+        .Title("")
+        .Legend(legend => legend
+            .Position(ChartLegendPosition.Bottom)
+        )      
+        .ChartArea(chartArea => chartArea
+            .Background("transparent")
+        )
+        .Series(series => series
+            .Column(model => model.Value, model => model.Category)
+            .Style(ChartSeriesStyle.Smooth)            
+            .Gap(1)
+            .Overlay(o => o.Gradient(ChartSeriesGradient.None))            
+        )
+        .ValueAxis(axis => axis
+            .Numeric()
+                .Labels(labels => labels.Format("{0:n2}"))   
+        )        
+        .CategoryAxis(axis => axis
+            .Line(l => l.Visible(false))
+            .Labels(l => l.Position(ChartAxisLabelsPosition.Start))
+        )
+        .Tooltip(tooltip => tooltip
+            .Visible(true)
+            .Template(string.IsNullOrEmpty(widget.TooltipTemplate) ? "#= series.name # (#= category #): #= kendo.format('{0:n2}', Math.abs(value)) #" : widget.TooltipTemplate)
+        )
+        .SeriesColors(widget.SeriesColors)
+        .DataSource(dataSource => dataSource
+            .Group(group => group.Add(model => model.Group))
+        )
+        //Settings for PDF export using kendo built-in function
+        .Pdf(pdf => pdf
+            .FileName(@widget.Title.ToString())
+            //.PaperSize("A4")
+            .Landscape(false)
+            .Margin(m => m
+                .Left(10)
+                .Right(10)
+                .Top(10)
+                .Bottom(10))
+        )
+)
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title"></span></h4>
+    </div>
+
+    @(Html.Kendo().Grid<AmsCaseListDrillDownViewModel>()
+                        .Name(userWidgetId + "-grid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                            columns.Bound(a => a.Country);
+                            columns.Bound(a => a.SubCase);
+                            columns.Bound(a => a.CPIClient);
+                            columns.Bound(a => a.CPICaseType);
+                            columns.Bound(a => a.CPITitle);
+                            columns.Bound(a => a.CPIAppNo);
+                            columns.Bound(a => a.CPIPatNo);
+                            columns.Bound(a => a.CPIExpireDate).Format("{0:dd-MMM-yyyy}");
+                            columns.Bound(a => a.AnnuityNoDue);
+                            columns.Bound(a => a.AnnuityDueDate).Format("{0:dd-MMM-yyyy}");
+                            columns.Bound(a => a.AnnuityCost).Format("{0:n}");
+                        })
+                        .ToolBar(tools => tools.Excel())
+                        .AutoBind(false)
+                        .Pageable(page => page.PageSizes(amsSettings.SearchResultsPageSizeOptions))
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .PageSize(amsSettings.SearchResultsPageSize)
+                            .Read(read => read.Action("AMSTotalAnnuityPaidDetailRead", "Dashboard", new { userWidgetId = widget.Id })
+                            .Data("gridDetailSearchFilters"))
+                        )
+                        .Events(e => e.ExcelExport("gridExcelExport"))
+                        .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" })
+    )
+<style>
+    .k-chart {
+        margin: auto;
+    }
+</style>
+}

@@ -1,0 +1,724 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model UserNotificationSettings
+@inject ISystemSettings<R10.Core.Entities.DMS.DMSSetting> DMSSettings
+@{
+    var dmsSettings = await DMSSettings.GetSetting();
+
+    var dmsActReminderRecurrence = new List<SelectListItem>()
+    {
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["None"], Value = "0"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Days"], Value = "1"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Weeks"], Value = "2"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Months"], Value = "3"
+        }
+    };
+    var dmsActReminderRepeatOn = new List<SelectListItem>()
+    {        
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Monday"], Value = "1"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Tuesday"], Value = "2"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Wednesday"], Value = "3"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Thursday"], Value = "4"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Friday"], Value = "5"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Saturday"], Value = "6"
+        },
+        new SelectListItem()
+        {
+            Text = SharedLocalizer["Sunday"], Value = "7"
+        }
+    };
+}
+
+<div class="page-content">
+    <div id="userSettingStatus" class="alert alert-dismissible mt-4" role="alert" style="display: none;">
+        <button type="button" class="close" aria-label="Close" onclick="$('#userSettingStatus').hide()"><span aria-hidden="true">&times;</span></button>
+        <span class="status-message"></span>
+    </div>
+    
+    @if (Model != null)
+    {
+        <div class="row">
+            @if(User.IsInSystems(SystemType.HasQuickEmail))
+            {
+                <div class="col-lg-6 col-xl-5">
+                        <h5 class="pt-4">@SharedLocalizer["Quick Email"]</h5>
+                        <ul class="list-group">
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveQuickEmail">@SharedLocalizer["Receive Quick Emails"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveQuickEmail" type="checkbox" checked="@Model.ReceiveQuickEmail" data-setting="ReceiveQuickEmail" class="toggle-option" onclick="saveEmailSetting(this, 'quick-email');">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="QuickEmailCopyToSelf">@SharedLocalizer["Send copy to myself"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="QuickEmailCopyToSelf" type="checkbox" checked="@Model.QuickEmailCopyToSelf" data-setting="QuickEmailCopyToSelf" class="notification-setting quick-email toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            @if(User.IsInSystem(SystemType.Patent)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailPatent">@SharedLocalizer["Receive Patent emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailPatent" type="checkbox" checked="@Model.QuickEmailSystems.Contains('P')" data-setting="QuickEmailSystems" data-value="P" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.PatClearance)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailPatClearance">@SharedLocalizer["Receive Patent Clearance emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailPatClearance" type="checkbox" checked="@Model.QuickEmailSystems.Contains('E')" data-setting="QuickEmailSystems" data-value="E" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInRoles(SystemType.AMS, CPiPermissions.RegularUser)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailAMS">@SharedLocalizer["Receive Annuity Management emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailAMS" type="checkbox" checked="@Model.QuickEmailSystems.Contains('A')" data-setting="QuickEmailSystems" data-value="A" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.DMS)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailDMS">@SharedLocalizer["Receive Invention Disclosure emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailDMS" type="checkbox" checked="@Model.QuickEmailSystems.Contains('D')" data-setting="QuickEmailSystems" data-value="D" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.Trademark)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailTrademark">@SharedLocalizer["Receive Trademark emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailTrademark" type="checkbox" checked="@Model.QuickEmailSystems.Contains('T')" data-setting="QuickEmailSystems" data-value="T" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.SearchRequest)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailSearchRequest">@SharedLocalizer["Receive Trademark Request emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailSearchRequest" type="checkbox" checked="@Model.QuickEmailSystems.Contains('C')" data-setting="QuickEmailSystems" data-value="C" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.GeneralMatter)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveQuickEmailGeneralMatter">@SharedLocalizer["Receive General Matter emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveQuickEmailGeneralMatter" type="checkbox" checked="@Model.QuickEmailSystems.Contains('G')" data-setting="QuickEmailSystems" data-value="G" class="quick-email system-type toggle-option" @(Model.ReceiveQuickEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                </div>  
+            }
+            @if(User.IsInSystems(SystemType.HasWorkflow))
+            {
+                <div class="col-lg-6 col-xl-5">
+                        <h5 class="pt-4">@SharedLocalizer["Workflow"]</h5>
+                        <ul class="list-group">
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveWorkflowEmail">@SharedLocalizer["Receive Workflow emails"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveWorkflowEmail" type="checkbox" checked="@Model.ReceiveWorkflowEmail" data-setting="ReceiveWorkflowEmail" class="toggle-option" onclick="saveEmailSetting(this, 'workflow');">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            @if(User.IsInSystem(SystemType.Patent)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailPatent">@SharedLocalizer["Receive Patent emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailPatent" type="checkbox" checked="@Model.WorkflowSystems.Contains('P')" data-setting="WorkflowSystems" data-value="P" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.PatClearance)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailPatClearance">@SharedLocalizer["Receive Patent Clearance emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailPatClearance" type="checkbox" checked="@Model.WorkflowSystems.Contains('E')" data-setting="WorkflowSystems" data-value="E" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @*DMS Workflow has separate section
+                            @if(User.IsInSystem(SystemType.DMS)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailDMS">@SharedLocalizer["Receive Invention Disclosure emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailDMS" type="checkbox" checked="@Model.WorkflowSystems.Contains('D')" data-setting="WorkflowSystems" data-value="D" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }*@
+                            @if(User.IsInSystem(SystemType.Trademark)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailTrademark">@SharedLocalizer["Receive Trademark emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailTrademark" type="checkbox" checked="@Model.WorkflowSystems.Contains('T')" data-setting="WorkflowSystems" data-value="T" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.SearchRequest)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailSearchRequest">@SharedLocalizer["Receive Trademark Request emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailSearchRequest" type="checkbox" checked="@Model.WorkflowSystems.Contains('C')" data-setting="WorkflowSystems" data-value="C" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInSystem(SystemType.GeneralMatter)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveWorkflowEmailGeneralMatter">@SharedLocalizer["Receive General Matter emails"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveWorkflowEmailGeneralMatter" type="checkbox" checked="@Model.WorkflowSystems.Contains('G')" data-setting="WorkflowSystems" data-value="G" class="workflow system-type toggle-option" @(Model.ReceiveWorkflowEmail ? "" : "disabled")>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                </div>
+            }
+            @if(User.IsInRoles(SystemType.DMS, CPiPermissions.Inventor) ||
+                User.IsInRoles(SystemType.DMS, CPiPermissions.CanAccessReview))
+            {
+                <div class="col-lg-6 col-xl-5">
+                    <h5 class="pt-4">@SharedLocalizer["Invention Disclosure"]</h5>
+                    <ul class="list-group">
+                        @if(User.IsInRoles(SystemType.DMS, CPiPermissions.CanAccessReview))
+                        {
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveDMSNewDisclosureNotification">@SharedLocalizer["Receive new disclosure notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveDMSNewDisclosureNotification" type="checkbox" checked="@Model.ReceiveDMSNewDisclosureNotification" data-setting="ReceiveDMSNewDisclosureNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li> 
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveDMSNewDiscussionNotification">@SharedLocalizer["Receive new discussion notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveDMSNewDiscussionNotification" type="checkbox" checked="@Model.ReceiveDMSNewDiscussionNotification" data-setting="ReceiveDMSNewDiscussionNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveDMSDiscussionReplyNotification">@SharedLocalizer["Receive discussion reply notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveDMSDiscussionReplyNotification" type="checkbox" checked="@Model.ReceiveDMSDiscussionReplyNotification" data-setting="ReceiveDMSDiscussionReplyNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                        }
+                        @if(User.IsInRoles(SystemType.DMS, CPiPermissions.Inventor))
+                        {
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveDMSInventorChangeNotification">@SharedLocalizer["Receive inventor change notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveDMSInventorChangeNotification" type="checkbox" checked="@Model.ReceiveDMSInventorChangeNotification" data-setting="ReceiveDMSInventorChangeNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                        }
+                        @if (dmsSettings.CanEditDMSReminderSettings)
+                        {
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveDMSActionReminder">@SharedLocalizer["Receive action reminder"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveDMSActionReminder" type="checkbox" checked="@Model.ReceiveDMSActionReminder" data-setting="ReceiveDMSActionReminder" onclick="dmsActionReminderOnClick(this);" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            @if (User.IsInRoles(SystemType.DMS, CPiPermissions.Inventor) || User.IsInRoles(SystemType.DMS, CPiPermissions.Reviewer))
+                            {
+                                <li class="d-flex justify-content-between">
+                                    <div class="float-label col-4" style="padding-left:0px !important;">
+                                        <label for="DMSActionReminderRepeatInterval">@SharedLocalizer["Repeat every"]</label>
+                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatInterval)
+                                            .Enable(Model.ReceiveDMSActionReminder)
+                                            .Events(events => events.Change("dmsActReminderRepeatIntervalOnChange"))
+                                            .HtmlAttributes(new { style = "width: 100%" })
+                                            )
+                                    </div>
+                                    <div class="float-label col-4" style="padding-left:0px !important;">
+                                        <label for="DMSActionReminderRepeatRecurrence">@SharedLocalizer["Recurrence"]</label>
+                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatRecurrence)
+                                            .DataValueField("Value").DataTextField("Text")
+                                            .BindTo(dmsActReminderRecurrence)
+                                            .Events(events => events.Change("dmsActReminderRecurrenceOnChange"))
+                                            .Enable(Model.ReceiveDMSActionReminder)
+                                            .HtmlAttributes(new { style = "width: 100%" })
+                                            )
+                                    </div>
+                                    <div id="dmsActRepeatOnDiv" class="float-label col-4" style="padding-left:0px !important; visibility: @(Model.DMSActionReminderRepeatRecurrence == 2 ? "visible" : "hidden");">
+                                        <label for="DMSActionReminderRepeatOnDay">@SharedLocalizer["Repeat on"]</label>
+                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatOnDay)
+                                            .DataValueField("Value").DataTextField("Text")
+                                            .BindTo(dmsActReminderRepeatOn)
+                                            .Enable(Model.ReceiveDMSActionReminder)
+                                            .Events(events => events.Change("dmsActReminderRepeatOnDayOnChange"))
+                                            .HtmlAttributes(new { style = "width: 100%" })
+                                            )
+                                    </div>
+                                </li>
+                            }
+                        }                        
+                    </ul>
+                </div>
+            }
+            @if(User.IsInUserType(CPiUserType.User) && (
+                User.IsInRoles(SystemType.AMS, CPiPermissions.CanReceiveInstructionsNotifications) ||
+                User.IsInRoles(SystemType.RMS, CPiPermissions.CanReceiveInstructionsNotifications) ||
+                User.IsInRoles(SystemType.ForeignFiling, CPiPermissions.CanReceiveInstructionsNotifications) ||
+                User.IsInRoles(SystemType.Patent, CPiPermissions.CanReceiveInstructionsNotifications) ||
+                User.IsInRoles(SystemType.Trademark, CPiPermissions.CanReceiveInstructionsNotifications) ||
+                User.IsInRoles(SystemType.GeneralMatter, CPiPermissions.CanReceiveInstructionsNotifications)))
+            {
+                <div class="col-lg-6 col-xl-5">
+                        <h5 class="pt-4">@SharedLocalizer["Portfolio Review"]</h5>
+                        <ul class="list-group">
+                            @if(User.IsInRoles(SystemType.AMS, CPiPermissions.CanReceiveInstructionsNotifications)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveAMSInstructionNotification">@SharedLocalizer["Receive Annuity instruction notification"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveAMSInstructionNotification" type="checkbox" checked="@Model.ReceiveAMSInstructionNotification" data-setting="ReceiveAMSInstructionNotification" class="notification-setting toggle-option">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveAMSSendToCPIReminder">@SharedLocalizer["Receive Instructions to CPI reminder"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveAMSSendToCPIReminder" type="checkbox" checked="@Model.ReceiveAMSSendToCPIReminder" data-setting="ReceiveAMSSendToCPIReminder" class="notification-setting toggle-option">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInRoles(SystemType.ForeignFiling, CPiPermissions.CanReceiveInstructionsNotifications)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveFFInstructionNotification">@SharedLocalizer["Receive Foreign Filing instruction notification"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveFFInstructionNotification" type="checkbox" checked="@Model.ReceiveFFInstructionNotification" data-setting="ReceiveFFInstructionNotification" class="notification-setting toggle-option">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if(User.IsInRoles(SystemType.RMS, CPiPermissions.CanReceiveInstructionsNotifications)) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveRMSInstructionNotification">@SharedLocalizer["Receive Renewal instruction notification"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveRMSInstructionNotification" type="checkbox" checked="@Model.ReceiveRMSInstructionNotification" data-setting="ReceiveRMSInstructionNotification" class="notification-setting toggle-option">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                            @if((User.IsModuleEnabled(CPiModule.PatDeDocket) && User.IsInRoles(SystemType.Patent, CPiPermissions.CanReceiveInstructionsNotifications)) ||
+                                (User.IsModuleEnabled(CPiModule.TmkDeDocket) && User.IsInRoles(SystemType.Trademark, CPiPermissions.CanReceiveInstructionsNotifications)) ||
+                                (User.IsModuleEnabled(CPiModule.GMDeDocket) && User.IsInRoles(SystemType.GeneralMatter, CPiPermissions.CanReceiveInstructionsNotifications))) {
+                                <li class="d-flex justify-content-between">
+                                    <label for="ReceiveDeDocketInstructionNotification">@SharedLocalizer["Receive DeDocket instruction notification"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input id="ReceiveDeDocketInstructionNotification" type="checkbox" checked="@Model.ReceiveDeDocketInstructionNotification" data-setting="ReceiveDeDocketInstructionNotification" class="notification-setting toggle-option">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                </div>
+            }
+            @if(User.IsInSystems(SystemType.HasActionDelegation))
+            {
+                <div class="col-lg-6 col-xl-5">
+                        <h5 class="pt-4">@SharedLocalizer["Action Delegation"]</h5>
+                        <ul class="list-group">
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveActionDelegatedNotification">@SharedLocalizer["Receive action delegation notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveActionDelegatedNotification" type="checkbox" checked="@Model.ReceiveActionDelegatedNotification" data-setting="ReceiveActionDelegatedNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveActionCompletedNotification">@SharedLocalizer["Receive action completion notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveActionCompletedNotification" type="checkbox" checked="@Model.ReceiveActionCompletedNotification" data-setting="ReceiveActionCompletedNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveActionDeletedNotification">@SharedLocalizer["Receive action deletion notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveActionDeletedNotification" type="checkbox" checked="@Model.ReceiveActionDeletedNotification" data-setting="ReceiveActionDeletedNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveActionReassignedNotification">@SharedLocalizer["Receive action reassignment notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveActionReassignedNotification" type="checkbox" checked="@Model.ReceiveActionReassignedNotification" data-setting="ReceiveActionReassignedNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveActionDueDateChangedNotification">@SharedLocalizer["Receive action due date change notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveActionDueDateChangedNotification" type="checkbox" checked="@Model.ReceiveActionDueDateChangedNotification" data-setting="ReceiveActionDueDateChangedNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <label class="text-wrap" for="DaysAfterActionDueToKeepReceivingNotifications">@SharedLocalizer["Number of days to keep receiving notifications after action is past due"]</label>
+                                <span class="pt-2">
+                                    @(Html.Kendo().NumericTextBox<int>()
+                                        .Name("DaysAfterActionDueToKeepReceivingNotifications")
+                                        .Value(Model.DaysAfterActionDueToKeepReceivingNotifications)
+                                        .Format("#")
+                                        .HtmlAttributes(new { style = "width: 75px;" })
+                                        .Events(e => e.Change("saveActionNotifyDays"))
+                                    )
+                                </span>
+                            </li>
+                        </ul>
+                </div>
+            }
+            <div class="col-lg-6 col-xl-5">
+                @if(User.IsInUserType(CPiUserType.User) && User.IsInRoles(SystemType.Patent, CPiPermissions.FullRead))
+                {
+                        <h5 class="pt-4">@SharedLocalizer["Patent Watch"]</h5>
+                        <ul class="list-group">
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceivePatentWatchEmail">@SharedLocalizer["Receive Patent Watch update emails"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceivePatentWatchEmail" type="checkbox" checked="@Model.ReceivePatentWatchEmail" data-setting="ReceivePatentWatchEmail" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                        </ul>
+                }  
+                @if(User.IsAdmin())
+                {
+                        <h5 class="pt-4">@SharedLocalizer["Administration"]</h5>
+                        <ul class="list-group">
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceivePendingRegistrationNotification">@SharedLocalizer["Receive pending registration notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceivePendingRegistrationNotification" type="checkbox" checked="@Model.ReceivePendingRegistrationNotification" data-setting="ReceivePendingRegistrationNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            @if(User.IsSuper()) {
+                            <li class="d-flex justify-content-between">
+                                <label for="ReceiveTaskSchedulerNotification">@SharedLocalizer["Receive Task Scheduler error notification"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input id="ReceiveTaskSchedulerNotification" type="checkbox" checked="@Model.ReceiveTaskSchedulerNotification" data-setting="ReceiveTaskSchedulerNotification" class="notification-setting toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </li>
+                            }
+                        </ul>
+                } 
+            </div>
+        </div>
+    }
+</div>
+<style>
+    .user-settings .list-group li {
+        padding: 2px 0 2px 0;
+    }
+
+    .theme-name {
+        text-transform: capitalize;
+    }
+</style>
+
+<script>
+    function saveDefaultPage(e) {
+        saveSetting("@CPiSettings.DefaultPage", `{ DefaultPageId: ${this.selectedIndex > 0 ? this.dataItem(this.selectedIndex).Id : 0} }`, true);
+    }
+    function saveTheme(e) {
+        const theme = this.dataItem(this.selectedIndex).Value;
+        saveUserPreference(`{ Theme: "${theme.replace(" ", "-")}" }`, function () {
+            location.reload();
+        });
+    }
+    function saveSearchResultsPageSize(e) {
+        saveUserPreference(`{ SearchResultsPageSize: "${this.dataItem(this.selectedIndex).Value}" }`);
+    }
+    function saveUserPreference(setting, callback) {
+        saveSetting("@CPiSettings.UserPreferences", setting, true, callback);
+    }
+    function saveUserNotificationSettings(setting, callback) {
+        saveSetting("@CPiSettings.UserNotificationSettings", setting, false, callback);
+    }
+    function saveEmailSetting(e, group) {
+        const el = $(e);
+        const options = $(`.${group}.toggle-option`);
+        let setting = {};
+
+        setting[el.data("setting")] = el.is(':checked');
+        if (!el.is(':checked')) {
+            options.prop( "checked", false );   
+            options.attr("disabled", true);
+            options.each(function(index) {                
+                setting[$(this).data("setting")] = $(this).data("value") ? "" : false;
+            });
+        }
+        else {
+            options.removeAttr("disabled");
+        }
+
+        saveUserNotificationSettings(JSON.stringify(setting))
+    }
+    function saveSystemType(e) {
+        const settingName = $(e).data("setting");
+        const options = $(`.system-type[data-setting='${settingName}']`);
+        let setting = {};
+        let systems = [];
+
+        options.each(function(index) {
+            if ($(this).is(':checked'))
+                systems.push($(this).data("value"));
+        });
+
+        setting[settingName] = systems.join("");
+        saveUserNotificationSettings(JSON.stringify(setting))
+    }
+
+    function saveSetting(settingName, setting, refresh, callback) {
+        cpiLoadingSpinner.show();
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action("SaveSetting", "Manage")",
+            data: { settingName: settingName, setting: setting, refresh: refresh },
+            dataType: "json",
+            success: function (data) {
+                cpiLoadingSpinner.hide();
+                if (callback !== undefined)
+                    callback();
+            },
+            error: function (data) {
+                cpiLoadingSpinner.hide();
+                cpiAlert.warning(data.responseText, function () {
+                    location.reload();
+                });
+            }
+        });
+    };
+
+    function saveActionNotifyDays(e) {
+        saveUserNotificationSettings(`{ ${this.element[0].name}: ${this.value()}}`);
+    }
+
+    function showStatus(message, success) {
+        var $status = $("#userSettingStatus");
+
+        if (success) {
+            $status.addClass("alert-success");
+            $status.removeClass("alert-danger");
+        }
+        else {
+            $status.removeClass("alert-success");
+            $status.addClass("alert-danger");
+        }
+        $status.children(".status-message").text(message)
+        $status.show()
+    }
+
+
+    var dmsActDays_DS = new kendo.data.DataSource({ data: [0, 1, 7, 14, 21, 30] });
+    var dmsActWeeks_DS = new kendo.data.DataSource({ data: [0, 1, 2, 3, 4, 5, 6] });
+    var dmsActMonths_DS = new kendo.data.DataSource({ data: [0, 1, 2, 3, 4, 5, 6] });
+    function changeDMSActRepeatIntervalDS(recurrence) {
+        var dmsActReminderRepeatInterval_dropdown = $("#DMSActionReminderRepeatInterval").data("kendoDropDownList");        
+        if (dmsActReminderRepeatInterval_dropdown) {
+            if (recurrence === 1)
+                dmsActReminderRepeatInterval_dropdown.setDataSource(dmsActDays_DS);
+            else if (recurrence === 2)
+                dmsActReminderRepeatInterval_dropdown.setDataSource(dmsActWeeks_DS);
+            else if (recurrence === 3)
+                dmsActReminderRepeatInterval_dropdown.setDataSource(dmsActMonths_DS);
+            else 
+                dmsActReminderRepeatInterval_dropdown.setDataSource(new kendo.data.DataSource({ data: [0] }));            
+        }
+    }
+    function dmsActReminderRepeatIntervalOnChange(e) {
+        if (this && this.value()) {
+            var parsedValue = parseInt(this.value());            
+            saveUserNotificationSettings((`{ ${this.element[0].name}: ${parsedValue}}`));
+        }
+    }
+    function dmsActReminderRecurrenceOnChange(e) {
+        if (this && this.value()) {
+            var parsedValue = parseInt(this.value());            
+            saveUserNotificationSettings((`{ ${this.element[0].name}: ${parsedValue}}`));
+            if (parsedValue >= 0) {
+                changeDMSActRepeatIntervalDS(parsedValue);
+                var dmsActRepeatOnDiv = $("#dmsActRepeatOnDiv");
+                if (dmsActRepeatOnDiv) {
+                    if (parsedValue === 2)
+                        dmsActRepeatOnDiv.css('visibility', 'visible');
+                    else
+                        dmsActRepeatOnDiv.css('visibility', 'hidden');
+                }
+            }            
+        }            
+    }
+    function dmsActReminderRepeatOnDayOnChange(e) {
+        if (this && this.value()) {
+            var parsedValue = parseInt(this.value());            
+            saveUserNotificationSettings((`{ ${this.element[0].name}: ${parsedValue}}`));
+        }
+    }
+    function dmsActionReminderOnClick(e) {
+        const el = $(e);       
+        var dmsRepeatInterval_dropdown = $("#DMSActionReminderRepeatInterval").data("kendoDropDownList");
+        var dmsRecurrence_dropdown = $("#DMSActionReminderRepeatRecurrence").data("kendoDropDownList");
+        var dmsRepeatOnDay_dropdown = $("#DMSActionReminderRepeatOnDay").data("kendoDropDownList");
+        if (!el.is(':checked')) {           
+            if (dmsRepeatInterval_dropdown) dmsRepeatInterval_dropdown.enable(false);
+            if (dmsRecurrence_dropdown) dmsRecurrence_dropdown.enable(false);
+            if (dmsRepeatOnDay_dropdown) dmsRepeatOnDay_dropdown.enable(false);
+        }
+        else {            
+            if (dmsRepeatInterval_dropdown) dmsRepeatInterval_dropdown.enable(true);
+            if (dmsRecurrence_dropdown) dmsRecurrence_dropdown.enable(true);
+            if (dmsRepeatOnDay_dropdown) dmsRepeatOnDay_dropdown.enable(true);
+        }        
+    }
+
+
+    $(document).ready(function () {
+        $(document).off("click", ".user-settings .toggle-option");
+        $(document).on("click", ".user-settings .toggle-option", function (e) {
+            saveUserPreference(`{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`);
+        });
+        $(document).off("click", ".notification-setting.toggle-option");
+        $(document).on("click", ".notification-setting.toggle-option", function (e) {
+            saveUserNotificationSettings(`{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`);
+        });
+        $(document).off("click", ".system-type.toggle-option");
+        $(document).on("click", ".system-type.toggle-option", function (e) {
+            saveSystemType(e.target);
+        });
+
+        
+        changeDMSActRepeatIntervalDS(@(Model != null ? Model.DMSActionReminderRepeatRecurrence : 0));
+        var userDMSActRepeatInterval = @(Model != null ? Model.DMSActionReminderRepeatInterval : 0);        
+        if (userDMSActRepeatInterval > 0) {
+            var dmsActReminderRepeatInterval_dropdown = $("#DMSActionReminderRepeatInterval").data("kendoDropDownList");
+            if (dmsActReminderRepeatInterval_dropdown) {
+                dmsActReminderRepeatInterval_dropdown.value(userDMSActRepeatInterval);
+                dmsActReminderRepeatInterval_dropdown.trigger("change");
+            } 
+        }
+        
+
+    });
+</script>

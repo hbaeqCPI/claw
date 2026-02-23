@@ -1,0 +1,77 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model DetailPagePermission
+
+@{
+    var permission = Model;
+}
+
+<script>
+    function letIdFilter() {
+        return {
+            letId: ($("#selLetId").val())
+        };
+    }
+</script>
+
+
+<div class="row" style="height:350px;">
+    <div class="col-md-12 px-5">
+        @(Html.Kendo().Grid<LetterUserData>()
+                      .Name("userDataGrid")
+                      .AutoBind(false)
+                      .Columns(column =>
+                      {
+                          column.Bound(ud => ud.LetDataId).Hidden();
+                          column.Bound(ud => ud.DataName).Width(150);
+                          column.Bound(ud => ud.DefaultValue).Width(150);
+                          column.Command(command =>
+                          {
+                              if (permission.CanDeleteRecord)
+                                  command.Custom("Delete").Click("function(e) {letterGen.deleteGridRow(e,this)}").IconClass("k-icon fas fa-trash");
+
+                          }).Width(50);
+                      })
+                      .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                      .Scrollable()
+                      .ToolBar(toolbar =>
+                      {
+                          if (permission.CanAddRecord)
+                          {
+                              toolbar.Create().IconClass("k-icon fas fa-plus").Text(SharedLocalizer["Add"]).HtmlAttributes(new { @class = "d-none" });
+                          }
+                          if (permission.CanEditRecord && !permission.CanEditRemarksOnly)
+                          {
+                              toolbar.Custom().Name("Save").IconClass("k-icon fas fa-save").Text(SharedLocalizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                              toolbar.Custom().Name("Cancel").IconClass("k-icon fas fa-times").Text(SharedLocalizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                          }
+                      })
+                      .Editable(editable => editable.Enabled(permission.CanEditRecord && !permission.CanEditRemarksOnly)
+                          .Mode(GridEditMode.InCell).ConfirmDelete(@SharedLocalizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                      .DataSource(dataSource => dataSource
+                          .Ajax()
+                          .Batch(true)
+                          .PageSize(10)
+                          .Model(model =>
+                          {
+                              model.Id(f => f.LetDataId);
+                          })
+                          .Read(read => read.Action("ReadUserData", "LetterUserData").Data("letIdFilter"))
+                          .Update(update => update.Action("UserDataUpdate", "LetterUserData").Data("letterGen.gridFilter('letId')"))
+                          .Destroy(update => update.Action("UserDataDelete", "LetterUserData").Data("letterGen.gridFilter('letId')"))
+                          .Events(events =>
+                          {
+                              events.Error("pageHelper.gridErrorHandler");
+                          })
+                      )
+                      .HtmlAttributes(new { @class = "kendo-Grid" })
+                      .HtmlAttributes(new { style = "height: 325px;" })
+              )
+
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        letterGen.configureGrid("userDataGrid", "letId");
+    });
+</script>

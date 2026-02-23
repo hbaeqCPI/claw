@@ -1,0 +1,22 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    
+   var content = $"{@SharedLocalizer["Are you sure you want to delete this record?"]}";
+}
+<div id="deleteDialogContainer">
+    <div id="deleteDialog"></div>
+    <script>
+        var options = {
+            container: 'deleteDialogContainer',
+            okText: '@SharedLocalizer["OK"]',
+            cancelText: '@SharedLocalizer["Cancel"]',
+            title: '@SharedLocalizer["Confirm Delete"]',
+            content: '@content',
+            okHandler: @ViewBag.DeleteHandler
+        };
+        $("#deleteDialog").cpiConfirmActionDialog(options);
+    </script>
+</div>
+   
+
+  

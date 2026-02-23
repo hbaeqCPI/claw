@@ -1,0 +1,51 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    var systemType = ViewBag.SystemType;
+    var systemCriteria = $"{{systemType: '{systemType}'}}";
+    var screen = "letterGen";
+}
+
+<form id="searchCriteriaForm">
+    @(Html.Kendo().PanelBar()
+          .Name("searchPanel")
+          .Items(panelBar =>
+          {
+              panelBar.Add().Text("Search Criteria")
+                  .Expanded(false)
+                  .Content(
+                      @<div>
+                          <br/>
+                          <div class="form-row form-group">
+                              <div class="col text-md-left ml-5">
+                                  <button class="k-button k-primary mr-1" type="button" id="help"><span class="far fa-question-circle mr-2"></span> @SharedLocalizer["Help"]</button>
+                              </div>
+                              <div class="col text-md-right mr-5">
+                                  <button class="k-button k-primary mr-1" type="button" id="search"><span class="far fa-search mr-2"></span> @SharedLocalizer["Search"]</button>
+                                  <button class="k-button border" type="button" id="clear"><span class="far fa-eraser mr-2"></span> @SharedLocalizer["Clear"]</button>
+                              </div>
+                          </div>
+                          <div class="form-row form-group">
+                              <div class="col-md-2 text-md-right">
+                                  <label for="LetterName">Letter Name</label>
+                              </div>
+                              <div class="col-md-3">
+                                  @await Component.InvokeAsync("ComboBox", new { name = "LetName", textProperty = "LetName", controller = "Letter", area = "Shared", action = "GetPicklistLetters", data = @systemCriteria, screen = screen })
+                              </div>
+                              <div class="col-md-1 text-md-right">
+                                  <label for="Category">Category</label>
+                              </div>
+                              <div class="col-md-3 form-inline">
+                                  @await Component.InvokeAsync("ComboBox", new { name = "LetterCategory.LetCatDesc", textProperty= "LetCatDesc", controller = "LetterCategory", area = "Shared", action = "GetCategoryList", screen = screen })
+                              </div>
+                          </div>
+                          
+                        
+
+                      </div>
+                  );
+
+          })
+          )
+</form>
+

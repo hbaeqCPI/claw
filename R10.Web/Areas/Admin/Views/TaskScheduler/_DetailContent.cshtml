@@ -1,0 +1,395 @@
+﻿@model ScheduledTaskDetailViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var addMode = Model.TaskId == 0;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var screen = ViewData["PageId"];
+    var isReadOnly = addMode ? false : !detailPagePermission.CanEditRecord;
+
+    var requestMethods = new List<string>() { "GET", "POST", "PUT", "PATCH", "DELETE" };
+    var requestContentTypes = Html.GetEnumSelectList<ScheduledTaskRequestContentType>();
+    var grantTypes = new List<SelectListItem> { 
+        new SelectListItem() { Text = "Password", Value = "password" },
+        new SelectListItem() { Text = "Client Credentials", Value = "client_credentials" }
+    };
+
+    var monthlyDays = Html.GetEnumSelectList<ScheduledTaskDayOfMonth>().ToList();
+    monthlyDays.Insert(0, new SelectListItem() { Text = "", Value = "" });
+
+    var useServiceAccount = addMode ? false : (Model.GrantType == "password" && string.IsNullOrEmpty(Model.UserName) && string.IsNullOrEmpty(Model.Password));
+}
+
+<form cpi-detail-form action="Save" class="task-scheduler">
+    <input asp-for="TaskId" class="form-control" value="@Model.TaskId" hidden />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            @if (Model.IsCpiTask ?? false)
+            {
+                <div class="col-12">
+                    <span class="dymo-alert">@Localizer["CPI Task"]</span>
+                </div>
+            }
+            <div class="col col-12 col-md-6 col-lg-4">
+                <div class="form-group float-label">
+                    <label asp-for="Name"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Name" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Name"></span>
+                </div>
+            </div>
+            <div class="col col-sm-3 col-md-3 col-lg-2 col-xl-2">
+                <div class="form-group float-label">
+                    <div class=" custom-control custom-checkbox">
+                        @Html.CheckBox("IsEnabled", Model.IsEnabled ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                        <label asp-for="IsEnabled" class="custom-control-label">
+                        </label>
+                    </div>
+                    <span asp-validation-for="IsEnabled"></span>
+                </div>
+            </div>
+            <div class="col col-12">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+        </div>
+
+        @* TRIGGER *@
+        @if (!addMode)
+        {
+            <div class="form-row">
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="Status"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Status" asp-is-readonly="true" />
+                    </div>
+                </div>
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="NextRunTime"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" readonly value="@(Model.NextRunTime.FormatToDisplayWithTime())" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("NextRunTime") { Value = Model.NextRunTime })
+                        }
+                    </div>
+                </div>
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="ExpirationTime"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" readonly value="@(Model.ExpirationTime.FormatToDisplayWithTime())" />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("ExpirationTime") { Value = Model.ExpirationTime })
+                        }
+                    </div>
+                </div>
+                <div class="d-none d-lg-block col-lg-3"></div>
+                <div class="d-none d-lg-block col-lg-3"></div>
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="LastRunTime"></label>
+                        <input type="text" class="form-control form-control-sm" readonly value="@(Model.LastRunTime.FormatToDisplayWithTime())" />
+                    </div>
+                </div>                
+                <div class="col col-12 col-sm-8 col-lg-6">
+                    <div class="form-group float-label">
+                        <label asp-for="LastRunResult"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="LastRunResult" asp-is-readonly="true" />
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="form-row">
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label for="NextRunTime">@Localizer["Start Time"].Value</label>
+                        @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("NextRunTime") { Value = Model.NextRunTime })
+                    </div>
+                </div>
+                <div class="col col-12 col-sm-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="ExpirationTime"></label>
+                        @await Component.InvokeAsync("DateTimePicker", new DateTimePickerOptions("ExpirationTime") { Value = Model.ExpirationTime })
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="form-row">
+            <div class="col col-12 col-sm-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label for="@(screen)_Frequency">@Localizer["Frequency"]</label>
+
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" readonly value="@(Model.Frequency)" />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("Frequency")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(Html.GetEnumSelectList<ScheduledTaskFrequency>())
+                            .Value(((int)Model.Frequency).ToString())
+                            .Events(e => e.Change("taskSchedulerPage.onFrequencyChange"))
+                            .HtmlAttributes(new { id = $"{screen}_Frequency" }))
+                    }
+                </div>
+            </div>
+            <div class="col col-12 col-sm-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="RecurFactor"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" readonly value="@(Model.RecurFactor)" />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>()
+                            .Name("RecurFactor")
+                            .Value(Model.RecurFactor)
+                            .Decimals(0)
+                            .Min(1)
+                            .Format($"#")
+                            .HtmlAttributes(new { style = "width: 100%", id = $"{screen}_RecurFactor" })
+                            )
+                    }
+                </div>
+            </div>
+            <div class="col col-12 col-sm-4 col-lg-6">
+                <div class="form-row">
+                    @if (isReadOnly && Model.Frequency == ScheduledTaskFrequency.Monthly)
+                    {
+                        <div class="col col-12 col-lg-6 day-of-month">
+                            <div class="form-group float-label">
+                                <label for="@(screen)_Frequency">@Localizer["Day of Month"]</label>
+                                <input type="text" class="form-control form-control-sm" readonly value="@(Model.RecurFactor)" />
+                            </div>
+                        </div>
+                    }
+                    else if (!isReadOnly)
+                    {
+                        <div class="col col-12 col-lg-6 day-of-month">
+                            <div class="form-group float-label">
+                                <label for="@(screen)_Frequency">@Localizer["Day of Month"]</label>
+                                @if (isReadOnly && Model.Frequency == ScheduledTaskFrequency.Monthly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" readonly value="@(Model.DayOfMonth)" />
+                                }
+                                else
+                                {
+                                    @(Html.Kendo().DropDownList()
+                                        .Name("DayOfMonth")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                            .BindTo(monthlyDays)
+                                        .Value(((int?)(Model.DayOfMonth)).ToString())
+                                        .HtmlAttributes(new { id = $"{screen}_DayOfMonth" }))
+                                }
+                            </div>
+                        </div>
+                    }
+                    @if (!isReadOnly || (isReadOnly && Model.Frequency == ScheduledTaskFrequency.Monthly))
+                    {
+                        <div class="col col-12 day-of-week">
+                            <div><label>Day of the Week</label></div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Sun", Model.Sun ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Sun" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Mon", Model.Mon ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Mon" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Tue", Model.Tue ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Tue" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Wed", Model.Wed ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Wed" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Thu", Model.Thu ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Thu" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Fri", Model.Fri ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Fri" class="custom-control-label">
+                                </label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBox("Sat", Model.Sat ?? false, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                                <label asp-for="Sat" class="custom-control-label">
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ACTION *@
+        <div class="form-row">
+            <div class="col col-12 col-sm-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="BaseUrl"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="BaseUrl" asp-is-readonly="true" />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-12 col-md-8 col-lg-6">
+                <div class="form-group float-label">
+                    <label asp-for="RequestUri"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="RequestUri" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="RequestUri"></span>
+                </div>
+            </div>
+            <div class="col col-12 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label for="@(screen)_RequestMethod">@Localizer["Request Method"]</label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" readonly value="@(Model.RequestMethod)" />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("RequestMethod")
+                            .BindTo(requestMethods)
+                            .Value(Model.RequestMethod)
+                            .HtmlAttributes(new { id = $"{screen}_RequestMethod" }))
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-12 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label for="@(screen)_Frequency">@Localizer["Request Content Type"]</label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" readonly value="@(requestContentTypes.Where(t => t.Value == ((int)(Model.RequestContentType ?? 0)).ToString()).Select(t => t.Text).FirstOrDefault())" />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("RequestContentType")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(requestContentTypes)
+                            .Value(((int?)(Model.RequestContentType)).ToString())
+                            .HtmlAttributes(new { id = $"{screen}_RequestContentType" }))
+                    }
+                </div>
+            </div>
+            <div class="col col-12 col-md-8 col-lg-9">
+                <div class="form-group float-label">
+                    <label asp-for="RequestContent"></label>
+                    <textarea rows="3" class="form-control form-control-sm" asp-for="RequestContent" asp-is-readonly="@isReadOnly"></textarea>
+                    <span asp-validation-for="RequestContent"></span>
+                </div>
+            </div>
+        </div>
+        @if (!isReadOnly)
+        {
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <div class=" custom-control custom-checkbox">
+                            @Html.CheckBox("UseServiceAccount", useServiceAccount, isReadOnly ? new { @class = "custom-control-input", disabled = "disabled" } : new { @class = "custom-control-input" })
+                            <label asp-for="UseServiceAccount" class="custom-control-label">
+                            </label>
+                        </div>
+                        <span asp-validation-for="UseServiceAccount"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row authentication">
+                <div class="col col-12 col-md-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="TokenEndpoint"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="TokenEndpoint" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="TokenEndpoint"></span>
+                    </div>
+                </div>
+                <div class="col col-12 col-md-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label for="@(screen)_RequestMethod">@Localizer["Grant Type"]</label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" readonly value="@(Model.GrantType)" />
+                        }
+                        else
+                        {
+                            @(Html.Kendo().DropDownList()
+                                .Name("GrantType")
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .BindTo(grantTypes)
+                                .Value(Model.GrantType)
+                                .HtmlAttributes(new { id = $"{screen}_GrantType" }))
+                        }
+                    </div>
+                </div>
+                <div class="d-none d-md-block col-md-4 d-lg-none"></div>
+                <div class="col col-12 col-md-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="UserName"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="UserName" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="UserName"></span>
+                    </div>
+                </div>
+                <div class="col col-12 col-md-4 col-lg-3">
+                    <div class="form-group float-label">
+                        <label asp-for="Password"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" readonly value="********************" />
+                        }
+                        else
+                        {
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control pwd" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary btn-toggle-pwd" type="button"><i class="toggle-pwd far fa-eye-slash"></i></button>
+                                </div>
+                            </div>
+                        }
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<style>
+    .day-of-week .custom-checkbox {
+        margin-right: 15px;
+        display: inline-block;
+    }
+</style>

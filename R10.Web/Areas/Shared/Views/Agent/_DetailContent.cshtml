@@ -1,0 +1,599 @@
+﻿@model AgentDetailViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@inject ISystemSettings<AMSSetting> AMSSettings
+@inject ISystemSettings<RMSSetting> RMSSettings
+@inject ISystemSettings<FFSetting> FFSettings
+@inject ISystemSettings<TmkSetting> TmkSettings
+@inject ISystemSettings<PatSetting> PatSettings
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ICountryLookupViewModelService CountryLookupService
+@{
+    var settings = await Settings.GetSetting();
+    var amsSettings = await AMSSettings.GetSetting();
+    var rmsSettings = await RMSSettings.GetSetting();
+    var ffSettings = await FFSettings.GetSetting();
+    var tmkSettings = await TmkSettings.GetSetting();
+    var patSettings = await PatSettings.GetSetting();
+
+    var id = Model.AgentID;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
+
+    var countryLabel = SharedLocalizer["Country"];
+    var countryNameLabel = SharedLocalizer["Country Name"];
+    var agentLabel = settings.LabelAgent;
+    var agentNameLabel = settings.LabelAgentName;
+
+    var childViewModel = new ChildViewModel { Id = id, Permission = detailPagePermission };
+
+    var hasAMSSettings = User.IsInSystem(SystemType.AMS) && amsSettings.HasAgentResp;
+    var hasRMSSettings = User.IsInSystem(SystemType.RMS) && rmsSettings.HasAgentResp;
+    var hasFFSettings = User.IsInSystem(SystemType.ForeignFiling) && ffSettings.HasAgentResp;
+    var isShowCustomFieldOn = settings.IsShowCustomFieldOn;
+    var pageId = ViewData["PageId"];
+
+    var isTmkCostEstimatorOn = tmkSettings.IsCostEstimatorOn;
+    var isPatCostEstimatorOn = patSettings.IsCostEstimatorOn;
+    var showCostEstimatorTab = isTmkCostEstimatorOn || isPatCostEstimatorOn;
+}
+
+<form cpi-detail-form action="@(detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" :"Save")">
+    <input type="hidden" asp-for="AgentID" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    <div class="page-content  detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-md-3">
+                <div class="form-group float-label">
+                    <label for="AgentCode" class="required">@SharedLocalizer[agentLabel]</label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AgentCode" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="AgentCode"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label for="AgentName" class="required">@SharedLocalizer[agentNameLabel]</label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AgentName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="AgentName"></span>
+                </div>
+            </div>
+            <div class="col-md-3 pt-3">
+                @if (isReadOnly)
+                {
+                    @(Html.Kendo().CheckBoxFor(m => m.IsActive).HtmlAttributes(new {id="Agent_IsActive", disabled = "true" }))
+                }
+                else
+                {
+                    @(Html.Kendo().CheckBoxFor(m => m.IsActive).HtmlAttributes(new {id="Agent_IsActive"}))
+                }
+            </div>
+        </div>
+    </div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="agentDetailMainTab" data-toggle="tab" role="tab" aria-controls="agentDetailMainTabContent" aria-selected="true" href="#agentDetailMainTabContent">@SharedLocalizer[$"{agentLabel} Info"] </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="agentDetailAddressTab" data-toggle="tab" role="tab" aria-controls="agentDetailAddressTabContent" aria-selected="false" href="#agentDetailAddressTabContent">@SharedLocalizer["Address"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="agentDetailPOBoxAddressTab" data-toggle="tab" role="tab" aria-controls="agentDetailPOBoxAddressTabContent" aria-selected="false" href="#agentDetailPOBoxAddressTabContent">@SharedLocalizer["PO Box"]</a>
+        </li>
+        @if (hasAMSSettings)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentDetailAMSSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailAMSSettingsTabContent" aria-selected="false" href="#agentDetailAMSSettingsTabContent">@SharedLocalizer["AMS Settings"]</a>
+            </li>
+        }
+        @if (hasFFSettings)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentDetailFFSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailFFSettingsTabContent" aria-selected="false" href="#agentDetailFFSettingsTabContent">@SharedLocalizer["Foreign Filing Settings"]</a>
+            </li>
+        }
+        @if (hasRMSSettings)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentDetailRMSSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailRMSSettingsTabContent" aria-selected="false" href="#agentDetailRMSSettingsTabContent">@SharedLocalizer["RMS Settings"]</a>
+            </li>
+        }
+        @if (showCostEstimatorTab)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentDetailCostEstimatorSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailCostEstimatorSettingsTabContent" aria-selected="false" href="#agentDetailCostEstimatorSettingsTabContent">@SharedLocalizer["Cost Estimator Settings"]</a>
+            </li>
+        }
+        @if (!detailPagePermission.HasLimitedRead)
+        {
+            <li class="nav-item">
+                <a class="nav-link @(string.IsNullOrEmpty(Model.Remarks) ? null : "has-remarks")" id="agentDetailRemarksTab" data-toggle="tab" role="tab" aria-controls="agentDetailRemarksTabContent" aria-selected="false" href="#agentDetailRemarksTabContent">@SharedLocalizer["Remarks"]</a>
+            </li>
+        }
+        @if (!addMode)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentDetailContactsTab" data-toggle="tab" role="tab" aria-controls="agentDetailContactsTabContent" aria-selected="false" href="#agentDetailContactsTabContent">@SharedLocalizer["Contact Persons"]</a>
+            </li>
+        }
+        @if (isShowCustomFieldOn && Model.SysCustomFieldSettings != null && Model.SysCustomFieldSettings.Any())
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="agentCustomFieldTab" data-toggle="tab" role="tab" aria-controls="agentCustomFieldTabContent" aria-selected="false" href="#agentCustomFieldTabContent">@SharedLocalizer[settings.AuxCustomFieldsTabLabel]</a>
+            </li>
+        }
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane page-content cpiMainEntry show active" id="agentDetailMainTabContent" role="tabpanel" aria-labelledby="agentDetailMainTab">
+            <div class="form-row">
+                <div class="col-sm-6 col-md-6 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="Language"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="Language" readonly />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.LanguageWithLink("Language", Model.Language))
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="form-row mt-4">
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="PhoneNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="PhoneNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="PhoneNumber"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="FaxNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="FaxNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="FaxNumber"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="MobileNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="MobileNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="MobileNumber"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="EMail"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="EMail" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="EMail"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="WebSite"></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-sm" asp-for="WebSite" asp-is-readonly="@isReadOnly" />
+                            @if (!string.IsNullOrEmpty(Model.WebSite))
+                            {
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary p-0 pl-2 pr-2" type="button" onClick="window.open('@Model.WebSite')" title="@SharedLocalizer["Open website in new window."]"><i class="fal fa-external-link"></i></button>
+                                </div>
+                            }
+                        </div>
+                        <span asp-validation-for="WebSite"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane page-content cpiMainEntry" id="agentDetailAddressTabContent" role="tabpanel" aria-labelledby="agentDetailAddressTab">
+            <fieldset>
+                <div class="form-row">
+                    <div class="col-md-7 col-lg-6 col-xl-4">
+                        <div class="form-group float-label">
+                            <label asp-for="Address1"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="Address1" asp-is-readonly="@isReadOnly" />
+                            <span asp-validation-for="Address1"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-7 col-lg-6 col-xl-4">
+                        <input type="text" class="form-control form-control-sm" asp-for="Address2" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="Address2"></span>
+                    </div>
+                </div>
+                <div class="form-row pt-1">
+                    <div class="col-md-7 col-lg-6 col-xl-4">
+                        <input type="text" class="form-control form-control-sm" asp-for="Address3" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="Address3"></span>
+                    </div>
+                </div>
+                <div class="form-row pt-1 pb-1">
+                    <div class="col-md-7 col-lg-6 col-xl-4">
+                        <input type="text" class="form-control form-control-sm" asp-for="Address4" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="Address4"></span>
+                    </div>
+                </div>
+            </fieldset>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="City"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="City" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="City"></span>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 col-xl-3">
+                    <div class="form-group float-label">
+                        <label asp-for="State"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="State" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="State"></span>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-2 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="ZipCode"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="ZipCode" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="ZipCode"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="Country"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="Country" disabled />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country, showLinkButton: User.IsInSystem(CountryLookupService.CountrySource)))
+                            <span asp-validation-for="Country"></span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-8 col-lg-9 col-xl-7">
+                    <div class="form-group float-label">
+                        <label for="Country_@(ViewData["PageId"])_Name">@countryNameLabel</label>
+                        <input type="text" class="form-control form-control-sm" id="Country_@(ViewData["PageId"])_Name" readonly="readonly" asp-for="CountryName" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane page-content cpiMainEntry" id="agentDetailPOBoxAddressTabContent" role="tabpanel" aria-labelledby="agentDetailPOBoxAddressTab">
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="POAddress1"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POAddress1" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POAddress1"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress2" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress2"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress3" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress3"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1 pb-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress4" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress4"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="POCity"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POCity" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POCity"></span>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 col-xl-3">
+                    <div class="form-group float-label">
+                        <label asp-for="POState"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POState" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POState"></span>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-2 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="POZipCode"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POZipCode" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POZipCode"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="POCountry"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="POCountry" disabled />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("POCountry", countryLabel, countryNameLabel, Model.POCountry, showLinkButton: User.IsInSystem(CountryLookupService.CountrySource)))
+                            <span asp-validation-for="POCountry"></span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-8 col-lg-9 col-xl-7">
+                    <div class="form-group float-label">
+                        <label for="POCountry_@(ViewData["PageId"])_Name">@countryNameLabel</label>
+                        <input type="text" class="form-control form-control-sm" id="POCountry_@(ViewData["PageId"])_Name" readonly="readonly" asp-for="POCountryName" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (hasAMSSettings)
+        {
+            <div class="tab-pane page-content cpiMainEntry" id="agentDetailAMSSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailAMSSettingsTab">
+                <div class="form-row">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                        @if (amsSettings.HasAgentResp)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <label for="GenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="GenerateAgentResponsibilityLetter" name="GenerateAgentResponsibilityLetter" checked="@(Model.GenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
+                        @if (amsSettings.HasAgentResp)
+                        {
+                            <div class="form-group float-label confirmation-cover-letter">
+                                <label asp-for="AgentResponsibilityCoverLetter"></label>
+                                @if (isReadOnly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" asp-for="AgentResponsibilityCoverLetter" disabled />
+                                }
+                                else
+                                {
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("AgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSAgentResponsibilityCoverLetter).Name, Model.AgentResponsibilityCoverLetter))
+                                    <span asp-validation-for="AgentResponsibilityCoverLetter"></span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="GenerateAgentResponsibilityLetter" class="boolean" />
+            <input type="hidden" asp-for="AgentResponsibilityCoverLetter" />
+        }
+
+        @if (hasFFSettings)
+        {
+            <div class="tab-pane page-content cpiMainEntry" id="agentDetailFFSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailFFSettingsTab">
+                <div class="form-row">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                        @if (ffSettings.HasAgentResp)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <label for="FFGenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="FFGenerateAgentResponsibilityLetter" name="FFGenerateAgentResponsibilityLetter" checked="@(Model.FFGenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
+                        @if (ffSettings.HasAgentResp)
+                        {
+                            <div class="form-group float-label confirmation-cover-letter">
+                                <label asp-for="FFAgentResponsibilityCoverLetter"></label>
+                                @if (isReadOnly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" asp-for="FFAgentResponsibilityCoverLetter" disabled />
+                                }
+                                else
+                                {
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("FFAgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(FFAgentResponsibilityCoverLetter).Name, Model.FFAgentResponsibilityCoverLetter))
+                                    <span asp-validation-for="FFAgentResponsibilityCoverLetter"></span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="FFGenerateAgentResponsibilityLetter" class="boolean" />
+            <input type="hidden" asp-for="FFAgentResponsibilityCoverLetter" />
+        }
+
+        @if (hasRMSSettings)
+        {
+            <div class="tab-pane page-content" id="agentDetailRMSSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailRMSSettingsTab">
+                <div class="form-row cpiMainEntry">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                        @if (rmsSettings.HasAgentResp)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <label for="RMSGenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="RMSGenerateAgentResponsibilityLetter" name="RMSGenerateAgentResponsibilityLetter" checked="@(Model.RMSGenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
+                        @if (rmsSettings.HasAgentResp)
+                        {
+                            <div class="form-group float-label confirmation-cover-letter">
+                                <label asp-for="RMSAgentResponsibilityCoverLetter"></label>
+                                @if (isReadOnly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" asp-for="RMSAgentResponsibilityCoverLetter" disabled />
+                                }
+                                else
+                                {
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("RMSAgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(RMSAgentResponsibilityCoverLetter).Name, Model.RMSAgentResponsibilityCoverLetter))
+                                    <span asp-validation-for="RMSAgentResponsibilityCoverLetter"></span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>                
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="RMSGenerateAgentResponsibilityLetter" class="boolean" />
+            <input type="hidden" asp-for="RMSAgentResponsibilityCoverLetter" />
+        }
+
+        @if (showCostEstimatorTab)
+        {
+            <div class="tab-pane page-content" id="agentDetailCostEstimatorSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailCostEstimatorSettingsTab">                
+                <div class="form-row">
+                    <div class="col-8">
+                        @await Html.PartialAsync("_GridCEFees", childViewModel)
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!detailPagePermission.HasLimitedRead)
+        {
+            <div class="tab-pane page-content cpiMainEntry" id="agentDetailRemarksTabContent" role="tabpanel" aria-labelledby="agentDetailRemarksTab">
+                <div class="form-row">
+                    <div class="col">
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks">Remarks</textarea>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!addMode)
+        {
+            <div class="tab-pane" id="agentDetailContactsTabContent" role="tabpanel" aria-labelledby="agentDetailContactsTab">
+                @await Html.PartialAsync("_GridContactPersons", childViewModel)
+            </div>
+        }
+        @if (isShowCustomFieldOn && Model.SysCustomFieldSettings != null && Model.SysCustomFieldSettings.Any())
+        {
+            <div class="tab-pane" id="agentCustomFieldTabContent" role="tabpanel" aria-labelledby="agentCustomFieldTab">
+                <div class="page-content cpiMainEntry">
+                    <div class="form-row">
+                        @foreach (var item in Model.SysCustomFieldSettings)
+                        {
+                            var customFieldValue = Model.GetType().GetProperty(item.ColumnName).GetValue(Model, null);
+
+                            object htmlAttributes;
+                            if (@isReadOnly)
+                            {
+                                htmlAttributes = new
+                                {@@class = "form-control form-control-sm",
+                                    @readonly = "true"
+                                };
+                            }
+                            else
+                            {
+                                htmlAttributes = new
+                                {@@class = "form-control form-control-sm"
+                                };
+                            }
+
+                            <div class="col-md-4">
+
+                                @if (item.EditorType.ToLower() != "checkbox")
+                                {
+                                    <div class="form-group float-label">
+                                        <label>@SharedLocalizer[item.ColumnLabel]</label>
+                                        @if (item.EditorType.ToLower() == "textbox")
+                                        {
+                                    @Html.TextBox(item.ColumnName + (isReadOnly ? "_" : ""), customFieldValue, "", htmlAttributes)
+                                        }
+                                        else if (item.EditorType.ToLower() == "textarea")
+                                        {
+                                    @Html.TextArea(item.ColumnName + (isReadOnly ? "_" : ""), (string)customFieldValue, 10, 0, htmlAttributes)
+                                        }
+                                        else if (item.EditorType.ToLower() == "combobox")
+                                        {
+                                            if (isReadOnly)
+                                            {
+                                        @Html.TextBox(item.ColumnName + "_", customFieldValue, "", htmlAttributes)
+                                            }
+                                            else
+                                            {
+                                                @await Component.InvokeAsync("ComboBox", new { name = item.ColumnName, controller = "Agent", defaultValue = (string)customFieldValue })
+                                            }
+
+                                        }
+                                        else if (item.EditorType.ToLower() == "datepicker")
+                                        {
+                                            if (isReadOnly)
+                                            {
+                                                customFieldValue = customFieldValue != null ? ((DateTime?)Convert.ToDateTime(customFieldValue)).FormatToDisplay() : "";
+                                        @Html.TextBox(item.ColumnName + "_", customFieldValue, "", htmlAttributes)
+                                            }
+                                            else
+                                            {
+                                                @await Component.InvokeAsync("DatePicker", new DatePickerOptions(item.ColumnName) { Screen = pageId.ToString(), Value = customFieldValue == null ? (DateTime?)null : Convert.ToDateTime(customFieldValue) })
+                                            }
+                                        }
+
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="form-check form-check-inline">
+                                        @if (isReadOnly)
+                                        {
+                                    @Html.CheckBox(item.ColumnName + "_", customFieldValue == null ? false : Convert.ToBoolean(customFieldValue), new { id = $"{item.ColumnName}_{pageId}", @class = "form-check-input", @disabled = "disabled" })
+                                        }
+                                        else
+                                        {
+                                            @Html.CheckBox(item.ColumnName, customFieldValue == null ? false : Convert.ToBoolean(customFieldValue), new { id = $"{item.ColumnName}_{pageId}", @class = "form-check-input"})
+                                        }
+                                        <label class="form-check-label" for="@($"{item.ColumnName}_{pageId}")">@SharedLocalizer[item.ColumnLabel]</label>
+                                    </div>
+                                }
+                            </div>
+
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    agentPage.initialize(@id);
+</script>

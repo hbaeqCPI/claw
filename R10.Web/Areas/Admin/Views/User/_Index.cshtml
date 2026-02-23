@@ -1,0 +1,7 @@
+﻿@model PageViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["ActivePage"] = "userSetupPage";
+}
+
+@await Html.PartialPageAsync(Model.Page, Model)

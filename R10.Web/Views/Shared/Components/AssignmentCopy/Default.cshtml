@@ -1,0 +1,226 @@
+﻿@model AssignmentCopyOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var screen = "assignmentCopyDialog";
+    var grid = $"assignmentCopyGrid_{screen}";
+}
+
+<script>
+    function refreshAssignmentCopyGrid() {
+        const grid = $("#@grid").data("kendoGrid");
+        grid._selectedIds = {};
+        grid.clearSelection();
+        grid.dataSource.read();
+    }
+
+    function getComboParam() {
+        return { excludeId: @Model.ParentId}
+    }
+
+    function assignmentCopySelectionChange() {
+        const copyButton = $("#@screen").find("#copy");
+
+        const grid = $("#@grid").data("kendoGrid");
+        if (grid.selectedKeyNames().length > 0)
+            copyButton.removeAttr("disabled");
+        else
+            copyButton.attr("disabled", "disabled");
+    }
+
+    function getAssignmentCopyParam() {
+        let form = $("#assignmentCopyDialog").find("form")[0];
+        form = $(form);
+
+        const param = {
+            caseNumber: form.find("input[name = 'CaseNumber']").val(),
+            country: form.find("input[name = 'Country']").val(),
+            subCase: form.find("input[name = 'SubCase']").val(),
+            appNumber: form.find("input[name = 'AppNumber']").val(),
+            assignmentFrom: form.find("input[name = 'AssignmentFrom']").val(),
+            assignmentTo: form.find("input[name = 'AssignmentTo']").val(),
+            reel: form.find("input[name = 'Reel']").val(),
+            frame: form.find("input[name = 'Frame']").val(),
+            parentId: form.find("#ParentId").val()
+        };
+        return param;
+    }
+</script>
+
+<div class="modal fade" id="assignmentCopyDialog" data-backdrop="static" tabindex="-1"
+     role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="AssignmentCopySave">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title pl-2">@Localizer["Select Copy Source"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <input type="hidden" name="ParentId" value="@Model.ParentId" />
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label>@Localizer[Model.CaseNumberLabel]</label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "CaseNumber",
+                                            textProperty = "Text",
+                                            valueProperty = "Text",
+                                            controller = Model.Controller,
+                                            area = Model.Area,
+                                            action = "GetCopyCaseNumberList",
+                                            onChange = "refreshAssignmentCopyGrid",
+                                            data = "getComboParam",
+                                            screen = screen
+                                        })
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group float-label">
+                                    <label asp-for="Country"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "Country",
+                                            textProperty = "Text",
+                                            valueProperty = "Text",
+                                            controller = Model.Controller,
+                                            area = Model.Area,
+                                            action = "GetCopyCountryList",
+                                            onChange = "refreshAssignmentCopyGrid",
+                                            data = "getComboParam",
+                                            screen = screen
+                                        })
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group float-label">
+                                    <label asp-for="SubCase"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "SubCase",
+                                            textProperty = "Text",
+                                            valueProperty = "Text",
+                                            controller = Model.Controller,
+                                            area = Model.Area,
+                                            action = "GetCopySubCaseList",
+                                            onChange = "refreshAssignmentCopyGrid",
+                                            data = "getComboParam",
+                                            screen = screen
+                                        })
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="AppNumber"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "AppNumber",
+                                            textProperty = "Text",
+                                            valueProperty = "Text",
+                                            controller = Model.Controller,
+                                            area = Model.Area,
+                                            action = "GetCopyAppNumberList",
+                                            onChange = "refreshAssignmentCopyGrid",
+                                            data = "getComboParam",
+                                            screen = screen
+                                        })
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="AssignmentFrom"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "AssignmentFrom",
+                                            controller = Model.Controller,
+                                            action = "GetPicklistData",
+                                            onChange = "refreshAssignmentCopyGrid"
+                                        })
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="AssignmentTo"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "AssignmentTo",
+                                            controller = Model.Controller,
+                                            action = "GetPicklistData",
+                                            onChange = "refreshAssignmentCopyGrid"
+                                        })
+
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group float-label">
+                                    <label asp-for="Reel"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "Reel",
+                                            controller = Model.Controller,
+                                            action = "GetPicklistData",
+                                            onChange = "refreshAssignmentCopyGrid"
+                                        })
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group float-label">
+                                    <label asp-for="Frame"></label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                                        {
+                                            name = "Frame",
+                                            controller = Model.Controller,
+                                            action = "GetPicklistData",
+                                            onChange = "refreshAssignmentCopyGrid"
+                                        })
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @(Html.Kendo().Grid<AssignmentViewModel>()
+                        .Name(grid)
+                        .Columns(columns =>
+                        {
+                            columns.Bound(a => a.AssignmentFrom).ClientHeaderTemplate(@Localizer["From/To"]).ClientTemplate("<div>#:AssignmentFrom#</div><div>#:AssignmentTo#</div>");
+                            //columns.Bound(a => a.AssignmentTo);
+                            columns.Bound(a => a.AssignmentStatus).Width(180);
+                            columns.Bound(a => a.AssignmentDate).Format("{0:dd-MMM-yyyy}").Width(180);
+                            columns.Bound(a => a.Reel).Width(100);
+                            columns.Bound(a => a.Frame).Width(100);
+                            columns.Select().Width(50);
+
+                        })
+                        .Pageable()
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .Events(ev => ev.Change("assignmentCopySelectionChange"))
+                        .PersistSelection()
+                        .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .Model(model => model.Id(a => a.HistoryId))
+                        .PageSize(10)
+                        .Read(read => read.Action("CopyAssignmentRead", Model.Controller)
+                        .Data("getAssignmentCopyParam")
+                        )
+                        )
+                        .HtmlAttributes(new { @class = "kendo-Grid" })
+                        )
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                    <button type="button" class="btn btn-primary" disabled id="copy" data-url="@Url.Action("CopyAssignment", Model.Controller)"><i class="fa fa-copy pr-2"></i>@Localizer["Copy"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<style>
+    button {
+        cursor: not-allowed;
+    }
+</style>

@@ -1,0 +1,435 @@
+﻿@model IEnumerable<PatCaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@inject IAttorneyService _attyService
+@inject IClientService ClientService
+@inject IStringLocalizer<PatentResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    var patSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[patSettings.LabelClient ?? ""];
+    var clientNameLabel = Localizer[patSettings.LabelClientName ?? ""];
+
+    var countryLabel = SharedLocalizer["Country"];
+    var countryNameLabel = SharedLocalizer["Country Name"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+
+    var userWidgetId = widget.Id.ToString() + "-expiring-patents";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var template = string.IsNullOrEmpty(widget.Template) ? $"<div class='name d-flex  justify-content-between'><span><a href='./Patent/CountryApplication/detail/#=AppId#'>#=kendo.htmlEncode(CaseNumber)# #= Country == null ? '' : kendo.htmlEncode(Country)# #= SubCase == null ? '' : kendo.htmlEncode(SubCase)# </a></span></div><div class='title small ellipsis'>#= AppTitle == null ? '&nbsp;' : kendo.htmlEncode(AppTitle)#</div><div class='title small ellipsis'>{Localizer["Expiration Date"]}: #= ExpDate == null ? '' : kendo.format('{{0:dd-MMM-yyyy}}', ExpDate)#</div>" : widget.Template;
+
+
+    bool showAllowPaging = userSettings.Property("ShowAllowPaging") != null ? (userSettings["ShowAllowPaging"] ?? false).Value<bool>() : false;
+    bool allowPaging = !showAllowPaging || userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? userSettings.Property("PageSize") != null ? (userSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+
+    if (userSettings.Property("Countries") != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)userSettings.Property("Countries").Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    bool showAttorneyOption = widgetSettings.Property("ShowAttorney") != null ? (widgetSettings["ShowAttorney"] ?? false).Value<bool>() : false;
+    bool showAttyPositionOption = widgetSettings.Property("ShowAttorneyPosition") != null ? (widgetSettings["ShowAttorneyPosition"] ?? false).Value<bool>() : false;
+    bool showClientOption = widgetSettings.Property("ShowClient") != null ? (widgetSettings["ShowClient"] ?? false).Value<bool>() : false;
+
+    List<AttorneyListViewModel> attorneys = new List<AttorneyListViewModel>();
+
+    if (userSettings.Property("Attorneys") != null)
+    {
+        try
+        {
+            int[] attyFilter = ((JArray)userSettings.Property("Attorneys").Value).Select(a => (int)a).ToArray();
+
+            if (attyFilter.Count() > 0)
+            {
+                attorneys = await _attyService.QueryableList
+                                        .Where(a => attyFilter.Contains(a.AttorneyID))
+                                        .Select(a => new AttorneyListViewModel
+                                        {
+                                            AttorneyID = a.AttorneyID,
+                                            AttorneyCode = a.AttorneyCode,
+                                            AttorneyName = a.AttorneyName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<AttorneyListViewModel> attorneyPositions = new List<AttorneyListViewModel>();
+
+    List<AttorneyListViewModel> fixedAttyPositions = new List<AttorneyListViewModel>()
+{
+        new AttorneyListViewModel {AttorneyID = 0, AttorneyCode = "", AttorneyName = ""},
+        new AttorneyListViewModel {AttorneyID = 1, AttorneyCode = "Attorney1", AttorneyName = "Attorney1"},
+        new AttorneyListViewModel {AttorneyID = 2, AttorneyCode = "Attorney2", AttorneyName = "Attorney2"},
+        new AttorneyListViewModel {AttorneyID = 3, AttorneyCode = "Attorney3", AttorneyName = "Attorney3"},
+        new AttorneyListViewModel {AttorneyID = 4, AttorneyCode = "Attorney4", AttorneyName = "Attorney4"},
+        new AttorneyListViewModel {AttorneyID = 5, AttorneyCode = "Attorney5", AttorneyName = "Attorney5"}
+    };
+
+    if (userSettings.Property("AttorneyPositions") != null)
+    {
+        try
+        {
+            int[] attyFilter = ((JArray)userSettings.Property("AttorneyPositions").Value).Select(a => (int)a).ToArray();
+
+            if (attyFilter.Count() > 0)
+            {
+                attorneyPositions = fixedAttyPositions.Where(a => attyFilter.Contains(a.AttorneyID))
+                                .Select(a => new AttorneyListViewModel
+                                {
+                                    AttorneyID = a.AttorneyID,
+                                    AttorneyCode = a.AttorneyCode,
+                                    AttorneyName = a.AttorneyName
+                                })
+                                .ToList();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+
+<script>
+$(document).ready(function () {
+    var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+    var attyList = [@String.Join(",", attorneys.Select(a => a.AttorneyID).ToList())];
+    var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+    var attyPositionsList = [@String.Join(",", attorneyPositions.Select(a => a.AttorneyID).ToList())];
+    var refresh = false;
+
+    $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+    $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+        if (refresh) {
+            $("#@widget.Id .refresh").click();
+        }
+    });
+
+    $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+    $(document).off("change", "#Country_@userWidgetId");
+    $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+        var item = $.inArray($(this).data("id"), countryList);
+
+        if (item !== -1) {
+            countryList.splice(item, 1);
+            $(this).closest("li").remove();
+
+            saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+        }
+    });
+    $(document).on("change", "#Country_@userWidgetId", function (e) {
+        var country = $(this).data("kendoMultiColumnComboBox");
+
+        if (country.selectedIndex >= 0) {
+            var dataItem = country.dataItem(country.selectedIndex);
+
+            var countryId = dataItem.CountryID;
+            var countryCode = dataItem.Country;
+            var countryName = dataItem.CountryName;
+
+            if ($.inArray(countryId, countryList) == -1) {
+                countryList.push(countryId);
+                $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        }
+
+        country.value("");
+    });
+
+    $(document).off("click", "#attorneyFilter_@userWidgetId .delete-atty");
+    $(document).off("change", "#AttorneyCode_@userWidgetId");
+    $(document).on("click", "#attorneyFilter_@userWidgetId .delete-atty", function (e) {
+        var item = $.inArray($(this).data("id"), attyList);
+
+        if (item !== -1) {
+            attyList.splice(item, 1);
+            $(this).closest("li").remove();
+
+            saveSetting(@widget.Id, `{ Attorneys: [${attyList.toString()}] }`, function () { refresh = true; });
+        }
+    });
+    $(document).on("change", "#AttorneyCode_@userWidgetId", function (e) {
+        var atty = $(this).data("kendoMultiColumnComboBox");
+
+        if (atty.selectedIndex >= 0) {
+            var dataItem = atty.dataItem(atty.selectedIndex);
+
+            var attyId = dataItem.AttorneyID;
+            var attyCode = dataItem.AttorneyCode;
+            var attyName = dataItem.AttorneyName;
+
+            if ($.inArray(attyId, attyList) == -1) {
+                attyList.push(attyId);
+                $("#attorneyFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="atty-code">${attyCode}</span><span class="atty-name">${attyName}</span></div><div class="delete-filter delete-atty" data-id="${attyId}" title="Remove ${attyCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                saveSetting(@widget.Id, `{ Attorneys: [${attyList.toString()}] }`, function () { refresh = true; });
+            }
+        }
+
+        atty.value("");
+    });
+
+    $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+    $(document).off("change", "#ClientCode_@userWidgetId");
+    $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+        var item = $.inArray($(this).data("id"), clientList);
+
+        if (item !== -1) {
+            clientList.splice(item, 1);
+            $(this).closest("li").remove();
+
+            saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+        }
+    });
+    $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+        var client = $(this).data("kendoMultiColumnComboBox");
+
+        if (client.selectedIndex >= 0) {
+            var dataItem = client.dataItem(client.selectedIndex);
+
+            var clientId = dataItem.ClientID;
+            var clientCode = dataItem.ClientCode;
+            var clientName = dataItem.ClientName;
+
+            if ($.inArray(clientId, clientList) == -1) {
+                clientList.push(clientId);
+                $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        }
+
+        client.value("");
+    });
+
+    $(document).off("click", "#attorneyPositionFilter_@userWidgetId .delete-attyPos");
+    $(document).off("change", "#AttorneyPosition_@userWidgetId");
+    $(document).on("change", "#AttorneyPosition_@userWidgetId", function (e) {
+        var attyPositions = $(this).data("kendoDropDownList");
+
+        if (attyPositions.selectedIndex >= 0) {
+            var dataItem = attyPositions.dataItem(attyPositions.selectedIndex);
+
+            var attyId = dataItem.AttorneyID;
+            var attyCode = dataItem.AttorneyCode;
+            var attyName = dataItem.AttorneyName;
+
+            if ($.inArray(attyId, attyPositionsList) == -1) {
+                attyPositionsList.push(attyId);
+                $("#attorneyPositionFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="atty-code">${attyCode}</span></div><div class="delete-filter delete-attyPos" data-id="${attyId}" title="Remove ${attyCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                saveSetting(@widget.Id, `{ AttorneyPositions: [${attyPositionsList.toString()}] }`, function () { refresh = true; });
+            }
+        }
+
+        attyPositions.value("");
+    });
+    $(document).on("click", "#attorneyPositionFilter_@userWidgetId .delete-attyPos", function (e) {
+        var item = $.inArray($(this).data("id"), attyPositionsList);
+
+        if (item !== -1) {
+            attyPositionsList.splice(item, 1);
+            $(this).closest("li").remove();
+
+            saveSetting(@widget.Id, `{ AttorneyPositions: [${attyPositionsList.toString()}] }`, function () { refresh = true; });
+        }
+    });
+});
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "CountryApplicationLookup", "Patent", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        @if (showAttyPositionOption)
+        {
+            <ul id="attorneyPositionFilter_@userWidgetId" class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@SharedLocalizer["Attorney Position"]</span>
+                    <span>
+                        @(Html.Kendo().DropDownList()
+                              .Name("AttorneyPosition_"+@userWidgetId)
+                              .DataTextField("AttorneyName")
+                              .DataValueField("AttorneyID")
+                              .HtmlAttributes(new { style = "width: 100px" })
+                              .BindTo(fixedAttyPositions)
+                              .Events(events => events.Open("function() {this.element.getKendoDropDownList().list.find('li.k-item').first().hide();}"))
+                              )
+                    </span>
+                </li>
+                @foreach (AttorneyListViewModel atty in attorneyPositions)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <div>
+                            <span class="atty-code">@atty.AttorneyCode</span>
+                        </div>
+                        <div class="delete-filter delete-attyPos" data-id="@atty.AttorneyID" title="Remove @atty.AttorneyCode"><i class="fal fa-trash-alt"></i></div>
+                    </li>
+                }
+            </ul>
+        }
+        @if (showAttorneyOption)
+        {
+            <ul id="attorneyFilter_@userWidgetId" class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@SharedLocalizer["Attorney"]</span>
+                    <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.AttorneyID("AttorneyCode", Localizer["Attorney"], Localizer["Attorney Name"], "Attorney", "Shared", userWidgetId))</span>
+                </li>
+                @foreach (AttorneyListViewModel atty in attorneys)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <div>
+                            <span class="atty-code">@atty.AttorneyCode</span>
+                            <span class="atty-name">@atty.AttorneyName</span>
+                        </div>
+                        <div class="delete-filter delete-atty" data-id="@atty.AttorneyID" title="Remove @atty.AttorneyCode"><i class="fal fa-trash-alt"></i></div>
+                    </li>
+                }
+            </ul>
+        }
+        @if (showClientOption)
+        {
+            <ul id="clientFilter_@userWidgetId" class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@clientLabel</span>
+                    <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", @clientLabel, @clientNameLabel, "Client", "Shared", userWidgetId))</span>
+                </li>
+                @foreach (ClientListViewModel client in clients)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <div>
+                            <span class="client-code">@client.ClientCode</span>
+                            <span class="client-name">@client.ClientName</span>
+                        </div>
+                        <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .ServerOperation(false)
+        )
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

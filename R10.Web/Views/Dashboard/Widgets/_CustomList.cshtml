@@ -1,0 +1,36 @@
+﻿@model IEnumerable<ListDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IProductService ProductService
+@inject IClientService ClientService
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var template = "<div class='name d-flex  justify-content-between'><span><a target='_blank' href='#= System == 'G' ? './GeneralMatter/Matter/DetailLink/' : System == 'T' ? './Trademark/TmkTrademark/DetailLink/' : './Patent/CountryApplication/DetailLink/'##:Id#'>#:CaseNumber#</a></span></div><div class='title small ellipsis'>#= Title == null ? '&nbsp;' : kendo.htmlEncode(Title)#</div>";
+}
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(true).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(9)
+        .ServerOperation(false)
+        )
+)

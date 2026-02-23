@@ -1,0 +1,610 @@
+﻿@model PageViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@inject ISystemSettings<PatSetting> PatSettings
+@inject ISystemSettings<TmkSetting> TmkSettings
+@inject ISystemSettings<GMSetting> GmSettings
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAuthorizationService AuthorizationService
+@{
+    var settings = await Settings.GetSetting();
+    var patSettings = await PatSettings.GetSetting();
+    var tmkSettings = await TmkSettings.GetSetting();
+    var gmSettings = await GmSettings.GetSetting();
+    var attorneyLabel = Localizer["Attorney(s)"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var clientLabel = Localizer[settings.LabelClient + "(s)"];
+    var clientNameLabel = Localizer[settings.LabelClientName ?? "Client Name"];
+
+    var isPatDocVerificationOn = (await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded;
+    var isTmkDocVerificationOn = (await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded; ;
+    var isGmDocVerificationOn = (await AuthorizationService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded; ;
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var additionalData = "function() {return documentVerificationPage.getSystems(documentVerificationPage.refineSearchContainer);}";
+
+    var defaultResponsibleId = ViewData["DefaultResponsibleId"] == null ? "" : ((string)(ViewData["DefaultResponsibleId"] ?? ""));
+    var inDocketingGroup = (bool)(ViewData["InDocketingGroup"] ?? false);
+    var inReportingGroup = (bool)(ViewData["InReportingGroup"] ?? false);
+
+    var includeDeDocket = settings.IsDeDocketOn && settings.IncludeDeDocketInVerification;
+    var isDocketRequestOn = settings.IsDocketRequestOn;
+    var canRequestDocket = false;
+    if (isDocketRequestOn)
+    {
+        canRequestDocket = (await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanRequestDocket)).Succeeded ||
+            (await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanRequestDocket)).Succeeded ||
+            (await AuthorizationService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanRequestDocket)).Succeeded;
+    }
+}
+
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="documentVerificationSearchCaseInfoTabContent" role="tabpanel"
+    aria-labelledby="documentVerificationSearchCaseInfoTab">        
+        <div class="form-row">
+            <div class="col">
+                <input type="hidden" name="FromSystem" value="@Model.SystemType" />
+                <input id="SortCol" type="text" hidden name="SortCol" value="" />
+                <input id="SortOrder" type="text" hidden name="SortOrder" value="ASC" />
+                <div class="system-types">
+                    <div class="pb-1"><label>@Localizer["System"]</label></div>
+                    <div class="border rounded px-2 py-2 d-flex">                        
+                        @if (isPatDocVerificationOn)
+                        {
+                            <div class="form-check form-check-inline" style="width:40%">
+                                <input class="form-check-input" type="checkbox" name="Patent" @(Model.SystemType != null && Model.SystemType.Contains("P") ? "checked" : "") value="P" onclick="documentVerificationPage.refreshCriteriaDS();">
+                                <label class="form-check-label" for="Patent">@Localizer["Patent"]</label>
+                            </div>
+                        }
+                        @if (isTmkDocVerificationOn)
+                        {
+                            <div class="form-check form-check-inline" style="width:40%">
+                                <input class="form-check-input" type="checkbox" name="Trademark" @(Model.SystemType != null && Model.SystemType.Contains("T") ? "checked" : "") value="T" onclick="documentVerificationPage.refreshCriteriaDS();">
+                                <label class="form-check-label" for="Trademark">@Localizer["Trademark"]</label>
+                            </div>
+                        }
+                        @if (isGmDocVerificationOn)
+                        {
+                            <div class="form-check form-check-inline" style="width:40%">
+                                <input class="form-check-input" type="checkbox" name="GeneralMatter" @(Model.SystemType != null && Model.SystemType.Contains("G") ? "checked" : "") value="G" onclick="documentVerificationPage.refreshCriteriaDS();">
+                                <label class="form-check-label" for="GeneralMatter">@Localizer["General Matter"]</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (isDocketRequestOn || includeDeDocket)
+        {
+            <div id="requestDocketFilter">
+                <div class="form-row">
+                    <div class="col grid-options">
+                        <div class="form-group">
+                            <label class="option-name" for="IncludeDocumentRequest">@Localizer["Include Document Verification"]</label>
+                            <span>
+                                <label class="toggle-switch active">
+                                    <input name="IncludeDocumentRequest" checked type="checkbox" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                @if (isDocketRequestOn && canRequestDocket)
+                {
+                    <div class="form-row">
+                        <div class="col grid-options">
+                            <div class="form-group">
+                                <label class="option-name" for="IncludeRequestDocket">@Localizer["Include Request Docket"]</label>
+                                <span>
+                                    <label class="toggle-switch active">
+                                        <input name="IncludeRequestDocket" checked type="checkbox" class="toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="RequestDocketCompleted">@Localizer["Request Docket Completed?"]</label>
+                                <div>
+                                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-outline">
+                                            <input type="radio" name="RequestDocketCompleted" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                        </label>
+                                        <label class="btn btn-outline active">
+                                            <input type="radio" name="RequestDocketCompleted" checked class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                        </label>
+                                        <label class="btn btn-outline">
+                                            <input type="radio" name="RequestDocketCompleted" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (includeDeDocket)
+                {
+                    <div class="form-row">
+                        <div class="col grid-options">
+                            <div class="form-group">
+                                <label class="option-name" for="IncludeDeDocket">@Localizer["Include De-Docket Instruction"]</label>
+                                <span>
+                                    <label class="toggle-switch active">
+                                        <input name="IncludeDeDocket" checked type="checkbox" class="toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="DeDocketCompleted">@Localizer["De-Docket Completed?"]</label>
+                                <div>
+                                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-outline">
+                                            <input type="radio" name="DeDocketCompleted" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                        </label>
+                                        <label class="btn btn-outline active">
+                                            <input type="radio" name="DeDocketCompleted" checked class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                        </label>
+                                        <label class="btn btn-outline">
+                                            <input type="radio" name="DeDocketCompleted" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        <div class="form-row">
+            <div class="col">
+                <div id="OrphanDocSystem" class="d-none">
+                    <label class="option-name" for="showOrphanage">@Localizer["Show Unlinked Documents"]</label>
+                    <span>
+                        <label class="toggle-switch">
+                            <input name="showOrphanage" type="checkbox" checked class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row" id="docNameFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Document"]</label>                    
+                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("DocNames") { 
+                        DataTextProperty = "DocName",                        
+                        Controller = "DocumentVerification",
+                        Action = "GetDocumentNames",
+                        Area = "Shared",
+                        Data = @additionalData                       
+                    })
+                </div>
+            </div>
+        </div>
+        <div class="form-row" id="uploadedByFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Uploaded By"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("DocUploadedBys")
+                                    .DataTextField("UpdatedBy")
+                                    .DataValueField("UpdatedBy")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetDocumentUploadedBy", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                        })
+                                        .ServerFiltering(false);
+                                    })
+                                    )                   
+                </div>
+            </div>
+        </div>
+        <div class="form-row" id="uploadedDateFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Uploaded Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromUploadedDate"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Uploaded Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToUploadedDate"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row" id="countriesFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Country"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("Countries")
+                                    .DataTextField("Country")
+                                    .DataValueField("Country")
+                                    .AutoBind(false)
+                                    .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(countryLabel, countryNameLabel))
+                                    .ItemTemplate(ComboBoxHelper.GetItemTemplate("Country", "CountryName"))
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetCountryList", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                        })
+                                        .ServerFiltering(false);
+                                    })
+                                    .AutoWidth(true)
+                                    )
+                </div>
+            </div>
+        </div>
+        <div class="form-row" id="sourceFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Source"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("Sources")
+                                    .DataTextField("Source")
+                                    .DataValueField("Source")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetSourceList", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                        })
+                                        .ServerFiltering(false);
+                                    })
+                                    )
+                </div>
+            </div>
+        </div>        
+        <div class="form-row" id="respDocketingFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Responsible (Docketing)"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("RespDocketings")
+                                    .DataTextField("Responsible")
+                                    .DataValueField("ResponsibleId")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetRespDocketingList", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                        })
+                                        .ServerFiltering(false);
+                                    })                        
+                                    )
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label for="RespDocketingSwitch">@Localizer["Has Responsible (Docketing)?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline">
+                                <input type="radio" name="HasRespDocketing" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline">
+                                <input type="radio" name="HasRespDocketing" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline active">
+                                <input type="radio" name="HasRespDocketing" checked class="form-control" value="" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> 
+        <div class="form-row d-none" id="respReportingFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Responsible (Reporting)"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("RespReportings")
+                                    .DataTextField("Responsible")
+                                    .DataValueField("ResponsibleId")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetRespReportingList", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                        })
+                                        .ServerFiltering(false);
+                                    })
+                                    )
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label for="RespReportingSwitch">@Localizer["Has Responsible (Reporting)?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline">
+                                <input type="radio" name="HasRespReporting" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline">
+                                <input type="radio" name="HasRespReporting" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline active">
+                                <input type="radio" name="HasRespReporting" checked class="form-control" value="" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row d-none" id="docSentToClientFilter">           
+            <div class="col">
+                <div class="form-group">
+                    <label for="DocSentToClient">@Localizer["Document Sent?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline">
+                                <input type="radio" name="DocSentToClient" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline active">
+                                <input type="radio" name="DocSentToClient" checked class="form-control" value="false" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline">
+                                <input type="radio" name="DocSentToClient" class="form-control" value="" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        
+        <div class="form-row" id="actionTypeFilter">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Action Type"]</label>
+                    @(Html.Kendo().MultiSelect()
+                                    .Name("ActionTypes")
+                                    .DataTextField("ActionType")
+                                    .DataValueField("ActionType")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetDocVerificationActionType", "DocumentVerification", new { Area = "Shared" }).Data("function() {var data = documentVerificationPage.getSystems(documentVerificationPage.refineSearchContainer); data['getDistinctOnly'] = true; return data;}");
+                                        })
+                                        .ServerFiltering(false);
+                                    })
+                                    )
+                </div>
+            </div>
+        </div>        
+                
+        <div id="actionFilter" class="d-none">                      
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="DocCheckActSwitch">@Localizer["Document Check Docket?"]</label>
+                        <div>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="DocCheckAct" checked class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="DocCheckAct" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="DocCheckAct" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="ActVerifiedSwitch">@Localizer["Action Verified?"]</label>
+                        <div>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="ActVerified" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="ActVerified" checked class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="ActVerified" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="ActCheckDocketSwitch">@Localizer["Action Check Docket?"]</label>
+                        <div>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="ActCheckDocket" checked class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="ActCheckDocket" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="ActCheckDocket" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Action Created By"]</label>
+                        @(Html.Kendo().MultiSelect()
+                                .Name("ActCreatedBys")
+                                .DataTextField("CreatedBy")
+                                .DataValueField("CreatedBy")
+                                .AutoBind(false)
+                                .DataSource(source =>
+                                {
+                                    source.Read(read =>
+                                    {
+                                        read.Action("GetActionCreatedBy", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                    })
+                                    .ServerFiltering(false);
+                                })
+                                )                       
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Action Date Created From"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromActDateCreated"))
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Action Date Created To"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToActDateCreated"))
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Due Date From"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromDueDate"))
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Due Date To"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToDueDate"))
+                    </div>
+                </div>
+            </div>            
+        </div>
+    </div>
+    <div class="tab-pane" id="documentVerificationSearchEntitiesTabContent" role="tabpanel"
+    aria-labelledby="documentVerificationSearchEntitiesTab">
+        <div class="form-row">            
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@clientLabel</label>
+                    @(Html.Kendo().MultiSelect()
+                            .Name("Clients")
+                            .DataTextField("Client")
+                            .DataValueField("Client")
+                            .AutoBind(false)
+                            .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(clientLabel, clientNameLabel))
+                            .ItemTemplate(ComboBoxHelper.GetItemTemplate("Client", "ClientName"))
+                            .DataSource(source =>
+                            {
+                                source.Read(read =>
+                                {
+                                    read.Action("GetClientList", "DocumentVerification", new { Area = "Shared" }).Data(additionalData);
+                                })
+                                .ServerFiltering(false);
+                            })
+                            .AutoWidth(true)
+                        )
+                </div>
+            </div>           
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@attorneyLabel</label>
+                    @(Html.Kendo().MultiSelect()
+                            .Name("Attorneys")
+                            .DataTextField("Attorney")
+                            .DataValueField("Attorney")
+                            .AutoBind(false)
+                            .DataSource(source =>
+                            {
+                                source.Read(read =>
+                                {
+                                    read.Action("GetAttorneyList", "QuickDocketLookup", new { Area = "Shared" }).Data(additionalData);
+                                })
+                                .ServerFiltering(false);
+                            })
+                            .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(new Dictionary<string, int>() { { attorneyLabel, 250 }, { attorneyNameLabel, 500 } }))
+                            .ItemTemplate(ComboBoxHelper.GetItemTemplate(new Dictionary<string, int>() { { "Attorney", 250 }, { "AttorneyName", 500 } }))
+                            .AutoWidth(true)
+                            )
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter1">@Localizer["[1]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter1" id="AttorneyFilter1" checked value="A1">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter2">@Localizer["[2]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter2" id="AttorneyFilter2" checked value="A2">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter3">@Localizer["[3]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter3" id="AttorneyFilter3" checked value="A3">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter4">@Localizer["[4]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter4" id="AttorneyFilter4" checked value="A4">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter5">@Localizer["[5]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter5" id="AttorneyFilter5" checked value="A5">
+                </div>
+                <div class="form-check form-check-inline d-none" id="attyFilterR">
+                    <label class="form-check-label mr-1" for="AttorneyFilterR">@Localizer["[Responsible]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilterR" id="AttorneyFilterR" value="AR">
+                </div>
+                <div class="form-check form-check-inline d-none" id="attyFilterD">
+                    <label class="form-check-label mr-1" for="AttorneyFilterD">@Localizer["[Due date]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilterD" id="AttorneyFilterD" value="AD">
+                </div>
+                @if (settings.IsDocketRequestOn)
+                {
+                    <div class="form-check form-check-inline" id="attyFilterRD">
+                        <label class="form-check-label mr-1" for="AttorneyFilterRD">@Localizer["[Request Docket]"]</label>
+                        <input class="form-check-input" type="checkbox" name="AttorneyFilterRD" id="AttorneyFilterRD" value="ARD">
+                    </div>
+                }                
+            </div>
+        </div>        
+    </div>
+</div>
+<script>
+    documentVerificationPage.defaultResponsibleId = "@defaultResponsibleId";
+    documentVerificationPage.inDocketingGroup = @inDocketingGroup.ToString().ToLower();
+    documentVerificationPage.inReportingGroup = @inReportingGroup.ToString().ToLower();
+    documentVerificationPage.defaultSystems = "@Model.SystemType";
+</script>
+<style>
+    #documentVerificationSearchCaseInfoTabContent .form-check-label,
+    #documentVerificationSearchCaseInfoTabContent .btn-outline {
+        font-size: .8rem !important;
+    }
+</style>

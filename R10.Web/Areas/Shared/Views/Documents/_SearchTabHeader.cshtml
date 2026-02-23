@@ -1,0 +1,96 @@
+﻿@model DocPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var systemCount = Model.DocSystemList.Count;
+
+    //TN 20201202
+    var systemType = ViewData["DetailSystemType"] != null ? ViewData["DetailSystemType"].ToString() : "";
+    var screenCode = ViewData["DetailScreenCode"] != null ? ViewData["DetailScreenCode"].ToString() : null;
+    var dataKeyValue = ViewData["DetailDataKeyValue"] != null ? ViewData["DetailDataKeyValue"] : 0;
+    //TN 20201202
+
+    var labelMenuNew = Localizer["New Folder"].ToString();
+    var labelMenuView = Localizer["View"].ToString();
+    var labelMenuRename = Localizer["Rename"].ToString();
+    var labelMenuDelete = Localizer["Delete"].ToString();
+}
+
+<ul class="nav nav-tabs refine-search nav-tabs-vertical" role="tablist">
+    <li class="nav-item">
+        <a id="systemTab" href="#systemTabContent" class="nav-link active" data-toggle="tab" role="tab"
+           aria-controls="systemTabContent" title="@Localizer["System"]">@Localizer["System"]</a>
+    </li>
+</ul>
+
+<div class="accordion-content show">
+    <div class="tab-pane show form-sidebar active" id="systemTabContent" aria-labelledby="systemTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>@Localizer["System"]</label>
+                    <div class="btn-group btn-group-toggle flex-wrap" data-toggle="buttons" id="DocSystemType">
+                        @{
+                            for (var i = 0; i < systemCount; i++)
+                            {
+                                var value = Model.DocSystemList[i].Value;
+                                var text = Model.DocSystemList[i].Text;
+                                //TN 20201202
+                                <label class="btn btn-outline @(i == 0 && string.IsNullOrEmpty(systemType) ? "active" : !string.IsNullOrEmpty(systemType) && systemType == value ? "active" : "" )">
+                                    <input type="radio" name="SystemType" class="form-control" value="@value" data-role="option"> @Localizer[text]
+                                </label>
+                                //TN 20201202
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Description">@Localizer["Screen"]</label>
+                    @await Component.InvokeAsync("ComboBox", new
+               {
+                   name = "ScreenCode",
+                   action = "GetScreenPicklistData",
+                   controller = "Documents",
+                   area = "Shared",
+                   screen = Model.PageId,
+                   textProperty = "Text",
+                   valueProperty = "Value",
+                   data = "documentPage.getSystemTypeFilter",
+               })
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        documentPage.initializeSearchTabHeader({
+            containerId: "#@Model.PageId",
+            tabName: "#systemTab",
+            url: "@Context.Request.PathBase@Context.Request.Path",
+            title: "@Model.Title",
+            labelMenuNew: "@labelMenuNew",
+            labelMenuView: "@labelMenuView",
+            labelMenuRename: "@labelMenuRename",
+            labelMenuDelete: "@labelMenuDelete",
+            defaultScreenCode: "@screenCode",
+            defaultRecordId: "@dataKeyValue",
+            subSearchContainerId: "#documentSubSearchContainer",
+            searchResultContainerId: "#documentResultsContainer"
+        });
+
+        //For direct link from a record
+        @*if ('@screenCode' > '') {
+            var combobox = $("#ScreenCode_documentSearch").data("kendoComboBox");
+            combobox.dataSource.read();
+            refreshSubSearch('@screenCode');
+        }*@
+    });
+
+
+</script>

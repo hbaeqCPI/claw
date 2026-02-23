@@ -1,0 +1,12 @@
+﻿@model String
+@{
+    var width = ViewData["width"] == null ? "100" : ViewData["width"];
+    var data = (IEnumerable<string>)ViewData["data"];
+}
+
+@(Html.Kendo().ComboBoxFor(m => m)
+        .BindTo(data)
+        .Filter(FilterType.Contains)
+        .HtmlAttributes(new { style = "width: " + width + "%" })
+
+    )

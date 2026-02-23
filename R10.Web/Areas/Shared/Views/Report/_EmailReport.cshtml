@@ -1,0 +1,124 @@
+﻿@model EmailReportViewModel
+
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewBag.Title = "Email Report";
+}
+
+<div id="emailReportDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="emailReportDialogTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="emailReportForm" asp-action="SendEmail" asp-controller="Report" asp-area="Shared" method="post" enctype="multipart/form-data"
+                  data-success="@Localizer["Email has been sent successfully."]">
+                <div class="modal-header py-1">
+                    <h5 class="modal-title" id="setEntityFilterDialogLabel">@Localizer["Email Report"]</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body container-fluid py-0">
+
+                    <div id="errorSummary" class="alert alert-danger d-none alert-dismissible fade show" role="alert">
+                        <div class="content"></div>
+                        <button type="button" class="close alert-close" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="p-2">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Subject"]</label>
+                            <textarea type="text" name="Subject" class="form-control form-control-sm" rows="1" asp-for="Subject"></textarea>
+                        </div>
+                        <input asp-for="GeneratedReportName" hidden />
+                        <input asp-for="EmailReportName" hidden />
+                    </div>
+                    <div class="p-1">
+                        <div class="tab-content" id="erMainTabsContent">
+                                <div class="p-2">
+                                    <div class="input-group input-group-sm mb-1">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="toText">@Localizer["To"]</span>
+                                        </div>
+                                        <textarea type="text" name="To" class="form-control form-control-sm" rows="1" asp-for="To"></textarea>
+                                    </div>
+                                    <div class="input-group input-group-sm mb-1">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="ccText">@Localizer["Cc"]</span>
+
+                                        </div>
+                                        <textarea type="text" name="CopyTo" class="form-control form-control-sm" rows="1" asp-for="CopyTo"></textarea>
+                                        <div class="input-group-append">
+                                            <button id="moreButton" class="btn btn-outline-secondary" type="button" aria-label="More">
+                                                <i id="downIcon" class="fal fa-chevron-down font-weight-bold"></i>
+                                                <i id="upIcon" class="fal fa-chevron-up font-weight-bold"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="moreContainer">
+                                        <div id="bccContainer" class="input-group input-group-sm mb-1">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text" id="bccText">@Localizer["Bcc"]</span>
+
+                                            </div>
+                                            <textarea type="text" name="Bcc" class="form-control form-control-sm" rows="1" asp-for="Bcc"></textarea>
+                                        </div>
+                                        <div id="fromContainer" class="input-group input-group-sm mb-1">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text" id="toText">From</span>
+                                            </div>
+                                            <textarea type="text" name="FromAddress" class="form-control form-control-sm" rows="1" asp-for="FromAddress"></textarea>
+                                        </div>
+                                        <div id="replyToContainer" class="input-group input-group-sm mb-1">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text" id="replyToText">Reply-to</span>
+                                            </div>
+                                            <textarea type="text" name="ReplyToAddress" class="form-control form-control-sm" rows="1" asp-for="ReplyToAddress"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="p-2">
+                                        @(Html.Kendo().Editor()
+                                                                        .Name("Body")
+                                                                        .Value(Model.Body)
+                                                                        .HtmlAttributes(new { style = "height: 250px; padding: 25px", aria_label = "editor" })
+                                                                        .Resizable(resizable => resizable.Content(true).Toolbar(true))
+                                    )
+                                    </div>
+                                    <div>
+                                        <label>@Localizer["Attachment:"]</label>
+                                        <a href="@Url.Action("DownloadReport", "Report", new { Area = "Shared", generatedReportName=Model.GeneratedReportName})" download="@Model.EmailReportName" target="_blank">@Model.EmailReportName</a>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="modal-footer">
+                        <button id="cancel" type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times-circle pr-2"></i>@Localizer["Close"]</button>
+                        <button id="ok" type="submit" class="btn btn-primary float-right"><i class="fal fa-paper-plane pr-2"></i>@Localizer["Send"]</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    ReportCriteriaPage.initializeEmailReport();
+</script>
+
+
+
+<style>
+    /*sets the width of your addons*/
+    .input-group > .input-group-prepend {
+        flex: 0 0 12%;
+    }
+    /*forces the inputs to take up all of their parent container.*/
+    .input-group .input-group-text {
+        width: 100%;
+    }
+
+    .k-dropzone {
+        padding: 0px;
+    }
+</style>

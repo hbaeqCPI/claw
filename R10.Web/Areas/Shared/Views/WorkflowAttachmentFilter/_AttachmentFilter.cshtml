@@ -1,0 +1,68 @@
+﻿@model AttachmentFilterViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var controller = Model.Controller ?? "Workflow";
+    var tStamp = Model.tStamp != null ? Convert.ToBase64String(Model.tStamp) : "";
+}
+
+<div class="modal fade" id="attachmentFilterDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="AttachmentFilterSave" asp-controller="@controller" asp-area="@Model.Area">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Attachment Filter"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="ActId" />
+                        <input type="hidden" asp-for="CreatedBy" />
+                        <input type="hidden" asp-for="DateCreated" value="@Model.DateCreated.FormatToSave()" />
+                        <input type="hidden" name="tStamp" value="@(tStamp)" />
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group float-label">
+                                    <label for="FileType">@Localizer["File extensions"]</label>
+                                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("FileType", action: "GetFileTypes", controller: "Workflow", textProperty: "Value", defaultValue: Model.FileType))
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group float-label">
+                                    <label asp-for="DocumentName"></label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="DocumentName" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group float-label">
+                                    <label for="FileType">@Localizer["Tags"]</label>
+                                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("Tags", action: "GetTags", controller: "Workflow", textProperty: "Value", defaultValue: Model.Tags))
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer" style="border-top:none">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                            <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Ok"]</button>
+                        </div>
+                    </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+

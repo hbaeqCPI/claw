@@ -1,0 +1,93 @@
+﻿@model PageViewModel
+@inject ISystemSettings<PatSetting> Settings;
+@inject IStringLocalizer<PatentResource> Localizer
+
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+
+    var gridId = $"{Model.PageId}-SearchGrid";
+
+    var numberTitle = Localizer["Application No."] + "<br/>" + Localizer["Patent No."];
+    var dateTitle = Localizer["Filing Date"] + "<br/>" + Localizer["Issue Date"];
+
+    var numberTemplate = "<span>#= AppNumber == null ? '' : AppNumber # <br> #= PatNumber == null ? '' : PatNumber #</span>";
+    var dateTemplate = "<span>#= FilDate == null ? '' : kendo.toString(FilDate,'dd-MMM-yyyy') # <br> #= IssDate == null ? '' : kendo.toString(IssDate,'dd-MMM-yyyy') #</span>";
+    //var dataBoundEvent = "documentPage.viewResultDatabound('#" + gridId + "')";
+
+    var dataKeyValue = ViewData["RecordId"] != null ? ViewData["RecordId"] : 0;
+    var screenCode = ViewData["ScreenCode"] != null ? ViewData["ScreenCode"].ToString() : "";
+}
+
+
+@(Html.Kendo().Grid<DocumentCtryAppResultsViewModel>()
+        .Name(gridId)
+        .Columns(columns =>
+        {
+            columns.Bound(a => a.CaseNumber).Title(caseNumberLabel)
+                .HtmlAttributes(new { @class = "text-nowrap"});
+            columns.Bound(a => a.Country);
+            columns.Bound(a => a.SubCase);
+            columns.Bound(a => a.CaseType);
+            columns.Bound(a => a.ApplicationStatus);
+            columns.Bound(a => a.AppNumber).Title(numberTitle).ClientTemplate(numberTemplate);
+            columns.Bound(a => a.FilDate).Title(dateTitle).ClientTemplate(dateTemplate);
+            //columns.Bound(a => a.PatNumber);
+            //columns.Bound(a => a.IssDate).Format("{0:dd-MMM-yyyy}");
+            //columns.Bound(a => a.AppTitle);
+        })
+        .AutoBind(false)
+        .Pageable(page => page.PageSizes(true).Refresh(true))
+        .Sortable(sort => sort.AllowUnsort(false))
+        .DataSource(dataSource => dataSource
+            .Ajax()
+            .Events(events => events.RequestEnd("documentPage.searchResultGridRequestEnd"))
+            .PageSize(Model.GridPageSize)
+            .Read(read => read.Action("PageRead", "DocCtryApp").Data("documentPage.gridMainSearchFilters"))
+            .Sort(sort => sort.Add(a => a.CaseNumber))
+         )
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+        .Events(events => events.Change("documentPage.loadDocumentTree"))
+        .HtmlAttributes(new { @class = "kendo-Grid" })
+
+
+    )
+
+<style>
+    .k-grid td, .k-listview .col {
+        font-size: smaller !important;
+    }
+</style>
+
+
+<script>
+    $(document).ready(function () {
+        if (@dataKeyValue > 0) {
+            documentPage.initializeSearchResultPage({
+                resultGridId: "#@gridId",
+                screenCode: "@screenCode",
+                defaultRecordId: "@dataKeyValue"
+
+            });
+
+            @*var combobox = $("#ScreenCode_documentSearch").data("kendoComboBox");
+            var len = combobox.dataSource._data.length;
+            if (len > 0) {
+                var i;
+                for (i = 0; i < len; i++) {
+                    if (combobox.dataSource._data[i]["Value"] == '@screenCode') {
+                        combobox.select(i);
+                        combobox.value(combobox.dataSource._data[i]["Value"]);
+                        combobox.trigger("change");
+                        break;
+                    }
+                }
+            }
+            var resultGrid = $('#@gridId').data("kendoGrid");
+            resultGrid.dataSource.read({ keyId:@dataKeyValue}).then(function () { resultGrid.select("tr:eq(1)"); documentPage.loadDocumentTree(this); });*@
+        }
+
+     });
+</script>
+
+

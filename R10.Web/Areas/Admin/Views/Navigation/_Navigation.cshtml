@@ -1,0 +1,756 @@
+﻿@model IEnumerable<R10.Web.Models.MenuViewModels.MenuItemViewModel>
+@{
+    var title = ViewData["Title"].ToString();
+    var container = ViewData["PageId"].ToString();
+}
+<div class="page-content">
+     @*todo: use page status*@
+    <div id="statusMessage" class="alert page-status alert-dismissible alert-danger collapse" role="alert">
+        <button type="button" class="close" data-hide="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <span class="message">&nbsp;</span>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <form id="mainMenu" method="post">
+                @(Html.Kendo().DropDownList()
+                                        .Name("menuId")
+                                        .DataTextField("Title")
+                                        .DataValueField("Id")
+                                        .Value(ViewData["MenuId"].ToString())
+                                        .HtmlAttributes(new { @class = "k-control" })
+                                        .AutoBind(true)
+                                        .Height(500)
+                                        .DataSource(source =>
+                                        {
+                                            source.Read(read =>
+                                            {
+                                                read.Action("GetMainMenu", "Navigation");
+                                            })
+                                        .ServerFiltering(true);
+                                        })
+
+                                        .Events(e =>
+                                        {
+                                            e.Change("getMenu");
+                                        })
+                )
+            </form>
+        </div>
+        <div class="col">
+            <a class="nav-link mt-1 add-menu" href="#" title="Add menu" role="button"><i class="fal fa-plus pr-2"></i><span>Add menu</span></a>
+            <a class="nav-link mt-1 refresh-menu" href="#" role="button" title="Refresh menu"><i class="fal fa-sync pr-2"></i>Refresh</a>
+        </div>
+    </div>
+
+    <div id="sub-menus" class="card-columns">
+        @foreach (var menu in Model)
+        {
+            @await Html.PartialAsync("_MenuCard", menu)
+        }
+    </div>
+
+    @(Html.Kendo().Sortable()
+                                .For("ul")
+                                .Filter(".menu-item")
+                                .ConnectWith(".menu-items")
+                                .Cursor("grabbing")
+                                .Handler(".menu-item-handler")
+                                .HintHandler("hint")
+                                .PlaceholderHandler("placeholder")
+                                .Events(e => e.Change("sortMenuItem"))
+    )
+
+    @(Html.Kendo().Sortable()
+                                .For("#sub-menus")
+                                .Filter(".card-sub-menu")
+                                .Cursor("grabbing")
+                                .Handler(".card-header, .menu-title")
+                                .HintHandler("hint")
+                                .PlaceholderHandler("placeholder")
+                                .Events(e => e.Change("sortMenu"))
+    )
+
+    @(Html.Kendo().ContextMenu()
+                                .Name("menuAction")
+                                .HtmlAttributes(new { @class = "context-menu"})
+                                .Target(".sub-menu-action")
+                                .ShowOn("click")
+                                .Events(e => e.Open("menuActionOnOpen").Select("menuActionOnSelect"))
+                                .Items(items =>
+                                {
+                                    items.Add().Text("");
+                                })
+    )
+
+    @await Component.InvokeAsync("AlertDialog")
+    @await Component.InvokeAsync("ConfirmDialog")
+    @await Component.InvokeAsync("LoadingSpinner")
+</div>
+<style>
+    .card-sub-menu {
+        margin-top: 20px;
+        background-color: var(--bg-main);
+        border: 1px solid var(--control-border);
+    }
+
+        .card-sub-menu:hover {
+            border-color: var(--control-focused);
+        }
+
+        .card-sub-menu .card-header {
+            padding: 5px 10px;
+        }
+
+        .card-sub-menu .list-group {
+            min-height: 20px;
+        }
+
+        .card-sub-menu.new-sub-menu {
+            -webkit-animation: new-sub-menu 2s ease;
+            -moz-animation: new-sub-menu 2s ease;
+            /*-ms-animation: new-sub-menu 2s ease;*/
+            -o-animation: new-sub-menu 2s ease;
+            animation: new-sub-menu 2s ease;
+        }
+
+    @@keyframes new-sub-menu {
+        from {
+            border-width: 1px;
+            border-color: var(--control-focused);
+            box-shadow: 0 0 0 0.2rem var(--control-box-shadow);
+        }
+
+        to {
+            border-width: 1px;
+            border-color: var(--control-focused);
+            box-shadow: 0 0 0 0.2rem var(--control-box-shadow);
+        }
+    }
+
+    @@-webkit-keyframes new-sub-menu {
+        from {
+            border-width: 1px;
+            border-color: var(--control-focused);
+            box-shadow: 0 0 0 0.2rem var(--control-box-shadow);
+        }
+
+        to {
+            border-width: 1px;
+            border-color: var(--control-focused);
+            box-shadow: 0 0 0 0.2rem var(--control-box-shadow);
+        }
+    }
+
+    .list-group-item {
+        padding: 5px 0;
+        background-color: var(--bg-main);
+        font-size: .9rem;
+    }
+
+        .list-group-item:hover {
+            color: #fff;
+            background-color: var(--grid-hover);
+        }
+            .list-group-item:hover .menu-item-name {
+                color: #fff;
+            }
+            .list-group-item:hover .menu-item-handler,
+            .list-group-item:hover .menu-item-action {
+                color: #fff;
+            }
+
+                .list-group-item:hover .menu-item-name:hover,
+                .list-group-item:hover .menu-item-handler:hover,
+                .list-group-item:hover .menu-item-action i:hover {
+                    color: #fff;
+                }
+
+        .list-group-item .menu-item-title {
+            display: inline-block;
+            max-width: 78%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-group-item .menu-item-handler {
+            padding: 4px 10px;
+            color: var(--text-dim);
+            cursor: grab;
+        }
+
+        .list-group-item .menu-item-action {
+            float: right;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+
+        .card-sub-menu .card-header {
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: grab;
+        }
+
+        .card-sub-menu .sub-menu-action {
+            float: right;
+            margin-right: 2px;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+    li.hint {
+        min-height:43px;
+        border-radius:4px;
+        padding-top: 8px;
+    }
+
+        li.hint .menu-item-action {
+            opacity: 0.1;
+        }
+
+    li.placeholder {
+        background-color: #e7e7e7 !important;
+        opacity: 0.5;
+    }
+
+        li.placeholder .menu-item-name {
+            color: var(--text-dim);
+        }
+
+    div.placeholder {
+        opacity: 0.4;
+        border: 1px dashed #a6a6a6;
+    }
+
+    /*li.disabled {
+        color: #e7e7e7 !important;
+    }*/
+
+    div.disabled,
+    a.disabled {
+        color: var(--text-dim);
+    }
+
+    .context-menu .k-item .k-link {
+        font-family: 'Microsoft Sans Serif', sans-serif;
+        font-size: 14px;
+        font-weight: normal;
+        padding: 8px 20px 5px 15px;
+    }
+
+    .context-menu .k-separator {
+/*        height: 1px;
+        padding: 0;
+        background-color: #e7e7e7;*/
+        border-color: var(--separator);
+    }
+
+    .add-menu,
+    .refresh-menu {
+        font-size: .9rem;
+        float: right;
+    }
+</style>
+<script>
+    function getMenu() {
+        $("#mainMenu").submit();
+    }
+
+    function getArea() {
+        return { areaId: $("#menuId").val() };
+    }
+
+    function placeholder(element) {
+        return element.clone().addClass("placeholder");
+    }
+
+    function hint(element) {
+        return element.clone().addClass("hint")
+            .height(element.height() + 5)
+            .width(element.width());
+    }
+
+    function menuActionOnOpen(e) {
+        var isMenuEnabled = $(e.target).data("enabled") == "True";
+        var items = [];
+
+        items.push({
+            text: "<i class='fal fa-file-plus fa-fixed-width'></i>Add page",
+            attr: { "data-action": "addPage" },
+            encoded: false
+        });
+
+        items.push({
+            text: "<i class='fal fa-external-link-square fa-fixed-width'></i>Add custom link",
+            attr: { "data-action": "addLink" },
+            encoded: false
+        });
+
+        items.push({
+            text: "",
+            cssClass: "k-separator"
+        });
+
+        items.push({
+            text: "<i class='fal fa-edit fa-fixed-width'></i>Edit menu",
+            attr: { "data-action": "edit" },
+            encoded: false
+        });
+
+        if (isMenuEnabled) {
+            items.push({
+                text: "<i class='far fa-toggle-on fa-fixed-width'></i>Disable menu",
+                attr: { "data-action": "disable" },
+                encoded: false
+            });
+        }
+        else {
+            items.push({
+                text: "<i class='far fa-toggle-off fa-fixed-width'></i>Enable menu",
+                attr: { "data-action": "enable" },
+                encoded: false
+            });
+        }
+
+        items.push({
+            text: "",
+            cssClass: "k-separator"
+        });
+
+        items.push({
+            text: "<i class='fal fa-sync fa-fixed-width'></i>Refresh menu",
+            attr: { "data-action": "refresh" },
+            encoded: false
+        });
+
+        items.push({
+            text: "",
+            cssClass: "k-separator"
+        });
+
+        items.push({
+            text: "<i class='fal fa-trash-alt fa-fixed-width'></i>Delete menu",
+            attr: { "data-action": "delete" },
+            encoded: false
+        });
+
+        this.setOptions({
+            dataSource: items
+        })
+    }
+
+    function menuActionOnSelect(e) {
+        var action = $(e.item).data("action");
+        var menuId = $(e.target).data("id");
+        var menu = $(`#${menuId}`);
+        var menuName = $(e.target).closest("div").text();
+        var mainMenuName = $("#menuId").data("kendoDropDownList").text();
+
+        switch (action) {
+            case "addPage":
+                updateMenuItem("@Url.Action("NewPage", "Navigation", new { Area = "Admin" })", menuId, menuName, function (id, name) {
+                    appendMenuItem("@Url.Action("NewMenuItem", "Navigation", new { Area = "Admin" })", id, function (response) {
+                        menu.append(response);
+                    });
+                });
+                return;
+            case "addLink":
+                updateMenuItem("@Url.Action("NewUrl", "Navigation", new { Area = "Admin" })", menuId, menuName, function (id, name) {
+                    appendMenuItem("@Url.Action("NewMenuItem", "Navigation", new { Area = "Admin" })", id, function (response) {
+                        menu.append(response);
+                    });
+                });
+                return;
+            case "enable":
+            case "disable":
+                var toggle = $(e.item).find("i");
+                var enable = toggle.hasClass("fa-toggle-off");
+
+                toggleMenuItem(menuId, enable, function () {
+                    $(e.target).data("enabled", enable ? "True" : "False");
+
+                    if (enable) {
+                        toggle.removeClass("fa-toggle-off");
+                        toggle.addClass("fa-toggle-on");
+                        $(`#menu-${menuId}`).removeClass("disabled");
+                    }
+                    else {
+                        toggle.removeClass("fa-toggle-on");
+                        toggle.addClass("fa-toggle-off");
+                        $(`#menu-${menuId}`).addClass("disabled");
+                    }
+                });
+                return;
+            case "edit":
+                updateMenuItem("@Url.Action("MenuItemInfo", "Navigation", new { Area = "Admin" })",
+                    menuId,
+                    `${mainMenuName}<i class="fa fa-angle-right pr-1 pl-1"></i>${menuName}`,
+                    function (id, name) {
+                        if ($(`#menu-${id}`).length) {
+                            $(`#menu-${id}`).find(".menu-title").text(name);
+                        }
+                    });
+                return;
+            case "refresh":
+                cpiLoadingSpinner.show("Refreshing.");
+
+                $.ajax({
+                    url: "@Url.Action("MenuItems", "Navigation", new { Area = "Admin" })",
+                    type: "POST",
+                    data: { menuId: menuId },
+                    success: function (response) {
+                        cpiLoadingSpinner.hide();
+                        menu.hide().empty().append(response).slideDown();
+                    },
+                    error: function () {
+                        cpiLoadingSpinner.hide();
+                        showStatus(`Unable to refresh menu.`, [""]);
+                    }
+                });
+                return;
+            case "delete":
+                deleteMenuItem(menuId, menuName, mainMenuName, function () {
+                    menu.closest(".card-sub-menu").remove();
+                });
+                return;
+        }
+
+        return;
+    }
+
+    function appendMenuItem(actionUrl, menuId, successCallback) {
+        cpiLoadingSpinner.show("Loading.");
+
+        $.ajax({
+            url: actionUrl,
+            type: "POST",
+            data: { menuId: menuId },
+            success: function (response) {
+                cpiLoadingSpinner.hide();
+                successCallback(response);
+            },
+            error: function () {
+                cpiLoadingSpinner.hide();
+                cpiAlert.open({
+                    title: "Navigation",
+                    mesage: "Unable to load new menu item.",
+                    onClose: function () {
+                        getMenu();
+                    }
+                });
+            }
+        });
+    }
+
+    function updateMenuItem(actionUrl, menuId, label, successCallback) {
+        cpiLoadingSpinner.show("Loading.");
+
+        $.ajax({
+            url: actionUrl,
+            type: "POST",
+            data: { menuId: menuId },
+            success: function (response) {
+                cpiLoadingSpinner.hide();
+
+                cpiConfirm.confirm(label, response, function () {
+                    var form = $(".form-detail");
+
+                    $.validator.unobtrusive.parse(form);
+
+                    var disabled = form.find(':input:disabled').removeAttr('disabled');
+                    var openInNewWindow = form.find('#OpenInNewWindow');
+                    if (openInNewWindow.is(':checked'))
+                        openInNewWindow.val(true);
+
+                    var formData = form.serialize();
+
+                    disabled.attr('disabled', 'disabled');
+                    if (form.valid()) {
+                        cpiLoadingSpinner.show("Saving.");
+
+                        $.ajax({
+                            url: "@Url.Action("SaveMenuItem", "Navigation", new { Area = "Admin" })",
+                            type: "POST",
+                            data: formData,
+                            success: function (response) {
+                                cpiLoadingSpinner.hide();
+
+                                if (response.success) {
+                                    successCallback(response.id, response.name);
+                                }
+
+                                showStatus(response.message, response.errors);
+                            },
+                            error: function () {
+                                cpiLoadingSpinner.hide();
+                                showStatus(`Unable to save menu item.`, [""]);
+                            }
+                        });
+                    } else {
+                        form.wasValidated();
+                        throw "Validation error.";
+                    }
+                },
+                {
+                    "action": { "class": "btn-primary", "label": "Save", "icon": "fa fa-check" },
+                    "close": { "class": "btn-secondary", "label": "Cancel", "icon": "fa fa-undo-alt" }
+                });
+            },
+            error: function () {
+                cpiLoadingSpinner.hide();
+                cpiAlert.open({ title: "Navigation", message: "Unable to load form." });
+            }
+        });
+    }
+
+    function deleteMenuItem(id, name, menuName, successCallback) {
+        var message = `<p>Are you sure you want to delete ${name}?</p>`;
+        if ($(`#${id}`).is("ul")) {
+            if ($(`#${id} li`).length > 0) {
+                message = `<div class="row"><div class="col-2 text-center pl-md-4 pt-1"><i class="text-danger far fa-exclamation-triangle fa-2x"></i></div><div class="col-10"><p class="text-danger">${$(`#${id} li`).length} item${$(`#${id} li`).length > 1 ? "s" : ""} in this menu will also be deleted.</p>${message}</div></div>`;
+            }
+        }
+
+        cpiConfirm.confirm(`${menuName}<i class="fa fa-angle-right pr-1 pl-1"></i>${name}`, message, function () {
+            cpiLoadingSpinner.show("Deleting menu item.");
+
+            $.ajax({
+                url: "@Url.Action("DeleteMenuItem", "Navigation", new { Area = "Admin" })",
+                type: "POST",
+                data: { menuId: id },
+                success: function (response) {
+                    cpiLoadingSpinner.hide();
+
+                    if (response.success) {
+                        successCallback();
+                    }
+
+                    showStatus(response.message, response.errors);
+                },
+                error: function () {
+                    cpiLoadingSpinner.hide();
+                    showStatus(`Unable to delete menu item.`, [""]);
+                }
+            });
+        }, {
+                "action": { "class": "btn-danger", "label": "Delete", "icon": "fa fa-trash-alt" },
+                "close": { "class": "btn-secondary", "label": "Cancel", "icon": "fa fa-undo-alt" }
+        });
+    }
+
+    function toggleMenuItem(menuId, enable, successCallback) {
+        cpiLoadingSpinner.show("Please wait.");
+
+        $.ajax({
+            url: "@Url.Action("ToggleMenuItem", "Navigation", new { Area = "Admin" })",
+            type: "POST",
+            data: { menuId: menuId, isEnabled: enable },
+            success: function (response) {
+                cpiLoadingSpinner.hide();
+
+                if (response.success) {
+                    successCallback(response.id, );
+                }
+
+                showStatus(response.message, response.errors);
+            },
+            error: function () {
+                cpiLoadingSpinner.hide();
+                showStatus(`Unable to update menu item.`, [""]);
+            }
+        });
+    }
+
+    function moveMenuItem(menuId, menuItemId, newIndex) {
+        cpiLoadingSpinner.show("Please wait.");
+
+        $.ajax({
+            url: "@Url.Action("MoveMenuItem", "Navigation", new { Area = "Admin" })",
+            type: "POST",
+            data: { menuId: menuId, menuItemId: menuItemId, newIndex: newIndex },
+            success: function (response) {
+                cpiLoadingSpinner.hide();
+                showStatus(response.message, response.errors);
+            },
+            error: function () {
+                cpiLoadingSpinner.hide();
+                cpiAlert.open({
+                    title: "Navigation",
+                    message: "Error moving menu item.",
+                    onClose: function () {
+                        getMenu();
+                    }
+                });
+            }
+        })
+    }
+
+    function sortMenuItem(e) {
+        var menuItem = e.item
+        var menuItemId = menuItem.data("id");
+        var menu = menuItem.closest("ul");
+        var menuId = menu.attr("id");
+        var newIndex = e.newIndex;
+
+        if (newIndex < 0) {
+            return;
+        }
+
+        moveMenuItem(menuId, menuItemId, newIndex);
+    }
+
+    function sortMenu(e) {
+        var menuItemId = e.item.data("id");
+        var menuId = $("#menuId").val();
+        var newIndex = e.newIndex;
+
+        if (newIndex < 0) {
+            return;
+        }
+
+        moveMenuItem(menuId, menuItemId, newIndex);
+    }
+
+    function showStatus(message, errors, alertId) {
+        alertId = alertId == null ? "statusMessage" : alertId;
+
+        $(`#${alertId} ul`).remove();
+        $(`#${alertId} .message`).text(message);
+
+        if (errors == null || errors.length == 0) {
+            $(`#${alertId}`).addClass("alert-success");
+            $(`#${alertId}`).removeClass("alert-danger");
+            //$(`#${alertId} i`).addClass("fa-check-circle");
+            //$(`#${alertId} i`).removeClass("fa-exclamation-triangle");
+        }
+        else {
+            $(`#${alertId}`).addClass("alert-danger");
+            $(`#${alertId}`).removeClass("alert-success");
+            //$(`#${alertId} i`).addClass("fa-exclamation-triangle");
+            //$(`#${alertId} i`).removeClass("fa-check-circle");
+
+            if (errors.length != undefined && errors[0] != "") {
+                var list = $(`#${alertId}`).append("<ul class='pt-4 errors'></ul>").find("ul");
+                for (var i = 0; i < errors.length; i++) {
+                    if (errors[i] != "") {
+                        list.append(`<li>${errors[i]}</li>`);
+                    }
+                }
+            }
+        }
+
+        $(`#${alertId}`).show();
+    }
+
+    $(document).ready(function () {
+        const container = "#@container";
+        const sidebar = pageHelper.initializeSidebarPage(`${container} .page-sidebar`, `${container} .page-main`);
+        pageHelper.moveBreadcrumbs(container);
+        window.cpiBreadCrumbs.addNode({
+            name: container,
+            label: "@title",
+            url: "",
+            updateHistory: true
+        });
+
+        $("body").on("click", ".refresh-menu", function (e) {
+            getMenu();
+        });
+
+        $("body").on("click", ".add-menu", function (e) {
+            var menuId = $("#menuId").val();
+            var menuName = $("#menuId").data("kendoDropDownList").text();
+
+            updateMenuItem("@Url.Action("NewMenu", "Navigation", new { Area = "Admin" })", menuId, menuName, function (id, name) {
+                appendMenuItem("@Url.Action("NewCard", "Navigation", new { Area = "Admin" })", id, function (response) {
+                    $("#sub-menus").append(response);
+
+                    $(`.card-sub-menu[data-id="${id}"]`).addClass("new-sub-menu");
+                    if ($(".new-sub-menu").isInViewport() == false) {
+                        $("body, html").animate({ scrollTop: $(".new-sub-menu").offset().top }, 1000);
+                    }
+                    
+                    var menuAction = $("#menuAction").data("kendoContextMenu");
+                    if (menuAction) {
+                        menuAction.setOptions({ target: ".sub-menu-action" });
+                    }
+
+                    var sortable = $(`#${id}`);
+                    if (sortable.data("kendoSortable")) {
+                        sortable.data("kendoSortable").destroy();
+                    }
+                    sortable.kendoSortable({
+                        "change": sortMenuItem,
+                        "filter": ".menu-item",
+                        "connectWith": "ul.menu-items",
+                        "cursor": "grabbing",
+                        "handler": ".menu-item-handler",
+                        "hint": hint,
+                        "placeholder": placeholder
+                    });
+                    sortable = $("#sub-menus");
+                    if (sortable.data("kendoSortable")) {
+                        sortable.data("kendoSortable").destroy();
+                    }
+                    sortable.kendoSortable({
+                        "change": sortMenu,
+                        "filter": ".card-sub-menu",
+                        "cursor": "grabbing",
+                        "handler": ".card-header",
+                        "hint": hint,
+                        "placeholder": placeholder
+                    });
+                });
+            });
+        });
+
+        $("body").on("click", ".menu-item-action .visibility", function (e) {
+            var toggle = $(this);
+            var menuItem = toggle.closest("li");
+            var menuId = menuItem.data("id");
+            var enable = toggle.hasClass("fa-toggle-off");
+
+            toggleMenuItem(menuId, enable, function () {
+                if (enable) {
+                    toggle.removeClass("fa-toggle-off");
+                    toggle.addClass("fa-toggle-on");
+                    $(`#menu-${menuId}`).removeClass("disabled");
+                }
+                else {
+                    toggle.removeClass("fa-toggle-on");
+                    toggle.addClass("fa-toggle-off");
+                    $(`#menu-${menuId}`).addClass("disabled");
+                }
+            });
+        });
+
+        $("body").on("click", ".menu-item-action .delete", function (e) {
+            var menuItem = $(this).closest("li");
+            var id = menuItem.data("id");
+            var name = menuItem.find(".menu-item-name").text();
+            var menuName = $(this).closest("div").find(".card-header").text();
+
+            deleteMenuItem(id, name, menuName, function () {
+                menuItem.remove();
+            });
+        });
+
+        $("body").on("click", ".menu-item-name", function (e) {
+            var menuItem = $(this).closest("li");
+            var id = menuItem.data("id");
+            var name = $(this).text();
+            var menuName = menuItem.closest("div").find(".card-header").text();
+
+            updateMenuItem("@Url.Action("MenuItemInfo", "Navigation", new { Area = "Admin" })",
+                id,
+                `${menuName}<i class="fa fa-angle-right pr-1 pl-1"></i>${name}`,
+                function (id, name) {
+                    if ($(`#menu-${id}`).length) {
+                        $(`#menu-${id}`).text(name);
+                    }
+                });
+        });
+    });
+</script>

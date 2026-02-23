@@ -1,0 +1,30 @@
+﻿@inject ICPiSystemSettingManager SettingManager
+@{
+    /* Use class indicator-row on tr to highlight entire row
+     * Use class indicator-cell on td to highlight individual cell
+     */
+    var indicator = await SettingManager.GetSystemSetting<ActionIndicator>();
+}
+@if (indicator.Enabled) {    
+    @foreach (var color in indicator.Colors)
+    {
+        @if(!string.IsNullOrEmpty(color.Value) && color.Value.Trim() != "#ffffff")
+        {
+            <style>
+                .k-grid tr:not(:hover).indicator-row.indicator.@(color.Key),
+                .k-grid tr:not(:hover).indicator.@(color.Key) .indicator-cell,
+                .k-listview tr.indicator-row.indicator.@(color.Key),
+                .k-listview tr.indicator.@(color.Key) .indicator-cell,
+                .indicator-calendar .indicator.@(color.Key) {
+                    background-color: @(color.Value) !important;
+                }
+            </style>
+        }
+    }
+}
+<script>
+    function IndicatorToClassName(indicator) {
+        return `indicator ${indicator.toLowerCase().replace(/[^A-Z0-9]/ig, "-")}`;
+    }
+</script>
+

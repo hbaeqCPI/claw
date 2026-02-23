@@ -1,0 +1,152 @@
+﻿@model List<ExportSettingViewModel>
+@inject IStringLocalizer<CountryApplicationResource> CaLocalizer
+@inject IStringLocalizer<TrademarkResource> TmkLocalizer
+@{
+    IStringLocalizer<Object> Localizer = ViewBag.Module == "CountryApplication" ? CaLocalizer : TmkLocalizer;
+}
+<div class="modal fade show" id="familyTreeDataSettingDialog" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Data Settings"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <div class="row mt-4" style="color: white; background-color: var(--btn-primary)">
+                            <div class="pl-3 pt-1">
+                                <input type="checkbox" class="k-checkbox" id="SelectAll" name="SelectAll">
+                            </div>
+                            <h5 class="pl-3">@Localizer["Select fields to display"]</h5>
+                        </div>
+                        <div class="row settings-fields"></div>
+                        <div class="modal-body">
+                            <span class="message"></span>
+                        </div>
+                        <div class="modal-footer" style="border-top:none">
+                            <input type="hidden" id="ScreenCode" name="ScreenCode" value="@ViewBag.ScreenCode">
+                            <input type="checkbox" class="k-checkbox" id="DefaultSetting" name="DefaultSetting">
+                            <label class="k-checkbox-label pr-3" for="DefaultSetting">
+                                @Localizer["Set as default"]
+                            </label>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).off('shown.bs.modal', '#familyTreeDataSettingDialog').on('shown.bs.modal', '#familyTreeDataSettingDialog', async function (event) {
+        const modalButton = $('[data-target="#familyTreeDataSettingDialog"]');
+        modalButton.prop('disabled', true);
+
+        const modal = $("#familyTreeDataSettingDialog");
+        const url = $("#d3-tree").data('settings-url');
+        const settingsContainer = modal.find('.settings-fields');
+        const existedContainer = $("#tempSettingsContainer");
+
+        if (settingsContainer.contents().length === 0) {
+            if (existedContainer.contents().length > 0) {
+                settingsContainer.append(existedContainer.contents().clone());
+            } else {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        modal.find('#DefaultSetting').prop('checked', response.isSettingDefault);
+
+                        response.properties.forEach(function(item) {
+                            const checkedAttr = item.Include ? 'checked' : '';
+                            const checkboxHtml = `
+                            <div class="col-md-4">
+                                <input type="checkbox" class="k-checkbox" id="${item.PropertyName}" name="${item.PropertyName}" ${checkedAttr}>
+                                <label class="k-checkbox-label" for="${item.PropertyName}">${item.Label}</label>
+                            </div>`;
+                            settingsContainer.append(checkboxHtml);
+                        });
+                    },
+                    error: function (xhr) {
+                        console.error('Error fetching settings data:', xhr.responseText);
+                    },
+                    complete: () => {
+                        modalButton.prop('disabled', false);
+                    }
+                });
+            }
+        }
+
+        const $entryForm = modal.find("form").first();
+        const originalState = getFormState($entryForm);
+
+        const $submitButton = $entryForm.find("button[type='submit']");
+        $submitButton.prop("disabled", true);
+
+        $entryForm.off('input change').on("input change", "input", function () {
+            const isDirty = checkFormDirty($entryForm, originalState);
+            $submitButton.prop("disabled", !isDirty);
+        });
+
+        $entryForm.off('submit').on("submit", async function (e) {
+            e.preventDefault();
+
+            const mainUrl = url.split("/").slice(0, -1).join("/");
+            const exportSettingsUrl = `${mainUrl}/UpdateTreeDataSettings`;
+            const defaultSettingsUrl = `${mainUrl}/UpdateTreeDataSettingDefault`;
+
+            const fieldsSelected = getSelectedFields();
+            const screenCode = $("#ScreenCode").val();
+            const isDefault = $("#DefaultSetting").prop("checked");
+
+            try {
+                await $.post(exportSettingsUrl, { exportSettings: fieldsSelected });
+                await $.post(defaultSettingsUrl, { screenCode: screenCode, isDefault: isDefault });
+
+                pageHelper.showSuccess("Changes have been saved successfully.");
+                await familyTreeLinkPage.reRender(false, true);
+            } catch (error) {
+                console.error("Error updating settings:", error);
+            }
+
+            modal.modal("hide");
+        });
+
+        modal.off("change", "#SelectAll").on("change", "#SelectAll", function () {
+            const isChecked = $(this).is(":checked");
+            modal.find(".settings-fields input[type='checkbox']").prop("checked", isChecked);
+        });
+
+        function getFormState($form) {
+            const state = {};
+            $form.find("input").each(function () {
+                const $input = $(this);
+                const name = $input.attr("name");
+                state[name] = $input.is(":checkbox") ? $input.prop("checked") : $input.val();
+            });
+            return state;
+        }
+
+        function checkFormDirty($form, originalState) {
+            const currentState = getFormState($form);
+            return Object.keys(originalState).some(key => originalState[key] !== currentState[key]);
+        }
+
+        function getSelectedFields() {
+            const selectedFields = [];
+            modal.find(".settings-fields input[type='checkbox']").each(function () {
+                selectedFields.push({
+                propertyName: $(this).attr("name"),
+                include: $(this).prop("checked")
+                });
+            });
+            return selectedFields;
+        }
+    });
+</script>

@@ -1,0 +1,118 @@
+﻿@using R10.Web.Areas.Shared.ViewModels.ReportScheduler
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var pageName = ViewBag.ActivePage;
+
+    var detailsUrl = Model.DetailsLinkTemplate(Url.Action("Detail", "ReportScheduler", new { Area = "Shared", id = 0, fromSearch = true }), "Schedule");
+    var detailsAddUrl = Url.Action("Add", "ReportScheduler", new { Area = "Shared", fromSearch= true, reportId=Model.RecordId });
+    var detailsLinkTemplate = $"<a href={detailsUrl} class='details-link' >#: Schedule#</a>";
+    var canAddSchedule = (bool)ViewBag.CanAddSchedule;
+
+    var gridName = $"scheduleGrid";
+}
+
+<script>
+
+        @(gridName)_gridReadData = function() {
+            return { reportId: @Model.RecordId, userSchedulesOnly: $(".grid-options #showYourSchedulesOnly").is(':checked') };
+        };
+
+        $(document).ready(function () {
+            $(".grid-options #showYourSchedulesOnly").change(function () {
+                var grid = $("#@(gridName)").data("kendoGrid");
+                var yourSchedulesOnly = $(this).is(':checked');
+
+
+                @(pageName).showYourSchedulesOnly = yourSchedulesOnly;
+                @*ServerOperation is false. Call both page(1) and read to reset to page 1 before refreshing data.*@
+                grid.dataSource.page(1);
+                //grid.dataSource.read();
+            });
+
+            $(".grid-options #showYourSchedulesOnly").prop('checked', true);
+        })
+
+    function checkScheduleLimit(e) {
+        var dataReportId = $(e.target).closest('.grid-action').data('report-id');
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action("CheckScheduleLimit", "ReportScheduler", new { area = "Shared" })",
+            success: function (response) {
+                var addUrl = "@Url.Action("Add", "ReportScheduler", new { Area = "Shared", fromSearch = true })";
+                addUrl += "&reportId=" + dataReportId;
+                window.location.href = addUrl;
+            },
+            error: function (error) {
+                var errorMessage = "You've reached the maximum number of scheduled reports. To add a new one, please disable an existing scheduled report you no longer need.";
+                if (error.responseJSON && error.responseJSON.errors) {
+                    errorMessage = error.responseJSON.errors;
+                }
+                cpiAlert.warning(errorMessage);
+                e.preventDefault();
+            }
+        });
+    }
+</script>
+
+<div class="grid-options">
+    <div class="show-Your-Schedules">
+        <label class="option-name" for="showYourSchedulesOnly">@Localizer["Show Your Schedules Only"]</label>
+        <span>
+            <label class="toggle-switch">
+                <input id="showYourSchedulesOnly" type="checkbox" class="toggle-option">
+                <span class="slider round"></span>
+            </label>
+        </span>
+    </div>
+</div>
+
+@(Html.Kendo().Grid<ScheduleViewModel>()
+                        .Name("scheduleGrid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(p => p.Schedule)
+                            .ClientTemplate(Html.GetDetailsLinkTemplate(Url.Action("DetailLink", "ReportScheduler", new { Area = "Shared", id = "#: TaskId#" }), "Schedule"));
+                            columns.Bound(p => p.Status)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Trigger)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.NextRunTime)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.CreatedBy)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.DateCreated)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                        })
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .ToolBar(toolbar =>
+                        {
+                            if (canAddSchedule)
+                            {
+                                toolbar.Custom().IconClass("k-icon fal fa-plus").Text(Localizer["Add Schedule"]).HtmlAttributes(new { @class = "grid-action details-link", onclick = "checkScheduleLimit(event)", data_report_id = Model.RecordId });
+                                //toolbar.Custom().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action details-link", @href = Url.Action("Detail", "ReportScheduler", new { Area = "Shared", id = 0, fromSearch = true, reportId=Model.RecordId })/*detailsAddUrl/*"RedirectToScheduleDetail"*/ });
+                            }
+                        })
+                        .Pageable()
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Batch(true)
+                            .PageSize(10)
+                            .Model(model =>
+                            {
+                                model.Id(s => s.TaskId);
+                                model.Field(s => s.Schedule).Editable(false);
+                                model.Field(s => s.Status).Editable(false);
+                                model.Field(s => s.Trigger).Editable(false);
+                                model.Field(s => s.NextRunTime).Editable(false);
+                                model.Field(s => s.CreatedBy).Editable(false);
+                                model.Field(s => s.DateCreated).Editable(false);
+                            })
+                            .Read(read => read.Action("GetSchedulesList", "ReportScheduler", new { Area="Shared"}).Data($"{gridName}_gridReadData"))
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                        )        
+                        .HtmlAttributes(new { @class = "k-grid-border" })
+)

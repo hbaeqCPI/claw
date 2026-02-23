@@ -1,0 +1,174 @@
+﻿@* Patent only *@
+@model FamilyTreeDialogModel
+@using Newtonsoft.Json
+@{
+    string formData = JsonConvert.SerializeObject(new { appId = Model.Id, caseNumber = Model.CaseNumber });
+}
+
+<div class="modal fade show" id="RelationshipsDialog" tabindex="-1" role="dialog"
+    data-parents='@Json.Serialize(Model.DirectParents)'
+    data-children='@Json.Serialize(Model.DirectChildren)'
+    aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Relationships for @Model.RecordTitle</h4>
+            </div>
+
+            <div class="modal-body">
+                <table>
+                    <tr><td>Parent:</td></tr>
+                    @if (Model.DirectParents?.Any() == true)
+                    {
+                        @foreach (var parent in Model.DirectParents)
+                        {
+                            <tr><td style="padding-left: 20px;"><b>@parent.Name</b></td></tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td style="padding-left: 20px;"><b>No Parent Relationship</b></td></tr>
+                    }
+
+                    <tr><td>Children:</td></tr>
+                    @if (Model.DirectChildren?.Any() == true)
+                    {
+                        @foreach (var child in Model.DirectChildren)
+                        {
+                            <tr><td style="padding-left: 20px;"><b>@child.Name</b></td></tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td style="padding-left: 20px;"><b>No Child Relationship</b></td></tr>
+                    }
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                &nbsp;
+                @if (!Model.CanModify || (Model.Type != "C" && Model.Type != "T"))
+                {
+                    <button type="button" class="btn btn-primary" disabled>
+                        Edit Parent Relationship
+                    </button>
+                }
+                else
+                {
+                    <button id="getModifyParentRelationshipModal"
+                            type="button"
+                            class="btn btn-primary"
+                            data-dismiss="modal"
+                            data-toggle="modal"
+                            data-target="#ModifyParentRelationshipModal">
+                        Edit Parent Relationship
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="ModifyParentRelationshipModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <form id="ModifyParentRelationshipForm" method="post" asp-action="SaveFamilyModal" asp-controller="@ViewBag.Module">
+                <input type="hidden" id="Id" name="Id" value="@Model.Id">
+                <input type="hidden" id="ModalType" name="ModalType" value="@Model.ModalType">
+                <input type="hidden" id="CanModify" name="CanModify" value="@Model.CanModify.ToString()">
+                <input type="hidden" id="Type" name="Type" value="@Model.Type">
+                <input type="hidden" id="CaseNumber" name="CaseNumber" value="@Model.CaseNumber"> 
+
+                <div class="modal-header">
+                    <h4 class="modal-title">Edit Parent Relationship for @Model.RecordTitle</h4>
+                    <button type="button" class="close close-modal" data-target="modal" data-dismiss="modal"
+                            data-toggle="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group float-label">
+                    <label asp-for="ParentId"></label>
+                    @await Component.InvokeAsync(
+                        "ComboBox",
+                        new {
+                            id = "ParentId",
+                            name = "ParentId", 
+                            controller = ViewBag.Module, 
+                            action = "GetPossibleFamilyTreeReferences", 
+                            area = ViewBag.System, 
+                            textProperty = "ParentCase", 
+                            valueProperty = "ParentId",
+                            defaultValue = Model.ParentId == null ? (Model.DirectParents.Count() == 0 ? "" : Model.DirectParents[0].Id.ToString()) : Model.ParentId.ToString(),
+                            defaultText = Model.ParentId == null ? (Model.DirectParents.Count() == 0 ? "" : Model.DirectParents[0].Name) : Model.ParentCase,
+                            limitToList = true,
+                            data = formData
+                        }
+                    )
+                    </div>
+                    <span class="message"></span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" 
+                            class="btn btn-secondary back-modal" 
+                            data-dismiss="modal"
+                            data-toggle="modal"
+                            data-target="#RelationshipsDialog">
+                        Back
+                    </button>
+                    <button type="submit" class="btn btn-primary" @(Model.CanModify ? "" : "disabled")>Save New Parent Relationship</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    $(document).ready(function () {
+        $(".back-modal").on("click", function () {
+            $("#ModifyParentRelationshipForm")[0].reset();
+        });
+    });
+
+
+    $(document).off('submit', '#ModifyParentRelationshipForm').on('submit', '#ModifyParentRelationshipForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        cpiLoadingSpinner.show();
+
+        $.ajax({
+            url: form.attr("action"),
+            type: form.attr("method"),
+            data: form.serialize(),
+            success: async function (response) {
+                pageHelper.showSuccess("Change has been saved successfully.");
+                $("#ModifyParentRelationshipModal").modal("hide");
+                await familyTreeLinkPage.reRender(true, false);
+            },
+            error: function (xhr) {
+                let errorMessage = "An error occurred.";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.errors && Array.isArray(response.errors)) {
+                        errorMessage = response.errors.map(err => err.Value.join(" ")).join(" ");
+                        errorMessage = errorMessage.replace(/\\u([\dA-F]{4})/gi, function(match, grp) {
+                            return String.fromCharCode(parseInt(grp, 16));
+                        });
+                    } else {
+                        errorMessage = xhr.responseText;
+                    }
+                } catch (e) {
+                    errorMessage = xhr.responseText;
+                }
+                $(".message").html(`<div class="alert alert-danger">Error: ${errorMessage}</div>`);
+            },
+            complete: () => {
+                cpiLoadingSpinner.hide();
+            }
+        });
+    });
+
+</script>

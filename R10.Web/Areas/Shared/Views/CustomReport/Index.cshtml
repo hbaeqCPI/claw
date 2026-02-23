@@ -1,0 +1,12 @@
+﻿@model CustomReportPageViewModel
+
+@{ 
+    ViewData["Title"] = Model.Title;
+}
+
+<div>
+    @await Html.PartialAsync("_SearchIndex", Model)
+</div>
+    
+
+

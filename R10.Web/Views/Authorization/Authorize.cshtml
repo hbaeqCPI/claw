@@ -1,0 +1,60 @@
+﻿@using R10.Web.Models.AuthorizationViewModels
+@using Microsoft.Extensions.Primitives
+@using System.Collections.Generic;
+
+@model AuthorizeViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    ViewData["Title"] = Localizer["Authorize"].Value;
+    var consentLabel = Localizer["Do you want to grant the application below access to your data?"];
+}
+
+<div class="login-header">
+    <div class="login-brand"></div>
+</div>
+<div class="row mt-3">
+    <div class="col">
+        <div class="card card-account border-secondary mx-auto">
+            <h3 class="card-header bg-transparent border-0 mt-0 text-center">@ViewData["Title"]</h3>
+            <div class="card-body pb-4">
+                <div class="form-group">
+                    @consentLabel
+                    <div class="font-weight-bold pt-2">
+                        @Model.ApplicationName
+                    </div>
+                </div>
+                
+                <form asp-controller="Authorization" asp-action="Authorize" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="request_id" value="@Model.RequestId" />
+                    @foreach (var parameter in Model.Parameters)
+                    {
+                        <input type="hidden" name="@parameter.Key" value="@parameter.Value" />
+                    }
+                    <div class="form-group p-3 k-centered">
+                        <input class="btn btn-primary btn-block-xs text-white" name="submit.Accept" type="submit" value="@Localizer["Yes"]" />
+                        <input class="btn btn-danger btn-block-xs text-white" name="submit.Deny" type="submit" value="@Localizer["No"]" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*
+
+    "action": { "class": "btn-primary", "label": this.container.data("btn-yes"), "icon": "fa fa-check" },
+    "close": { "class": "btn-secondary", "label": this.container.data("btn-no"), "icon": "fa fa-times" }
+
+        <p class="lead text-left">Do you want to grant <strong>@Model.ApplicationName</strong> access to your data? (scopes requested: @Model.Scope)</p>
+    foreach (var parameter in Context.Request.HasFormContentType ?
+            (IEnumerable<KeyValuePair<string, StringValues>>)Context.Request.Form : Context.Request.Query)
+        {
+            <input type="hidden" name="@parameter.Key" value="@parameter.Value" />
+        }
+    <div class="form-group">
+        @consentLabel
+    </div>
+*@

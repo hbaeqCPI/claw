@@ -1,0 +1,32 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<Language>()
+                    .Name($"{Model.PageId}-Grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(m => m.LanguageName).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: KeyID#", fromSearch = true }), "LanguageName")).Width(200);
+                        columns.Bound(m => m.Description);
+                        columns.Bound(m => m.LanguageCulture);
+                    })
+                    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                    .AutoBind(false)
+                    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    //.ColumnMenu()
+                    .Excel(excel => excel.FileName("LanguageList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Area")))
+                    .DataSource(dataSource => dataSource
+                    .Ajax().Events(events => events.Error("languagePage.searchResultGridError"))
+                    .Events(events => events.RequestEnd("languagePage.searchResultGridRequestEnd"))
+                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                    .Read(read => read.Action("PageRead", "Language")
+                    .Data("languagePage.gridMainSearchFilters")
+                    )
+                    .Sort(sort => sort.Add(m => m.LanguageName))
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

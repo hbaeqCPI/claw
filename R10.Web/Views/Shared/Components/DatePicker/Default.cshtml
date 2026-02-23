@@ -1,0 +1,32 @@
+﻿@model DatePickerOptions 
+@{
+    IDictionary<string, object> htmlAttributes = new Dictionary<string, object>();
+
+    if (!string.IsNullOrEmpty(Model.Style))
+    {
+        htmlAttributes.Add("style", Model.Style);
+    }
+    else
+    {
+        htmlAttributes.Add("style", "width: 100%");
+    }
+
+    htmlAttributes.Add("id", Model.Id);
+
+    //kendo
+    //if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("validationmessage", Model.ValidationMessage); }
+
+    //bootstrap
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val", "true"); }
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val-required", Model.ValidationMessage); }
+}
+@(Html.Kendo().DatePicker()
+    .Name(Model.Name)
+    .Value(Model.Value)
+    .Format(Model.Format)
+    .ParseFormats(Model.ParseFormats)
+    .Events(e => { if (!string.IsNullOrEmpty(Model.OnChange)) { e.Change(Model.OnChange); } })
+    .HtmlAttributes(htmlAttributes)
+    .Max(new DateTime(9999,12,31))
+    .Min(new DateTime(1800, 1, 1))
+    )

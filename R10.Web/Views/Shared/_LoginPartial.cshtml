@@ -1,0 +1,260 @@
+@using Microsoft.AspNetCore.Identity
+@using R10.Web.Models
+@using R10.Core.Identity
+@using R10.Infrastructure.Identity
+@using Microsoft.Extensions.Options;
+@using Microsoft.AspNetCore.Builder
+@using R10.Web.Services
+@using R10.Web.Interfaces.Shared
+
+@inject IOptions<RequestLocalizationOptions> LocOptions
+@inject SignInManager<CPiUser> SignInManager
+@inject IOptions<CPiIdentitySettings> Options
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthorizationService
+@inject IOptions<GraphSettings> GraphSettings
+@inject IEntityService<TimeTrack> timeTrackEntityService
+@inject ITimeTrackerService timeTrackerService
+@{
+    CPiIdentitySettings CPiSettings = Options.Value;
+    var showGlobalSearch = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessGlobalSearch)).Succeeded;
+    var showRecentlyViewed = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessRecentViewed)).Succeeded;
+    var locale = User.GetLocale() ?? "en";
+    var cultures = LocOptions.Value.SupportedUICultures;
+    var culture = cultures.FirstOrDefault(c => c.Name == locale);
+    var settings = await Settings.GetSetting();
+    var isNotificationOn = settings.IsNotificationOn;
+    var graphSettings = GraphSettings.Value;
+    var timeTrack = timeTrackEntityService.QueryableList.FirstOrDefault(c => c.StopDate == null && c.UserId.Equals(User.GetUserIdentifier()));
+    var showStopTimeTrack = timeTrack != null;
+    if(showStopTimeTrack && ((decimal)(DateTime.Now - timeTrack.StartDate).TotalHours) >= settings.TimeTrackMaxHours)
+    {
+        await timeTrackerService.StopTimeTrack();
+        showStopTimeTrack = false;
+    }
+    //hide if 2FA is required but disabled by user
+    //or if SSO is required
+    var showItem = !User.SSORequired() && !User.TwoFactorRequired() && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.SystemUser)).Succeeded;
+    var showDashboard = !User.SSORequired() && !User.TwoFactorRequired() && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.DashboardUser)).Succeeded;
+
+    var showIPDecisionCentral = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.DecisionMaker)).Succeeded;
+
+    var mailDownloaderController = settings.DocumentStorage == DocumentStorageOptions.SharePoint ? "SharePointGraph" :
+                               settings.DocumentStorage == DocumentStorageOptions.iManage ? "iManageWork" :
+                               settings.DocumentStorage == DocumentStorageOptions.NetDocuments ? "NetDocs" : "DocDocuments";
+    var mailDownloaderArea = settings.DocumentStorage == DocumentStorageOptions.iManage ||
+                             settings.DocumentStorage == DocumentStorageOptions.NetDocuments ? "" : "Shared";
+
+    var showDocVerification = ((await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded)
+                            || ((await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded)
+                            || ((await AuthorizationService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded);
+
+    var myAccountLabel = $"{User.FindFirst(CPiClaimTypes.FirstName)?.Value?.FirstOrDefault()}{User.FindFirst(CPiClaimTypes.LastName)?.Value?.FirstOrDefault()}";
+
+    var showQuickDocket = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessDueDateList)).Succeeded;
+}
+<div class="nav-login">
+    @if (SignInManager.IsSignedIn(User))
+    {
+    <ul class="nav d-none d-lg-flex justify-content-end pt-lg-1">
+        @if (showGlobalSearch)
+        {
+            <li class="nav-item global-search-form" style="display: none;">
+                <form asp-area="Shared" asp-controller="GlobalSearch" asp-action="Index" method="post" class="global-search">
+                    <div class="form-group float-label">
+                        <label for="SearchStr">@Localizer["Search"]</label>
+                        <input type="text" name="SearchStr" class="form-control form-control-sm" />
+                        <i class="far fa-search text-muted gen-search-submit"></i>
+                    </div>
+                </form>
+            </li>
+                <li class="nav-item global-search-icon" title="@Localizer["Global Search"]">
+                <a class="nav-link" href="#">
+                    <i class="fal fa-search pr-1"></i>@Localizer["Global Search"]
+                </a>
+            </li>
+        }
+        @if(showStopTimeTrack){
+            <li class="nav-item">
+                <a id="StopTimeTrack" href="#" title="@Localizer["Stop Timer"]" data-url="@Url.Action("StopTimeTrack", "TimeTracker", new { Area = "Shared" })" onclick="pageHelper.stopTimeTrack()" class="nav-link">
+                    <i class="fal fa-clock fa-spin"></i>&nbsp;@Localizer["Stop Timer"]
+                </a>
+            </li>
+        }else{
+            <li class="nav-item">
+                <a id="StopTimeTrack" href="#" title="@Localizer["Stop Timer"]" data-url="@Url.Action("StopTimeTrack", "TimeTracker", new { Area = "Shared" })" onclick="pageHelper.stopTimeTrack()" class="nav-link" hidden>
+                    <i class="fal fa-clock fa-spin"></i>&nbsp;@Localizer["Stop Timer"]
+                </a>
+            </li>
+        }
+        
+        @if (showRecentlyViewed) {
+        <li class="nav-item">
+            <a asp-area="Shared" asp-controller="RecentViewed" asp-action="Index" title="@Localizer["Recently Viewed Records"]" class="nav-link">
+                    <i class="fal fa-files pr-1"></i>@Localizer["Recently Viewed Records"]
+            </a>
+        </li>
+        }
+        @if (showQuickDocket) {
+        <li class="nav-item">
+            <a asp-area="Shared" asp-controller="QuickDocket" asp-action="Index" title="@Localizer["Dockets"]" class="nav-link">
+                    <i class="fal fa-browsers pr-1"></i>@Localizer["Dockets"]
+            </a>
+        </li>
+        }
+        @if (showDashboard)
+        {
+        <li class="nav-item">
+            <a asp-area="" asp-controller="Dashboard" asp-action="" title="@Localizer["Dashboard"]" class="nav-link">
+                <i class="fal fa-chart-line pr-1"></i>@Localizer["Dashboard"]
+            </a>
+        </li>
+        }
+        @if (showItem && showIPDecisionCentral) {
+        <li class="nav-item">
+            <a asp-area="" asp-controller="IPDecisionCentral" asp-action="" title="@Localizer["IP Decision Central"]" class="nav-link">
+                <i class="fal fa-tasks pr-1"></i>@Localizer["IP Decision Central"]
+            </a>
+        </li>
+        }
+        @if (showItem && isNotificationOn)
+        {
+            <li class="nav-item">
+                <a asp-area="" asp-controller="Manage" asp-action="Alerts" title="@Localizer["Alerts"]" class="nav-link">
+                    <i class="fal fa-bell-on pr-1"></i>@Localizer["Alerts"]
+                    <span class="global-message-count badge badge-pill badge-info"></span>
+                </a>
+            </li>
+        }
+        @if (showDocVerification)
+        {
+            <li class="nav-item">
+                <a asp-area="Shared" asp-controller="DocumentVerification" asp-action="DocVerification" title="@Localizer["Document Verification"]" class="nav-link">
+                    <i class="fal fa-list pr-1"></i>@Localizer["Tasks"]
+                    <span class="doc-verification-count badge badge-pill badge-info" data-url="@Url.Action("GetDocVerificationCount", "DocumentVerification", new { Area = "Shared" })"></span>
+                </a>
+            </li>
+        }
+        @if (showItem && graphSettings.HasMail)
+        {
+            for(var i = 0; i < graphSettings.Mailboxes.Count; i++) {
+                var mailbox = graphSettings.Mailboxes[i];
+                @if ((await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.GetMailboxPolicyName(mailbox.MailboxName))).Succeeded) 
+                {
+                    <li class="nav-item">
+                        <a asp-area="" asp-controller="Mail" asp-action="Mailbox" asp-route-id="@mailbox.MailboxName" title="@Localizer[mailbox.MailboxName]" class="nav-link">
+                            <i class="fal fa-envelope pr-1"></i>@Localizer[mailbox.MailboxName]
+                            <span class="unread-message-count mailbox-@i badge badge-pill badge-info" data-mailbox="@i" data-url="@Url.Action("GetMailCount", "Mail", new { Area = "", mailbox = mailbox.MailboxName })" data-download-url="@Url.Action("MailDownloader", mailDownloaderController, new { Area = mailDownloaderArea, mailbox = mailbox.MailboxName })"></span>
+                        </a>
+                    </li>
+                }
+            }
+        }
+        <li class="nav-item">
+            <div class="position-relative">
+                <a class="nav-link" href="#" id="cpi-cultures" title="@Localizer["Language"]">
+                    <i class="fal fa-globe pr-1"></i>@(culture?.DisplayName ?? Localizer["Language ({0})", locale])
+                </a>
+                <ul class="d-none list-group position-absolute cultures">
+                    @foreach (var item in cultures.OrderBy(c => c.DisplayName))
+                    {
+                        <li class="list-group-item culture" data-locale="@item.Name">@item.DisplayName</li>
+                    }
+                </ul>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a asp-area="" asp-controller="" asp-action="" title="@Localizer["Help"]" class="nav-link get-help">
+                <i class="fal fa-question-circle pr-1"></i>@Localizer["Help"]
+            </a>
+        </li>
+        <li class="nav-item">
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="btn nav-link logoutBtn" title="@Localizer["Log out"]">
+                    <i class="fal fa-sign-out pr-1"></i>@Localizer["Log out"]
+                </button>
+            </form>
+        </li>
+        <li class="nav-item">
+            <a asp-area="" asp-controller="Manage" asp-action="Index" title="@Localizer["My Account"]" class="nav-link my-account">
+                <span class="my-account-bg"><span class="my-account-label">@myAccountLabel</span></span>
+            </a>
+        </li>
+    </ul>
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+            <ul class="navbar-nav flex-column flex-lg-row d-md-flex d-lg-none">
+                @if (showDashboard)
+                {
+                <li class="nav-item">
+                    <a asp-area="" asp-controller="Dashboard" asp-action="" title="@Localizer["Dashboard"]" class="nav-link">
+                        @Localizer["Dashboard"]
+                    </a>
+                </li>
+                }
+                @if (showItem && showIPDecisionCentral) 
+                {
+                <li class="nav-item">
+                    <a asp-area="" asp-controller="IPDecisionCentral" asp-action="" title="@Localizer["IP Decision Central"]" class="nav-link">
+                        @Localizer["IP Decision Central"]
+                    </a>
+                </li>
+                }
+                @if (showItem && graphSettings.HasMail)
+                {
+                    for(var i = 0; i < graphSettings.Mailboxes.Count; i++) {
+                        var mailbox = graphSettings.Mailboxes[i];
+                        @if ((await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.GetMailboxPolicyName(mailbox.MailboxName))).Succeeded)
+                        {
+                            <li class="nav-item">
+                                <a asp-area="" asp-controller="Mail" asp-action="Mailbox" asp-route-id="@mailbox.MailboxName" title="@Localizer[mailbox.MailboxName]" class="nav-link">
+                                    @Localizer[mailbox.MailboxName]
+                                    <span class="unread-message-count mailbox-@i badge badge-pill badge-light" data-mailbox="@i" data-url="@Url.Action("GetMailCount", "Mail", new { Area = "", mailbox = mailbox.MailboxName })" data-download-url="@Url.Action("MailDownloader", mailDownloaderController, new { Area = mailDownloaderArea, mailbox = mailbox.MailboxName })"></span>
+                                </a>
+                            </li>
+                        }
+                    }
+                }
+                <li class="nav-item">
+                    <a asp-area="" asp-controller="" asp-action="" title="@Localizer["Help"]" class="nav-link get-help">
+                        @Localizer["Help"]
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <button type="submit" class="btn nav-link logoutBtn" title="Log out">
+                        @Localizer["Log out"]
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <a asp-area="" asp-controller="Manage" asp-action="Index" title="@Localizer["My Account"]" class="nav-link">
+                        @Localizer["My Account"]
+                    </a>
+                </li>
+            </ul>
+        </form>
+    }
+    else
+    {
+        <ul class="nav d-none d-lg-flex">
+            @*@if (CPiSettings.Registration.Allowed)
+                {
+                    <li class="nav-item"><a asp-area="" asp-controller="Account" asp-action="Register" class="flex-sm-fill nav-link"><i class="fal fa-user-plus pr-2"></i>Register</a></li>
+                }*@
+            <li class="nav-item">
+                <a asp-area="" asp-controller="Account" asp-action="Login" class="flex-sm-fill nav-link">
+                    <i class="fal fa-sign-in pr-2"></i>@Localizer["Log in"]
+                </a>
+            </li>
+        </ul>
+        <ul class="navbar-nav flex-column flex-lg-row d-md-flex d-lg-none">
+            @*@if (CPiSettings.Registration.Allowed)
+                {
+                    <li class="nav-item"><a asp-area="" asp-controller="Account" asp-action="Register" class="flex-sm-fill nav-link">Register</a></li>
+                }*@
+            <li class="nav-item"><a asp-area="" asp-controller="Account" asp-action="Login" class="flex-sm-fill nav-link">@Localizer["Log in"]</a></li>
+        </ul>
+    }
+</div>
+@*this partial view is loaded multiple times
+    add css to site.css
+    add script to _Layout.cshtml*@

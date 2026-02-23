@@ -1,0 +1,160 @@
+﻿@model DOCXPopupViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var recordKey = Model.RecordKey;
+    var recordId = Model.RecordId;
+    var docxScreenCode = Model.ScreenCode;
+    var docxContainer = "docxContainer";
+}
+<input type="hidden" id="docxRecordKey" value="@recordKey" />
+<input type="hidden" id="docxRecordId" value="@recordId" />
+<input type="hidden" id="docxScreenCode" value="@docxScreenCode" />
+
+<div id="docxGenDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="docxGenDialogTitle" aria-hidden="true">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header py-1">
+                <h5 class="modal-title">@Localizer["DOCX Generation"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid py-0">
+                <div id="errorSummary" class="alert alert-danger d-none alert-dismissible fade show" role="alert">
+                    <div class="content"></div>
+                    <button type="button" class="close alert-close" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Source Screen"]</label>
+                            <input type="text" class="form-control form-control-sm" asp-for="ScreenName" readonly="readonly" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-6">
+                        <span style="font-style:italic; font-size: small; font-weight: bold;" class="pt-2 pb-2">@Localizer["Please select a DOCX to generate."]</span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group float-label" style="width:100%">
+                            <label for="pat-search-str">@Localizer["Search DOCX Name"]</label>
+                            <input type="text" id="docx-search" class="form-control form-control-sm" />
+                            <i class="far fa-search text-muted docx-search-submit" title="@Localizer["Search"]"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-1" id="@docxContainer" data-filter-url="@Url.Action("UpdatePopupFilter", "DOCX")"
+                     data-gen-title="@Localizer["Generate DOCX"]"
+                     data-gen-log-message="@Localizer["Please confirm that you want to preview and log this DOCX:"]"
+                     data-gen-nolog-message="@Localizer["Please confirm that you want to preview this docx without logging:"]"
+                     data-no-docx-selected="@Localizer["Please select a DOCX to generate."]"
+                     data-no-contacts="@Localizer["Unable to generate the DOCX. There are no contacts listed."]"
+                     data-no-selected-contacts="@Localizer["Please select at least one recipient contact."]"
+                     data-no-template-file="@Localizer["Unable to generate the DOCX. It has no template file."]">
+                    <div class="form-row">
+                        <div class="col">
+                            @(Html.Kendo().Grid<DOCXListViewModel>()
+                            .Name("docxListGrid")
+                            .Columns(columns =>
+                            {
+                            columns.Bound(l => l.DOCXId).Hidden();
+                            columns.Bound(l => l.DOCXName);
+                            columns.Bound(l => l.TemplateFile);
+                            })
+                            .AutoBind(false)
+                            .Pageable(page => page.PageSizes(true).Refresh(true))
+                            .Sortable(sortable => sortable.SortMode(GridSortMode.SingleColumn).ShowIndexes(true))
+                            .Selectable()
+                            .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Model(model =>
+                            {
+                            model.Id(l => l.DOCXId);
+                            })
+                            .Events(events => events.Error("docxSetup.searchResultGridError"))
+                            //.Events(events => events.RequestEnd("docxSetup.searchResultGridRequestEnd"))
+
+                            .PageSize(8)
+                            //.Read(read => read.Action("PageRead", "DOCX").Data($"{{systemType: '{Model.SystemType}', screenCode: '{Model.ScreenCode}', docxName: docx.getSearchedDOCX()}}"))
+                            .Read(read => read.Action("PageRead", "DOCX").Data("docx.getSearchedDOCX"))
+                            .Sort(sort => sort.Add(i => i.DOCXName))
+                            )
+                            .Events(events => events
+                            .Change("docx.gridDisplayDetail")
+                            )
+                            .HtmlAttributes(new { @class = "k-grid-border" })
+                            )
+                        </div>
+                        <form action="@Url.Action("Generate", "DOCX", new {Area = "Shared"})" method="post" id="docxForm">
+                            <input type="hidden" name="docxFormParams" id="docxFormParams" />
+                        </form>
+                    </div>
+                </div>
+                <div class="p-1">
+                    <ul class="nav nav-tabs nav-tabs-horizontal scrolling" id="docxTab" role="tablist">
+                        @*<li class="nav-item">
+                            <a class="nav-link active" id="docxRecipientTab" data-toggle="tab" href="#docxRecipientTabContent" role="tab" aria-controls="docxRecipientTabContent" aria-selected="false"> @Localizer["Recipients"]</a>
+                        </li>*@
+                        <li class="nav-item">
+                            <a class="nav-link active" id="docxFilterTab" data-toggle="tab" href="#docxFilterTabContent" role="tab" aria-controls="docxFilterTabContent" aria-selected="true"> @Localizer["Filters"]</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="docxTabContent">
+                        @*<div class="tab-pane show active py-2" id="docxRecipientTabContent" role="tabpanel" aria-labelledby="docxRecipientTabContent">
+                            <div class="p-2">
+                                @await Html.PartialAsync("_GridContact")
+                            </div>
+                        </div>*@
+                        <div class="tab-pane show py-2 active" id="docxFilterTabContent" role="tabpanel" aria-labelledby="docxFilterTabContent">
+                            <div class="p-2">
+                                @await Html.PartialAsync("_GridFilter")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="generateDOCXButton" type="button" class="btn btn-primary float-right"><i class="fal fa-file-plus pr-2"></i>@Localizer["Preview & Log"]</button>
+                @*<button id="previewDOCXButton"  type="button" class="btn btn-primary float-right"><i class="fal fa-search pr-2"></i>@Localizer["Preview Only"]</button>*@
+                <button id="previewDOCXButton"  type="button" class="btn btn-primary float-right">@Localizer["Preview Only"]</button>
+                <button id="cancel" type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times-circle pr-2"></i>@Localizer["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        docx.initialize({
+            docxContainer: "#@docxContainer",
+            docxDialog: "#docxGenDialog",
+            systemType: "@(Model.SystemType)",
+            screenCode: "@(Model.ScreenCode)"
+        });
+
+    });
+
+</script>
+
+<style>
+    #docxListGrid tr:hover {
+        cursor: pointer;
+    }
+
+    #docxListGrid tr.k-state-selected {
+        background-color: var(--grid-hover) !important;
+    }
+    #docxGenDialog i.fa-search {
+        position: absolute;
+        top: 15px;
+        right: 10px;
+        cursor: pointer;
+    }
+
+</style>

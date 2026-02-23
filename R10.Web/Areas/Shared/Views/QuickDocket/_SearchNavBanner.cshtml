@@ -1,0 +1,77 @@
+﻿<div class="qdSearchNavBanner" style="display: none;">
+    @(Html.Kendo().Calendar()
+        .Name("qdMiniCalendar")
+        .ComponentType("modern")
+        .Events(e => e.Change("quickDocket.miniCalendarOnChange"))
+        )
+</div>
+<style>
+    #qdMiniCalendar {
+        font-size: 0.85rem;
+        display: block;
+        border: 0;
+    }
+
+    #qdMiniCalendar td.k-state-selected .k-link {
+        box-shadow: unset !important;
+    }
+
+    #qdMiniCalendar td.k-state-focused {
+        border: 0;
+    }
+
+    .qdMiniCalendarToggle {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: .9rem;
+        color: var(--link-label);
+        opacity: .5;
+        margin-right: 2px;
+    }
+
+    .qdMiniCalendarTitle,
+    #qdMiniCalendar .k-calendar-title,
+    #qdMiniCalendar .k-nav-today {
+        font-size: .9rem;
+        color: var(--link-label);
+    }
+
+    .qdMiniCalendarTitle {
+        cursor: pointer;
+    }
+    .qdMiniCalendarTitle::before {
+        display: none;
+    }
+</style>
+<script>    
+    $(document).ready(function () {
+        var calHeader = $("#qdMiniCalendar .k-calendar-header");
+        calHeader.prepend("<span class='qdMiniCalendarTitle' style='display:none;'>Calendar</span>");
+        calHeader.append("<i class='qdMiniCalendarToggle fal fa-chevron-up'></i>");
+
+        var toggleMiniCalendar = (el) => {
+            var toggle = $(el.currentTarget);
+            var cal = $("#qdMiniCalendar .k-calendar-view");
+
+            cal.toggle();
+
+            if (cal.is(":visible")) {
+                toggle.removeClass("fa-chevron-down");
+                toggle.addClass("fa-chevron-up");
+                calHeader.find(".k-calendar-title").show();
+                calHeader.find(".k-calendar-nav").show();
+                calHeader.find(".qdMiniCalendarTitle").hide();
+            }
+            else {
+                toggle.removeClass("fa-chevron-up");
+                toggle.addClass("fa-chevron-down");
+                calHeader.find(".k-calendar-title").hide();
+                calHeader.find(".k-calendar-nav").hide();
+                calHeader.find(".qdMiniCalendarTitle").text(calHeader.find(".k-calendar-title").text());
+                calHeader.find(".qdMiniCalendarTitle").show();
+            }
+        };
+        $("#qdMiniCalendar .qdMiniCalendarToggle").on("click", toggleMiniCalendar);
+        $("#qdMiniCalendar .qdMiniCalendarTitle").on("click", toggleMiniCalendar)
+    });
+</script>

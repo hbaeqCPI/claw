@@ -1,0 +1,30 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<QECategory>()
+                    .Name($"{Model.PageId}-Grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(m => m.QECat).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: QECatId#", fromSearch = true }), "QECat")).Width(200);
+                        columns.Bound(m => m.QECatDesc);
+                    })
+                    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                    .AutoBind(false)
+                    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .Excel(excel => excel.FileName("QuickEmailCategoryList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "QuickEmailCategory")))
+                    .DataSource(dataSource => dataSource
+                    .Ajax().Events(events => events.Error("qeCategoryPage.searchResultGridError"))
+                    .Events(events => events.RequestEnd("qeCategoryPage.searchResultGridRequestEnd"))
+                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                    .Read(read => read.Action("PageRead", "QuickEmailCategory")
+                    .Data("qeCategoryPage.gridMainSearchFilters")
+                    )
+                    .Sort(sort => sort.Add(m => m.QECat))
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

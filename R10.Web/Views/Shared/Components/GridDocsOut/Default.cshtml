@@ -1,0 +1,315 @@
+﻿@model DocsOutGridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject ISystemSettings<R10.Core.Entities.AMS.AMSSetting> AMSSettings
+@inject ISystemSettings<R10.Core.Entities.ForeignFiling.FFSetting> FFSettings
+@inject ISystemSettings<R10.Core.Entities.RMS.RMSSetting> RMSSettings
+@{
+    var settings = await Settings.GetSetting();
+    var param = $"{{systemType: '{Model.SystemType}', parentKey: '{Model.ParentKey}', parentValue: {Model.ParentValue}, documentCode: 'All'}}";
+
+    var gridName = $"docsOutGrid_{ViewData["PageId"]}";
+    var optionName = $"documentCode_{ViewData["PageId"]}";
+
+    var url = Url.Action("Open", "DocsOut", new { Area = Model.Area, documentCode = "#: DocumentCode #", docLogId = "#: DocLogId#", systemType = Model.SystemType, parentKey = Model.ParentKey, parentValue = Model.ParentValue });
+    var openQuickEmailTemplate = $"<a href='\\#' data-url='{url}' class='open-Viewer' data-id='#: DocLogId#'>#: Document#</a>";
+    var openReminderEmailTemplate = $"<a href='\\#' data-url='{url}' class='open-reminder' data-id='#: DocLogId#' title='{Localizer["Reminder"]}'>#: Document#</a>";
+    var downloadFileTemplate = $"<a href='\\#' data-url='{url}' class='download-file'></span>#: Document#</a>";
+    var docViewerUrl = Url.Action("ZoomDocsOut", "DocViewer", new { Area = "Shared", systemType = Model.SystemType });
+    var qeUrl = Url.Action("EmailFromLog", "QuickEmail", new { Area = "Shared" });
+    var documentTypes = new List<SelectListItem>()
+    {
+        new SelectListItem() {Text = Localizer["All"], Value = "All"},
+        new SelectListItem() {Text = Localizer["Letters"], Value = "Let"},
+        new SelectListItem() {Text = Localizer["Quick Email"], Value = "QE"},
+        new SelectListItem() {Text = Localizer["Electronic Forms"], Value = "EFS"}
+    };
+
+    var amsSettings = await AMSSettings.GetSetting();
+    var ffSettings = await FFSettings.GetSetting();
+    var rmsSettings = await RMSSettings.GetSetting();
+
+    if (amsSettings.ShowReminderCorrespondence && Model.SystemType == "A" && User.IsInSystem(SystemType.AMS) ||
+        ffSettings.ShowReminderCorrespondence && Model.SystemType == "P" && User.IsInSystem(SystemType.ForeignFiling) ||
+        rmsSettings.ShowReminderCorrespondence && Model.SystemType == "T" && User.IsInSystem(SystemType.RMS))
+    {
+        documentTypes.Add(new SelectListItem() { Text = Localizer["Reminders"], Value = "REM" });
+    }
+
+    var docEditUrl = "";
+    var letterLogDocLibrary = "";
+    var efsLogDocLibrary = "";
+    var isSharePointLoggingOn = settings.IsSharePointIntegrationOn && settings.IsSharePointLoggingOn;
+    if (isSharePointLoggingOn)
+    {
+        //docViewerUrl = Url.Action("GetLogPreviewUrl", "SharePointGraph", new { Area = "Shared" });
+        docViewerUrl = Url.Action("GetLogPreviewUrl", "FileViewer", new { Area = "" });
+        //docEditUrl = Url.Action("GetLogEditUrl", "SharePointGraph", new { Area = "Shared" });
+        docEditUrl = Url.Action("GetLogEditUrl", "FileViewer", new { Area = "" });
+        var downloadUrl = Url.Action("DownloadFile", "SharePointGraph", new { Area = "Shared", docLibrary = "{docLibrary}", name = "#: LogFile #", id = "#: ItemId#" });
+        downloadFileTemplate = $"<a href='\\#' data-url='{downloadUrl}' data-doc-code='#: DocumentCode#' class='download-file'></span>#: Document#</a>";
+        letterLogDocLibrary = SharePointDocLibrary.LetterLog;
+        efsLogDocLibrary = SharePointDocLibrary.IPFormsLog;
+    }
+    var activePage = ViewData["ActivePage"];
+}
+
+<div class="grid-options">
+    <div id="docTypeContainer" class="document-type d-flex">
+        <label class="mr-2">@Localizer["Display Document Type"]</label>
+        @(Html.Kendo().DropDownList().AutoWidth(true)
+            .Name(optionName)
+            .DataTextField("Text")
+            .DataValueField("Value")
+            .BindTo(documentTypes))
+
+    </div>
+</div>
+
+<div class="row form-group content-signature"
+     data-confirm="@Localizer["Please Confirm"]"
+     data-send-prompt="@Localizer["Are you sure you want to send this document for eSignature?"]"
+     data-resend-prompt="@Localizer["Document is already marked as sent. Are you sure you want to send it again?"]"
+     data-pull-prompt="@Localizer["Are you sure you want to retrieve the signed document?"]"
+     data-repull-prompt="@Localizer["Document was already retrieved before. Are you sure you want to do it again?"]">
+    <div class="col-md-12">
+        @(
+            Html.Kendo().Grid<DocsOutDTO>
+            ()
+            .Name(gridName)
+            .Columns(columns =>
+            {
+                columns.Bound(d => d.DocumentType).Width(200);
+                columns.Bound(d => d.Document).ClientTemplate("# if (DocumentCode == 'QE'){#" + openQuickEmailTemplate + "# }" + "else if (DocumentCode == 'REM') { #" + openReminderEmailTemplate + "# }" + "else { #" + downloadFileTemplate + "# }#");
+                columns.Bound(d => d.GeneratedOn).Format("{0:dd-MMM-yyyy hh:mm tt}").Width(200);
+                columns.Bound(d => d.GeneratedBy);
+
+                if (settings.IsESignatureOn)
+                    columns.Bound(p => p.SentToDocuSign).ClientTemplate("<i class='fa fal #: SentToDocuSign ? 'fa-check' : ''#'></i>").Width(100);
+
+                columns.Command(command =>
+                {
+                    command.Custom("Email").Text(Localizer["Email"].ToString()).Click($"function(e) {{openQESender(e,this)}}").IconClass("k-icon fal fa-envelope pr-2").HtmlAttributes(new { @class = "send-email", style = "width:80px;" });
+                }).Width(15);
+                columns.Command(command =>
+                {
+                    command.Custom("View").Text(Localizer["View"].ToString()).Click($"function(e) {{{(isSharePointLoggingOn ? "openDocViewerSharePoint" : "openDocViewer")}(e,this)}}").IconClass("k-icon fal fa-search-plus").HtmlAttributes(new { @class = "doc-viewer", style = "width:80px;" });
+                    if (isSharePointLoggingOn && Model.CanUploadDocuments)
+                    {
+                        command.Custom("Edit").Text(Localizer["Edit"].ToString()).Click($"function(e) {{openDocEditorSharePoint(e,this)}}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { @class = "doc-editor", style = "width:80px;" });
+                    }
+                    command.Custom("Download").Text(Localizer["Download"]).Click($"function(e) {{letter.downloadDocsOutFile(e,'{gridName}',{isSharePointLoggingOn.ToString().ToLower()})}}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { @class = "file-download", title = Localizer["Download"] });
+                    command.Custom("DocuSignUpload").Text(Localizer["eSign"]).Click($"function(e) {{letter.pushDocsOutFileToDocuSign(e,'{letterLogDocLibrary}','{efsLogDocLibrary}','{Model.RoleLink}','{gridName}')}}").IconClass("k-icon fal fa-signature pr-2").HtmlAttributes(new { title = Localizer["Send for eSignature"], @class = "e-sign", style = "width:80px;" });
+                    command.Custom("DocuSignDownload").Text(Localizer["Retrieve"]).Click($"function(e) {{letter.pullDocsOutFileFromDocuSign(e,'{gridName}',{isSharePointLoggingOn.ToString().ToLower()})}}").IconClass("k-icon fal fa-cloud-download pr-2").HtmlAttributes(new { title = Localizer["Retrieve signed document"], @class = "e-retrieve" });
+
+                    if (Model.CanDeleteRecord)
+                    {
+                        command.Custom("Delete").Text(Localizer[" "]).Click($"function(e) {{{activePage}.deleteGridRow(e,this)}}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { @class = "rec-delete", style = "width:30px;", title = Localizer["Delete"] });
+                    }
+                });
+            })
+            .HtmlAttributes(new { style = "height: 380px;" })
+
+            .Editable(editable => editable.Enabled(Model.CanDeleteRecord).Mode(GridEditMode.InCell).ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+            .Pageable(page => page.Responsive(false).Refresh(true))
+            .Sortable(sort => sort.AllowUnsort(false))
+            .AutoBind(false)
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .PageSize(settings.SubFormPageSize)
+            .Model(model =>
+            {
+                model.Field(p => p.DocumentType).Editable(false);
+                model.Field(p => p.Document).Editable(false);
+                model.Field(p => p.GeneratedOn).Editable(false);
+                model.Field(p => p.GeneratedBy).Editable(false);
+                model.Field(p => p.SentToDocuSign).Editable(false);
+            })
+            .Read(create => create.Action("DocsOutRead", "DocsOut", new { Area = Model.Area }).Data(@param))
+            .Destroy(create => create.Action("DocsOutDelete", "DocsOut", new { Area = Model.Area }))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            )
+            .HtmlAttributes(new { @class = "mb-2 kendo-Grid" })
+            .Events(events => events.DataBound("function(e) {docsOutdataBound(e,this);}"))
+            )
+    </div>
+</div>
+
+<script>
+    openDocViewerSharePoint = (e, grid) => {
+        const selectedDocsOut = grid.dataItem($(e.currentTarget).closest("tr"));
+        let url = "@Html.Raw(docViewerUrl)";
+        url = url + "?documentCode=" + selectedDocsOut.DocumentCode + "&id=" + selectedDocsOut.ItemId;
+
+        $.get(url)
+            .done(function (result) {
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.href = result.previewUrl;
+                a.target = "_blank";
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                }, 0);
+            })
+            .fail(function (e) {
+                pageHelper.showErrors(e.responseText);
+            });
+
+    }
+
+    openDocEditorSharePoint = (e, grid) => {
+        const selectedDocsOut = grid.dataItem($(e.currentTarget).closest("tr"));
+        let url = "@Html.Raw(docEditUrl)";
+        url = url + "?documentCode=" + selectedDocsOut.DocumentCode + "&id=" + selectedDocsOut.ItemId;
+
+        console.log(selectedDocsOut);
+
+        $.get(url)
+            .done(function (result) {
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.href = result.editUrl;
+                a.target = "_blank";
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                }, 0);
+            })
+            .fail(function (e) {
+                pageHelper.showErrors(e.responseText);
+            });
+
+    }
+
+    openDocViewer = (e, grid) => {
+        const selectedDocsOut = grid.dataItem($(e.currentTarget).closest("tr"));
+        let url = "@Html.Raw(docViewerUrl)";
+        url = url + "&documentCode=" + selectedDocsOut.DocumentCode + "&docLogId=" + selectedDocsOut.DocLogId + "&screenCode=" + selectedDocsOut.ScreenCode + "&key=" + selectedDocsOut.RecKey;
+        documentPage.zoomDocument(url);
+    }
+
+    openQESender = (e, grid) => {
+        const selectedDocsOut = grid.dataItem($(e.currentTarget).closest("tr"));
+        let url = "@Html.Raw(qeUrl)";
+        url = url + "?logId=" + selectedDocsOut.DocLogId;
+        $.get(url).done(function (result) {
+            const popupContainer = $(".site-content .popup").last();
+            popupContainer.html(result);
+        }).fail(function (e) {
+            pageHelper.showErrors(e);
+        });
+    }
+
+    $(document).ready(function () {
+        var container = $('#@(ViewData["PageId"])');
+        container.unbind();
+
+        if (container.length > 0) {
+            container.find('input[name="@(optionName)"]').change(function () {
+                var documentCode = $(this).val();
+                var grid = container.find("#@(gridName)").data("kendoGrid");
+                var param = $.extend(@(Html.Raw(param)), { documentCode: documentCode });
+                grid.dataSource.read(param);
+                grid.refresh();
+            });
+
+            container.on('click', 'a.download-file', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var letterLogDocLibrary = "@letterLogDocLibrary";
+                var efsLogDocLibrary = "@efsLogDocLibrary";
+                var url = $(this).data("url");
+                var docCode = $(this).data("doc-code");
+
+                if (docCode == "Let")
+                    url = url.replace("{docLibrary}", letterLogDocLibrary);
+                else
+                    url = url.replace("{docLibrary}", efsLogDocLibrary);
+                window.open(url);
+            });
+
+            container.on('click', 'a.open-Viewer', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var url = $(this).data("url");
+
+                $.ajax({
+                    url: url,
+                    success: function (result) {
+                        const popupContainer = $(".site-content .popup");
+                        popupContainer.html(result);
+                        quickEmail.initializeLogViewer();
+                    },
+                    error: function (error) {
+                        pageHelper.showErrors(error.responseText);
+                    }
+                });
+            });
+
+            container.on('click', 'a.open-reminder', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var el = $(this);
+                var url = el.data("url");
+
+                cpiLoadingSpinner.show();
+                $.ajax({
+                    url: url,
+                    success: function (result) {
+                        cpiLoadingSpinner.hide();
+                        cpiAlert.popUp(el.prop("title"), result, null, true);
+                    },
+                    error: function (error) {
+                        cpiLoadingSpinner.hide();
+                        pageHelper.showErrors(error.responseText);
+                    }
+                });
+            });
+        }
+    });
+
+    function docsOutdataBound(e, grid) {
+        const items = e.sender.items();
+        items.each(function (index) {
+            const dataItem = grid.dataItem(this);
+
+            if (dataItem.DocumentCode === "EFS" || dataItem.DocumentCode === "REM") {
+                const viewer = $(this).find(".doc-viewer");
+                viewer.addClass("d-none");
+            }
+
+            if (dataItem.DocumentCode !== "QE") {
+                const sender = $(this).find(".send-email");
+                sender.addClass("d-none");
+            }
+
+            if (dataItem.DocumentCode != "Let") {
+                const editor = $(this).find(".doc-editor");
+                editor.addClass("d-none");
+            }
+            if (!(dataItem.ForSignature && dataItem.SignatureReviewed)) {
+                const eSign = $(this).find(".e-sign");
+                eSign.addClass("d-none");
+            }
+
+            if (!dataItem.SentToDocuSign) {
+                const eRetrieve = $(this).find(".e-retrieve");
+                eRetrieve.addClass("d-none");
+            }
+
+            if (!(dataItem.DocumentCode == "Let" || dataItem.DocumentCode == "EFS")) {
+                const sender = $(this).find(".file-download");
+                sender.addClass("d-none");
+
+                const deleteRec = $(this).find(".rec-delete");
+                deleteRec.addClass("d-none");
+            }
+            
+        })
+    }
+
+</script>

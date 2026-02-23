@@ -1,0 +1,17 @@
+﻿@model DOCXCategory
+@(Html.Kendo().DropDownListFor(m => m)
+        .DataValueField("DOCXCatId")
+        .DataTextField("DOCXCatDesc")
+        .Events(e=> e.DataBound("page.dropDownDefaultToFirstItem"))
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action("GetCategoryList", "DOCXCategory", new { area = "Shared" });
+            });
+        }))
+
+
+  
+
+  

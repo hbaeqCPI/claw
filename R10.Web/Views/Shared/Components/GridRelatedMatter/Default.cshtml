@@ -1,0 +1,135 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<GMSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var idParam = $"{{parentId: {Model.ParentId}}}";
+    var matLink = $"<a href = '{Url.Action("Detail", "Matter", new { area = "GeneralMatter", id = "#: MatId#", fromSearch = true })}' class='details-link'>#: RelatedCaseNumber#</a>";
+    var controller = Model.Controller;
+    if (controller.StartsWith("Matter"))
+        matLink = $"<a href = '{Url.Action("Detail", "Matter", new { area = "GeneralMatter", id = "#: MatId#", fromSearch = true })}' class='details-link' target='_blank'>#: RelatedCaseNumber#</a>";
+
+    var pageName = ViewBag.ActivePage;
+    var id = Model.ParentId;
+    bool addMode = id == 0;
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var gridName = $"relatedMattersGrid_{ViewData["PageId"]}";
+
+}
+
+
+<div data-url-add-related-matter="@Url.Action("RelatedMattersAdd", controller)"
+     data-url-edit-related-matter="@Url.Action("RelatedMattersEdit", controller)">
+    @(Html.Kendo().Grid<SharedRelatedMatterViewModel>()
+        .Name(gridName)
+        .Columns(columns =>
+        {
+            columns.Bound(r => r.RelatedCaseNumber).Width(150).Title(Localizer[caseNumberLabel]).ClientTemplate(matLink).HtmlAttributes(new { @class = "relatedCaseNumber-field nowrap" });
+            columns.Bound(t => t.MatterTitle).Width(250).ClientTemplate("<div class='col' style='padding-right: 0; padding-left: 0;'><div class='tmkNameSearchResult-collapsible'>#: MatterTitle#</div></div>");
+            columns.Bound(r => r.SubCase).Width(100).HtmlAttributes(new { @class = "subCase-field" });
+            columns.Bound(r => r.MatterType).Width(150).HtmlAttributes(new { @class = "caseType-field" });
+            columns.Bound(t => t.ProjectName);
+            columns.Bound(t => t.Program);
+            columns.Bound(t => t.EffectiveOpenDate).Format("{0:dd-MMM-yyyy}").HtmlAttributes(new { @class = "nowrap" });
+            columns.Bound(t => t.TerminationEndDate).Format("{0:dd-MMM-yyyy}").HtmlAttributes(new { @class = "nowrap" });
+            columns.Bound(t => t.MatterStatus);
+            columns.Command(command =>
+            {
+                if (detailPagePermission.CanEditRecord)
+                    command.Custom("Edit")
+                .Click("function(e) {relatedMatterPage.editRelatedMattersGridRow(e, '" + @gridName + "');}")
+                .IconClass("k-icon fal fa-edit")
+                .Text($"<span class='grid-action-label'>{Localizer["Edit"]}</span>")
+                .HtmlAttributes(new { @class = "grid-action" });
+
+            }).Width(10);
+            columns.Command(command =>
+            {
+                if (detailPagePermission.CanDeleteRecord)
+                    command.Custom("Delete")
+                .Click("function(e) {" + pageName + ".deleteGridRow(e,this)}")
+                .IconClass("k-icon fal fa-trash-alt")
+                .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                .HtmlAttributes(new { @class = "grid-action" });
+
+            }).Width(10);
+        })
+
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+        .ToolBar(toolbar =>
+        {
+            //HIDE ADD BUTTON IF PARENT IS READONLY
+            if (detailPagePermission.CanEditRecord && detailPagePermission.CanAddRecord & !addMode)
+            {
+                @* toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" }); *@
+                toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "ShowAddOurMatter" }).HtmlAttributes(new { @class = "grid-action" });
+            }
+            if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+            {
+                toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+            }
+
+        })
+        .Editable(editable => editable.Enabled(detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+        .Mode(GridEditMode.InCell).
+        ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+        .Sortable(sort => sort.AllowUnsort(false))
+        .Pageable(page => page.Responsive(false))
+        .AutoBind(false)
+        .DataSource(dataSource => dataSource
+        .Ajax()
+        .Batch(true)
+        .PageSize(settings.SubFormPageSize)
+        .ServerOperation(false)
+        .Model(model =>
+        {
+            model.Id(r => r.KeyId);
+            model.Field(r => r.RelatedCaseNumber).Editable(false);
+            model.Field(r => r.MatterTitle).Editable(false);
+            model.Field(r => r.SubCase).Editable(false);
+            model.Field(r => r.MatterType).Editable(false);
+            model.Field(r => r.ProjectName).Editable(false);
+            model.Field(r => r.Program).Editable(false);
+            model.Field(r => r.EffectiveOpenDate).Editable(false);
+            model.Field(r => r.TerminationEndDate).Editable(false);
+            model.Field(r => r.MatterStatus).Editable(false);
+        })
+        .Read(create => create.Action("RelatedMattersRead", Model.Controller).Data(@idParam))
+        .Update(update => update.Action("RelatedMattersUpdate", Model.Controller))
+        .Destroy(destroy => destroy.Action("RelatedMatterDelete", Model.Controller))
+        .Events(events =>
+        {
+            events.Error("pageHelper.onGridError");
+        })
+        )
+        .Events(events => events.DataBound("function(e) {relatedMatterPage.relatedMattersGridDataBound('" + @gridName + "', " + @id + ");}"))
+        .HtmlAttributes(new { @class = "kendo-Grid" })
+        )
+</div>
+<script>
+    relatedMatterPage.initialize('@gridName', '@id');
+</script>
+<style>
+    .k-grid .nowrap {
+        white-space: nowrap;
+    }
+
+    #imageWindow {
+        height: 400px;
+        width: 400px;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        z-index: 9999;
+    }
+</style>

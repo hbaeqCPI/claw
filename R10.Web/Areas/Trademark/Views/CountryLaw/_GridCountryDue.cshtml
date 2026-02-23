@@ -1,0 +1,107 @@
+﻿@model CountryLawChildViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    
+    var permission = Model.Permission;
+    var childLinkParam = $"{{parentId: {Model.Id} }}";
+}
+
+<div data-countryLawId="@Model.Id" data-country="@Model.Country" data-caseType="@Model.CaseType" data-url-add="@Url.Action("CountryDueAdd", "CountryLaw")"
+     data-url-edit="@Url.Action("CountryDueEdit", "CountryLaw")"
+     data-url-copy="@Url.Action("CountryDueCopy", "CountryLaw")"
+     data-url-compute="@Url.Action("CountryDueCompute", "CountryLaw")">
+    @(Html.Kendo().Grid<TmkCountryDue>()
+          .Name("tmkCountryDueGrid")
+          .Columns(columns =>
+          {
+              columns.Bound(d => d.ActionDue).Width(400);
+              columns.Bound(d => d.BasedOn);
+              columns.Bound(d => d.Yr);
+              columns.Bound(d => d.Mo);
+              columns.Bound(d => d.Dy);
+              columns.Bound(d => d.EffStartDate).Format("{0:dd-MMM-yyyy}").Width(150);
+              columns.Bound(d => d.EffEndDate).Format("{0:dd-MMM-yyyy}").Width(150);
+              columns.Bound(d => d.Indicator);
+              columns.Bound(d => d.Calculate).ClientTemplate("<i class='fa fal #: Calculate ? 'fa-check' : ''#'></i>")
+                                             .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
+              columns.Command(command =>
+              {
+                  if (permission.CanEditRecord && !permission.CanEditRemarksOnly)
+                      command.Custom("Edit").Click("function(e) {tmkCountryLawPage.editCountryDueRecord(e,this)}").IconClass("k-icon fal fa-edit")
+                      .Text(Localizer["Edit"]);
+              }).Width(10);
+              columns.Command(command =>
+              {
+                  if (Model.CanDeleteChild)
+                      command.Custom("Delete").Click("function(e) {tmkCountryLawPage.deleteGridRow(e,this)}").IconClass("k-icon fal fa-trash-alt")
+                      .Text(Localizer["Delete"]).Visible("function(dataItem) {return !dataItem.CPIAction}");
+
+              }).Width(10);
+              columns.Command(command =>
+              {
+                  if (permission.CanAddRecord)
+                      command.Custom("Copy").Click("function(e) {tmkCountryLawPage.copyCountryDueRecord(e,this)}").IconClass("k-icon fal fa-copy")
+                      .Text(Localizer["Copy"]);
+              }).Width(10);
+              columns.Command(command =>
+              {
+                  if (permission.CanAddRecord)
+                      command.Custom("Generate").Click("function(e) {tmkCountryLawPage.reComputeCountryLawActions(e,this)}").IconClass("k-icon fal fa-bolt")
+                      .Text(Localizer["Generate"]);
+              }).Width(10);
+          })
+          .Pageable()
+          .Sortable(sort => sort.AllowUnsort(false))
+          .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
+          .ToolBar(toolbar =>
+          {
+              if (permission.CanAddRecord)
+              {
+                  toolbar.Custom().Name("AddCountryDue").IconClass("k-icon fal fa-plus").Text(Localizer["Add"]);
+              }
+
+              if (permission.CanEditRecord)
+              {
+                  toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                  toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+              }
+
+          })
+          .Editable(editable => editable.Enabled(permission.CanEditRecord)
+              .Mode(GridEditMode.InCell).
+              ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+          .AutoBind(true)
+          .DataSource(dataSource => dataSource
+              .Ajax()
+              .Batch(true)
+              .ServerOperation(false)
+              .Model(model =>
+              {
+                  model.Id(d => d.CDueId);
+                  model.Field(d => d.ActionDue).Editable(false);
+                  model.Field(d => d.BasedOn).Editable(false);
+                  model.Field(d => d.Yr).Editable(false);
+                  model.Field(d => d.Mo).Editable(false);
+                  model.Field(d => d.Dy).Editable(false);
+                  model.Field(d => d.EffStartDate).Editable(false);
+                  model.Field(d => d.EffEndDate).Editable(false);
+                  model.Field(d => d.Indicator).Editable(false);
+
+              })
+              .Read(create => create.Action("CountryDueRead", "CountryLaw").Data(childLinkParam))
+              .Update(create => create.Action("CountryDuesUpdate", "CountryLaw").Data(childLinkParam))
+              .Destroy(create => create.Action("CountryDueDelete", "CountryLaw"))
+              .Events(events =>
+              {
+                  events.Error("pageHelper.onGridError");
+              })
+          )
+          .HtmlAttributes(new { @class = "kendo-Grid" })
+          )
+</div>
+<style>
+    #tmkCountryDueGrid .k-command-cell {
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+</style>

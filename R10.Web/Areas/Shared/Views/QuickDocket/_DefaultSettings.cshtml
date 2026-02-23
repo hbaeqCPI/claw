@@ -1,0 +1,880 @@
+﻿@model QuickDocketDefaultSettingsViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var screen = "qdDefaultSettings";
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var clientLabel = Localizer[settings.LabelClient + "(s)"];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+    var ownerLabel = Localizer[settings.LabelOwner];
+    var ownerNameLabel = Localizer[settings.LabelOwnerName];
+    var agentLabel = Localizer[settings.LabelAgent];
+    var agentNameLabel = Localizer[settings.LabelAgentName];
+    var clientRefLabel = Localizer[settings.LabelClientRef];
+    var attorneyLabel = Localizer["Attorney"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseTypeLabel = Localizer["Case Type"];
+    var descriptionLabel = Localizer["Description"];
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent) || User.IsRespOfficeOn(SystemType.Trademark) || User.IsRespOfficeOn(SystemType.GeneralMatter);
+    var additionalData = "function() {return quickDocket.getDefaultSystems('#qdDefaultSettingsForm');}";
+    var deDocketOn = settings.IsDeDocketOn;
+    var deDocketInstructionOnly = Model.DeDocketInstructionOnly ?? false;
+    var deDocketUninstructedOnly = Model.DeDocketUninstructedOnly ?? false;
+}
+
+<div id="defaultSettingsContainer" style="font-size:.75rem">
+    <form id="qdDefaultSettingsForm" asp-area="Shared" asp-controller="QuickDocket" asp-action="SaveSettings" method="post"
+          data-save-message="@Localizer["Default settings were updated successfully"]"
+          data-default-title-mapper-url="@Url.Action("DefaultTitleValueMapper","QuickDocketLookup")"
+          data-default-casenumber-mapper-url="@Url.Action("DefaultCaseNumberValueMapper","QuickDocketLookup")">
+        <div class="mb-3 border pl-1 pb-1">
+            <p><i class="fal fa-exclamation-circle"></i>@Localizer["Note"]</p>
+            <p>@Localizer["The default settings below are used to initialize the Quick Docket screen with data. Save the settings after making changes so it can be used the next time you open this screen."]</p>
+        </div>
+        <div class="form-row mb-1">
+            <div class="col-lg-6 pr-4">
+                <div class="border rounded pl-1 def-system-types">
+                    <p>@Localizer["System"]</p>
+                    @foreach (var item in Model.Systems)
+                    {
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="@item.SystemId" @((Model.SystemTypes ?? "").Contains(item.TypeId) ? "checked" : "") value="@item.TypeId">
+                            <label class="form-check-label" for="@item.SystemId">@Localizer[item.SystemName]</label>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-6 text-md-right">
+                <div>
+                    <label for="IsDefaultPage" style="font-size: .8rem;">@Localizer["Show as Default Page?"]</label>
+                    <span>
+                        <label class="toggle-switch">
+                            <input id="IsDefaultPage" name="IsDefaultPage" type="checkbox" @(Model.IsDefaultPage ? "checked" : "") class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-lg-6 pr-4">
+                <div class="border rounded pl-1" style="margin-top:5px !important">
+                    <p>@Localizer["Status Codes"]</p>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="ActiveSwitch" id="activeSwitchActive" @(Model.ActiveSwitch == "1" ? "checked" : "") value="1">
+                        <label class="form-check-label" for="activeSwitchActive">@Localizer["Active"]</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="ActiveSwitch" id="activeSwitchInActive" @(Model.ActiveSwitch == "0" ? "checked" : "") value="0">
+                        <label class="form-check-label" for="activeSwitchInActive">@Localizer["Inactive"]</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="ActiveSwitch" id="activeSwitchAll" @(Model.ActiveSwitch == "2" ? "checked" : "") value="2">
+                        <label class="form-check-label" for="activeSwitchAll">@Localizer["All"]</label>
+                    </div>
+
+                </div>
+
+
+
+                <div class="border rounded pl-1" style="margin-top:10px !important">
+                    <p>@Localizer["Due Date Range"]</p>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="DueDateRange" id="dueDateRelative" @(Model.DueDateRange == "Relative" ? "checked" : "") value="Relative">
+                        <label class="form-check-label" for="DueDateRange">@Localizer["Relative to Current Date"]</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="DueDateRange" id="dueDateTimeFrame" @(Model.DueDateRange == "Fix" ? "checked" : "") value="Fix">
+                        <label class="form-check-label" for="DueDateRange">@Localizer["Specific Time Frame"]</label>
+                    </div>
+                    <div id="dueDateRelativeRow">
+                        <div id="DueDateRelativeStartDate" class="form-row form-inline mb-1">
+                            <div class="col-sm-5 form-inline">
+                                <div class="col-auto form-inline">
+                                    <span>@Localizer["Start Date"]</span>
+                                </div>
+                                <div class="col form-inline justify-content-end">
+                                    <span>@Localizer["Today"]</span>
+                                </div>
+                            </div>
+                            <div class="col-2 form-inline">
+                                @(Html.Kendo().DropDownList()
+                                            .Name("DueDateStartOp")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(new List<SelectListItem>() {
+                                                                        new SelectListItem() { Text = "-", Value = "-" },
+                                                                        new SelectListItem() { Text = "+", Value = "+" },
+                                            })
+                                            .Value(Model.DueDateStartOp)
+                                            .HtmlAttributes(new { style = "width: 100%" })
+                            )
+                            </div>
+                            <div class="col-sm-5 form-inline">
+                                <input type="number" class="form-control form-control-sm" name="DueDateStartOffset" asp-for="DueDateStartOffset" style="width: 4em" value="@Model.DueDateStartOffset">
+                                @(Html.Kendo().DropDownList()
+                                .Name("DueDateStartUnit")
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .BindTo(new List<SelectListItem>() {
+                                            new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                            new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                            new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                            new SelectListItem() { Text = Localizer["Years"], Value = "Y" }
+                                })
+                                .Value(Model.DueDateStartUnit)
+                                .HtmlAttributes(new { style = "width: 60%;",@class="pl-1" })
+                            )
+                            </div>
+                        </div>
+                        <div id="DueDateRelativeEndDate" class="form-row form-inline mb-2">
+                            <div class="col-sm-5 form-inline">
+                                <div class="col form-inline">
+                                    <span>@Localizer["End Date"]</span>
+                                </div>
+                                <div class="col-auto form-inline justify-content-end">
+                                    <span>@Localizer["Start Date"]</span>
+                                </div>
+                            </div>
+                            <div class="col-2 form-inline justify-content-center">
+                                <span>+</span>
+                            </div>
+                            <div class="col-sm-5 form-inline">
+                                <input type="number" class="form-control form-control-sm" name="DueDateEndOffset" asp-for="DueDateEndOffset" style="width: 4em" value="@Model.DueDateEndOffset">
+                                @(Html.Kendo().DropDownList()
+                                        .Name("DueDateEndUnit")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .BindTo(new List<SelectListItem>() {
+                                                                    new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                                                    new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                                                    new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                                                    new SelectListItem() { Text = Localizer["Years"], Value = "Y" },                                                                                                                                                                                                                      })
+                                        .Value(Model.DueDateEndUnit)
+                                        .HtmlAttributes(new { style = "width: 60%", @class = "pl-1" })
+                            )
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dueDateTimeFrameRow">
+                        <div id="DueDateFixControls" class="form-group">
+                            @*<label>@Localizer["Time Frame"]</label>*@
+                            @(Html.Kendo().DropDownList()
+                                            .Name("DueDateTimeFrame")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(new List<SelectListItem>() {
+                                                                new SelectListItem() {
+                                                                    Text = Localizer["This Week"],
+                                                                    Value = "W"
+                                                                },
+                                                                new SelectListItem() {
+                                                                    Text = Localizer["This Month"],
+                                                                    Value = "M"
+                                                                },
+                                                                new SelectListItem() {
+                                                                    Text = Localizer["This Year"],
+                                                                    Value = "Y"
+                                                                },                                                                                                                                                                            })
+                                            .Value(Model.DueDateTimeFrame)
+                                            .HtmlAttributes(new { style = "width: 50%" })
+                        )
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="border rounded pl-1" style="margin-top:10px !important">
+                    <p>@Localizer["Base Date Range"]</p>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="BaseDateRange" id="baseDateRelative" @(Model.BaseDateRange == "Relative" ? "checked" : "") value="Relative">
+                        <label class="form-check-label" for="All">@Localizer["Relative to Current Date"]</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="BaseDateRange" id="baseDateTimeFrame" @(Model.BaseDateRange == "Fix" ? "checked" : "") value="Fix">
+                        <label class="form-check-label" for="Active">@Localizer["Specific Time Frame"]</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="BaseDateRange" id="baseDateNone" @(Model.BaseDateRange == "None" ? "checked" : "") value="None">
+                        <label class="form-check-label" for="Active">@Localizer["None"]</label>
+                    </div>
+                    <div id="baseDateRelativeRow">
+                        <div id="BaseDateRelativeStartDate" class="form-row form-inline mb-1">
+                            <div class="col-sm-5 form-inline">
+                                <div class="col-auto form-inline">
+                                    <span class="text-sm-left">@Localizer["Start Date"]</span>
+                                </div>
+                                <div class="col form-inline justify-content-end">
+                                    <span class="text-sm-right">@Localizer["Today"]</span>
+                                </div>
+                            </div>
+                            <div class="col-2 form-inline">
+                                @(Html.Kendo().DropDownList()
+                                        .Name("BaseDateStartOp")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .BindTo(new List<SelectListItem>() {
+                                                        new SelectListItem() { Text = "-", Value = "-" },
+                                                        new SelectListItem() { Text = "+", Value = "+" },
+                                        })
+                                        .Value(Model.BaseDateStartOp)
+                                        .HtmlAttributes(new { style = "width: 100%; justify-content-end" })
+                            )
+                            </div>
+                            <div class="col-sm-5 form-inline">
+                                <input type="number" class="form-control form-control-sm" name="BaseDateStartOffset" asp-for="BaseDateStartOffset" style="width: 4em" value="@Model.BaseDateStartOffset">
+                                @(Html.Kendo().DropDownList()
+                                        .Name("BaseDateStartUnit")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .BindTo(new List<SelectListItem>()
+                                        {
+                                            new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                            new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                            new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                            new SelectListItem() { Text = Localizer["Years"], Value = "Y" },
+                                        })
+                                        .Value(Model.BaseDateStartUnit)
+                                        .HtmlAttributes(new { style = "width: 60%", @class = "pl-1" })
+                            )
+                            </div>
+                        </div>
+                        <div id="BaseDateRelativeEndDate" class="form-row form-inline mb-2">
+                            <div class="col-sm-5 form-inline">
+                                <div class="col form-inline">
+                                    <span>@Localizer["End Date"]</span>
+                                </div>
+                                <div class="col-auto form-inline justify-content-end">
+                                    <span>@Localizer["Start Date"]</span>
+                                </div>
+                            </div>
+                            <div class="col-2 form-inline justify-content-center">
+                                <span>+</span>
+                            </div>
+                            <div class="col-sm-5 form-inline">
+                                <input type="number" class="form-control form-control-sm" name="BaseDateEndOffset" asp-for="BaseDateEndOffset" style="width: 4em" value="@Model.BaseDateEndOffset">
+                                @(Html.Kendo().DropDownList()
+                                        .Name("BaseDateEndUnit")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .BindTo(new List<SelectListItem>() {
+                                            new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                            new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                            new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                            new SelectListItem() { Text = Localizer["Years"], Value = "Y" }
+                                        })
+                                        .Value(Model.BaseDateEndUnit)
+                                        .HtmlAttributes(new { style = "width: 60%;", @class = "pl-1" } )
+                            )
+                            </div>
+                        </div>
+                    </div>
+                    <div id="baseDateTimeFrameRow">
+                        <div id="BaseDateFixControls" class="form-group">
+                            @*<label>@Localizer["Time Frame"]</label>*@
+                            @(Html.Kendo().DropDownList()
+                                    .Name("BaseDateTimeFrame")
+                                    .DataTextField("Text")
+                                    .DataValueField("Value")
+                                    .BindTo(new List<SelectListItem>() {
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Week"],
+                                                    Value = "W"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Month"],
+                                                    Value = "M"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Year"],
+                                                    Value = "Y"
+                                                }
+                                    })
+                                    .Value(Model.BaseDateTimeFrame)
+                                    .Text(Model.BaseDateTimeFrame)
+                                    .HtmlAttributes(new { style = "width: 50%" })
+                        )
+                        </div>
+                    </div>
+                    <div id="baseDateNoneRow"></div>
+
+                </div>
+
+                @if (deDocketOn)
+                {
+                    <div class="border rounded pl-1" style="margin-top:10px !important">
+                        <p>@Localizer["De-Docket Instruction Date Range"]</p>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="DeDocketInstrxDateRange" id="deDocketInstrxDateRelative" @(Model.DeDocketInstrxDateRange == "Relative" ? "checked" : "") value="Relative">
+                            <label class="form-check-label" for="All">@Localizer["Relative to Current Date"]</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="DeDocketInstrxDateRange" id="deDocketInstrxDateTimeFrame" @(Model.DeDocketInstrxDateRange == "Fix" ? "checked" : "") value="Fix">
+                            <label class="form-check-label" for="Active">@Localizer["Specific Time Frame"]</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="DeDocketInstrxDateRange" id="deDocketInstrxDateNone" @(Model.DeDocketInstrxDateRange == "None" ? "checked" : "") value="None">
+                            <label class="form-check-label" for="Active">@Localizer["None"]</label>
+                        </div>
+                        <div id="deDocketInstrxDateRelativeRow">
+                            <div id="DeDocketInstrxDateRelativeStartDate" class="form-row form-inline mb-1">
+                                <div class="col-sm-5 form-inline">
+                                    <div class="col-auto form-inline">
+                                        <span class="text-sm-left">@Localizer["Start Date"]</span>
+                                    </div>
+                                    <div class="col form-inline justify-content-end">
+                                        <span class="text-sm-right">@Localizer["Today"]</span>
+                                    </div>
+                                </div>
+                                <div class="col-2 form-inline">
+                                    @(Html.Kendo().DropDownList()
+                                            .Name("DeDocketInstrxDateStartOp")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(new List<SelectListItem>() {
+                                            new SelectListItem() { Text = "-", Value = "-" },
+                                            new SelectListItem() { Text = "+", Value = "+" },
+                                            })
+                                            .Value(Model.DeDocketInstrxDateStartOp)
+                                            .HtmlAttributes(new { style = "width: 100%; justify-content-end" })
+                                                )
+                                </div>
+                                <div class="col-sm-5 form-inline">
+                                    <input type="number" class="form-control form-control-sm" name="DeDocketInstrxDateStartOffset" asp-for="DeDocketInstrxDateStartOffset" style="width: 4em" value="@Model.DeDocketInstrxDateStartOffset">
+                                    @(Html.Kendo().DropDownList()
+                                            .Name("DeDocketInstrxDateStartUnit")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(new List<SelectListItem>()
+                                            {
+                                                                new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                                                new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                                                new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                                                new SelectListItem() { Text = Localizer["Years"], Value = "Y" },
+                                            })
+                                            .Value(Model.DeDocketInstrxDateStartUnit)
+                                            .HtmlAttributes(new { style = "width: 60%", @class = "pl-1" })
+                                                )
+                                </div>
+                            </div>
+                            <div id="deDocketInstrxDateRelativeEndDate" class="form-row form-inline mb-2">
+                                <div class="col-sm-5 form-inline">
+                                    <div class="col form-inline">
+                                        <span>@Localizer["Today"]</span>
+                                    </div>
+                                    <div class="col-auto form-inline justify-content-end">
+                                        <span>@Localizer["Start Date"]</span>
+                                    </div>
+                                </div>
+                                <div class="col-2 form-inline justify-content-center">
+                                    <span>+</span>
+                                </div>
+                                <div class="col-sm-5 form-inline">
+                                    <input type="number" class="form-control form-control-sm" name="DeDocketInstrxDateEndOffset" asp-for="DeDocketInstrxDateEndOffset" style="width: 4em" value="@Model.DeDocketInstrxDateEndOffset">
+                                    @(Html.Kendo().DropDownList()
+                        .Name("DeDocketInstrxDateEndUnit")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                                            new SelectListItem() { Text = Localizer["Days"], Value = "D" },
+                                            new SelectListItem() { Text = Localizer["Weeks"], Value = "W" },
+                                            new SelectListItem() { Text = Localizer["Months"], Value = "M" },
+                                            new SelectListItem() { Text = Localizer["Years"], Value = "Y" }
+                        })
+                        .Value(Model.DeDocketInstrxDateEndUnit)
+                        .HtmlAttributes(new { style = "width: 60%;", @class = "pl-1" })
+                            )
+                                </div>
+                            </div>
+                        </div>
+                        <div id="deDocketInstrxDateTimeFrameRow">
+                            <div id="DeDocketInstrxDateFixControls" class="form-group">
+                                @*<label>@Localizer["Time Frame"]</label>*@
+                                @(Html.Kendo().DropDownList()
+                        .Name("DeDocketInstrxDateTimeFrame")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Week"],
+                                                    Value = "W"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Month"],
+                                                    Value = "M"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = Localizer["This Year"],
+                                                    Value = "Y"
+                                                }
+                        })
+                        .Value(Model.DeDocketInstrxDateTimeFrame)
+                        .Text(Model.DeDocketInstrxDateTimeFrame)
+                        .HtmlAttributes(new { style = "width: 50%" })
+                        )
+                            </div>
+                        </div>
+                        <div id="deDocketInstrxDateNoneRow"></div>
+
+                    </div>
+                }
+
+                <div class="form-row mt-1">
+                    <div class="col-lg-6">
+                        <div class="form-group float-label">
+                            <label>@caseNumberLabel</label>
+                            @await Component.InvokeAsync("ComboBox", new
+                        {
+                                name = "CaseNumber",
+                          controller = "QuickDocketLookUp",
+                          area = "Shared",
+                          action = "GetDefaultCaseNumberList",
+                          defaultValue = Model.CaseNumber,
+                          screen = screen,
+                          enablePaging = enableComboPaging,
+                          pagingSize = comboPagingSize,
+                          valueMapper = "quickDocket.defaultCaseNumberValueMapper",
+                          data = additionalData
+                            })
+                        </div>
+
+                    </div>
+                    <div class="col-lg-2">
+                        <div class="form-group float-label">
+                            <label></label>
+                            @(Html.Kendo().DropDownList()
+                               .Name("CountryOp")
+                               .DataTextField("Text")
+                               .DataValueField("Value")
+                               .BindTo(new List<SelectListItem>() {
+                                   new SelectListItem() {
+                                        Text = "<>",
+                                       Value = "<>"
+                                   },
+                                   new SelectListItem() {
+                                        Text = "=",
+                                       Value = "="
+                                   },
+                               })
+                               .Value(Model.CountryOp)
+                               .HtmlAttributes(new { style = "width: 100%" })
+                            )
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Country"]</label>
+                            @await Component.InvokeAsync("ComboBox", new
+                             {
+                                name = "Country",
+                               controller = "QuickDocketLookUp",
+                               area = "Shared",
+                               textProperty = "Country",
+                               action = "GetDefaultCountryList",
+                               defaultValue = Model.Country,
+                                 listWidth = 500,
+                               headerTemplate = ComboBoxHelper.GetHeaderTemplate(countryLabel, countryNameLabel),
+                               itemTemplate = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                               screen = screen,
+                               data = additionalData
+                             })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-lg-12">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Title"]</label>
+                            @await Component.InvokeAsync("ComboBox", new
+                             {
+                                name = "Title",
+                               controller = "QuickDocketLookUp",
+                               area = "Shared",
+                               action = "GetDefaultTitleList",
+                               defaultValue = Model.Title,
+                               screen = screen,
+                               enablePaging = enableComboPaging,
+                               pagingSize = comboPagingSize,
+                               valueMapper = "quickDocket.defaultTitleValueMapper",
+                               data = additionalData
+                            })
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-lg-12">
+                        <div class="border rounded pl-1" style="margin-top:5px !important">
+                            <p>@Localizer["Office Action?"]</p>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="OfficeAction" id="officeActionActive" @(Model.OfficeAction == "1" ? "checked" : "") value="1">
+                                <label class="form-check-label" for="officeActionActive">@Localizer["Yes"]</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="OfficeAction" id="officeActionInActive" @(Model.OfficeAction == "0" ? "checked" : "") value="0">
+                                <label class="form-check-label" for="officeActionInActive">@Localizer["No"]</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="OfficeAction" id="officeActionAll" @(Model.OfficeAction == "2" ? "checked" : "") value="2">
+                                <label class="form-check-label" for="officeActionAll">@Localizer["All"]</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="form-row">
+                    <div class="col-lg-@(isRespOfficeOn ? 2: 2)">
+                        <div class="form-group float-label" id="statusOp">
+                            <label></label>
+                            @(Html.Kendo().DropDownList()
+                        .Name("StatusOp")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                            new SelectListItem() {
+                                Text = "<>",
+                                Value = "<>"
+                            },
+                            new SelectListItem() {
+                                Text = "=",
+                                Value = "="
+                            },
+                        })
+                        .Value(Model.StatusOp)
+                        .HtmlAttributes(new { style = "width: 100%" })
+                            )
+                        </div>
+
+                    </div>
+                    <div class="col-lg-@(isRespOfficeOn ? 4: 5)">
+                        <div class="form-group float-label" id="status">
+                            <label>@Localizer["Status"]</label>
+                            @await Component.InvokeAsync("ComboBox", new { name = "Status", controller = "QuickDocketLookUp", area = "Shared", action = "GetDefaultStatusList", defaultValue = Model.Status, screen = screen, data = additionalData })
+                        </div>
+
+                    </div>
+                    <div class="col-lg-@(isRespOfficeOn ? 3: 5)">
+                        <div class="form-group float-label">
+                            <label>@caseTypeLabel</label>
+                            @await Component.InvokeAsync("ComboBox",
+                           new
+                                {
+                                    name = "CaseType",
+                               controller = "QuickDocketLookUp",
+                               area = "Shared",
+                               action = "GetDefaultCaseTypeList",
+                               defaultValue = Model.CaseType,
+                               listWidth = 500,
+                               headerTemplate = ComboBoxHelper.GetHeaderTemplate(caseTypeLabel, descriptionLabel),
+                               itemTemplate = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                               screen = screen,
+                               data = additionalData
+                           })
+                        </div>
+                    </div>
+                    @if (isRespOfficeOn)
+                    {
+                        <div class="col-lg-3">
+                            <div class="form-group float-label">
+                                <label>@Localizer["Resp. Office"]</label>
+                                @await Component.InvokeAsync("ComboBox", new { name = "RespOffice", controller = "QuickDocketLookUp", area = "Shared", action = "GetDefaultRespOfficeList", defaultValue = Model.RespOffice, screen = screen, data = additionalData })
+                            </div>
+                        </div>
+                    }
+
+                </div>
+                <div class="form-row">
+                    <div class="col-lg-12">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Action Due"]</label>
+                            @await Component.InvokeAsync("ComboBox", new { name = "ActionDue", controller = "QuickDocketLookUp", area = "Shared", action = "GetDefaultActionDueList", defaultValue = Model.ActionDue, screen = screen, data = additionalData })
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="form-row">
+                    <div class="col-lg-6">
+                        <div class="form-group float-label">
+                            <label>@ownerLabel</label>
+                            @await Component.InvokeAsync("ComboBox", new
+                       {
+                           controller = "QuickDocketLookup",
+                           area = "Shared",
+                           action = "GetOwnerList",
+                           name = "Owner",
+                           textProperty = "Owner",
+                           listWidth = 500,
+                           defaultValue = Model.Owner,
+                           headerTemplate = ComboBoxHelper.GetHeaderTemplate(ownerLabel, ownerNameLabel),
+                           itemTemplate = ComboBoxHelper.GetItemTemplate("Owner", "OwnerName"),
+                           filterColumns = new string[] { "Owner", "OwnerName" },
+                           screen = screen,
+                           enablePaging = enableComboPaging,
+                           pagingSize = comboPagingSize,
+                           valueMapper = "ownerPage.ownerCodeNameValueMapper",
+                           data = additionalData
+                       })
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group float-label">
+                            <label>@clientLabel</label>
+                            @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                       {
+                           Screen = screen,
+                           Controller = "QuickDocketLookup",
+                           Area = "Shared",
+                           Action = "GetClientList",
+                           Name = "Clients",
+                           DataTextProperty = "Client",
+                           ListWidth = 500,
+                           DefaultValue = Model.Clients,
+                           HeaderTemplate = ComboBoxHelper.GetHeaderTemplate(clientLabel, clientNameLabel),
+                           ItemTemplate = ComboBoxHelper.GetItemTemplate("Client", "ClientName"),
+                           FilterColumns = new string[] { "Client", "ClientName" },
+                           Data = additionalData
+                       })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-lg-12">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Action Type"]</label>
+                            @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                       {
+                           Screen = screen,
+                           Controller = "QuickDocketLookup",
+                           Area = "Shared",
+                           Action = "GetDefaultActionTypeList",
+                           Name = "ActionTypes",
+                           DataTextProperty = "ActionType",
+                           DefaultValue = Model.ActionTypes,
+                           Data = additionalData
+                       })
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+                    <div class="col-lg-6">
+                        <div class="form-group float-label">
+                            <label>@agentLabel</label>
+                            @await Component.InvokeAsync("ComboBox", new
+                       {
+                           controller = "QuickDocketLookup",
+                           area = "Shared",
+                           action = "GetAgentList",
+                           name = "Agent",
+                           textProperty = "Agent",
+                           listWidth = 500,
+                           defaultValue = Model.Agent,
+                           headerTemplate = ComboBoxHelper.GetHeaderTemplate(agentLabel, agentNameLabel),
+                           itemTemplate = ComboBoxHelper.GetItemTemplate("Agent", "AgentName"),
+                           filterColumns = new string[] { "Agent", "AgentName" },
+                           screen = screen,
+                           //enablePaging = enableComboPaging,
+                           //pagingSize = comboPagingSize,
+                           data = additionalData
+                       })
+                        </div>
+
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group float-label">
+                            <label>@clientRefLabel</label>
+                            @await Component.InvokeAsync("ComboBox", new { name = "ClientRef", controller = "QuickDocketLookUp", area = "Shared", action = "GetDefaultClientRefList", defaultValue = Model.ClientRef, screen = screen, data = additionalData })
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-lg-2">
+                        <div class="form-group float-label">
+                            <label></label>
+                            @(Html.Kendo().DropDownList()
+                        .Name("IndicatorOp")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                            new SelectListItem() {
+                                Text = "<>",
+                                Value = "<>"
+                            },
+                            new SelectListItem() {
+                                Text = "=",
+                                Value = "="
+                            },
+                        })
+                        .Value(Model.IndicatorOp)
+                        .HtmlAttributes(new { style = "width: 100%" })
+                            )
+                        </div>
+                    </div>
+                    <div class="col-lg-10">
+                        <div class="form-group float-label">
+                            <label>@Localizer["Indicator(s)"]</label>
+
+                            @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                            {
+                                Name = "Indicators",
+                            DataTextProperty = "Indicator",
+                            Controller = "QuickDocketLookUp",
+                            Area = "Shared",
+                            Action = "GetDefaultIndicatorList",
+                            DefaultValue = Model.Indicators,
+                            Screen = screen,
+                                Data = additionalData
+                            })
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-lg-5">
+                        <div class="form-group float-label">
+                            <label for="Attorney">@Localizer["Attorney(s)"]</label>
+                            @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                       {
+                           Screen = screen,
+                           Controller = "Attorney",
+                           Area = "Shared",
+                           Action = "GetAttorneyList",
+                           Name = "Attorneys",
+                           DataTextProperty = "AttorneyCode",
+                           ListWidth = 500,
+                           DefaultValue = Model.Attorneys,
+                           HeaderTemplate = ComboBoxHelper.GetHeaderTemplate(attorneyLabel, attorneyNameLabel),
+                           ItemTemplate = ComboBoxHelper.GetItemTemplate("AttorneyCode", "AttorneyName"),
+                           Data = additionalData,
+                           FilterColumns = new string[] { "AttorneyCode", "AttorneyName" }
+                       })
+                        </div>
+
+                    </div>
+                    <div class="col-xs-6 col-lg mt-2">
+                        <div class="form-inline">
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilter1">@Localizer["Filter by Attorney [1]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilter1" @(Model.FilterAtty.Contains("A1") ? "checked" : "") name="AttorneyFilter1" value="A1">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilter2">@Localizer["[2]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilter2" @(Model.FilterAtty.Contains("A2") ? "checked" : "") name="AttorneyFilter2" value="A2">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilter3">@Localizer["[3]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilter3" @(Model.FilterAtty.Contains("A3") ? "checked" : "") name="AttorneyFilter3" value="A3">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilter4">@Localizer["[4]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilter4" @(Model.FilterAtty.Contains("A4") ? "checked" : "") name="AttorneyFilter4" value="A4">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilter5">@Localizer["[5]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilter5" @(Model.FilterAtty.Contains("A5") ? "checked" : "") name="AttorneyFilter5" value="A5">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilterR">@Localizer["[Responsible]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilterR" @(Model.FilterAtty.Contains("AR") ? "checked" : "") name="AttorneyFilterR" value="AR">
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label mr-1" for="AttorneyFilterD">@Localizer["[Due date]"]</label>
+                                <input class="form-check-input" type="checkbox" id="AttorneyFilterD" @(Model.FilterAtty.Contains("AD") ? "checked" : "") name="AttorneyFilterD" value="AD">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    @if (deDocketOn)
+                    {
+                        <div class="col-lg-4">
+                            <div>
+                                <div class="form-group float-label">
+                                    <label>@Localizer["De-Docket Instruction"]</label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                               {
+                                   name = "DeDocketInstruction",
+                                   controller = "DeDocketInstruction",
+                                   action = "GetPicklistData",
+                                   textProperty = "Instruction",
+                                   defaultValue = Model.DeDocketInstruction,
+                                   screen = screen
+                               })
+                                </div>
+                            </div>
+                            <div>
+                                <div class="form-group float-label">
+                                    <label>@Localizer["De-Docket Instructed By"]</label>
+                                    @await Component.InvokeAsync("ComboBox", new
+                               {
+                                   name = "DeDocketInstructedBy",
+                                   controller = "QuickDocketLookUp",
+                                   area = "Shared",
+                                   action = "GetDeDocketInstructedByList",
+                                   textProperty = "InstructedBy",
+                                   defaultValue = Model.DeDocketInstructedBy,
+                                   screen = screen,
+                                   data = additionalData
+                               })
+
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="DeDocketInstructionOnly" @(deDocketInstructionOnly ? "checked" : "") value="true">
+                                <label class="form-check-label" for="DeDocketInstructionOnly">@Localizer["De-Docket Instruction only"]</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="DeDocketUninstructedOnly" @(deDocketUninstructedOnly ? "checked" : "") value="true">
+                                <label class="form-check-label" for="DeDocketUninstructedOnly">@Localizer["De-Docket Uninstructed only"]</label>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Systems.Any(s => s.SystemId == SystemType.AMS))
+                    {
+                        <div class="col">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="IncludeNP" @(Model.IncludeNP ? "checked" : "") value="true">
+                                <label class="form-check-label" for="IncludeNP">@Localizer["Include NP AMS instructions?"]</label>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="col-lg text-md-right button-container">
+                        <button class="btn btn-primary" type="button" id="saveSettings"><span class="fa fa-save"></span> @Localizer["Save Settings"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    #defaultSettingsContainer {
+        padding: 10px;
+    }
+    #defaultSettingsContainer .form-check-label {
+        font-size: .75rem;
+    }
+    #defaultSettingsContainer .button-container {
+        padding-top: 50px;
+    }
+</style>

@@ -1,0 +1,65 @@
+﻿@model PageViewModel
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IHostingEnvironment Env
+@{
+    string pagerContainer = $"{Model.PageId}-Pager";
+    string contentContainer = $"{Model.PageId}-Content";
+}
+
+@*@if (File.Exists(Env.WebRootPath + $"\\js\\{ViewBag.ActivePage}.js"))
+{
+    <script>
+        if (typeof @ViewBag.ActivePage === 'undefined') {
+            $.getScript("@Url.Content($"~/js/{ViewBag.ActivePage}.js")");
+        }
+    </script>
+}
+else
+{
+    <script>
+        if (typeof @ViewBag.ActivePage === 'undefined') {
+            @ViewBag.ActivePage = new ActivePage();
+        }
+    </script>
+}*@
+<script>
+    if (typeof @ViewBag.ActivePage === 'undefined') {
+        var @ViewBag.ActivePage = new ActivePage();
+    }
+    $(document).ready(function () {
+        var pageReady = function () {
+            @*if (typeof @ViewBag.ActivePage === 'undefined') {
+                setTimeout(pageReady, 50);
+                return;
+            }*@
+            @(ViewBag.ActivePage).initializeDetailPage({
+                mainDetailContainer: "@Model.PageId",
+                recordNavigatorContainer: "@pagerContainer",
+                detailContentContainer: "@contentContainer",
+                detailUrl: "@Url.Action("Detail", new { id = "recid" })",
+                searchUrl: "@Url.Action("Index")",
+                title: "@Html.Raw(Model.Title)",
+                recordId: @Model.RecordId,
+                singleRecord: @(Model.SingleRecord ? "true" : "false"),
+                recordNavigateHandler: @(ViewBag.ActivePage).recordNavigateHandler
+            });
+        };
+
+        pageReady();
+    })
+</script>
+
+<div id="@Model.PageId" class="detail-page-wrap">
+    <div class="page-message"></div>
+    <div class="page-main">
+        <div class="page-header detail-page page-crumbs"></div>
+        <div id="@contentContainer" class="cpiDataContainer detail-page-content-wrap">
+            @await Html.PartialAsync("_DetailContentPage", Model)
+        </div>
+        <div id="@pagerContainer" class="record-navigator" style="@(@Model.RecordId == 0 ? "display: none" : "")">
+            @await Html.PartialAsync("_RecordNavigator")
+        </div>
+    </div>
+</div>

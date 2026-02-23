@@ -1,0 +1,90 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for Certification & Request for Prioritized Exam under 37 CFR 1.102(e) - AIA/424 -->
+  <PDFFieldMapping>
+    <PdfField>Docket Number Optional</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Application Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Filed</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Title of the Invention</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Title</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Check Box6</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SmallEntity</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Check Box7</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>MicroEntity</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>Typed or printed name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Telephone Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>PhoneNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Date</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CurrentDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>attorney or agent of record Registration number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>RegistrationNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+		<PdfField>Art Unit</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>GroupArtUnit</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Examiner</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Examiner</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+</NewDataSet>

@@ -1,0 +1,400 @@
+﻿@using R10.Core.Entities.ReportScheduler
+@model RSHistory
+@inject ISystemSettings<PatSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var hidePrintOptions = ViewBag.ReportId == 8;
+    var hideDateCriteria = ViewBag.ReportId == 8;
+
+    var screen = "HistoryEntry";
+
+    var id = Model.LogId;
+}
+
+<div class="modal fade" id="rSHistoryEntryDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <form cpi-detail-form>
+                <input type="hidden" asp-for="TaskId" />
+
+                <div class="page-content">
+                    <div class="cpiMainEntry">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label class="required" for="Name">@Localizer["Schedule Name"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Name" disabled="disabled"/>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="ReportName">@Localizer["Report"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="ReportName" disabled="disabled"/>
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <div class=" custom-control custom-checkbox">
+                                        <input asp-for="IsEnabled" class="custom-control-input" disabled="disabled"/>
+                                        <label asp-for="IsEnabled" class="custom-control-label">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="Description">@Localizer["Description"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Description" disabled="disabled"/>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label class="required" for="Frequency">@Localizer["Frequency"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Frequency" disabled="disabled"/>
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="TaskStartDateTime">@Localizer["Task Start"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="TaskStartDateTime" disabled="disabled"/>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="TaskExpireDateTime">@Localizer["Task Expire"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="TaskExpireDateTime" disabled="disabled"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-3">
+                            </div>
+
+                            <div id="weeklyOptions_HistoryEntry" class="col-sm-6">
+                                <div class="form-group row">
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Sun" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Sun" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Mon" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Mon" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Tue" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Tue" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Wed" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Wed" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Thu" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Thu" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Fri" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Fri" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group float-label">
+                                        <div class=" custom-control custom-checkbox">
+                                            <input asp-for="Sat" class="custom-control-input" disabled="disabled"/>
+                                            <label asp-for="Sat" class="custom-control-label">
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="monthlyOptions_HistoryEntry" class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="DayOfMonth">@Localizer["Day of the Month"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="DayOfMonth" disabled="disabled"/>
+                                </div>
+                            </div>
+
+
+
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="StartDateTime">@Localizer["Start Time"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="StartDateTime" disabled="disabled" />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="EndDateTime">@Localizer["End Time"]</label>
+                                    <input type="datetime" class="form-control form-control-sm" asp-for="EndDateTime" disabled="disabled" />
+                                </div>
+                            </div>
+                            @*pattern="dd-MMM-yyyy hh:mm tt"*@
+
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="ElapsedTime">@Localizer["Elapsed Time"]</label>
+                                    <input type="datetime" class="form-control form-control-sm" asp-for="ElapsedTime" disabled="disabled" />
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="form-group float-label">
+                                    <label for="Message">@Localizer["Run Result"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Message" disabled="disabled" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="dueDateListTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="historyActionTab" data-toggle="tab" href="#historyActionTabContent" role="tab" aria-controls="historyActionTabContent" aria-selected="true">@Localizer["Actions"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(hidePrintOptions ? "d-none" : null)" id="historyPrintOptionTab" data-toggle="tab" href="#historyPrintOptionTabContent" role="tab" aria-controls="historyPrintOptionTabContent" aria-selected="true">@Localizer["Print Options"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="historyCriteriaTab" data-toggle="tab" href="#historyCriteriaTabContent" role="tab" aria-controls="historyCriteriaTabContent" aria-selected="true">@Localizer["Criteria"]</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content tab-pane">
+                        <div class="tab-pane page-content show active" )" id="historyActionTabContent" role="tabpanel" aria-labelledby="historyActionTab">
+                            <div class="col-sm-12">
+                                <div class="form-control-grid">
+                                    @await Html.PartialAsync("_GridActionHistory.cshtml", new GridOptions { Controller = "RSHistory", ParentId = id })
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-pane page-content" id="historyPrintOptionTabContent" role="tabpanel" aria-labelledby="historyPrintOptionTab">
+                            @if (!hidePrintOptions)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-3"></div>
+                                    <div class="col-sm-6">
+                                        <div class="form-control-grid">
+                                            @await Html.PartialAsync("_GridPrintOptionHistory.cshtml", new GridOptions { Controller = "RSHistory", ParentId = id })
+
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="tab-pane page-content" id="historyCriteriaTabContent" role="tabpanel" aria-labelledby="historyCriteriaTab">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="form-control-grid">
+                                        @await Html.PartialAsync("_GridCriteriaHistory.cshtml", new GridOptions { Controller = "RSHistory", ParentId = id })
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 cpiMainEntry @(hidePrintOptions ? "d-none" : null)">
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <label for="LastRunResult">@Localizer["Date Range"]</label>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <div class="form-group float-label">
+                                                <label for="DateType">@Localizer["Date Type"]</label>
+                                                <input type="text" class="form-control form-control-sm" asp-for="DateType" disabled="disabled"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <div class="form-group">
+                                            <input id="RelativeFixedRange_HistoryEntry" asp-for="IsFixedRange" type="radio" value="0" disabled="disabled"><Label>@Localizer["Relative to Current Date"]</Label><br />
+                                            <input id="FixedFixedRange_HistoryEntry" asp-for="IsFixedRange" type="radio" value="1" disabled="disabled"><Label>@Localizer["Specific Time Frame"]</Label><br />
+                                            @if (!Model.ReportName.Equals("Due Date List"))
+                                            {
+                                                <input id="NoneFixedRange_HistoryEntry" asp-for="IsFixedRange" type="radio" value="2" disabled="disabled"><Label>@Localizer["None"]</Label>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div id="relativeRangeOptions_HistoryEntry" class="col-sm-12">
+                                        <div class="row">
+                                            <div class="col-sm-2">
+                                                <label>@Localizer["Start Date"]</label>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <div class="form-group float-label">
+                                                    <label for="StartDateOperator">@Localizer["From Today"]</label>
+                                                    <input type="text" class="form-control form-control-sm" asp-for="StartDateOperator" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <div class="form-group float-label">
+                                                    <label for="StartDateOffSet">@Localizer["Number Of"]</label>
+                                                    <input class="form-control form-control-sm" asp-for="StartDateOffSet" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <div class="form-group float-label">
+                                                    <label for="StartDateUnit">@Localizer["Date Unit"]</label>
+                                                    <input id="StartDateUnitSub" type="text" class="form-control form-control-sm" asp-for="StartDateUnit" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-2">
+                                                <label>@Localizer["End Date"]</label>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <label>@Localizer["start Date Plus"]</label>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <div class="form-group float-label">
+                                                    <label for="EndDateOffSet">@Localizer["Number Of"]</label>
+                                                    <input class="form-control form-control-sm" asp-for="EndDateOffSet" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <div class="form-group float-label">
+                                                    <label for="EndDateUnit">@Localizer["Date Unit"]</label>
+                                                    <input id="EndDateUnitSub" class="form-control form-control-sm" asp-for="EndDateUnit" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="fixedRangeOptions_HistoryEntry" class="col-sm-12">
+                                        <div class="row">
+                                            <div class="col-sm-4">
+                                                <div class="form-group float-label">
+                                                    <label for="FixedRange">@Localizer["Range"]</label>
+                                                    <input id="FixedRangeSub" class="form-control form-control-sm" asp-for="FixedRange" disabled="disabled"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="content-stamp">
+                        <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Back"]</button>
+                        @*<button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>*@
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var relativeFixedRange = document.getElementById("RelativeFixedRange_HistoryEntry");
+        var fixedFixedRange = document.getElementById("FixedFixedRange_HistoryEntry");
+        var noneFixedRange = document.getElementById("NoneFixedRange_HistoryEntry");
+
+        relativeFixedRange.checked = @Model.IsFixedRange.Equals("0").ToString().ToLower();
+        fixedFixedRange.checked = @Model.IsFixedRange.Equals("1").ToString().ToLower();
+        if (noneFixedRange != null) {
+            noneFixedRange.checked = @Model.IsFixedRange.Equals("2").ToString().ToLower();
+        }
+
+        FrequencyChangeSub();
+        FixedRangeChangeSub();
+
+        var startDateUnitSub = document.getElementById("StartDateUnitSub");
+        var endDateUnitSub = document.getElementById("EndDateUnitSub");
+        var fixedRangeSub = document.getElementById("FixedRangeSub");
+
+        startDateUnitSub.value = GetDateUnitText(@Model.StartDateUnit);
+        endDateUnitSub.value = GetDateUnitText(@Model.EndDateUnit);
+        fixedRangeSub.value = GetRangeText(@Model.FixedRange);
+    });
+
+    function FrequencyChangeSub() {
+        var frequencyChanged = document.getElementById("Frequency");
+        var weeklyOptions = document.getElementById("weeklyOptions_HistoryEntry");
+        var monthlyOptions = document.getElementById("monthlyOptions_HistoryEntry");
+
+        if (frequencyChanged.value == 'Daily') {//daily
+            weeklyOptions.setAttribute("hidden", "hidden");
+            monthlyOptions.setAttribute("hidden", "hidden");
+        } else if (frequencyChanged.value == 'Weekly') {//weekly
+            weeklyOptions.removeAttribute("hidden");
+            monthlyOptions.setAttribute("hidden", "hidden");
+        } else {//monthly
+            weeklyOptions.setAttribute("hidden", "hidden");
+            monthlyOptions.removeAttribute("hidden");
+        }
+    }
+
+    function FixedRangeChangeSub() {
+
+        var relativeFixedRange = document.getElementById("RelativeFixedRange_HistoryEntry");
+        var fixedFixedRange = document.getElementById("FixedFixedRange_HistoryEntry");
+        var relativeOptions = document.getElementById("relativeRangeOptions_HistoryEntry");
+        var fixedOptions = document.getElementById("fixedRangeOptions_HistoryEntry");
+
+        if (relativeFixedRange.checked) {//relative
+            relativeOptions.removeAttribute("hidden");
+            fixedOptions.setAttribute("hidden", "hidden");
+        } else if (fixedFixedRange.checked) {//fixed
+            fixedOptions.removeAttribute("hidden");
+            relativeOptions.setAttribute("hidden", "hidden");
+        } else {
+            fixedOptions.setAttribute("hidden", "hidden");
+            relativeOptions.setAttribute("hidden", "hidden");
+        }
+    }
+
+    function GetDateUnitText(i) {
+        switch (i){
+            case 0: return "Days";
+            case 1: return "Weeks";
+            case 2: return "Months";
+            case 3: return "Years";
+            default: return "";
+        }
+    }
+
+    function GetRangeText(i) {
+        switch (i) {
+            case 0: return "This Week";
+            case 1: return "This Month";
+            default: return "";
+        }
+    }
+</script>

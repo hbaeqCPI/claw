@@ -1,0 +1,57 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    string formId = $"{Model.PageId}-MainSearch";
+    string gridId = $"{Model.PageId}-Grid";
+}
+
+    <div id="@Model.PageId" class="page-main-flex">
+        <div class="page-sidebar refine-search collapsible show" data-show-filters="Show filters" data-filter-count="0">
+            <div class="close" role="button" title="@Localizer["Hide filters"]" aria-label="@Localizer["Hide filters"]"><span aria-hidden="true">×</span></div>
+            <form id="@formId" method="post">
+                <div class="header">
+                    <div class="d-flex justify-content-between">
+                        <div class="title">@Localizer["Search"]</div>
+                        <a href="#" class="show-results" title="@Localizer["Show results"]" role="button">@Localizer["Show results"]<span class="total-results-count"></span><i class="fal fa-long-arrow-right pl-1"></i></a>
+                    </div>
+                    <nav class="nav">
+                        @if (Model.HasSavedCriteria)
+                        {
+                            <a class="nav-link load-filters" href="#" title="@Localizer["Load saved filters"]" role="button"><i class="fal fa-download pr-1"></i><span>@Localizer["Load"]</span></a>
+                            <a class="nav-link save-filters" href="#" title="@Localizer["Save search filters"]" role="button"><i class="fal fa-save pr-1"></i><span>@Localizer["Save"]</span></a>
+                        }
+                        <a class="nav-link search-clear" href="#" title="@Localizer["Clear"]" role="button"><i class="fal fa-times pr-1"></i><span>@Localizer["Clear"]</span></a>
+                        <a class="nav-link search-submit" href="#" title="@Localizer["Search"]" role="button"><i class="fal fa-search pr-1"></i><span>@Localizer["Search"]</span></a>
+                    </nav>
+                </div>
+                <ul class="nav nav-tabs refine-search nav-tabs-accordion" role="tablist" style="display:block">
+                    @*@await Html.PartialAsync("_SearchContent")*@
+                    @await Html.PartialAsync("_SearchNavItems")
+                    @await Html.PartialAsync("_SearchTabContent", new ViewDataDictionary(this.ViewData) { { "PageId", Model.PageId } })
+                </ul>
+                
+            </form>
+        </div>
+        <div class="page-main">
+            <div class="page-message"></div>
+            <div class="page-header page-crumbs">
+            </div>
+            <div class="page-grid">
+                @await Html.PartialAsync("_SearchResultsGrid", Model)
+            </div>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(function () {
+        @(ViewBag.ActivePage).initializeSearchPage({
+            container: "#@Model.PageId",
+            url: "@Context.Request.PathBase@Context.Request.Path",
+            title: "@Model.Title",
+            form: "#@formId",
+            searchResultGrid: "#@gridId"
+        });
+    });
+</script>
+
+

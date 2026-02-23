@@ -1,0 +1,141 @@
+﻿@model IEnumerable<PatCaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@inject IAttorneyService _attyService
+@inject IClientService ClientService
+@inject IStringLocalizer<PatentResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    var patSettings = await Settings.GetSetting();   
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+
+    var userWidgetId = widget.Id.ToString() + "-center-egrant";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var template = string.IsNullOrEmpty(widget.Template) ? $"<div class='name d-flex  justify-content-between'><span><a target='_blank' href='./Patent/CountryApplication/detail/#=AppId#'>#=kendo.htmlEncode(CaseNumber)# #= Country == null ? '' : kendo.htmlEncode(Country)# #= SubCase == null ? '' : kendo.htmlEncode(SubCase)# </a></span><span class='#=AppNumber == null ? 'd-none' : ''#'><a target='_blank' href='{Url.Action("Navigate", "WebLinks", new { area = "Shared", mainId = "#=WLMainId#", id = "#=AppId#", module = "Patent", subModule = "FormLink"})}'><i class='fal fa-link'></i></a></span></div><div class='title small ellipsis'>{Localizer["Patent Number: "]}#= PatNumber == null ? '&nbsp;' : kendo.htmlEncode(PatNumber)#</div><div class='title small ellipsis'>{Localizer["Issue Date: "]}#= IssDate == null ? '' : kendo.format('{{0:dd-MMM-yyyy}}', IssDate)#</div>" : widget.Template;
+
+    bool showAllowPaging = userSettings.Property("ShowAllowPaging") != null ? (userSettings["ShowAllowPaging"] ?? false).Value<bool>() : false;
+    bool allowPaging = !showAllowPaging || userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? userSettings.Property("PageSize") != null ? (userSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    int downloadedSwitch = userSettings.Property("DownloadedSwitch") != null ? (userSettings["DownloadedSwitch"] ?? 1).Value<int>() : 1;
+}
+
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+
+    $(document).ready(function () {       
+
+        const widgetGrid = $("#@userWidgetId");
+        pageHelper.kendoGridDirtyTracking(widgetGrid, { name: "@userWidgetId" });
+
+        $('#@userWidgetId').on('click', '.customCheck-chkbx', function () {            
+            var checked = $(this).is(':checked');            
+            var grid = $('#@userWidgetId').data("kendoGrid");
+            //Current item
+            var dataItem = grid.dataItem($(this).closest('tr'));
+            //Set current item back to true
+            if (dataItem) {
+                dataItem.set('CustomCheck', checked);
+            }            
+        })
+
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#@userWidgetId-downloaded-switch");
+        $(document).on("click", "#@userWidgetId-downloaded-switch", function (e) {
+            saveSetting(@widget.Id, `{ DownloadedSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+    });
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Downloaded"]</span>
+                <span>
+                    <label class="toggle-switch">
+                        <input id="@userWidgetId-downloaded-switch" type="checkbox" checked="@(downloadedSwitch == -1)">
+                        <span class="slider round"></span>
+                    </label>
+                </span>
+            </li>
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+@(Html.Kendo().Grid<PatCaseListViewModel>()
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns.Bound(u => u.CaseNumber)
+            .ClientTemplate(template)            
+            .HeaderHtmlAttributes(new { @class = "d-none" });
+
+        columns.Bound(c => c.CustomCheck)
+            .Width("15%")
+            .ClientTemplate("<input type='checkbox' #= (CustomCheck == true) ? checked ='checked' : '' # class='k-checkbox customCheck-chkbx'/>")              
+            .HeaderHtmlAttributes(new { @class = "d-none" });           
+
+    })
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .ToolBar(toolbar =>
+    {
+        toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+        toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+    })
+    .Editable(editable => editable.Enabled(true).Mode(GridEditMode.InCell)) 
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Refresh(true))
+    .AutoBind(true)        
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .Batch(true)
+        .ServerOperation(false)
+        .Model(model =>
+        {
+            model.Id(i => i.AppId);
+            model.Field(p => p.CaseNumber).Editable(false);
+            model.Field(p => p.CustomCheck).Editable(true);
+        })
+        .Read(update => update.Action("PatentCenterEGrantRead", "Dashboard", new { userWidgetId = widget.Id }).Data($"getWidgetTempSetting({widget.Id})"))
+        .Update(update => update.Action("PatentCenterEGrantUpdate", "Dashboard"))   
+        .Events(events =>
+        {
+            events.Error("pageHelper.onGridError");
+        })
+    )
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}

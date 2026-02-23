@@ -1,0 +1,135 @@
+﻿@model EmailTypeDetailViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.EmailTypeId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var screen = ViewData["PageId"];
+    var systemType = ViewData["SystemType"]?.ToString();
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="EmailTypeId" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content  detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-sm-6 col-md-6 col-lg-5 col-xl-5 order-lg-last">
+                <div class="d-flex justify-content-end">
+                    <label asp-for="IsEnabled" class="mr-4"></label>
+                    <span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="IsEnabled" name="IsEnabled" checked="@(Model.IsEnabled)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-6 col-lg-4 col-xl-4 order-sm-first">
+                <div class="form-group float-label">
+                    <label asp-for="Name"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Name" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Name"></span>
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-12 col-lg-8 col-xl-8">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-6 col-lg-4 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="ContentType"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="ContentType" value="@Model.ContentTypeDescription" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new
+                        {
+                           name = "ContentType",
+                           defaultText = Model.ContentTypeDescription,
+                           defaultValue = Model.ContentType,
+                           action = "GetUserContentTypeList",
+                           textProperty = "Text",
+                           valueProperty = "Value",
+                           limitToList = true,
+                           required = true,
+                           validationMessage = SharedLocalizer["The Notification Type field is required."].Value,
+                           limitToListMessage = SharedLocalizer["Please enter a valid Email Type."].Value,
+                           requiredRelation = systemType
+                        });
+                        <span asp-validation-for="ContentType"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-6 col-lg-3 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="EmailTemplateId"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="TemplateName" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new
+                        {
+                           name = "EmailTemplateId",
+                           defaultText = Model.TemplateName,
+                           defaultValue = Model.EmailTemplateId.ToString(),
+                           action = "GetTemplateList",
+                           controller = "EmailTemplate",
+                           textProperty = "Text",
+                           valueProperty = "Value",
+                           limitToList = true,
+                           showLinkButton = true,
+                           //required = true,
+                           //validationMessage = SharedLocalizer["The Template field is required."].Value,
+                           //limitToListMessage = SharedLocalizer["Please enter a valid Template."].Value
+                        });
+                        <span asp-validation-for="EmailTemplateId"></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="emailSetupDetailContentsTab" data-toggle="tab" role="tab" aria-controls="emailSetupDetailContentsTabContent" aria-selected="false" href="#emailSetupDetailContentsTabContent">@SharedLocalizer["Email Content"]</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane show active" id="emailSetupDetailContentsTabContent" role="tabpanel" aria-labelledby="emailSetupDetailContentsTab">
+                @await Html.PartialAsync("_GridEmailSetup", id)
+            </div>
+        </div>
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    $(document).ready(function () {
+        @(ViewBag.ActivePage).editableGrids = [
+            {
+                name: 'emailSetupGrid', isDirty: false, filter: { id: @id}, afterSubmit: @(ViewBag.ActivePage).updateRecordStamps
+            }
+        ];
+
+        const emailSetupGrid = $("#emailSetupGrid");
+        const grid = $("#emailSetupGrid").data("kendoGrid");
+        grid.dataSource.read();
+        pageHelper.addBreadCrumbsRefreshHandler(emailSetupGrid, () => {
+            grid.dataSource.read();
+        });
+    });
+</script>
+

@@ -1,0 +1,463 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthorizationService
+@{
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter ?? "Client Matter"] : Localizer[settings.LabelCaseNumber ?? "Case Number"];
+
+    var additionalData = "function() {return documentVerificationPage.getCriteria(documentVerificationPage.refineSearchContainer);}";
+
+    var canVerifyPatAction = (await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+    var canVerifyTmkAction = (await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+    var canVerifyGMAction = (await AuthorizationService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+
+    var isSharePointIntegrationOn = settings.IsSharePointIntegrationOn;
+
+    var noDocLabel = Localizer["No document available"];
+}
+<div id="actionVerificationContainer">
+    <form method="post" class="k-listview-wrap tickler"
+          data-save-verify-url="@Url.Action("SaveAllActionVerify", "DocumentVerification")"
+          data-label-verify-title="@Html.Raw(Localizer["Verify Action(s)"])"
+          data-label-verify-date="@Html.Raw(Localizer["Verify Date"])"
+          data-validation-error="@Html.Raw(Localizer["Verify Date is required"])"
+          data-label-verify-warning="@Html.Raw(Localizer["Please select action(s) to verify"])">
+        <div class="k-grid">
+            <div class="k-header k-grid-toolbar k-toolbar">
+                <nav class="nav nav-left sidebar-link" style="align-items:center;">
+                    @if (canVerifyPatAction || canVerifyTmkAction || canVerifyGMAction)
+                    {
+                        <a class="nav-link verify-record" href="#" role="button"><i class="fal fa-ballot-check pr-1"></i><span>@Html.Raw(Localizer["Verify selected"])</span></a>
+                        <a class="nav-link select-all-record" href="#" role="button"><i class="fal fa-check pr-1"></i><span>@Html.Raw(Localizer["Select all"])</span></a>
+                    }
+                    <a class="nav-link print-record" href="#" role="button"><i class="fal fa-file-arrow-down pr-1"></i><span>@Html.Raw(Localizer["Print View"])</span></a>
+                    <a class="nav-link excel-export" href="#" role="button"><i class="fal fa-file-excel pr-1"></i><span>@Html.Raw(Localizer["Export to Excel"])</span></a>
+                </nav>
+            </div>
+        </div>
+        <div id="dvActionHeaderContainer_fake">
+            <div class="row k-listview-header dvActionHeader">
+                <div class="col">
+                    <div class="row main">
+                        <div class="col col-1 d-md-block"></div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="BaseDate"><a data-id="Act_BaseDate" href="#">@Html.Raw(Localizer["Base Date"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-2">
+                            <div class="row">
+                                <div class="col" data-field="ActionType"><a data-id="Act_ActionType" href="#">@Html.Raw(Localizer["Action Type"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-3">
+                            <div class="row">
+                                <div class="col" data-field="DocName">@Html.Raw(Localizer["Document"])</div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="CaseNumber"><a data-id="Act_CaseNumber" href="#">@Html.Raw(caseNumberLabel)</a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col" data-field="Status"><a data-id="Act_Status" href="#">@Html.Raw(Localizer["Status"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="Country"><a data-id="Act_Country" href="#">@Html.Raw(Localizer["Country"])</a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col" data-field="AppNumber"><a data-id="Act_AppNumber" href="#">@Html.Raw(Localizer["Application No."])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="SubCase"><a data-id="Act_SubCase" href="#">@Html.Raw(Localizer["Sub Case"])</a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col" data-field="FilDate"><a data-id="Act_FilDate" href="#">@Html.Raw(Localizer["Filing Date"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="CaseType"><a data-id="Act_CaseType" href="#">@Html.Raw(Localizer["Case Type"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col" data-field="System"><a data-id="Act_System" href="#">@Html.Raw(Localizer["System"])</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row due">
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col"><a data-id="Act_DueDate" href="#">@Html.Raw(Localizer["Due Date"])</a></div>
+                            </div>
+                        </div>
+                        <div class="col col-1">
+                            <div class="row">
+                                <div class="col">@Html.Raw(Localizer["Indicator"])</div>
+                            </div>
+                        </div>
+                        <div class="col col-3">
+                            <div class="row">
+                                <div class="col"><a data-id="Act_ActionDue" href="#">@Html.Raw(Localizer["Action Due"])</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row k-listview-header dvActionHeader" id="dvActionHeaderContainer_real">
+            <div class="col">
+                <div class="row main">
+                    <div class="col col-1 d-md-block"></div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="BaseDate"><a data-id="Act_BaseDate" href="#">@Html.Raw(Localizer["Base Date"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-2">
+                        <div class="row">
+                            <div class="col" data-field="ActionType"><a data-id="Act_ActionType" href="#">@Html.Raw(Localizer["Action Type"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-3">
+                        <div class="row">
+                            <div class="col" data-field="DocName">@Html.Raw(Localizer["Document"])</div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="CaseNumber"><a data-id="Act_CaseNumber" href="#">@Html.Raw(caseNumberLabel)</a></div>
+                        </div>
+                        <div class="row">
+                            <div class="col" data-field="Status"><a data-id="Act_Status" href="#">@Html.Raw(Localizer["Status"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="Country"><a data-id="Act_Country" href="#">@Html.Raw(Localizer["Country"])</a></div>
+                        </div>
+                        <div class="row">
+                            <div class="col" data-field="AppNumber"><a data-id="Act_AppNumber" href="#">@Html.Raw(Localizer["Application No."])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="SubCase"><a data-id="Act_SubCase" href="#">@Html.Raw(Localizer["Sub Case"])</a></div>
+                        </div>
+                        <div class="row">
+                            <div class="col" data-field="FilDate"><a data-id="Act_FilDate" href="#">@Html.Raw(Localizer["Filing Date"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="CaseType"><a data-id="Act_CaseType" href="#">@Html.Raw(Localizer["Case Type"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col" data-field="System"><a data-id="Act_System" href="#">@Html.Raw(Localizer["System"])</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row due">
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col"><a data-id="Act_DueDate" href="#">@Html.Raw(Localizer["Due Date"])</a></div>
+                        </div>
+                    </div>
+                    <div class="col col-1">
+                        <div class="row">
+                            <div class="col">@Html.Raw(Localizer["Indicator"])</div>
+                        </div>
+                    </div>
+                    <div class="col col-3">
+                        <div class="row">
+                            <div class="col"><a data-id="Act_ActionDue" href="#">@Html.Raw(Localizer["Action Due"])</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @(
+            Html.Kendo().ListView<DocumentVerificationActionDTO>()
+            .Name("actionVerificationGrid")
+            .TagName("div")
+            .ContentElement("")
+            .ClientTemplateId("dvActionTemplate")
+            .Events(e =>
+            {
+                e.DataBound("documentVerificationPage.actionDataBound");                
+            })
+            .AutoBind(true)
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .ServerOperation(true)
+                .Read(read => read.Action("ActionVerification_Read", "DocumentVerification")
+                .Data(additionalData))
+                .Sort(sort => { sort.Add(c => c.DueDate).Ascending(); })
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Events(e => {
+                    e.RequestEnd("documentVerificationPage.actionRequestEnd");
+                })                
+            )
+            .Pageable(pageable => pageable
+            .Refresh(true)
+            .ButtonCount(5)
+            .PageSizes(settings.SearchResultsPageSizeOptions)            
+            )
+            )
+    </form>
+    <div class="cpiContainerPopup"></div>
+</div>
+<script type="text/x-kendo-tmpl" id="dvActionTemplate">
+    <div class="row k-listview-row tickler-row">
+        <div class="col">
+            <div class="row main family-header">
+                <div class="col col-1 d-md-block">
+                    #if(((System==="@SystemTypeCode.Patent") && "@canVerifyPatAction.ToString().ToLower()"==="true") || (System==="@SystemTypeCode.Trademark" && "@canVerifyTmkAction.ToString().ToLower()"==="true") || (System==="@SystemTypeCode.GeneralMatter" && "@canVerifyGMAction.ToString().ToLower()"==="true")) {#
+                        <input type="checkbox" class="click" name="chkActVerify" value="#:FamilyId#"/>
+                    #}#
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">#=pageHelper.cpiDateFormatToDisplay(BaseDate)#</div>
+                    </div>
+                </div>
+                <div class="col col-2">
+                    <div class="row">
+                        <div class="col">                            
+                            <a href="javascript:documentVerificationPage.redirectToAction('#:System#', #:ActId#)"><i class="fal fa-search-plus pr-1" title="@Html.Raw(Localizer["View"])"></i>#=ActionType#</a>                           
+                            #if(((System==="@SystemTypeCode.Patent") && "@canVerifyPatAction.ToString().ToLower()"==="true") || (System==="@SystemTypeCode.Trademark" && "@canVerifyTmkAction.ToString().ToLower()"==="true") || (System==="@SystemTypeCode.GeneralMatter" && "@canVerifyGMAction.ToString().ToLower()"==="true")) {#
+                                <span id="verify_icon_#=UId#" class="fal fa-edit act-verify-icon" data-u-id="#=UId#" data-system="#=System#" title="@Html.Raw(Localizer["Verify"])"></span>
+                            #}#
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-3">
+                    <div class="row">
+                        <div class="col">
+                            #=parseDocuments(DocNames, System, ParentId, DocLibrary, ActId)#
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">
+                            #if((System === '@SystemTypeCode.Patent' || System === '@SystemTypeCode.GeneralMatter') && canAccessSystem(System))
+                            {#
+                                <span><a href="javascript:documentVerificationPage.redirectToRecordByCaseNumber('#:System#', '#:CaseNumber#', #:ParentId#)"><i class='fal fa-search-plus'></i> #=(CaseNumber == null) ? '' : CaseNumber#</a></span>
+                            #} else {#
+                                <span>#=(CaseNumber == null) ? '' : CaseNumber#</span>
+                            #}#
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">#=Status#</div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">                            
+                            #if((System === '@SystemTypeCode.Patent' || System === '@SystemTypeCode.Trademark') && canAccessSystem(System))
+                            {#
+                                <span><a href="javascript:documentVerificationPage.redirectToRecordByCountry('#:System#', #:ParentId#)"><i class='fal fa-search-plus'></i> #=(Country == null) ? '&nbsp' : Country#</a></span>
+                            #} else {#
+                                <span>#=(Country == null) ? '&nbsp' : Country#</span>
+                            #}#
+                        </div>
+                    </div>
+                    <div class="row">
+                            <div class="col">#=(AppNumber == null) ? '&nbsp' : AppNumber#</div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">#=(SubCase == null) || (SubCase == '') ? '&nbsp' : SubCase#</div>
+                    </div>
+                    <div class="row">
+                            <div class="col">#=pageHelper.cpiDateFormatToDisplay(FilDate)#</div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">#=(CaseType == null) ? '' : CaseType#</div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">
+                            #if(System === '@SystemTypeCode.Patent') {#
+                                #=getDVLabel('patentLabel')#
+                            #}                            
+                            else if(System === '@SystemTypeCode.Trademark') {#
+                                #=getDVLabel('trademarkLabel')#
+                            #}
+                            else if (System === '@SystemTypeCode.GeneralMatter') {#
+                                #=getDVLabel('genMatterLabel')#
+                            #}#
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row family-header">
+                <div class="col col-3">
+                    <div class="row">
+                        <div class="col">
+                            <div id="verify_edit_#=UId#" class="edit-verify d-none">
+                                <input type="hidden" id="ActId_#=UId#" value="#=ActId#" />
+                                <input type="hidden" id="System_#=UId#" value="#=System#" />
+                                <div class="form-row">
+                                    <div class="col-md-6 d-flex">
+                                        <div class="form-group">
+                                            <label class="verifyLabel">#=getDVLabel('verifyLabel')#</label>
+                                            <input class="verified-date-entry" id="VerifiedDate_#=UId#"  data-value="#=VerifiedDate#"/>
+                                        </div>
+                                        <div class="pl-2" style="padding-top:30px;cursor:pointer;">
+                                            <span class="set-current-date-verify-icon pt-1" style="cursor:pointer" title="#=getDVLabel('setCurrentDateLabel')#">
+                                                <i class="fal fa-calendar-check"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="pl-1">
+                                            <div class="save-verify-icon pt-1" style="cursor:pointer" title="#=getDVLabel('saveLabel')#"><i class="fas fa-check"></i></div>
+                                            <div class="cancel-verify-icon pt-2" style="cursor:pointer" title="#=getDVLabel('cancelLabel')#"><i class="fas fa-times"></i></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row due">
+                 <div class="col col-1">
+                    <div class="row">
+                        <div class="col">#=pageHelper.cpiDateFormatToDisplay(DueDate)#</div>
+                    </div>
+                </div>
+                <div class="col col-1">
+                    <div class="row">
+                        <div class="col">#=Indicator#</div>
+                    </div>
+                </div>
+                <div class="col col-3">
+                    <div class="row">
+                        <div class="col">#=ActionDue#</div>
+                    </div>
+                </div>
+                <div class="col col-2 d-block"></div>
+                <div class="col col-4 d-block"></div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<style>
+    #actionVerificationGrid {
+        border: none !important;
+    }
+    #actionVerificationGrid .family-wrap {
+        border-bottom: 1px solid var(--separator) !important;
+    }
+
+    .act-verify-icon {
+        /*color: #CF4315;*/
+        color: var(--btn-primary);
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .verifyLabel {
+        font-size: .75rem;
+    }
+
+    .edit-verify {
+        padding-left: 50px;
+    }
+    
+    /* Styling for both Real and Fake Headers */
+    .dvActionHeader a,
+    .dvActionHeader a:hover {
+        color: var(--link-label);
+        font-weight: 400;
+        font-size: .9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Ensure the fake container has the same look as the Kendo listview header */
+    #dvActionHeaderContainer_fake {
+        background-color: var(--bg-main);
+        padding: 0 15px;
+        z-index: 1000;
+    }
+
+    /* Style for the sort icons */
+    .dvActionHeader span.k-icon {
+        margin-left: 5px;
+        font-size: 12px;
+    }
+
+    /* Ensure column rows inside headers look consistent */
+    .dvActionHeader .row.main,
+    .dvActionHeader .row.due {
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+        
+    #dvActionHeaderContainer_fake {       
+        z-index: 1000;        
+        overflow: hidden; /* Prevents internal rounding errors from showing */        
+        position: fixed;
+        top: 0px;        
+        background: var(--bg-main);
+        display: none;
+        border-bottom: 1px solid var(--text-body);
+    }
+
+    #dvActionHeaderContainer_real {        
+        border-bottom: 1px solid var(--text-body);
+    }
+
+    /* Ensure the tables/grids inside them don't have extra margins */
+    .dvActionHeader {
+        margin-top: 0 !important;
+    }
+
+    #actionVerificationGrid_pager .k-pager-info {
+        display: block !important;
+    }
+
+    #actionVerificationGrid .k-listview-row:hover {
+        background-color: transparent !important;        
+    }
+</style>
+<script>    
+    function parseDocuments(docNames, systemType, parentId, docLibrary, actId) {
+        if (docNames) {            
+            var holderStr = `<a href='javascript: documentVerificationPage.viewActDocument("${systemType}", "DocFileName", ${parentId}, ${actId}, DocId)'> <i class='fal fa-file pr-1' title='@Html.Raw(Localizer["View"])'></i>DocName</a > `;
+            var template = "";
+            var docArr = docNames.split(";");
+            docArr.forEach(function (item, indx) {
+                var itemArr = item.split("|");
+                var docNameLabel = itemArr[1];
+                if (docNameLabel <= "") {
+                    docNameLabel = "@noDocLabel";
+                }
+                template += holderStr.replace('DocFileName', itemArr[0]).replace('DocName', docNameLabel).replace('DocId', itemArr[2]);
+            });
+            if (template > "") {
+                return template;
+            }
+        }
+        return "";
+    }
+</script>

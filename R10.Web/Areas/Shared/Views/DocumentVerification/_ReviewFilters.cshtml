@@ -1,0 +1,141 @@
+﻿@model DocVerificationReviewFilterViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+
+    var clientLabel = Localizer[settings.LabelClient ?? "Client"];
+    var clientNameLabel = Localizer[settings.LabelClientName ?? "Client Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseTypeLabel = Localizer["Case Type"];
+}
+
+
+<div class="modal fade" id="docVerificationReviewFiltersDialog" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog  modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="SaveReviewFilters">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Documents for Review Criteria"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group float-label">
+                                    <label for="Countries">@countryLabel</label>
+                                    @(Html.Kendo().MultiSelect()
+                                        .Name("Countries")
+                                        .DataTextField("Country")
+                                        .DataValueField("Country")
+                                        .DataSource(source =>
+                                        {
+                                            source.Read(read =>
+                                            {
+                                                read.Action("GetCountryList", "Country", new { Area = "Shared", property = "Country" });
+                                            })
+                                            .ServerFiltering(false);
+                                        })
+                                        .Value(Model.Countries)
+                                        .AutoBind(Model.Countries?.Length > 0)
+                                        .ItemTemplate(ComboBoxHelper.GetItemTemplate("Country", "CountryName"))
+                                        .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(countryLabel, countryNameLabel))
+                                        .AutoWidth(true)
+                                    )
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group float-label">
+                                    <label for="Clients">@clientLabel</label>
+                                    @(Html.Kendo().MultiSelect()
+                                        .Name("Clients")
+                                        .DataTextField("ClientCode")
+                                        .DataValueField("ClientCode")
+                                        .DataSource(source =>
+                                        {
+                                            source.Read(read =>
+                                            {
+                                                read.Action("GetClientList", "Client", new { Area = "Shared", property = "ClientCode" });
+                                            })
+                                            .ServerFiltering(false);
+                                        })
+                                        .Value(Model.Clients)
+                                        .AutoBind(Model.Clients?.Length > 0)
+                                        .ItemTemplate(ComboBoxHelper.GetItemTemplate("ClientCode", "ClientName"))
+                                        .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(clientLabel, clientNameLabel))
+                                        .AutoWidth(true)
+                                        )
+                                </div>
+                            </div>
+                        </div>                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group float-label">
+                                    <label for="CaseTypes">@caseTypeLabel</label>
+                                    @(Html.Kendo().MultiSelect()
+                                        .Name("CaseTypes")
+                                        .DataTextField("CaseType")
+                                        .DataValueField("CaseType")
+                                        .DataSource(source =>
+                                        {
+                                            source.Read(read =>
+                                            {
+                                                read.Action("GetCaseTypeList", "DocumentVerification", new { Area = "Shared" });
+                                            })
+                                            .ServerFiltering(false);
+                                        })
+                                        .Value(Model.CaseTypes)
+                                        .AutoBind(Model.CaseTypes?.Length > 0)
+                                        .ItemTemplate(ComboBoxHelper.GetItemTemplate("CaseType", "Description"))
+                                        .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(caseTypeLabel, Localizer["Description"]))
+                                        .AutoWidth(true)
+                                        )
+                                </div>
+                            </div>                            
+                            <div class="col-md-4 d-flex">
+                                <div class="form-check">
+                                    <label for="IsActiveOnly">@Localizer["Active records only?"]</label>
+                                    <span>
+                                        <label class="toggle-switch">
+                                            <input asp-for="IsActiveOnly" class="toggle-option" />
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>   
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group float-label">
+                                    <label for="UploadedDate">@Localizer["Only documents uploaded after this date"]</label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("UploadedDate") { Value = Model.UploadedDate })
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group float-label">
+                                    <label for="DocNameFilter">@Localizer["File Name Contains"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="DocNameFilter" />
+                                    <span asp-validation-for="DocNameFilter"></span>
+                                </div>
+                            </div>
+                        </div>                                
+                        <div class="modal-footer" style="border-top:none">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                            <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        documentVerificationPage.showReviewFilters();
+    });
+</script>

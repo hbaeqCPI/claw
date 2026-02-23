@@ -1,0 +1,89 @@
+﻿@model ActivityLog
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var id = Model.Id;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="Id" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="ActivityDate"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ActivityDate" disabled value="@(Model.ActivityDate.ToString("dd-MMM-yyyy hh:mm:ss tt"))" />
+                </div>
+            </div>
+            <div class="col-12 col-sm-7 col-md-7 col-lg-7 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="UserId"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="UserId" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="HostName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="HostName" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-7 col-md-7 col-lg-7 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="HostIP"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="HostIP" disabled />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+                <div class="form-group float-label">
+                    <textarea rows="2" class="form-control form-control-sm" asp-for="RequestUrl" disabled></textarea>
+                    <label asp-for="RequestUrl"></label>
+                </div>
+            </div>
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="RequestMethod"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="RequestMethod" disabled />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <textarea rows="5" class="form-control form-control-sm" asp-for="RequestForm" disabled></textarea>
+                    <label asp-for="RequestForm"></label>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="StatusCode"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="StatusCode" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-7 col-md-7 col-lg-7 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="RemoteAddress"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="RemoteAddress" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-6">
+                <div class="form-group float-label">
+                    <label asp-for="AcceptLanguage"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AcceptLanguage" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+                <div class="form-group float-label">
+                    <textarea rows="3" class="form-control form-control-sm" asp-for="UserAgent" disabled></textarea>
+                    <label asp-for="UserAgent"></label>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,13 @@
+﻿@model R10.Web.Models.MenuViewModels.MenuItemViewModel
+
+<div class="card card-sub-menu" data-id="@Model.Id">
+    <div id="menu-@Model.Id" class="card-header @(Model.IsEnabled ? "" : "disabled")">
+        <span class="menu-title">@Model.Title</span>
+        <span class="sub-menu-action" data-id="@Model.Id" data-enabled="@Model.IsEnabled">
+            <i class="fal fa-ellipsis-h"></i>
+        </span>
+    </div>
+    <ul id="@Model.Id" class="list-group list-group-flush menu-items">
+        @await Html.PartialAsync("_MenuItems", Model.SubMenuItems)
+    </ul>
+</div>

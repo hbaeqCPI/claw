@@ -1,0 +1,488 @@
+﻿@using  R10.Web.Areas
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthService
+@model CostTrackingReportViewModel
+@{
+    var title = Localizer["Cost Tracking Report"];
+    ViewData["Title"] = title;
+    ViewData["ActivePage"] = "ReportCriteriaPage";
+
+    var screen = "costTracking";
+    ViewBag.PageId = "CostTracking";
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent) || User.IsRespOfficeOn(SystemType.Trademark) || User.IsRespOfficeOn(SystemType.GeneralMatter);
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = settings.LabelCaseNumber;
+    var ownerLabel = settings.LabelOwner;
+    var ownerNameLabel = settings.LabelOwnerName;
+    var clientLabel = settings.LabelClient;
+    var clientNameLabel = settings.LabelClientName;
+    var clientRefLabel = settings.LabelClientRef;
+    var agentLabel = settings.LabelAgent;
+    var agentNameLabel = settings.LabelAgentName;
+    var agentRefLabel = settings.LabelAgentRef;
+    var disclosureNumberRefLabel = settings.LabelDisclosureNumber;
+    var attorneyLabel = "Attorney";
+    var attorneyNameLabel = "Attorney Name";
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var titleDataSourceUrl = Url.Action("GetTitleList", "CostTrackingLookUp", new { area = "Shared", property = "Title" });
+
+    var partialViewModel = new ReportPartialLookUpViewModel { Controller = "CostTrackingLookUp", Area = "Shared" };
+    var reportPageOption = new ReportPageOption { CanPrint = true, CanEmail = true, CanSave = true, CanLoad = true, CanClear = true, Url = ViewBag.Url };
+}
+
+<style>
+    .input-validation-error {
+        border-color: red;
+    }
+</style>
+
+<div class="page-main">
+    <form method="post"
+          id="ReportCriteriaForm"
+          data-url="@ViewBag.Url"
+          data-email-report-url="@Url.Action("EmailCostTracking","Report", new { Area = "Shared", subjectTitle = title})">
+        <div class="container-fluid page-header">
+            <div class="row">
+                <div class="row col-md-6 col-lg-7" style="padding:0px 0px 0px 0px; margin:0px 0px 0px 0px">
+                    <h2>@title</h2>
+                    <div class="col-1"></div>
+                    <div>
+                        <div class="form-group vertical-center">
+                            <label for="ReportFormat">@Localizer["Report Format"]</label>
+                            @(Html.Kendo().DropDownList()
+                            .Name("ReportFormat")
+                            .HtmlAttributes(new { style = "width: 100px" })
+                            .BindTo(Html.GetEnumSelectList<ReportOutputType>())
+                            .Events(events => events.Open("function() {this.element.getKendoDropDownList().list.find('li.k-item').first().hide();}"))
+                            )
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-5" style="padding:0px 15px 0px 0px; margin:0px 0px 0px 0px">
+                    @await Component.InvokeAsync("ReportPageNavLinks", reportPageOption)
+                </div>
+            </div>
+        </div>
+
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="container-fluid page-content">
+            <div class="row col-sm-12">
+                <div class="form-group col-md-auto">
+                    <label asp-for="SortOrder"><strong>@Localizer["Sort"]</strong></label><br />
+                    <input asp-for="SortOrder" type="radio" value="1" checked>
+                    <label>@Localizer["by " + caseNumberLabel]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="2">
+                    <label>@Localizer["by " + clientLabel]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="3">
+                    <label>@Localizer["by Invoice Date"]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="4">
+                    <label>@Localizer["by Country"]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="9">
+                    <label id="byTitleLabel">>@Localizer["by Title"]</label><br />
+                </div>
+
+                <div class="form-group col-md-auto">
+                    <label asp-for="SortOrder"><strong>@Localizer["Sort"]</strong></label><br />
+                    <input asp-for="SortOrder" type="radio" value="5">
+                    <label>@Localizer["by Cost Type"]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="6">
+                    <label>@Localizer["by Payment Date"]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="7">
+                    <label>@Localizer["by Matter Type"]</label><br />
+                    <input asp-for="SortOrder" type="radio" value="8">
+                    <label>@Localizer["by Invoice Number"]</label><br />
+                </div>
+
+                <div class="form-group col-md-auto">
+                    <label asp-for="PaidOption"><strong>@Localizer["Cases"]</strong></label><br />
+                    <input asp-for="PaidOption" type="radio" value="1">
+                    <label>@Localizer["Paid"]</label><br />
+                    <input asp-for="PaidOption" type="radio" value="2">
+                    <label>@Localizer["Not Paid"]</label><br />
+                    <input asp-for="PaidOption" type="radio" value="3" checked>
+                    <label>@Localizer["All"]</label><br />
+                </div>
+
+                <div class="form-group col-md-auto">
+                    <label class="form-check-label"><strong>@Localizer["Includes"]</strong></label><br />
+                    <input asp-for="PrintRemarks" type="checkbox" />
+                    <label>@Localizer["Print Remarks"]</label><br />
+                    <input id = "PrintShowCriteria" asp-for="PrintShowCriteria" type="checkbox" onchange="PrintCriteriaChanged();" checked />
+                    <label>@Localizer["Selection Criteria"]</label><br />
+                    <input class="CriteriaDependence" asp-for="PrintShowCriteriaOnFirstPage" type="checkbox" />
+                    <label>@Localizer["Print Criteria On First Page"]</label><br />
+                </div>
+
+                <div class="col-md-auto">
+                    <label class="form-check-label"><strong>@Localizer["Systems"]</strong></label>
+                    <div class="form-group">
+                        @if ((await AuthService.AuthorizeAsync(User, PatentAuthorizationPolicy.FullRead)).Succeeded)
+                        {
+                            @if (Model.PrintSystems == "P")
+                            {
+                                <input id="PrintSystemsP" name="PrintSystemsP" class="PrintSystemCheckBox" type="checkbox" checked value="P" />
+                            }
+                            else
+                            {
+                                <input id="PrintSystemsP" name="PrintSystemsP" class="PrintSystemCheckBox" type="checkbox" value="P" />
+                            }
+                            <label>@Localizer["Patent"]</label><br />
+                        }
+                        else
+                        {
+                            <input hidden id="PrintSystemsP" name="PrintSystemsP" class="PrintSystemCheckBox" type="checkbox" value="P" />
+                        }
+                        @if ((await AuthService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullRead)).Succeeded)
+                        {
+                            @if (Model.PrintSystems == "T")
+                            {
+                                <input id="PrintSystemsT" name="PrintSystemsT" class="PrintSystemCheckBox" type="checkbox" checked value="T" />
+                            }
+                            else
+                            {
+                                <input id="PrintSystemsT" name="PrintSystemsT" class="PrintSystemCheckBox" type="checkbox" value="T" />
+                            }
+                            <label>@Localizer["Trademark"]</label><br />
+                        }
+                        else
+                        {
+                            <input hidden id="PrintSystemsT" name="PrintSystemsT" class="PrintSystemCheckBox" type="checkbox" value="T" />
+                        }
+                        @if ((await AuthService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullRead)).Succeeded)
+                        {
+                            @if (Model.PrintSystems == "G")
+                            {
+                                <input id="PrintSystemsG" name="PrintSystemsG" class="PrintSystemCheckBox" type="checkbox" checked value="G" />
+                            }
+                            else
+                            {
+                                <input id="PrintSystemsG" name="PrintSystemsG" class="PrintSystemCheckBox" type="checkbox" value="G" />
+                            }
+                            <label>@Localizer["Gen. Matter"]</label><br />
+                        }
+                        else
+                        {
+                            <input hidden id="PrintSystemsG" name="PrintSystemsG" class="PrintSystemCheckBox" type="checkbox" value="G" />
+                        }
+                        <input asp-for="PrintSystems" id="PrintSystems" type="text" hidden />
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+            <div class="container-fluid">
+                <div class="form-row group">
+                    <div class="col-xl-4 col-lg-6 col-md-4">
+                        <div class="form-row group justify-content-md-end vertical-center">
+                            <div class="col-auto" style="padding:0px 20px 0px 0px; margin:0px 0px 0px 0px">
+                                <input asp-for="DateType" type="radio" value="1" checked>
+                                <label>@Localizer["Invoice Date"]</label>
+                            </div>
+                            <div class="col-auto" style="padding:0px 20px 0px 0px; margin:0px 0px 0px 0px">
+                                <input asp-for="DateType" type="radio" value="2">
+                                <label>@Localizer["Payment Date"]</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group float-label col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label for="FromDate">@Localizer["From"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromDate"))
+                    </div>
+
+                    <div class="form-group float-label col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label for="ToDate">@Localizer["To"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToDate"))
+                    </div>
+                </div>
+            </div>
+            <hr />
+
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-row group">
+                            @await Component.InvokeAsync("RMultiSelectClient", partialViewModel)
+                            <input asp-for="Clients" id="Clients" type="text" hidden value="" />
+                            <input asp-for="ClientNames" id="ClientNames" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            @await Component.InvokeAsync("RMultiSelectAgent", partialViewModel)
+                            <input asp-for="Agents" id="Agents" type="text" hidden value="" />
+                            <input asp-for="AgentNames" id="AgentNames" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            @await Component.InvokeAsync("RMultiSelectOwner", partialViewModel)
+                            <input asp-for="Owners" id="Owners" type="text" hidden value="" />
+                            <input asp-for="OwnerNames" id="OwnerNames" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            @await Component.InvokeAsync("RMultiSelectAttorney", partialViewModel)
+                            <input asp-for="Attorneys" id="Attorneys" type="text" hidden value="" />
+                            <input asp-for="AttorneyNames" id="AttorneyNames" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            <div class="form-group float-label col-8 TitleMultiSelectClass" hidden>
+                                <label id="titleLabel">@Localizer["Titles"]</label>
+                                @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                                   {
+                                       Name = "Titles_Options",
+                                       DataTextProperty = "Title",
+                                       Controller = partialViewModel.Controller,
+                                       Area = partialViewModel.Area,
+                                       Action = "GetTitleList",
+                                   })
+                                <input asp-for="Titles" id="Titles" type="text" hidden value="" />
+                            </div>
+                            <div class="form-group float-label col-lg-8 TitleComboBoxClass">
+                                <label id="titleLabel2">@Localizer["Title"]</label>
+                                @await Component.InvokeAsync("ComboBox", new { name = "Title", controller = partialViewModel.Controller, action = "GetTitleList", area = partialViewModel.Area, screen = screen })
+                            </div>
+                            @await Component.InvokeAsync("SingleMultiSwitcher", new { MultiClass = "TitleMultiSelectClass", SingleClass = "TitleComboBoxClass" })
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <div class="form-row group">
+                            <div class="form-group float-label col-xl-4 col-6">
+                                <label for="LowCaseNumber">@Localizer["From " + caseNumberLabel]</label>
+                                @await Component.InvokeAsync("ComboBox", new { name = "CaseNumberFrom", textProperty = "CaseNumber", valueProperty = "CaseNumber", controller = partialViewModel.Controller, action = "GetCaseNumberList", area = partialViewModel.Area, screen = screen, enablePaging = enableComboPaging, pagingSize = comboPagingSize, valueMapper = "ReportCriteriaPage.caseNumberSearchValueMapper" })
+                            </div>
+
+                            <div class="form-group float-label col-xl-4 col-6">
+                                <label for="HighCaseNumber">@Localizer["To " + caseNumberLabel]</label>
+                                @await Component.InvokeAsync("ComboBox", new { name = "CaseNumberTo", textProperty = "CaseNumber", valueProperty = "CaseNumber", controller = partialViewModel.Controller, action = "GetCaseNumberList", area = partialViewModel.Area, screen = screen, enablePaging = enableComboPaging, pagingSize = comboPagingSize, valueMapper = "ReportCriteriaPage.caseNumberSearchValueMapper" })
+                            </div>
+                        </div>
+
+                        <div class="form-row group">
+                            <div class="form-group float-label col-xl-2 col-lg-3 col-4">
+                                @await Component.InvokeAsync("FilterOperatorList", new { name = "CostTypesOp" })
+                            </div>
+                            <div class="form-group float-label col-xl-6 col-lg-7 col-8">
+                                <label>@Localizer["Cost Types"]</label>
+                                @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                                           {
+                                               Name = "CostTypes_Options",
+                                               DataTextProperty = "CostType",
+                                               Controller = partialViewModel.Controller,
+                                               Area = partialViewModel.Area,
+                                               Action = "GetCostTypeList",
+                                           })
+                            </div>
+                            <input asp-for="CostTypes" id="CostTypes" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            <div class="form-group float-label col-xl-2 col-lg-3 col-4">
+                                @await Component.InvokeAsync("FilterOperatorList", new { name = "CountryOp" })
+                            </div>
+                            @await Component.InvokeAsync("RMultiSelectCountry", partialViewModel)
+                            <input asp-for="Countries" id="Countries" type="text" hidden value="" />
+                            <input asp-for="CountryNames" id="CountryNames" type="text" hidden value="" />
+                        </div>
+
+                        <div class="form-row group">
+                            <div class="form-group float-label col-xl-4 col-lg-5 col-md-6">
+                                <label for="Area">@Localizer["Area"]</label>
+                                @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = partialViewModel.Controller, action = "GetAreaList", area = partialViewModel.Area, screen = screen })
+                            </div>
+
+
+
+                            @if (isRespOfficeOn)
+                            {
+                                <div class="form-group float-label col-xl-4 col-lg-5 col-md-6 RespOfficeMultiSelectClass" hidden>
+                                    <label for="RespOffices">@Localizer["Resp. Offices"]</label>
+                                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+                                    {
+                                        Name = "RespOffices_Options",
+                                        DataTextProperty = "RespOffice",
+                                        Controller = partialViewModel.Controller,
+                                        Area = partialViewModel.Area,
+                                        Action = "GetRespOfficeList",
+                                    })
+                                    <input type="text" asp-for="RespOffices" id="RespOffices" hidden />
+                                </div>
+                                <div class="form-group float-label col-xl-4 col-lg-5 col-md-6 RespOfficeComboBoxClass">
+                                    <label for="RespOffice">@Localizer["Resp. Office"]</label>
+                                    @await Component.InvokeAsync("ComboBox", new { name = "RespOffice", controller = partialViewModel.Controller, action = "GetRespOfficeList", area = partialViewModel.Area, screen = screen })
+                                </div>
+                                @await Component.InvokeAsync("SingleMultiSwitcher", new { MultiClass = "RespOfficeMultiSelectClass", SingleClass = "RespOfficeComboBoxClass" })
+
+
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript">
+    var appTitleLabel = '@Localizer["Application Title"]';
+    var tmkTrademarkLabel = '@Localizer["Trademark Name"]';
+    var gmTitleLabel = '@Localizer["Matter Title"]';
+
+    var byTitleLabel = '@Localizer["by Title"]';
+    var byTrademarkLabel = '@Localizer["by Trademark"]';
+    var byTitleOrTrademarkLabel = '@Localizer["by Title or Trademark"]';
+
+    $(document).ready(function () {
+        const formName = "#ReportCriteriaForm";
+        ReportCriteriaPage.initialize(formName);
+        const form = $(formName);
+
+        CombineSystems();
+        form.find(".PrintSystemCheckBox").on("change", function (e) { CombineSystems() })
+        $(document).off("change", "#ReportFormat");
+        $(document).on("change", "#ReportFormat", function (e) {
+            ReportCriteriaPage.ReportFormatChange();
+        });
+
+        const reportPageId = 'CostTrackingReport';
+
+        form.find(".email-report").on("click", function (e) { ReportCriteriaPage.emailReport(form) })
+
+        form.find(".search-save").on("click", function () {
+            CombineFields();
+            pageHelper.getSearchCriteriaScreen(formName, reportPageId, true);
+        })
+        form.find(".search-load").on("click", function () {
+            pageHelper.getSearchCriteriaScreen(formName, reportPageId, false, function (response) {
+                form.clearSearch();
+                pageHelper.loadSearchCriteria(response, { refineSearchContainer: formName });
+                loadCombinedFields();
+                ReportCriteriaPage.ReportFormatChange();
+                setTimeout(function () { CombineFields(); }, 500);
+                setTimeout(function () { pageHelper.loadSearchCriteria(response, { refineSearchContainer: formName }); }, 1000);
+                setTimeout(function () { ReportCriteriaPage.showMultiWhenNotEmpty(); }, 1500);
+            });
+        })
+        if(@ViewBag.LoadDefault.ToString().ToLower()){
+            pageHelper.loadDefaultSearchCriteria(formName, reportPageId, { refineSearchContainer: formName });
+            loadCombinedFields();
+            ReportCriteriaPage.ReportFormatChange();
+            setTimeout(function () { CombineFields(); }, 500);
+            setTimeout(function () { pageHelper.loadDefaultSearchCriteria(formName, reportPageId, { refineSearchContainer: formName }); }, 1000);
+            setTimeout(function () { ReportCriteriaPage.showMultiWhenNotEmpty(); }, 1500);
+        }
+    })
+
+    function loadCombinedFields() {
+        var printSystems = "," + document.getElementById("PrintSystems").value + ",";
+        if (printSystems.includes(",G,"))
+            document.getElementById("PrintSystemsG").checked = true;
+        if (printSystems.includes(",T,"))
+            document.getElementById("PrintSystemsT").checked = true;
+        if (printSystems.includes(",P,"))
+            document.getElementById("PrintSystemsP").checked = true;
+    }
+
+    function printReport(form) {
+        cpiLoadingSpinner.show();
+
+        CombineFields()
+
+        ReportCriteriaPage.submitForm(form, "@title");
+    }
+
+    function CombineFields() {
+        ReportCriteriaPage.combineMultiSelect();
+    }
+
+    function CombineSystems() {
+        var result = ","
+        var target = document.getElementById("PrintSystems");
+        document.querySelectorAll('.PrintSystemCheckBox').forEach(element => {
+            if (element.nodeName == "INPUT" && element.checked) {
+                result += element.id.substring(element.id.length - 1) + ",";
+            }
+        });
+        if (result == ",")
+            result = "";
+        else {
+            result = result.substring(1, result.length - 1);
+        }
+
+        target.value = result;
+
+        rebindTitle('@titleDataSourceUrl', result, $('#Titles_Options_CostTracking'), $('#Title_costTracking'));
+        resetTitleLabel(result);
+    }
+
+    function rebindTitle(titleDataSourceUrl, systemType, multiSelect, comboBox) {
+        if (systemType === "")
+            return;
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: titleDataSourceUrl + "&systemType=" + systemType,
+                }
+            }
+        });
+        multiSelect.data("kendoMultiSelect").setDataSource(dataSource);
+        comboBox.data("kendoComboBox").setDataSource(dataSource);
+    }
+
+    function resetTitleLabel(systemType){
+        var label = "";
+        var sortLabel = byTitleLabel;
+
+        if (systemType === "") {
+            return;//label = titleLabel;
+        } else {
+            if (systemType.includes("P"))
+                label += appTitleLabel + "/";
+            if (systemType.includes("T"))
+                label += tmkTrademarkLabel + "/";
+            if (systemType.includes("G"))
+                label += gmTitleLabel + "/";
+            label = label.substring(0, label.length - 1);
+
+            if (systemType === 'T')
+                sortLabel = byTrademarkLabel
+            else if (systemType.includes("T"))
+                sortLabel = byTitleOrTrademarkLabel;
+            else
+                sortLabel = byTitleLabel;
+        }
+
+        document.getElementById("titleLabel").innerHTML = label;
+        document.getElementById("titleLabel2").innerHTML = label;
+
+        if (document.getElementById("byTitleLabel"))
+            document.getElementById("byTitleLabel").innerHTML = sortLabel;
+    }
+
+    function PrintCriteriaChanged() {
+        var actionDependences = document.querySelectorAll('.CriteriaDependence');
+
+        if (document.getElementById("PrintShowCriteria").checked) {
+            actionDependences.forEach(element => {
+                element.removeAttribute("disabled");
+            });
+        }
+        else {
+            actionDependences.forEach(element => {
+                element.setAttribute("disabled", "disabled");
+                if(element.type === "checkbox"){
+                    element.checked = false;
+                }
+            });
+        }
+    }
+</script>

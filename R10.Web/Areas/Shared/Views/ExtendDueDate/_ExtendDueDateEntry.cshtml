@@ -1,0 +1,365 @@
+﻿@model ExtendDueDateViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var days = new int[] { 0, 1, 7, 14, 21, 30 };
+    var weeks = new int[] { 0, 1, 2, 3, 4, 5, 6 };
+    var months = new int[] { 0, 1, 2, 3, 4, 5, 6 };
+    var currentDate = (DateTime)Model.CurrentDueDate;
+    var tStamp = Model.tStamp != null ? Convert.ToBase64String(Model.tStamp) : "";
+
+    var extendDay = Model.ExtendDay ?? 0;
+    var extendWeek = Model.ExtendWeek ?? 0;
+    var extendMonth = Model.ExtendMonth ?? 0;
+    var controller = Model.Controller ?? "ActionDueDate";
+}
+
+<script>
+    $(document).ready(() => {
+        const container = $("#patExtendDueDateDialog");
+        //const currentDueDate = new Date(@currentDate.Year, @currentDate.Month-1, @currentDate.Day);
+        let newDueDate = null;
+        let days = @extendDay, weeks = @extendWeek, months = @extendMonth;
+
+        container.on("click", ".extend-dd-item", function () {
+            const element = $(this);
+            if (element.hasClass("day")) {
+                container.find(".day.extend-dd-item").removeClass("badge-info");
+                days = parseInt($(this).html());
+                container.find("#ExtendDay").val(days);
+            }
+            else if (element.hasClass("week")) {
+                container.find(".week.extend-dd-item").removeClass("badge-info");
+                weeks = parseInt($(this).html());
+                container.find("#ExtendWeek").val(weeks);
+            }
+            else if (element.hasClass("month")) {
+                container.find(".month.extend-dd-item").removeClass("badge-info");
+                months = parseInt($(this).html());
+                container.find("#ExtendMonth").val(months);
+            }
+            element.addClass("badge-info");
+            //computeNewDueDate();
+        });
+
+        container.on("click", ".extend-dd", function () {
+            computeNewDueDate();
+        });
+
+        function computeNewDueDate() {
+            //console.log(months, weeks, days);
+            //newDueDate = new Date(currentDueDate);
+            //if (months > 0)
+            //    newDueDate.setMonth(newDueDate.getMonth() + months);
+
+            //if (weeks > 0)
+            //    newDueDate.setDate(newDueDate.getDate() + 7 * weeks);
+            //if (days > 0)
+            //    newDueDate.setDate(newDueDate.getDate() + days);
+            //container.find("#NewDueDateJs").val(newDueDate);
+            //container.find("#NewDueDate").val(pageHelper.cpiDateFormatToSave(newDueDate));
+            //container.find("#NewDueDateFormatted").val(kendo.toString(newDueDate, 'dd-MMM-yyyy'));
+
+            const baseUrl = $("body").data("base-url");
+            const url = `${baseUrl}/Shared/ExtendDueDate/ComputeNextDueDate`;
+
+            const localeDate = '@currentDate.Month/@currentDate.Day/@currentDate.Year';
+            $.get(url, { currentDueDate: localeDate, months, weeks, days })
+                .done(function (result) {
+                    console.log(result)
+                    container.find("#NewDueDate").val(result.newDueDate);
+                    container.find("#NewDueDateFormatted").val(result.newDueDateFormatted);
+                })
+                .fail(function (e) {
+                    pageHelper.showErrors(e.responseText);
+                });
+
+        };
+    });
+
+    function extendDueDateRecurrenceChange() {
+        const interval = $("#patExtendDueDateDialog #RepeatInterval").data("kendoDropDownList");
+        interval.dataSource.read();
+
+        if ($("#patExtendDueDateDialog #RepeatRecurrence").val() == "W")
+            $("#patExtendDueDateDialog .repeat-day").removeClass("d-none");
+        else
+            $("#patExtendDueDateDialog .repeat-day").addClass("d-none");
+    }
+
+    function extendDueDateStopIndicatorChange(e) {
+        const stopIndicator = $("#patExtendDueDateDialog #StopIndicator").val();
+
+        //on
+        if (stopIndicator == "O") {
+            $("#patExtendDueDateDialog .stop-date").removeClass("d-none")
+            $("#patExtendDueDateDialog .stop-occurence").addClass("d-none")
+        }
+        //after no of occurences
+        else if (stopIndicator == "A") {
+            $("#patExtendDueDateDialog .stop-date").addClass("d-none")
+            $("#patExtendDueDateDialog .stop-occurence").removeClass("d-none")
+        }
+        //never
+        else {
+            $("#patExtendDueDateDialog .stop-date").addClass("d-none")
+            $("#patExtendDueDateDialog .stop-occurence").addClass("d-none")
+        }
+
+    }
+</script>
+
+<div class="modal fade" id="patExtendDueDateDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="ExtendDueDate" asp-controller="@controller" asp-area="@Model.Area">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Extend Due Date"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="ExtensionId" />
+                        <input type="hidden" asp-for="DDId" />
+                        <input type="hidden" asp-for="CreatedBy" />
+                        <input type="hidden" asp-for="DateCreated" value="@Model.DateCreated.FormatToSave()" />
+                        <input type="hidden" asp-for="CurrentDueDate" value="@Model.CurrentDueDate.FormatToSave()" />
+                        <input type="hidden" name="NewDueDate" id="NewDueDate" />
+                        <input type="hidden" name="ExtendDay" id="ExtendDay" value="@Model.ExtendDay" />
+                        <input type="hidden" name="ExtendWeek" id="ExtendWeek" value="@Model.ExtendWeek" />
+                        <input type="hidden" name="ExtendMonth" id="ExtendMonth" value="@Model.ExtendMonth" />
+                        <input type="hidden" name="tStamp" value="@(tStamp)" />
+                        @*<input type="hidden" id="NewDueDateJs" />*@
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="CurrentDueDate"></label>
+                                    <input type="text" class="form-control form-control-sm" disabled value="@(Model.CurrentDueDate.FormatToDisplay())" />
+                                </div>
+                            </div>
+                            @*<div class="col-md-2 pl-5 pt-3">
+                            <i class="fas fa-chevron-double-right"></i>
+                            </div>*@
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="NewDueDateFormatted"></label>
+                                    <input type="text" class="form-control form-control-sm" disabled id="NewDueDateFormatted" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="pt-4">@Localizer["Select the number of months, weeks, or days"]</h5>
+                        <div>
+                            <ul class="nav nav-tabs detail nav-tabs-horizontal" id="actionDueTab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active  @(Model.ExtendMonth > 0 ? "has-extension-value" : "")" id="actionDueDetailMonthsTab" data-toggle="tab" role="tab" aria-controls="actionDueDetailMonthsTabContent" aria-selected="false" href="#actionDueDetailMonthsTabContent"><span>@Localizer["Months"]</span></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @(Model.ExtendWeek > 0 ? "has-extension-value" : "")"  id="actionDueDetailWeeksTab" href="#actionDueDetailWeeksTabContent" data-toggle="tab" role="tab" aria-controls="actionDueDetailWeeksTabContent"><span>@Localizer["Weeks"]</span></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @(Model.ExtendDay > 0 ? "has-extension-value" : "")" id="actionDueDetailDaysTab" href="#actionDueDetailDaysTabContent" data-toggle="tab" role="tab" aria-controls="actionDueDetailDaysTabContent" aria-selected="true"><span>@Localizer["Days"]</span></a>
+                                </li>
+                            </ul>
+                            <div class="tab-content detail pt-3">
+                                <div class="tab-pane active show" id="actionDueDetailMonthsTabContent" role="tabpanel" aria-labelledby="actionDueDetailMonthsTab">
+                                    @foreach (var item in months)
+                                    {
+                                        <span class="month extend-dd-item badge badge-pill @(item==Model.ExtendMonth ? "badge-info" : "")" style="cursor:pointer">@item</span>
+                                    }
+                                </div>
+                                <div class="tab-pane" id="actionDueDetailWeeksTabContent" role="tabpanel" aria-labelledby="actionDueDetailWeeksTab">
+                                    @foreach (var item in weeks)
+                                    {
+                                        <span class="week extend-dd-item badge badge-pill @(item==Model.ExtendWeek ? "badge-info" : "")" style="cursor:pointer">@item</span>
+                                    }
+                                </div>
+                                <div class="tab-pane" id="actionDueDetailDaysTabContent" aria-labelledby="actionDueDetailDaysTab" role="tabpanel">
+                                    @foreach (var item in days)
+                                    {
+                                        <span class="day extend-dd-item badge badge-pill @(item==Model.ExtendDay ? "badge-info" : "")" style="cursor:pointer">@item</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-3">
+                            <h5 class="pt-4">@Localizer["Manually extend the due date based on the selection above"]</h5>
+                            <a href="#" class="btn btn-primary extend-dd">@Localizer["Extend Due Date"]</a>
+                        </div>
+                        <hr />
+                        <h4 class="pt-4">@Localizer["Advanced Settings"]</h4>
+                        <h5>@Localizer["Custom recurrence"]</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="StartDate"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("StartDate") { Value = (DateTime?)Model.StartDate, ValidationMessage = Localizer["The Start Date field is required."].Value })
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <div class=" custom-control custom-checkbox">
+                                        <input asp-for="IsEnabled" class="custom-control-input" />
+                                        <label asp-for="IsEnabled" class="custom-control-label"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="RepeatInterval"></label>
+                                    @(Html.Kendo().DropDownListFor(m => m.RepeatInterval)
+                                        .DataSource(source =>
+                                        {
+                                            source.Read(read =>
+                                            {
+                                                read.Action("GetRepeatInterval", "ExtendDueDate").Data("function () {return {recurrence: $('#patExtendDueDateDialog #RepeatRecurrence').val()}}");
+                                            });
+                                        })
+                                        .HtmlAttributes(new { style = "width: 100%" })
+                                        )
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label>&nbsp;</label>
+                                    @(Html.Kendo().DropDownListFor(m => m.RepeatRecurrence)
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .Events(e => e.Change("extendDueDateRecurrenceChange"))
+                                        .BindTo(new List<SelectListItem>() {
+                                    new SelectListItem() {
+                                    Text = Localizer["Days"],
+                                    Value = "D"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Weeks"],
+                                    Value = "W"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Months"],
+                                    Value = "M"
+                                    }
+                                    })
+                                        .HtmlAttributes(new { style = "width: 100%" })
+                                        )
+                                </div>
+                            </div>
+                            <div class="col-md-4 repeat-day @(Model.RepeatRecurrence !="W" ? "d-none" : "")">
+                                <div class="form-group float-label">
+                                    <label asp-for="RepeatOnDay"></label>
+                                    @(Html.Kendo().DropDownListFor(m => m.RepeatOnDay)
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .BindTo(new List<SelectListItem>() {
+                                    new SelectListItem() {
+                                    Text = Localizer["Monday"],
+                                    Value = "1"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Tuesday"],
+                                    Value = "2"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Wednesday"],
+                                    Value = "3"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Thursday"],
+                                    Value = "4"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Friday"],
+                                    Value = "5"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Saturday"],
+                                    Value = "6"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["Sunday"],
+                                    Value = "0"
+                                    },
+                                    })
+                                        .HtmlAttributes(new { style = "width: 100%" })
+                                        )
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="StopIndicator"></label>
+                                    @(Html.Kendo().DropDownListFor(m => m.StopIndicator)
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .Events(e => e.Change("extendDueDateStopIndicatorChange"))
+                                        .BindTo(new List<SelectListItem>() {
+                                    new SelectListItem() {
+                                    Text = Localizer["Never"],
+                                    Value = "N"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["On"],
+                                    Value = "O"
+                                    },
+                                    new SelectListItem() {
+                                    Text = Localizer["After"],
+                                    Value = "A"
+                                    },
+                                    })
+                                        .HtmlAttributes(new { style = "width: 100%" })
+                                        )
+                                </div>
+                            </div>
+                            <div class="col-md-4 stop-date @(Model.StopIndicator !="O" ? "d-none" : "")">
+                                <div class="form-group float-label">
+                                    <label asp-for="StopDate"></label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("StopDate") { Value = Model.StopDate })
+                                </div>
+                            </div>
+                            <div class="col-md-4 stop-occurence @(Model.StopIndicator !="A" ? "d-none" : "")">
+                                <div class="form-group float-label">
+                                    <label asp-for="StopAfterCount"></label>
+                                    @(Html.Kendo().NumericTextBoxFor(m => m.StopAfterCount).Min(1).Format("n0").HtmlAttributes(new { style = "width: 100%" }))
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="NextRunDate"></label>
+                                    <input type="text" class="form-control form-control-sm" readonly value="@(Model.NextRunDate.FormatToDisplay())" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="OccurenceCount"></label>
+                                    <input type="text" class="form-control form-control-sm" readonly value="@(Model.OccurenceCount.ToString())" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="border-top:none">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Ok"]</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+

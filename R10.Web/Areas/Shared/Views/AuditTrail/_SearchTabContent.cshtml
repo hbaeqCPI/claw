@@ -1,0 +1,181 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var availableSystemTypes = (List<LookupDTO>)ViewBag.AvailableSystemTypes ?? new List<LookupDTO>();
+}
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="auditTrailSearchMainTabContent" aria-labelledby="auditTrailSearchMainTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="border rounded pl-1 mt-2" id="AudSystemType">
+                    <div><label>@SharedLocalizer["System"]</label></div>
+                        @if (User.IsInSystem(SystemType.Patent) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.Patent))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeP" value="P" @(Model.SystemType == "P" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeP">@SharedLocalizer["Patent"]</label>
+                            </div>
+                        }                        
+                        @if (User.IsInSystem(SystemType.Trademark) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.Trademark))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeT" value="T" @(Model.SystemType == "T" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeT">@SharedLocalizer["Trademark"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.GeneralMatter) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.GeneralMatter))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeG" value="G" @(Model.SystemType == "G" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeG">@SharedLocalizer["General Matter"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.DMS) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.DMS))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeD" value="D" @(Model.SystemType == "D" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeD">@SharedLocalizer["Invention Disclosure"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.ForeignFiling) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.ForeignFiling))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeF" value="F" @(Model.SystemType == "F" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeF">@SharedLocalizer["Foreign Filing"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.PatClearance) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.PatClearance))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeE" value="E" @(Model.SystemType == "E" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeE">@SharedLocalizer["Patent Clearance"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.AMS) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.AMS))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeA" value="A" @(Model.SystemType == "A" ? "checked" : "")>
+                            <label class="form-check-label" for="SystemTypeA">@SharedLocalizer["Annuity Management"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.RMS) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.RMS))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeR" value="R" @(Model.SystemType == "R" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeR">@SharedLocalizer["Renewal Management"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.SearchRequest) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.Clearance))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeC" value="C" @(Model.SystemType == "C" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeC">@SharedLocalizer["Trademark Request"]</label>
+                            </div>
+                        }
+                        @if (User.IsInSystem(SystemType.Shared) && availableSystemTypes.Any(d => d.Value == SystemTypeCode.Shared))
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SystemType" id="SystemTypeS" value="S" @(Model.SystemType == "S" ? "checked" : "")>
+                                <label class="form-check-label" for="SystemTypeS">@SharedLocalizer["Shared"]</label>
+                            </div>
+                        }
+                </div>               
+            </div>
+        </div>   
+        <div class="form-row">
+            <div class="col-md-4 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="TableId">@SharedLocalizer["Table Name"]</label>
+                    @(Html.Kendo().DropDownList()
+                                .Name("TableId")
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .AutoBind(false)
+                                .DataSource(source =>
+                                {
+                                    source.Read(read =>
+                                    {
+                                        read.Action("GetPicklistData", "AuditTrail", new { Area = "Shared", dataType = "table" })
+                                            .Data("auditTrail.getSystemType()");
+                                    })
+                                        .ServerFiltering(true);
+                                })
+                                .HtmlAttributes(new { style = "width: 100%" })
+                                )
+                </div>
+            </div>
+        </div>
+        <div class="form-row mt-4">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FromTranxDate">@SharedLocalizer["Date Range"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromTranxDate"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ToTranxDate">@SharedLocalizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToTranxDate"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="UserName">@SharedLocalizer["User Name"]</label>
+                    @(Html.Kendo().DropDownList()
+                                .Name("UserName")
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .AutoBind(false)
+                                .DataSource(source =>
+                                {
+                                    source.Read(read =>
+                                    {
+                                        read.Action("GetPicklistData", "AuditTrail", new { Area = "Shared", dataType = "user" })
+                                            .Data("auditTrail.getSystemType");
+                                    })
+                                    .ServerFiltering(true);
+                                })
+                                .HtmlAttributes(new { style = "width: 100%" })
+                            )
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="TranxType">@SharedLocalizer["Transaction Type"]</label>
+                    @(Html.Kendo().DropDownList()
+                                .Name("TranxType")
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .BindTo(new List<SelectListItem>() {
+                                    new SelectListItem() {
+                                        Text = "",
+                                        Value = ""
+                                    },
+                                    new SelectListItem() {
+                                        Text = "Update",
+                                        Value = "upd"
+                                    },
+                                    new SelectListItem() {
+                                        Text = "Delete",
+                                        Value = "del"
+                                    }
+                                })
+                                .HtmlAttributes(new { style = "width: 100%" })
+                                )
+                </div>
+            </div>
+        </div>        
+        <div id="searchSubCriteria" class="form-row"> </div>
+        <div class="form-row">
+            <div class="col-md">
+                <div class="form-group float-label">
+                    <label for="Remarks">@SharedLocalizer["Remarks"]</label>
+                    <input type="text" class="form-control" id="Remarks" name="Remarks" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

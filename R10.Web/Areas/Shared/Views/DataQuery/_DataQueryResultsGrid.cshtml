@@ -1,0 +1,64 @@
+﻿@model DataQueryPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{ 
+    var resultLabel = Localizer["Select the query below that you want to view or modify."];
+    var gridName = $"{Model.PageId}-Grid";
+}
+
+<div class="pl-2" style="font-size:small; font-style:italic;">
+    @resultLabel
+
+</div>
+@(Html.Kendo().Grid<DataQuerySearchResultViewModel>()
+    .Name(gridName)
+    .Columns(columns =>
+    {
+        columns.Bound(q => q.QueryId).Hidden();
+        columns.Bound(q => q.QueryName).HtmlAttributes(new { @class = "cut-off" });
+    })
+    //.ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).Responsive(false).ButtonCount(3).PageSizes(false).Info(false))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Scrollable()
+    .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Model(model =>
+                    {
+                        model.Id(dq => dq.QueryId);
+                    })
+                    .Events(events => events.Error("dataQuery.searchResultGridError"))
+                    .Events(events => events.RequestEnd("dataQuery.searchResultGridRequestEnd"))
+
+                    .PageSize(Model.GridPageSize)
+                    .Read(read => read.Action("PageRead", "DataQuery")
+                    .Data("dataQuery.gridMainSearchFilters"))
+                    .Sort(sort => sort.Add(i => i.QueryName))
+                )
+    .Selectable()
+    .Events(events => events
+        .Change("dataQuery.gridDisplayDetail")
+        .DataBound("dataQuery.searchGridSelectRow")
+        )
+
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+
+<style>
+    #@gridName tr:hover {
+        cursor:pointer;
+    }
+    #@(gridName) tr.k-state-selected {
+        background-color: var(--grid-hover) !important;
+    }
+     #@(gridName) .k-grid-content {
+        min-height: 100px;
+        max-height: 450px;
+    }
+    .cut-off {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+</style>

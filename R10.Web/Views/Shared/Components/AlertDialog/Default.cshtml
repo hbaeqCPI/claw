@@ -1,0 +1,24 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+<div class="modal fade" id="cpiAlert" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="cpiAlertLabel" aria-hidden="true"
+     data-title="@Localizer["Alert Dialog"]"
+     data-btn-okay="@Localizer["Ok"]"
+     data-btn-close="@Localizer["Close"]"
+     >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="cpiAlertLabel"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn modal-close" data-dismiss="modal"><i class="pr-2"></i><span></span></button>
+            </div>
+        </div>
+    </div>
+</div>
+@*<script src="~/js/alertDialog.js" asp-append-version="true"></script>*@

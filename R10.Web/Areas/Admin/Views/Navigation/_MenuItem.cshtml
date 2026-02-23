@@ -1,0 +1,12 @@
+﻿@model R10.Web.Models.MenuViewModels.MenuItemViewModel
+
+<li class="list-group-item menu-item" data-id="@Model.Id">
+    <span class="menu-item-title">
+        <i class="menu-item-handler fal fa-grip-lines"></i>
+        <a id="menu-@Model.Id" href="#" class="menu-item-name @(Model.IsEnabled ? "" : "disabled")">@Model.Title</a>
+    </span>
+    <span class="menu-item-action">
+        <i class="far fa-toggle-@(Model.IsEnabled ? "on" : "off") fa-fixed-width visibility"></i>
+        <i class="fal fa-trash-alt fa-fixed-width delete"></i>
+    </span>
+</li>

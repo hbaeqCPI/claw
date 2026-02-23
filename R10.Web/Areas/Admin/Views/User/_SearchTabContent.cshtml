@@ -1,0 +1,202 @@
+﻿@model PageViewModel
+@using R10.Core.Entities.Patent;
+@inject ISystemSettings<PatSetting> PatSettings
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var patSettings = await PatSettings.GetSetting();
+    var userTypes = Html.GetUserTypeSelectList(User).ToList();
+    var statusList = Html.GetEnumSelectList<CPiUserStatus>().ToList();
+    var defaultStatus = (ViewData["Status"] ?? string.Empty) as string;
+    var defaultStatusIndex = string.IsNullOrEmpty(defaultStatus) ? "" : statusList.Select(s => s.Text.ToLower()).ToList().IndexOf(defaultStatus.ToLower()).ToString();
+    var isRespOfficeOn = User.IsRespOfficeOn();
+
+    userTypes.Add(new SelectListItem { Text = "", Value = "" });
+    statusList.Add(new SelectListItem { Text = "", Value = "" });
+
+    var restrictOptions = new List<SelectListItem>()
+    {
+        new SelectListItem { Text = "", Value = "" },
+        new SelectListItem { Text = Localizer["Allowed"].ToString(), Value = "false" },
+        new SelectListItem { Text = Localizer["Restricted"].ToString(), Value = "true" }
+    };
+}
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="adminUserSetupSearchTabContent" aria-labelledby="adminUserSetupSearchTab" role="tabpanel">        
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="UserStatus">@Localizer["Status"]</label>
+                    @(Html.Kendo().DropDownList()
+                                            .Name("UserStatus")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(statusList.OrderBy(u => u.Text))
+                                            .Value(defaultStatusIndex)
+                                            )
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastLoginDateFrom">@Localizer["Last Login Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastLoginDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastLoginDateTo">@Localizer["Last Login Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastLoginDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="UserType">@Localizer["User Type"]</label>
+                    @(Html.Kendo().DropDownList()
+                                            .Name("UserType")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .BindTo(userTypes.OrderBy(u => u.Text))
+                                            .Height(300)
+                                            )
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FullName">@Localizer["Last Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LastName" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FullName">@Localizer["First Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "FirstName" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Email">@Localizer["Email"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Email" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group text-right mt-4">
+                    @await Component.InvokeAsync("InitialButtonGroup", new InitialButtonGroupOptions { Name = "Initial" })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="adminUserRoleSetupSearchTabContent" aria-labelledby="adminUserRoleSetupSearchTab" role="tabpanel">        
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="SystemId">@Localizer["System"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemId", controller = "Roles" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="RoleId">@Localizer["Role"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "RoleId", controller = "Roles" })
+                </div>
+            </div>
+            @if (isRespOfficeOn) 
+            {
+                <div class="col-md-4">
+                    <div class="form-group float-label">
+                        <label for="RespOffice">@Localizer["Responsible Office"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "RespOffice", controller = "Roles" })
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="tab-pane" id="adminUserGroupSetupSearchTabContent" aria-labelledby="adminUserGroupSetupSearchTab" role="tabpanel">        
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Group">@Localizer["Group"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Group", textProperty = "Name", controller = "Groups" })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="adminUserSettingSetupSearchTabContent" aria-labelledby="adminUserSettingSetupSearchTab" role="tabpanel">
+        <div class="form-row">
+            @if (patSettings.IsTradeSecretOn)
+            {
+                <div class="col-md-4">
+                    <div class="form-group float-label">
+                        <label for="PatTradeSecret">@Localizer["Patent Trade Secret"]</label>
+                        @(Html.Kendo().DropDownList()
+                            .Name("PatTradeSecret")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(restrictOptions)
+                            .Height(300)
+                            )
+                    </div>
+                </div>
+            }
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PrivateDocuments">@Localizer["Private Documents"]</label>
+                    @(Html.Kendo().DropDownList()
+                        .Name("PrivateDocuments")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(restrictOptions)
+                        .Height(300)
+                        )
+                </div>
+            </div>
+            @if (patSettings.IsExportControlOn && User.IsSystemEnabled(SystemType.Patent))
+            {
+                <div class="col-md-4">
+                    <div class="form-group float-label">
+                        <label for="ExportControl">@Localizer["Export Control"]</label>
+                        @(Html.Kendo().DropDownList()
+                            .Name("ExportControl")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(restrictOptions)
+                            .Height(300)
+                            )
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.Patent))
+            {
+                <div class="col-md-4">
+                    <div class="form-group float-label">
+                        <label for="InventorInfo">@Localizer["Inventor Info"]</label>
+                        @(Html.Kendo().DropDownList()
+                            .Name("InventorInfo")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(restrictOptions)
+                            .Height(300)
+                            )
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.Patent) || User.IsSystemEnabled(SystemType.Trademark) || User.IsSystemEnabled(SystemType.GeneralMatter))
+            {
+                <div class="col-md-4">
+                    <div class="form-group float-label">
+                        <label for="AdhocActions">@Localizer["Create Adhoc Actions"]</label>
+                        @(Html.Kendo().DropDownList()
+                            .Name("AdhocActions")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(restrictOptions)
+                            .Height(300)
+                            )
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,436 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> PatSettings
+@inject ISystemSettings<TmkSetting> TmkSettings
+@{
+
+    var additionalData = "function() {quickDocket.refreshCalendar = true; return quickDocket.getCriteria(quickDocket.refineSearchContainer);}";
+
+    var isPatentOn = User.IsInSystem(SystemType.Patent);
+    var isTrademarkOn = User.IsInSystem(SystemType.Trademark);
+    var isGMOn = User.IsInSystem(SystemType.GeneralMatter);
+    var isDMSOn = User.IsInSystem(SystemType.DMS);
+    var isAMSOn = User.IsInSystem(SystemType.AMS);
+
+    var patSettings = await PatSettings.GetSetting();
+    var tmkSettings = await TmkSettings.GetSetting();
+
+    var isRTSOn = patSettings.IsRTSOn;
+    var isTLOn = tmkSettings.IsTLOn;
+}
+
+<div id="schedulerContainer">
+    <div id="legend">
+        <div class="row border-light justify-content-end">
+            <div id="systems" class="col form-inline m-2 justify-content-end">
+
+                @if (isPatentOn)
+                {
+                    <div class="circle legend-P"></div>
+                    <span>@Localizer["Patent"]</span>
+                    @if (isRTSOn)
+                    {
+                        <div class="circle legend-L"></div>
+                        <span>@Localizer["PTO Actions"]</span>
+                    }
+                }
+
+                @if (isTrademarkOn)
+                {
+                    <div class="circle legend-T"></div>
+                    <span>@Localizer["Trademark"]</span>
+                    @if (isTLOn)
+                    {
+                        <div class="circle legend-M"></div>
+                        <span>@Localizer["Trademark Links"]</span>
+
+                    }
+                }
+
+                @if (isGMOn)
+                {
+                    <div class="circle legend-G"></div>
+                    <span>@Localizer["General Matter"]</span>
+                }
+
+                @if (isDMSOn)
+                {
+                    <div class="circle legend-D"></div>
+                    <span>@Localizer["Invention Disclosure"]</span>
+                }
+
+                @if (isAMSOn)
+                {
+                    <div class="circle legend-A"></div>
+                    <span>@Localizer["AMS"]</span>
+                }
+
+            </div>
+        </div>
+    </div>
+    <div class="calendar form-row">
+        <div class="col" style="padding-bottom: 10px;">
+            <div id="scheduler" class="indicator-calendar">
+                @(
+                    Html.Kendo().Scheduler<QuickDocketSchedulerViewModel>()
+                        .Name("qdScheduler")
+                        .CurrentTimeMarker(true)
+                        //.Date(DateTime.Today)
+                        //.StartTime(DateTime.Today)
+                        .ShowWorkHours(false)
+                        .Selectable(true)
+                        .AllDayEventTemplateId("eventTemplate")
+                        .Editable(false)
+                        .Pdf(pdf => pdf.FileName("Quick Docket Export.pdf")
+                        //.ProxyURL(Url.Action("Scheduler_PdfExport", "QDScheduler"))
+                        )
+                        .Toolbar(t =>  t.Pdf())
+                        .Events(e =>
+                        {
+                            e.Change("quickDocket.schedulerOnChange");
+                            e.Navigate("quickDocket.schedulerOnNavigate");
+                            e.DataBound("quickDocket.schedulerOnDataBound");
+                        })
+                        .Views(views =>
+                        {
+                            //views.DayView();
+                            //views.WeekView();
+                            views.DayView(d => d.MinorTickCount(0));
+                            views.WeekView(m => m.MinorTickCount(0));
+                            views.MonthView(v => v.EventTemplateId("eventTemplate").EventHeight(40).Selected(true));
+
+                        })
+                        //  .Timezone("Etc/UTC") //comment out, issue with EU clients
+                        //.Resources(resource =>
+                        //{
+                        //    resource.Add(f => f.OwnerID)
+                        //    .Title("System")
+                        //    .DataTextField("Text")
+                        //    .DataValueField("Value")
+                        //    .DataColorField("Color")
+                        //    .BindTo(new[] {
+                        //new { Text = "Patent", Value = 1, Color = "#51a0ed" } ,
+                        //new { Text = "PL", Value = 2, Color = "#304364" } ,
+                        //new { Text = "Trademark", Value = 3, Color = "#f8a398" } ,
+                        //new { Text = "TL", Value = 4, Color = "#ECBBBB" } ,
+                        //new { Text = "GeneralMatter", Value = 5, Color = "#ECBBBB" } ,
+                        //new { Text = "PastDue", Value = 6, Color = "#CF4315" }
+                        //    });
+                        //})
+                        .DataSource(d => d
+                            .Events(e => e.Error("quickDocket.schedulerOnError"))
+                            .Model(m =>
+                            {
+                                m.Id(f => f.TaskID);
+                                m.Field(f => f.Title).DefaultValue("No title");
+                            })
+                            .Read(read => read.Action("Scheduler_Read", "QuickDocket").Data(additionalData))
+                            //.Filter(filters =>
+                            //{
+                            //    filters.Add(model => model.OwnerID).IsEqualTo(1).Or().IsEqualTo(3);
+                            //})
+                        )
+                        )
+                @(Html.Kendo().Tooltip()
+                                    .For("#qdScheduler")
+                                    .Filter(".k-event:not(.k-event-drag-hint) > div, .k-task")
+                                    .Position(TooltipPosition.Top)
+                                    .Width(300)
+                                    .ContentTemplateId("popUpTemplate")
+                        )
+
+            </div>
+        </div>
+        <div class="month-day col col-2" ">
+            <div class="agenda" data-url="@Url.Action("SchedulerEvents")">
+                <div class="header">&nbsp;</div>
+                <div class="spinner" style="display: none;"><i class="far fa-spinner fa-spin"></i></div>
+                <div class="list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<form id="exportToCalendar" action="@Url.Action("ExportToCalendar")" method="post">
+    <input type="hidden" name="exportLocation" id="exportLocation" value="" />
+    <input type="hidden" name="exportFileName" id="exportFileName" value="" />
+    <input type="hidden" name="exportCriteria" id="exportCriteria" value="" />
+</form>
+
+<script id="eventTemplate" type="text/x-kendo-tmpl">
+    <div class="#= IndicatorToClassName(Indicator)#">
+        <span><div class="circle legend-#=System#"></div></span>
+        #if(IsPastDue)
+        {#
+        <span class="text-danger event">#:ActionDueSubject#</span>
+        #}
+        else{#
+        <span class="event">#:ActionDueSubject#</span>
+        #}#
+    </div>
+</script>
+
+<script id="popUpTemplate" type="text/x-kendo-template">
+    #var element = target.is(".k-task") ? target : target.parent();#
+    #var uid = element.attr("data-uid");#
+    #var scheduler = target.closest("[data-role=scheduler]").data("kendoScheduler");#
+    #var model = scheduler.occurrenceByUid(uid);#
+
+    #if(model) {#
+    <div class="qd-tooltip-header">#:model.ActionDue#</div>
+    <div class="qd-tooltip-content">
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Due Date"]:</span>
+            </div>
+            <div class="col">
+                #=kendo.toString(model.start,'dd-MMM-yyyy')#
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Case Number"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.CaseNumber#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Country"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.Country#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Sub Case"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.SubCase#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                #if(model.System === 'T' || model.OwnerID === 'M')
+                {#
+                <span>@Localizer["Trademark"]:</span>
+                #}
+                else {#
+                <span>@Localizer["Title"]:</span>
+                #}#
+            </div>
+            <div class="col">
+                <span>#=model.RecordTitle#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["App No."]:</span>
+            </div>
+            <div class="col">
+                #=(model.AppNumber == null) ? '' : model.AppNumber#
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                #if(model.System === 'G')
+                {#
+                <span>@Localizer["Effective Open"]:</span>
+                #}
+                else {#
+                <span>@Localizer["Filing Date"]:</span>
+                #}#
+            </div>
+            <div class="col">
+                #=(model.FilDate == null) ? '' : kendo.toString(model.FilDate,'dd-MMM-yyyy')#
+            </div>
+        </div>
+    </div>
+    #} else {#
+    <div class="qd-tooltip-error">@Localizer["Unable to find event data."]</div>
+    #}#
+</script>
+
+<script id="qdSchedulerToolbar" type="text/x-kendo-tmpl">
+    <li><a href='#' class='k-pdf'><i class='fal fa-file-pdf'></i><span class='pl-1 pr-4'>@Localizer["Export to Pdf"]</span></a></li>
+    <li><a href='#' class='k-ics'><i class='fal fa-calendar-alt'></i><span class='pl-1 pr-4'>@Localizer["Export to ics"]</span></a></li>
+    <li>
+        <a href='#' class='k-ics-public'><i class='fal fa-calendar-check'></i><span class='pl-1'>@Localizer["Export ics to a public Internet Calendar"]</span></a>
+    </li>
+    <li>
+        <div class="d-flex">
+            @*<div class="px-2">
+            <label for="fileName">@Localizer["File Name"]:</label>
+        </div>*@
+            <div  class="d-flex">
+                <input type="hidden" class="form-control form-control-sm mt-1" style="height:20px;width:150px" name="fileName" id="fileName"  value="@User.GetUserIdentifier()" />
+                <input class="form-control form-control-sm mt-1 ml-1 d-none" style="height:20px;width:300px" readonly id="exportPublicFullPath" value=""/><span class="mt-1 ml-1 d-none" id="exportPublicFullPathCopy" style="cursor:pointer"><i class="fal fa-copy" title="@Localizer["Copy to Clipboard"]"></i></span>
+            </div>
+        </div>
+
+    </li>
+</script>
+<style>
+    #qdScheduler .k-scheduler-toolbar {
+        font-size: .9rem;
+    }
+    #legend,
+    .k-scheduler-table th {
+        font-size: .85rem;
+    }
+    .square {
+        height: 15px;
+        width: 15px;
+        border: 1px solid silver;
+        margin-left: 5px;
+        margin-right: 15px;
+        text-align: center;
+    }
+    #systems .circle {
+        margin-left: 15px;
+        margin-right: 5px;
+    }
+    .circle {
+        height: 8px;
+        width: 8px;
+        border-radius: 50%;
+        -moz-border-radius: 50%;
+        -webkit-border-radius: 50%;
+        font-size: .85rem;
+        display: inline-block;
+        box-sizing: unset;
+    }
+
+    .checkbox {
+        display: inline-block;
+        margin-left: 5px;
+    }
+
+    .legend-P {
+        background-color: #82BA72;
+        border-color: #82BA72;
+    }
+
+    .legend-L {
+        background-color: #E1A16C;
+        border-color: #E1A16C;
+    }
+
+    .legend-T {
+        /*background-color: #5F9EA0;
+        border-color: #5F9EA0;*/
+        background-color: #CB667F;
+        border-color: #CB667F;
+    }
+
+    .legend-M {
+        background-color: #9FADDE;
+        border-color: #9FADDE;
+    }
+
+    .legend-G {
+        background-color: #F2D98A;
+        border-color: #F2D98A;
+    }
+
+    .legend-D {
+        background-color: #9A6657;
+        border-color: #9A6657;
+    }
+
+    .legend-A {
+        background-color: #589ECA;
+        border-color: #589ECA;
+    }
+
+    #PastDue {
+        margin-left: 5px;
+        margin-right: 5px;
+        font-weight: bold;
+        color: #CF4315;
+    }
+
+    
+
+    /*Override the MonthView's default slot height:*/
+    .k-scheduler-monthview .k-scheduler-table td {
+        height: 200px !important;
+    }
+
+    .k-scheduler-footer {
+            display:none !important;
+    }
+
+    .event {
+        font-size: .8rem;
+    }
+
+    .k-scheduler-tools {
+        height: 35px;
+    }
+
+    .k-scheduler-toolbar {
+        line-height: 1.5rem !important;
+        padding-top: 0px !important;
+    }
+
+    .k-nav-current > .k-link span + span {
+        font-size: 1.2em !important;
+    }
+
+    .k-tooltip {
+        padding: 4px 0;
+    }
+
+        .k-tooltip .qd-tooltip-header {
+            border-bottom: 1px solid #c9c9c9;
+            font-weight: bold;
+            padding: 4px 8px;
+            margin-bottom: 4px;
+        }
+
+        .k-tooltip .qd-tooltip-content {
+            font-size: .9rem;
+        }
+
+        .k-tooltip .qd-tooltip-label {
+            text-align: right;
+        }
+
+        .k-tooltip .qd-tooltip-error {
+            font-size: .9rem;
+            font-weight: bold;
+            padding: 4px 5px;
+        }
+
+    .calendar .month-day {
+        padding-bottom: 10px;
+    }
+
+        .calendar .month-day .agenda {
+            border: 1px solid #c9c9c9;
+            height: 100%;
+        }
+
+            .calendar .month-day .agenda .header {
+                border-bottom: 1px solid #c9c9c9;
+                padding: 8px 10px;
+                font-weight: bold;
+            }
+
+            .calendar .month-day .agenda .spinner {
+                padding-top: 20px;
+                text-align: center;
+            }
+
+            .calendar .month-day .agenda .list ul {
+                list-style-type: none;
+                padding-left: 0;
+            }
+
+                .calendar .month-day .agenda .list ul li {
+                    cursor: pointer;
+                    padding-left: 10px;
+                }
+</style>
+

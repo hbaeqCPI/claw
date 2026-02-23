@@ -1,0 +1,53 @@
+﻿@model Log
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var id = Model.Id;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="Id" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="TimeStamp"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="TimeStamp" disabled value="@(Model.TimeStamp.ToString("dd-MMM-yyyy hh:mm:ss tt"))" />
+                </div>
+            </div>
+            <div class="col-12 col-sm-5 col-md-5 col-lg-5 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Level"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Level" disabled />
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <textarea rows="5" class="form-control form-control-sm" asp-for="Message" disabled></textarea>
+                    <label asp-for="Message"></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <textarea rows="5" class="form-control form-control-sm" asp-for="Exception" disabled></textarea>
+                    <label asp-for="Exception"></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <textarea rows="5" class="form-control form-control-sm" asp-for="MessageTemplate" disabled></textarea>
+                    <label asp-for="MessageTemplate"></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <textarea rows="5" class="form-control form-control-sm" asp-for="Properties" disabled></textarea>
+                    <label asp-for="Properties"></label>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

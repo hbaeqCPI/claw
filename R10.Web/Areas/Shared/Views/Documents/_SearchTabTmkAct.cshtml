@@ -1,0 +1,271 @@
+﻿@model PageViewModel
+
+@inject ISystemSettings<TmkSetting> Settings
+@inject IStringLocalizer<ActionDueResource> Localizer
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var attorneyLabel = Localizer["Responsible Attorney"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var area = "Trademark";
+    var controller = "ActionDue";
+}
+
+<ul class="nav nav-tabs refine-search nav-tabs-vertical" role="tablist">
+    <li class="nav-item">
+        <a id="docMgtMainTab" href="#docMgtMainTabContent" class="nav-link active" data-toggle="tab" role="tab"
+           aria-controls="docMgtMainTabContent" title="@Localizer["Trademark Actions"]">@Localizer["Trademark Actions"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="docActionSearchActionInfoTab" data-toggle="tab" href="#docActionSearchActionInfoTabContent" role="tab" aria-controls="docActionSearchActionInfoTabContent" aria-selected="true">@Localizer["Action Due Info"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="docActionSearchDueDatesTab" data-toggle="tab" href="#docActionSearchDueDatesTabContent" role="tab" aria-controls="docActionSearchDueDatesTabContent" aria-selected="true">@Localizer["Due Dates"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" id="docActionSearchOtherInfoTab" href="#docActionSearchOtherInfoTabContent" role="tab" aria-controls="docActionSearchOtherInfoTabContent" title="@Localizer["Other Info"]">@Localizer["Other Info"]</a>
+    </li>
+</ul>
+
+<div class="accordion-content show">
+    <div class="tab-pane show form-sidebar active" id="docMgtMainTabContent" aria-labelledby="docMgtMainTab" role="tabpanel" data-case-number-mapper-url="@Url.Action("CaseNumberSearchValueMapper", "TmkTrademarkLookup", new { Area = "Trademark" })">
+        <div class="form-row group">
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="CaseNumber">@caseNumberLabel</label>
+                    @*@await Component.InvokeAsync("ComboBox", new { name = "CaseNumber", enablePaging = enableComboPaging, pagingSize = comboPagingSize, valueMapper = "tmkActionDuePage.caseNumberSearchValueMapper" })*@
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "CaseNumber" })
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="CountryOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "CountryOp" })
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="Country">@countryLabel</label>
+                    @await Component.InvokeAsync("MultiSelect", MultiSelectOptions.Country("Country", countryLabel, countryNameLabel, controller, null, area))
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="TmkCountry.CountryName">@Localizer["Country Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "TmkCountry.CountryName", textProperty = "CountryName", action = "GetCountryList" })
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="SubCase">@Localizer["Sub Case"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "SubCase" })
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="CaseTypeOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "CaseTypeOp" })
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="CountryApplication.CaseType">@Localizer["Case Type"]</label>
+                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("TmkTrademark.CaseType", controller, area) { DataTextProperty = "CaseType", Action = "GetCaseTypeList" })
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="TrademarkStatusOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "TrademarkStatusOp" })
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="TmkTrademark.TrademarkStatus">@Localizer["Status"]</label>
+                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("TmkTrademark.TrademarkStatus", controller, area) { DataTextProperty = "TrademarkStatus", Action = "GetStatusList" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="CountryApplication.AppNumber">@Localizer["Application No"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "TmkTrademark.AppNumber", textProperty = "AppNumber", action = "GetAppNumberList" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="CountryApplication.FilDateFrom">@Localizer["Filing Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("TmkTrademark.FilDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="CountryApplication.FilDateTo">@Localizer["Filing Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("TmkTrademark.FilDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="docActionSearchActionInfoTabContent" aria-labelledby="docActionSearchActionInfoTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="ActionType">@Localizer["Action Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "ActionType" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Responsible.AttorneyCode">@attorneyLabel</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.AttorneyCode("Responsible.AttorneyCode", attorneyLabel, attorneyNameLabel, controller, null, "GetAttorneyList", area))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Responsible.AttorneyName">@Localizer["Attorney Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "Responsible.AttorneyName", textProperty = "AttorneyName", action = "GetAttorneyNameList" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="BaseDateFrom">@Localizer["Base Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("BaseDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="BaseDateTo">@Localizer["Base Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("BaseDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="ResponseDateFrom">@Localizer["Response Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ResponseDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="ResponseDateTo">@Localizer["Response Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ResponseDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="docActionSearchDueDatesTabContent" aria-labelledby="docActionSearchDueDatesTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.ActionDue">@Localizer["Action Due"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, name = "DueDates.ActionDue", textProperty = "ActionDue", controller = "ActionDueDate" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.Indicator">@Localizer["Indicator"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, name = "DueDates.Indicator", textProperty = "Indicator", controller = "ActionDueDate" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.DueDateFrom">@Localizer["Due Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DueDates.DueDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.DueDateTo">@Localizer["Due Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DueDates.DueDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.DateTakenFrom">@Localizer["Date Taken From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DueDates.DateTakenFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DueDates.DateTakenTo">@Localizer["Date Taken To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DueDates.DateTakenTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="docActionSearchOtherInfoTabContent" aria-labelledby="docActionSearchOtherInfoTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col-md">
+                <div class="form-group float-label">
+                    <label for="Remarks">@Localizer["Remarks"]</label>
+                    <input type="text" class="form-control" id="Remarks" name="Remarks" />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="CreatedBy">@Localizer["Created By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "CreatedBy" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DateCreatedFrom">@Localizer["Date Created From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="DateCreatedTo">@Localizer["Date Created To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="UpdatedBy">@Localizer["Updated By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { area = area, controller = controller, name = "UpdatedBy" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LastUpdateFrom">@Localizer["Last Update From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LastUpdateTo">@Localizer["Last Update To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        documentPage.initializeSubSearchPage({
+            tabNameId: "#docMgtMainTab",
+            systemTabId  : "#systemTab"
+        })
+     });
+</script>

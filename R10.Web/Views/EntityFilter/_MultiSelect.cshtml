@@ -1,0 +1,18 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+
+@(Html.Kendo().MultiSelect()
+        .Name("EntityFilter")
+        .DataTextField("Code")
+        .DataValueField("Id")
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action("GetUserEntityFilterList", "EntityFilter").Type(HttpVerbs.Post);
+            })
+            .ServerFiltering(false);
+        })
+        .Events(e => e.Change("pageHelper.validateRequiredEntityFilterList"))
+        .HeaderTemplate(ComboBoxHelper.GetHeaderTemplate(Localizer["Code"], Localizer["Name"]))
+        .ItemTemplate(ComboBoxHelper.GetItemTemplate("Code", "Name"))
+)

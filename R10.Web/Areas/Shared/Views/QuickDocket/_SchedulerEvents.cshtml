@@ -1,0 +1,103 @@
+﻿@using System.Text.RegularExpressions
+@inject IStringLocalizer<SharedResource> Localizer
+@model List<QuickDocketSchedulerViewModel>
+
+<ul id="qdAgenda" class="indicator-calendar">
+@foreach(var data in Model) 
+{
+    <li class="indicator @(Regex.Replace((data.Indicator ?? "").ToLower(), @"[^a-zA-Z0-9_]+", "-"))" onclick="quickDocket.redirectToAction('@data.System', @data.ActId, '@data.Country');" data-id="@data.TaskID">
+        <span class="circle legend-@data.System"></span>
+        <span class="event @(data.IsPastDue ? "text-danger" : "")"><a href="#" onclick="return false;">@data.ActionDueSubject</a></span>
+    </li>
+}
+</ul>
+
+@(Html.Kendo().Tooltip()
+    .For("#qdAgenda")
+    .Filter("li")
+    .Position(TooltipPosition.Top)
+    .Width(300)
+    .ContentTemplateId("popUpAgendaTemplate")
+)
+
+<script id="popUpAgendaTemplate" type="text/x-kendo-template">
+    #var el = $(target);#
+    #var data = $("\\#qdScheduler").data("kendoScheduler").data();#
+    #var model = data.find(x => x.TaskID === el.data("id"));#
+
+    #if(model) {#
+    <div class="qd-tooltip-header">#:model.ActionDue#</div>
+    <div class="qd-tooltip-content">
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Due Date"]:</span>
+            </div>
+            <div class="col">
+                #=kendo.toString(model.start,'dd-MMM-yyyy')#
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Case Number"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.CaseNumber#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Country"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.Country#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["Sub Case"]:</span>
+            </div>
+            <div class="col">
+                <span>#=model.SubCase#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                #if(model.System === 'T' || model.OwnerID === 'M')
+                {#
+                <span>@Localizer["Trademark"]:</span>
+                #}
+                else {#
+                <span>@Localizer["Title"]:</span>
+                #}#
+            </div>
+            <div class="col">
+                <span>#=model.RecordTitle#</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                <span>@Localizer["App No."]:</span>
+            </div>
+            <div class="col">
+                #=(model.AppNumber == null) ? '' : model.AppNumber#
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-4 qd-tooltip-label">
+                #if(model.System === 'G')
+                {#
+                <span>@Localizer["Effective Open"]:</span>
+                #}
+                else {#
+                <span>@Localizer["Filing Date"]:</span>
+                #}#
+            </div>
+            <div class="col">
+                #=(model.FilDate == null) ? '' : kendo.toString(model.FilDate,'dd-MMM-yyyy')#
+            </div>
+        </div>
+    </div>
+    #} else {#
+    <div class="qd-tooltip-error">@Localizer["Unable to find event data."]</div>
+    #}#
+</script>

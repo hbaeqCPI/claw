@@ -1,0 +1,38 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<AttorneySearchResultViewModel>()
+                                .Name($"{Model.PageId}-Grid")
+                                .Columns(columns =>
+                                {
+                                    columns.Bound(c => c.AttorneyCode)
+                                    .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: AttorneyID#", fromSearch = true }), "AttorneyCode"))
+                                    .Width(200);
+                                    columns.Bound(c => c.AttorneyName);
+                                    columns.Bound(c => c.CreatedBy).Hidden();
+                                    columns.Bound(c => c.UpdatedBy).Hidden();
+                                    columns.Bound(c => c.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
+                                    columns.Bound(c => c.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
+                                })
+                                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), SharedLocalizer["Add"], SharedLocalizer["Export to Excel"])))
+                                .AutoBind(false)
+                                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                                .Sortable(sort => sort.AllowUnsort(false))
+                                //.Selectable(selectable=>selectable.Mode(GridSelectionMode.Single))
+                                //.ColumnMenu()
+                                .Excel(excel => excel.FileName("AttorneyList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Attorney")))
+                                .DataSource(dataSource => dataSource
+                                    .Ajax()
+                                    .Events(events => events.Error("attorneyPage.searchResultGridError"))
+                                    .Events(events => events.RequestEnd("attorneyPage.searchResultGridRequestEnd"))
+                                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                                    .Read(read => read.Action("PageRead", "Attorney")
+                                    .Data("attorneyPage.gridMainSearchFilters"))
+                                .Sort(sort => sort.Add(c => c.AttorneyName))
+                            )
+                            .HtmlAttributes(new { @class = "kendo-Grid" })
+)

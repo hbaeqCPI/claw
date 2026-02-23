@@ -1,0 +1,58 @@
+﻿@inject ISystemSettings<DefaultSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+
+    var exportExcelURL = @Url.Action("ExportFile", "AuditTrail");
+    var exportExcelTemplate = $"<a href='{exportExcelURL}' onclick='auditTrail.exportToExcel()'><i class='fal fa-file-excel pr-2'></i>{Localizer["Export to Excel"]}</a>";
+}
+
+<div style="height: 100%; overflow: auto;">
+    @(
+        Html.Kendo().Grid<AuditHeaderDTO>()
+            .Name("auditTrailSearchResults-Grid")
+            .Columns(columns =>
+            {
+                columns.Bound(a => a.AudTrailId).Hidden();
+                columns.Bound(a => a.TranxDate).Format("{0:dd-MMM-yyyy hh:mm:ss tt}").Width("32%");
+                columns.Bound(a => a.UserName).Width("40%").ClientTemplate("<span class='ellipsis-field' title='#=UserName#'>#=UserName#</span>").HtmlAttributes(new { @class = "ellipsis-field" });
+                columns.Bound(a => a.TableName).Width("30%").ClientTemplate("<span class='ellipsis-field' title='#=TableName#'>#=TableName#</span>").HtmlAttributes(new { @class = "ellipsis-field" });
+                columns.Bound(a => a.TranxType).ClientTemplate("#:TranxType == 'upd' ? 'Update' : TranxType == 'del' ? 'Delete' : ''#").Width("10%");
+            })
+            .ToolBar(tools => tools.ClientTemplate($"<nav class='nav nav-right'><a href='javascript:;' id='exportExcel' onclick='auditTrail.exportToExcel()'><i class='fal fa-file-excel pr-2'></i>{Localizer["Export to Excel"]}</a></nav>"))
+            .AutoBind(false)
+            .Pageable(page => page
+                //.PageSizes(settings.SearchResultsPageSizeOptions)
+                .Refresh(false)
+            )
+            .Sortable(sort => sort.AllowUnsort(false))
+            .Selectable()
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                //.PageSize(20)
+                //.PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .ServerOperation(true)
+                .Read(read => read.Action("GetAuditLogHeader", "AuditTrail")
+                    .Data("function() {return auditTrail.getCriteria(auditTrail.refineSearchContainer);}")
+                )
+                .Events(events => events.Error("auditTrail.searchResultGridError"))
+                .Events(events => events.RequestEnd("auditTrail.searchResultGridRequestEnd"))
+            )
+            .Events(events => { 
+                events.Change("function(e) { auditTrail.headerGridChange(); }");
+                events.DataBound("auditTrail.logHeaderdataBound");                
+            })   
+            .Height("100%")     
+            //.Scrollable(s => s.Enabled(true))
+            .HtmlAttributes(new { @class = "kendo-Grid no-refine-search" })
+    )
+
+</div>
+<style>
+    .ellipsis-field {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+}
+</style>

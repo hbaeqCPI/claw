@@ -1,0 +1,154 @@
+﻿@model QELog
+
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewBag.Title = "Quick Email View";
+
+    bool withAttachments = !(Model.Attachments == "[]");
+    //bool withAttachments = false; //we disabled logging of attachments to save space - already included in .msg file = we added it back because of resending
+}
+<div id="quickEmailLogDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="quickEmailLogDialogTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickEmailLogDialogLabel">@Localizer["Quick Email View"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid">
+                <div id="errorSummary" class="alert alert-danger d-none alert-dismissible fade show" role="alert">
+                    <div class="content"></div>
+                    <button type="button" class="close alert-close" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="p-2">
+                    <div class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="toText">@Localizer["To"]</span>
+                        </div>
+                        <textarea type="text" name="To" class="form-control form-control-sm" rows="1" asp-for="To"></textarea>
+                    </div>
+                    <div class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="ccText">@Localizer["Cc"]</span>
+                        </div>
+                        <textarea type="text" name="CopyTo" class="form-control form-control-sm" rows="1" asp-for="Cc"></textarea>
+                    </div>
+                    <div id="bccContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="bccText">@Localizer["Bcc"]</span>
+                        </div>
+                        <textarea type="text" name="Bcc" class="form-control form-control-sm" rows="1" asp-for="Bcc"></textarea>
+                    </div>
+                    <div id="fromContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="fromText">@Localizer["From"]</span>
+                        </div>
+                        <textarea type="text" name="FromAddress" class="form-control form-control-sm" rows="1" asp-for="From"></textarea>
+                    </div>
+                    <div id="replyToContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="replyToText">@Localizer["Reply-to"]</span>
+                        </div>
+                        <textarea type="text" name="ReplyToAddress" class="form-control form-control-sm" rows="1" asp-for="ReplyTo"></textarea>
+                    </div>
+                    <div id="genDateContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="genDateText">@Localizer["Sent On"]</span>
+                        </div>
+                        <textarea type="text" name="GenDate" class="form-control form-control-sm" rows="1" >@(Model.GenDate.ToString("dd-MMM-yyyy hh:mm tt"))</textarea>
+                    </div>
+                    <div id="subjectContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="subjectText">@Localizer["Subject"]</span>
+                        </div>
+                        <textarea type="text" name="Subject" class="form-control form-control-sm" rows="1" asp-for="Subject"></textarea>
+                    </div>
+                </div>
+                <div class="p-1">
+                    <ul class="nav nav-tabs nav-tabs-horizontal scrolling" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="qeLogBodyTab" data-toggle="tab" href="#qeLogBodyTabContent" role="tab" aria-controls="qeLogBodyTabContent" aria-selected="false"> @Localizer["Body"]</a>
+                        </li>
+                        
+                        @if(withAttachments)
+                        { 
+                            <li class="nav-item">
+                                <a class="nav-link" id="qeLogAttachmentsTab" data-toggle="tab" href="#qeLogAttachmentsTabContent" role="tab" aria-controls="qeLogAttachmentsTabContent" aria-selected="true"> @Localizer["Attachments"]</a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane show active mb-2" id="qeLogBodyTabContent" role="tabpanel" aria-labelledby="qeLogBodyTab">
+                            <div class="p-2">
+                                @(Html.Kendo().Editor()
+                                      .Name("QELogBody")
+                                      .Value(Model.Body)
+                                      .Tools(tools => tools.Clear())
+                                      )
+                            </div>
+                        </div>
+                    @if (withAttachments)
+                    {
+                        <div class="tab-pane mb-2" id="qeLogAttachmentsTabContent" role="tabpanel" aria-labelledby="qeLogAttachmentsTab">
+                            <div class="p-2">
+                                <div class="d-flex justify-content-center ">
+                                    <div id="qeAttachmentsViewOptionContainer" class="radio m-6">
+                                        <label>Display: </label>
+                                        <input type="radio" name="ImageViewOption" id="listView" value="ListView" checked/>
+                                        <label>Image View</label>
+                                        <input type="radio" name="ImageViewOption" id="gridView" value="GridView"/>
+                                        <label>Grid View</label>
+                                    </div>
+                                    <br/>
+                                </div>
+
+                                <div id="qeAttachmentsDataContainer">
+                                    <div id="qeAttachmentsGalleryContainer">
+                                        @await Html.PartialAsync("_QEAttachmentsGallery", Model)
+                                    </div>
+
+                                    <div id="qeAttachmentsGridContainer">
+                                        @await Html.PartialAsync("_QEAttachmentsGrid", Model)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    </div>                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var editor = $("#QELogBody").data("kendoEditor");
+        editor.refresh();
+
+        var editorBody = $(editor.body);
+        editorBody.attr("contenteditable", false);
+
+        $(".modal-body textarea").prop("disabled", true);
+    });
+</script>
+<style>
+
+    /*hide editor toolbar*/
+    .k-editor-toolbar {
+        display: none !important;
+    }
+
+    /*sets the width of your addons*/
+    .input-group > .input-group-prepend {
+        flex: 0 0 12%;
+    }
+    /*forces the inputs to take up all of their parent container.*/
+    .input-group .input-group-text {
+        width: 100%;
+    }
+</style>

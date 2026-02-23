@@ -1,0 +1,8 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Document Verification"];
+    ViewData["ActivePage"] = "documentVerificationPage";
+
+}
+@await Html.PartialPageAsync(Model.Page, Model)

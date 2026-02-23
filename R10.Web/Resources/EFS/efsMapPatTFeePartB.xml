@@ -1,0 +1,362 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for Part B - Fee(s) Transmittal -->
+  <!-- NOTE: Examiner, Art Unit are non-editable fields on the form and so, cannot be filled with date -->
+  <PDFFieldMapping>
+    <PdfField>Current Correspondence Address</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>ClientAddress</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Date</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CurrentDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>APPLICATION NORow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>FILING DATERow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>FIRST NAMED INVENTORRow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>ATTORNEY DOCKET NORow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>CONFIRMATION NORow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>ConfirmationNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>APPLN TYPERow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CaseType</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>ENTITY STATUSRow1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>TaxSchedule</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+	<PDFFieldMapping>
+		<PdfField>EXAMINER</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Examiner</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+	<PDFFieldMapping>
+		<PdfField>ART UNIT</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>GroupArtUnit</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	
+  <PDFFieldMapping>
+    <PdfField>First patent practitioner or single firm</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney1Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Second patent practitioner</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney2Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Third patent practitioner</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Attorney3Name</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Name of Assignee</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AssigneeName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Residence</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AssigneeResidence</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  
+  <PDFFieldMapping>
+    <PdfField>Date bottom</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>CurrentDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Typed or Printed Name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>SignatoryName</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Registration Number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>RegistrationNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- below are fields with no match in CPI
+  <PDFFieldMapping>
+    <PdfField>Deposit account number</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Typed or printed name</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Signature </PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Issue Fee Due</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Publication fee due</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Previously paid issue fee</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Total fee(s) due</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Date due</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Change of correspondence address</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Fee Address indication</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Assignee name 2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Residence for assignee 2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>Issue Fee</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Issue Fee</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Publication Fee if required</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Advance Order  of Copies</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Individual</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Corporation or other private group entity</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Government</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Number of copies</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Electronic Payment via EFSWeb</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Enclosed check</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Nonelectronic payment by credit card Attach form PTO2038</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>The Director is hereby authorized to charge the required fees any deficiency or credit any overpayment to Deposit Account No</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Applicant certifying micro entity status See 37 CFR 129</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Applicant asserting small entity status See 37 CFR 127</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Applicant changing to regular undiscounted fee status</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>      note: checkbox; value = On if checked, else blank
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Authorized signature</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>Reg number bottom</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NO_SUCH_FIELD_IN_CPI</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  -->
+  
+</NewDataSet>

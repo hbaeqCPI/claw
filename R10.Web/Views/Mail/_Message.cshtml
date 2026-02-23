@@ -1,0 +1,121 @@
+﻿@using R10.Web.Services
+@using R10.Web.Extensions
+@using R10.Web.Models.MailViewModels
+@using R10.Core.Helpers
+@using Microsoft.Graph
+@using R10.Web.Services.MailDownload
+@model Message
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var parentFolder = ViewData["ParentFolder"]?.ToString();
+    var mainFolder = ViewData["MainFolder"]?.ToString();
+    var documentLinkUrl = ViewData["DocumentLinkUrl"]?.ToString();
+    var labelExpand = Localizer["Expand"].ToString();
+    var labelBack = Localizer["Back"].ToString();
+    var labelMarkAsRead = Localizer["Mark As Read"].ToString();
+    var labelMarkAsUnread = Localizer["Mark As Unread"].ToString();
+    var labelDelete = Localizer["Delete"].ToString();
+    var labelRestore = Localizer["Restore"].ToString();
+    var labelReply = Localizer["Reply"].ToString();
+    var labelReplyAll = Localizer["Reply All"].ToString();
+    var labelForward = Localizer["Forward"].ToString();
+    var labelOpenDocumentLink = Localizer["View Case Info"].ToString();
+    var labelViewDownloadedDocument = Localizer["View Downloaded Document"].ToString();
+    var docPreviewUrl = ViewData["DocumentPreviewUrl"]?.ToString();
+
+    var body = Model.Body.Content;
+    if (Model.Attachments != null)
+    {
+        foreach (var attachment in Model.Attachments)
+        {
+            if (attachment.IsInline.HasValue && attachment.IsInline.Value)
+            {
+                if ((attachment is FileAttachment) && (attachment.ContentType.Contains("image")))
+                {
+                    var fileAttachment = attachment as FileAttachment;
+                    var contentBytes = fileAttachment.ContentBytes;
+                    var imageContentIDToReplace = "cid:" + fileAttachment.ContentId;
+                    body = body.Replace(imageContentIDToReplace, String.Format("data:image;base64,{0}", Convert.ToBase64String(contentBytes as byte[])));
+                }
+
+            }
+        }
+    }
+}
+
+<div class="k-grid">@*use .k-grid .k-grid-toolbar pattern to inherit css*@
+    <div class="k-grid-toolbar toolbar" style="display: none;">
+        <div class="mr-auto">
+            <a href="#" title="@labelBack" class="show-list k-button" style="display: none;"><i class="fal fa-long-arrow-left pr-2"></i><span class="label">@labelBack</span></a>
+        </div>
+        @if (mainFolder == MailGraphService.InboxFolder || mainFolder == MailGraphService.DownloadedItemsFolder)
+        {
+            <a href="#" title="@labelReply" class="action editor k-button" data-editor="@MailEditor.Reply"><i class="far fa-reply pr-2"></i><span class="label">@labelReply</span></a>
+            <a href="#" title="@labelReplyAll" class="action editor k-button" data-editor="@MailEditor.ReplyAll"><i class="far fa-reply-all pr-2"></i><span class="label">@labelReplyAll</span></a>
+            <a href="#" title="@labelForward" class="action editor k-button" data-editor="@MailEditor.Forward"><i class="far fa-share pr-2"></i><span class="label">@labelForward</span></a>
+        }
+        @if(parentFolder == MailGraphService.DeletedItemsFolder) 
+        {
+            <a href="#" title="@labelRestore" class="action restore-message k-button"><i class="far fa-trash-undo pr-2"></i><span class="label">@labelRestore</span></a>
+        }
+        <a href="#" title="@labelDelete" class="action delete-message k-button" data-delete-confirm="@(mainFolder == MailGraphService.DeletedItemsFolder ? Localizer["Do you want to permanently delete the selected message?"] : "")"><i class="far fa-trash pr-2"></i><span class="label">@labelDelete</span></a>
+        <a href="#" title="@labelMarkAsRead" class="action mark-as-read k-button"><i class="far fa-envelope-open pr-2"></i><span class="label">@labelMarkAsRead</span></a>
+        <a href="#" title="@labelMarkAsUnread" class="action mark-as-unread k-button"><i class="far fa-envelope pr-2"></i><span class="label">@labelMarkAsUnread</span></a>
+        @*uncomment to limit showing of case record links to DownloadedItemsFolder and its subfolders*@
+        @*@if (mainFolder == MailGraphService.DownloadedItemsFolder)
+        {*@
+            @if (!string.IsNullOrEmpty(documentLinkUrl))
+            {
+                <a href="#" title="@labelOpenDocumentLink" class="action open-document-link k-button" data-url="@documentLinkUrl"><i class="far fa-external-link pr-2"></i><span class="label">@labelOpenDocumentLink</span></a>
+            }
+            @if (!string.IsNullOrEmpty(docPreviewUrl))
+            {
+                <a href="#" title="@labelViewDownloadedDocument" class="action view-document k-button" data-doc-url="@docPreviewUrl" data-doc-title="@Localizer["Document Viewer"]"><i class="far fa-envelope-square pr-2"></i><span class="label">@labelViewDownloadedDocument</span></a>
+            }
+        @*}*@
+        <a href="#" title="@labelExpand" class="expand-detail k-button"><i class="far fa-expand-wide pr-2"></i><span class="label">@labelExpand</span></a>
+    </div>
+</div>
+<div class="details">
+    <div id="@Model.Id" class="message"
+        data-update-isread-url="@Url.Action("UpdateIsRead")"
+        data-delete-message-url="@Url.Action("DeleteMessage")"
+        data-restore-message-url="@Url.Action("RestoreMessage")"
+        data-reply-url="@Url.Action("GetEditor")">
+        <div class="d-flex"><span class="h2 subject mr-auto">@(string.IsNullOrEmpty(Model.Subject) ? Localizer["(No Subject)"] : Model.Subject)</span></div>
+        <div class="header">
+            <div class="row">
+                <div class="col"><span class="h4 from">@Model.From?.EmailAddress.Name</span></div>
+                <div class="col text-right">@(((DateTimeOffset)Model.ReceivedDateTime).DateTime.ToString("ddd dd-MMM-yyy hh:mm tt"))<span class="date"></span></div>
+            </div>
+            <div><span>@Localizer["To"]: </span>@(string.Join(", ", Model.ToRecipients.Select(r => r.EmailAddress.Name).ToArray()))<span class="to"></span></div>
+            @if(Model.CcRecipients.Count() > 0) {
+                <div><span>@Localizer["Cc"]: </span><span class="cc">@(string.Join(", ", Model.CcRecipients.Select(r => r.EmailAddress.Name).ToArray()))</span></div>
+            }
+            @if(Model.BccRecipients.Count() > 0) {
+                <div><span>@Localizer["Bcc"]: </span><span class="cc">@(string.Join(", ", Model.BccRecipients.Select(r => r.EmailAddress.Name).ToArray()))</span></div>
+            }
+        </div>
+        @if ((Model.HasAttachments ?? false))
+        {
+            <div class="attachments">
+            @if(Model.Attachments != null) {
+                @foreach(var attachment in Model.Attachments.Where(a => !(a.IsInline ?? false) && (a is FileAttachment)))
+                {
+                    <button type="button" class="btn btn-outline-secondary attachment" title="@attachment.Name" data-toggle="tooltip" data-placement="bottom" 
+                        data-message-id="@Model.Id" data-attachment-id="@attachment.Id" data-name="@(attachment.HasPreview() ? "" : attachment.Name)">
+                        <span class="attachment-icon"><i class="@(attachment.GetIcon())"></i></span>
+                        <span class="attachment-file">
+                            <span class="attachment-name">@attachment.Name</span>
+                            <span class="attachment-size">@(((int)attachment.Size).ToSize())</span>
+                        </span>
+                    </button>
+                }
+            }
+            </div>
+        }
+        <style-blocker>
+        <div class="body">@Html.Raw(body)</div>
+        </style-blocker>
+    </div>
+</div>

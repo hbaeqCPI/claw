@@ -1,0 +1,23 @@
+﻿@model SidebarPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["ActivePage"] = "mailPage";
+}
+
+@await Html.PartialAsync("_SidebarPage", Model)
+
+<script>
+    class StyleBlocker extends HTMLElement {
+        constructor() {
+            super();
+            this.attachShadow({ mode: 'open' });
+        }
+        connectedCallback() {
+            while (this.childNodes.length > 0) {
+                this.shadowRoot.appendChild(this.childNodes[0]);
+            }
+        }
+    }
+    window.customElements.define('style-blocker', StyleBlocker);
+</script>

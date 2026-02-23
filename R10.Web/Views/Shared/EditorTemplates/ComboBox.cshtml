@@ -1,0 +1,162 @@
+﻿@model String
+@{
+    //note: added virtualization for letter filter data
+    var width = ViewData["width"] == null ? "100" : ViewData["width"];
+    var enablePaging = ViewData["enablePaging"] == null ? false : (bool)ViewData["enablePaging"];
+    var height = ViewData["height"] == null ? Convert.ToDouble("400") : Convert.ToDouble(ViewData["height"]);
+    var itemHeight = ViewData["itemHeight"] == null ? 26 : (double)ViewData["itemHeight"];
+    var pageSize = ViewData["pageSize"] == null ? 80 : (int)ViewData["pageSize"];
+    var filterType = ViewData["filterType"] == null ? FilterType.StartsWith : (FilterType)ViewData["filterType"];
+    var limitToList = ViewData["limitToList"] == null ? true : (bool)ViewData["limitToList"];
+    var listWidth = ViewData["listWidth"] == null ? 0 : (int)ViewData["listWidth"];
+    var name = ViewData["name"];
+    var valuePrimitive = ViewData["valuePrimitive"] == null ? false : (bool)ViewData["valuePrimitive"];
+    var serverFiltering = ViewData["serverFiltering"] == null ? true : (bool)ViewData["serverFiltering"];
+    var columns = (List<ComboBoxColumn>)ViewData["columns"];
+}
+
+@if (ViewData["dataValueField"] == null)
+{
+    //TODO: REMOVE! All comboboxes must use same datasource structure for consistency.
+    @(Html.Kendo().ComboBoxFor(m => m)
+        .AutoBind(false)
+        .Height(height)
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action(ViewData["action"].ToString(), ViewData["controller"].ToString(), new { area = ViewData["area"].ToString(), property = ViewData["property"].ToString() }).Data(ViewData["readData"] == null ? "" : ViewData["readData"].ToString());
+            })
+            .ServerFiltering(serverFiltering);
+        })
+        .Events(e => e.Change(ViewData["onChange"] == null ? "pageHelper.handleComboBoxInvalidEntry" : ViewData["onChange"].ToString())
+        )
+        .Filter(FilterType.Contains)
+        .Template("<span class='k-state-default'>#: data #</span>")
+        .HtmlAttributes(new { style = "width: " + width + "%" })
+    )
+}
+else
+{
+    var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+
+    if (ViewData["routeValues"] == null)
+    {
+        if (ViewData["area"] != null)
+        {
+            routeValues.Add("area", ViewData["area"].ToString());
+        }
+
+        routeValues.Add("property", ViewData["property"]?.ToString() ?? ViewData["dataValueField"].ToString());
+    }
+
+    if (columns == null)
+    {
+    @(Html.Kendo().ComboBoxFor(m => m)
+          .DataTextField(ViewData["dataTextField"]?.ToString() ?? ViewData["dataValueField"].ToString())
+          .DataValueField(ViewData["dataValueField"].ToString())
+          .ValuePrimitive(valuePrimitive) //set to true if having [object Object] return value issue
+          .Filter(filterType)
+          .AutoBind(false)
+          .AutoWidth(true)
+          .Height(height)
+          .Events(e => e
+                .Change(ViewData["onChange"] == null ? limitToList ? "pageHelper.handleComboBoxInvalidEntry" : "pageHelper.doNothing" : ViewData["onChange"].ToString())
+                .Select(ViewData["onSelect"] == null ? "function (){}" : ViewData["onSelect"].ToString())
+                )
+            .DataSource(source =>
+            {
+                if (enablePaging)
+                {
+                    source.Ajax().PageSize(pageSize);
+                }
+                source.Read(read =>
+                {
+                    read.Action(ViewData["action"].ToString(), ViewData["controller"].ToString(), ViewData["routeValues"] ?? routeValues)
+                        .Data(ViewData["readData"] == null ? "" : ViewData["readData"].ToString());
+                })
+                .ServerFiltering(serverFiltering);
+            })
+
+            .Virtual(v=> {
+                if (enablePaging)
+                {
+                    v.ItemHeight(itemHeight);
+                    v.MapValueTo("dataItem");
+                    v.ValueMapper(ViewData["valueMapper"].ToString());
+                }
+            })
+            .Virtual(enablePaging)
+            .Template(ViewData["template"] == null ? null : ViewData["template"].ToString())
+            .HeaderTemplate(ViewData["headerTemplate"] == null ? null : ViewData["headerTemplate"].ToString())
+            .HtmlAttributes(ViewData["htmlAttributes"] == null ? new { style = $"width: {width}%" } : ViewData["htmlAttributes"])
+        )
+
+    }
+    else
+    {
+        @(Html.Kendo().MultiColumnComboBoxFor(m => m)
+          .DataTextField(ViewData["dataTextField"]?.ToString() ?? ViewData["dataValueField"].ToString())
+          .DataValueField(ViewData["dataValueField"].ToString())
+          .ValuePrimitive(valuePrimitive) //set to true if having [object Object] return value issue
+          .Filter(filterType)
+          .FilterFields(columns.Select(c => c.Name).ToArray())
+          .AutoBind(false)
+          .Height(height)
+          .DropDownWidth($"{listWidth}px")
+          .Columns(cols=> 
+            {
+                foreach (var c in columns) {
+                    if (c.Width > 0) {
+                            cols.Add().Field(c.Name).Template(c.Template).Title(c.Header).HeaderTemplate("<span class='combobox-mc-header'>#:data.title#</span>").Width($"{c.Width}px");
+                    }
+                    else {
+                            cols.Add().Field(c.Name).Template(c.Template).Title(c.Header).HeaderTemplate("<span class='combobox-mc-header'>#:data.title#</span>");
+                    }
+                }
+            })
+          .Events(e => e
+                .Change(ViewData["onChange"] == null ? limitToList ? "pageHelper.handleComboBoxInvalidEntry" : "pageHelper.doNothing" : ViewData["onChange"].ToString())
+                .Select(ViewData["onSelect"] == null ? "function (){}" : ViewData["onSelect"].ToString())
+                )
+            .DataSource(source =>
+            {
+                if (enablePaging)
+                {
+                    source.Ajax().PageSize(pageSize);
+                }
+                source.Read(read =>
+                {
+                    read.Action(ViewData["action"].ToString(), ViewData["controller"].ToString(), ViewData["routeValues"] ?? routeValues)
+                        .Data(ViewData["readData"] == null ? "" : ViewData["readData"].ToString());
+                })
+                .ServerFiltering(serverFiltering);
+            })
+
+            .Virtual(v=> {
+                if (enablePaging)
+                {
+                    v.ItemHeight(itemHeight);
+                    v.MapValueTo("dataItem");
+                    v.ValueMapper(ViewData["valueMapper"].ToString());
+                }
+            })
+            .Virtual(enablePaging)
+            .HtmlAttributes(ViewData["htmlAttributes"] == null ? new { style = $"width: {width}%" } : ViewData["htmlAttributes"])
+        )
+    }
+
+}
+
+
+@if (listWidth > 0)
+{
+    <style>
+        @@media screen and (min-width: 576px) {
+            #@(name)-list {
+                width: @(listWidth)px !important;
+            }
+        }
+    </style>
+}
+

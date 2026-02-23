@@ -1,0 +1,30 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<DataQueryCategory>()
+                    .Name($"{Model.PageId}-Grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(m => m.DQCat).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: DQCatId#", fromSearch = true }), "DQCat")).Width(200);
+                        columns.Bound(m => m.DQCatDesc);
+                    })
+                    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                    .AutoBind(false)
+                    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .Excel(excel => excel.FileName("DataQueryCategoryList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DataQueryCategory")))
+                    .DataSource(dataSource => dataSource
+                    .Ajax().Events(events => events.Error("dataQueryCategoryPage.searchResultGridError"))
+                    .Events(events => events.RequestEnd("dataQueryCategoryPage.searchResultGridRequestEnd"))
+                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                    .Read(read => read.Action("PageRead", "DataQueryCategory")
+                    .Data("dataQueryCategoryPage.gridMainSearchFilters")
+                    )
+                    .Sort(sort => sort.Add(m => m.DQCat))
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

@@ -1,0 +1,243 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+	<PDFFieldMapping>
+		<PdfField>FirstNamedInventortPatent Owner</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FirstNamedInventor</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Application NoPatent No</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AppNoPatNo</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>FiledIssue Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FilIssDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Titled 1</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Title</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Assignee</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>OwnerName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Check Box10</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>OptionB</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+   
+	<PDFFieldMapping>
+		<PdfField>1 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom1</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo1</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel1</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_2</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame1</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+
+	<PDFFieldMapping>
+		<PdfField>2 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom2</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To_2</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo2</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel_2</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel2</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame2</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+
+	<PDFFieldMapping>
+		<PdfField>3 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom3</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To_3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo3</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel_3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel3</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame3</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+	<PDFFieldMapping>
+		<PdfField>4 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom4</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To_4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo4</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel_4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel4</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame4</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+	<PDFFieldMapping>
+		<PdfField>5 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom5</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To_5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo5</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel_5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel5</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_6</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame5</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+
+	<PDFFieldMapping>
+		<PdfField>6 From</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentFrom6</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>To_6</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AssignmentTo6</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Reel_6</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel6</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame_7</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame6</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	
+	<PDFFieldMapping>
+		<PdfField>Printed or Typed Name</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>CurrentDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Title or Registration Number</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>RegistrationNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+</NewDataSet>

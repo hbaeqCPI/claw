@@ -1,0 +1,300 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for PTO/SB/08a (07-09) - Information Disclosure Statement By Applicant - Non-Patent Literature Documents -->
+  <!-- Header Section -->
+  <PDFFieldMapping>
+    <PdfField>text1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>PageNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NoOfPages</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text3</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>text4</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <PDFFieldMapping>
+    <PdfField>text5</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>text 6</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>GroupArtUnit</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>text7</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Examiner</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <PDFFieldMapping>
+    <PdfField>text8</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- NPL Documents Section -->
+  <!-- row 1 -->
+  <PDFFieldMapping>
+    <PdfField>text9</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>1</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text10</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text11</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 2 -->
+  <PDFFieldMapping>
+    <PdfField>text12</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue>2</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text13</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text14</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 3 -->
+  <PDFFieldMapping>
+    <PdfField>text15</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue>3</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text16</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text17</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 4 -->
+  <PDFFieldMapping>
+    <PdfField>text18</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue>4</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text19</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text20</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 5 -->
+  <PDFFieldMapping>
+    <PdfField>text21</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue>5</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text22</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text23</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 6 -->
+  <PDFFieldMapping>
+    <PdfField>text24</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue>6</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text25</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text26</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 7 -->
+  <PDFFieldMapping>
+    <PdfField>text27</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue>7</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text28</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text29</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- row 8 -->
+  <PDFFieldMapping>
+    <PdfField>text30</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue>8</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text31</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text32</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- row 9 -->
+  <PDFFieldMapping>
+    <PdfField>text33</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue>9</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text34</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text35</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- row 10 -->
+  <PDFFieldMapping>
+    <PdfField>text36</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue>10</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text37</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>NonPatLiteratureInfo</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text38</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- End of NPL Section -->
+ 
+</NewDataSet>

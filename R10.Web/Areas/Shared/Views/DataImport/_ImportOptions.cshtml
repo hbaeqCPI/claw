@@ -1,0 +1,10 @@
+﻿@inject IStringLocalizer<DataImportResource> Localizer
+@{
+    var options = (DataImportOptionsViewModel)ViewBag.ImportOptions;
+}
+<div>
+    <h5>@Localizer["Option:"]</h5>
+    <form method="post" id="optionsForm">
+        @Html.Kendo().CheckBox().Name("IgnoreDupes").Checked(options.IgnoreDupes).Label(Localizer["Ignore duplicates or records that are already existing (based on key)"])
+    </form>
+</div>

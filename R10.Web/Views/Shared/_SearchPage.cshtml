@@ -1,0 +1,62 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{ 
+    string formId = $"{Model.PageId}-MainSearch";
+}
+
+<div id="@Model.PageId" class="page-main-flex">
+    <div class="page-sidebar search">
+        <div class="header">
+            <div class="title">@Localizer["Search"]</div>
+            @*remove search screen*@
+            @*@if (Model.HasSavedCriteria)
+        {
+            <nav class="nav nav-right">
+                <a class="nav-link load-filters" href="#" title="Load search filters" role="button"><i class="fal fa-download pr-2"></i><span>@Localizer["Load criteria"]</span></a>
+            </nav>
+        }*@
+        </div>
+        <ul class="nav nav-tabs search nav-tabs-vertical nav-tabs-left" role="tablist">
+            @await Html.PartialAsync("_SearchNavItems")
+        </ul>
+    </div>
+    <div class="page-main">
+        <form id="@formId" method="post" data-loading="" data-no-results="@Localizer["Your search did not match any records."]" asp-action="Search">
+            <div class="page-header">
+                <div class="page-crumbs"></div>
+                @*remove search screen*@
+                @*<nav class="nav nav-right mt-2 ">
+                    <a class="nav-link page-nav search-submit" href="#" title="@Localizer["Search"]" role="button"><i class="fal fa-search pr-2"></i><span>@Localizer["Search"]</span></a>
+                    <a class="nav-link page-nav search-clear pr-2" href="#" title="@Localizer["Clear"]" role="button"><i class="fal fa-times pr-2"></i><span>@Localizer["Clear"]</span></a>
+                    @if (Model.CanAddRecord)
+                    {
+                        <a class="nav-link page-nav" data-url="@Url.Action("Add", new { fromSearch = true })" href="#" title="@Localizer["Add"]" role="button"><i class="fal fa-plus pr-2"></i><span>@Localizer["Add"]</span></a>
+                    }
+                    @if (Model.HasSavedCriteria)
+                    {
+                        <a class="nav-link load-filters d-lg-none d-md-inline" href="#" title="@Localizer["Load search filters"]" role="button"><i class="fal fa-save pr-2"></i><span>@Localizer["Load criteria"]</span></a>
+                    }
+                </nav>*@
+            </div>
+            @*remove search screen*@
+            <div class="d-none">
+                <ul class="nav nav-tabs search nav-tabs-horizontal" role="tablist">
+                    @await Html.PartialAsync("_SearchNavItems")
+                </ul>
+                @await Html.PartialAsync("_SearchTabContent", new ViewDataDictionary(this.ViewData) { { "PageId", Model.PageId } })
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        @(ViewBag.ActivePage).initializeSearchPage({
+            container: "#@Model.PageId",
+            url: "@Context.Request.PathBase@Context.Request.Path",
+            title: "@Model.Title",
+            form: "#@formId"
+        });
+    });
+</script>

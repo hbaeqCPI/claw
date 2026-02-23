@@ -1,0 +1,59 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<ActionDueResource> Localizer
+@inject ISystemSettings<GMSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+
+    var gridId = $"{Model.PageId}-SearchGrid";
+
+    //var subCaseStatusLabel = Localizer["Sub Case"] + "<br/>" + Localizer["Status"];
+    //var subCaseStatusTemplate = "<span>#= SubCase == null ? '' : SubCase # <br> #= MatterStatus == null ? '' : MatterStatus #</span>";
+
+    var dataKeyValue = ViewData["RecordId"] != null ? ViewData["RecordId"] : 0;
+    var screenCode = ViewData["ScreenCode"] != null ? ViewData["ScreenCode"].ToString() : "";
+}
+
+@(Html.Kendo().Grid<DocumentActionResultsViewModel>()
+    .Name(gridId)
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+        columns.Bound(m => m.SubCase);
+        columns.Bound(m => m.Status);
+        //columns.Bound(a => a.SubCase).Title(subCaseStatusLabel).ClientTemplate(subCaseStatusTemplate);
+        columns.Bound(m => m.BaseDate).Format("{0:dd-MMM-yyyy}");
+        columns.Bound(m => m.ActionType);
+    })
+    .AutoBind(false)
+    .Pageable(page => page.PageSizes(true).Refresh(true))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .DataSource(dataSource => dataSource
+            .Ajax()
+            .Events(events => events.RequestEnd("documentPage.searchResultGridRequestEnd"))
+            .PageSize(Model.GridPageSize)
+            .Read(read => read.Action("PageRead", "DocGMAct").Data("documentPage.gridMainSearchFilters"))
+            .Sort(sort => sort.Add(a => a.CaseNumber))
+         )
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .Events(events => events.Change("documentPage.loadDocumentTree"))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+
+<style>
+    .k-grid td, .k-listview .col {
+        font-size: smaller !important;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        if (@dataKeyValue > 0) {
+            documentPage.initializeSearchResultPage({
+                resultGridId: "#@gridId",
+                screenCode: "@screenCode",
+                defaultRecordId: "@dataKeyValue"
+            });
+        }
+     });
+</script>

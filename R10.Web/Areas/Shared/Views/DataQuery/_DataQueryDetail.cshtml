@@ -1,0 +1,227 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+
+@{
+    var settings = await Settings.GetSetting();
+    // AQB
+    string aqbPathBase = Context.Request.PathBase.ToString().Replace("/", "");                                 // we only need "R9"; /R9 will cause error
+                                                                                                               //string aqbCssPath = Context.Request.PathBase + "/ActiveQueryBuilder/Handler/resources/style/qb";         // temp solution to AQB css path issue that affects rendering
+    string createDQUrl = Url.Action("CreateQueryBuilder", "DataQuery");
+    int whereColumnCount = settings.DQWhereColumnCount;
+    bool isCustomReportOn = settings.IsCustomReportON;
+
+    string aqbContainerId = "cpiAQBContainer";
+    string gridId = $"{aqbContainerId}-Grid";
+    string dqMainContainer = "dataQueryContent";
+
+    var rqf = Context.Request.HttpContext.Features.Get<Microsoft.AspNetCore.Localization.IRequestCultureFeature>();
+    var culture = rqf.RequestCulture.Culture.Name;
+    if (culture == "zh") culture = "zh-cn";
+}
+
+    <div id="dataQueryContent" class="page-main" data-sqlchange-url="@Url.Action("ChangeSql")" >
+        <div class="page-message"></div>
+        <div class="page-header page-crumbs"></div>
+        <div class="sidebar-link"></div>
+        <div id="dataQueryDetail">
+            <div class="cpiDataContainer">
+            </div>
+        </div>
+
+        <div id="@aqbContainerId" data-empty-sql="@Localizer["You have not entered your query."]"
+             data-run-url="@Url.Action("RunQuery", "DataQuery")" data-result-grid="@gridId"
+             data-export-excel-url="@Url.Action("ExportToExcel", "DataQuery")"
+             data-export-word-url="@Url.Action("ExportToWord", "DataQuery")"
+             data-export-xml-url="@Url.Action("ExportToXML", "DataQuery")"
+             data-export-json-url="@Url.Action("ExportToJSON", "DataQuery")"
+             data-export-rdl-url="@Url.Action("GetCustomReport", "DataQuery")"
+             data-export-widget-url="@Url.Action("ExportToWidget", "DataQuery")"
+             data-export-check-url="@Url.Action("CheckExport", "DataQuery")"
+             data-help-url="@Url.Action("OpenHelp")">
+            <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal flush-left" id="dataQueryTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active dq-query-tab" id="dataQueryBuilderTab" data-toggle="tab" role="tab" aria-controls="dataQueryBuilderTabContent" aria-selected="true" href="#dataQueryBuilderTabContent">@Localizer["Query Builder"]</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="dataQueryResultTab" data-toggle="tab" role="tab" aria-controls="dataQueryResultTabContent" aria-selected="false" href="#dataQueryResultTabContent">@Localizer["Query Result"]</a>
+                </li>
+                 <li class="nav-item">
+                    <a class="nav-link" id="dataQueryTagTab" data-toggle="tab" role="tab" aria-controls="dataQueryTagTabContent" aria-selected="false" href="#dataQueryTagTabContent">@Localizer["Tags"]</a>
+                </li>
+                <li class="nav-item">
+                    @*<a class="nav-link @(string.IsNullOrEmpty(Model.Remarks) ? null : "has-remarks")" id="dataQueryRemarksTab" data-toggle="tab" role="tab" aria-controls="dataQueryRemarksTabContent" aria-selected="false" href="#dataQueryRemarksTabContent">@Localizer["Remarks"]</a>*@
+                    <a class="nav-link" id="dataQueryRemarksTab" data-toggle="tab" role="tab" aria-controls="dataQueryRemarksTabContent" aria-selected="false" href="#dataQueryRemarksTabContent">@Localizer["Remarks"]</a>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane page-content show active" id="dataQueryBuilderTabContent" role="tabpanel" aria-labelledby="dataQueryBuilderTab">
+                    <div class="form-row">
+                        <a class="nav-link query-help" role="button" href="#" title="@Localizer["Help"]"><i class="fal fa-question-circle pr-1"></i><span>@Localizer["Help"]</span></a>
+                        <a class="nav-link toggle-sql" id="showHideSQLButton" role="button" href="#" title="@Localizer["Show SQL"]" onclick="toggleSQL();"><i class="fal fa-keyboard-down pr-1"></i><span id="showHideSQLButtonSpan">@Localizer["Show SQL"]</span></a>
+                    </div>
+                    <div class="row">
+                        <div id="divAQB" class="col-md-12 masked-area">
+                            <div id="cpiDQ"></div>
+                            <div class="qb-ui-layout">
+                                <div class="qb-ui-layout__top" id="cpiDQDiagramContainer" style="height:600pt;">
+                                    <div class="qb-ui-layout__left">
+                                        <div class="qb-ui-structure-tabs">
+                                            <div class="qb-ui-structure-tabs__tab">
+                                                <input type="radio" id="tree-tab" name="qb-tabs" checked />
+                                                <label for="tree-tab">@Localizer["CPiDB"]</label>
+                                                <div class="qb-ui-structure-tabs__content">
+                                                    <div id="cpiDQtreeview"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="qb-ui-layout__right">
+                                        <div id="cpiDQnavbar"></div>
+                                        <div id="cpiDQcanvas"></div>
+                                        <div id="cpiDQstatusbar"></div>
+                                        <div id="cpiDQgrid"></div>
+                                    </div>
+                                </div>
+                                <div class="qb-ui-layout__bottom" id="cpiDQSQLContainer" style="display:none;">
+                                    <div id="cpiDQsql"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane page-content" id="dataQueryResultTabContent" role="tabpanel" aria-labelledby="dataQueryResultTab">
+                    <div class="row" style="font-size: .9rem;">
+                        <div class="col-3">
+                            <a class="nav-link run-query" href="#" title="Run Query" role="button"><i class="fal fa-search pr-2"></i><span>@Localizer["Run Query"]</span></a>
+                        </div>
+                        <div class="col-9 nav-right">
+                            <a class="nav-link export-widget" href="#" title="Report Template" role="button"><i class="fal fa-chart-line pr-2"></i><span class="pl-2" id="createModifySpan">@Localizer["Create Widget"]</span></a>
+                            @if (isCustomReportOn)
+                            {
+                                <a class="nav-link export-rdl" href="#" title="Report Template" role="button"><i class="fal fa-file-alt pr-2"></i><span class="pl-2">@Localizer["Download Report Source"]</span></a>
+                            }
+                            <a class="nav-link export-excel" href="#" title="Export to Excel" role="button"><i class="fal fa-file-excel pr-2"></i><span>@Localizer["Export to Excel"]</span></a>
+                            <a class="nav-link export-word" href="#" title="Export to Excel" role="button"><i class="fal fa-file-word pr-2"></i><span>@Localizer["Export to Word"]</span></a>
+                            <a class="nav-link export-xml" href="#" title="Export to XML" role="button"><i class="fal fa-file-code pr-2"></i><span>@Localizer["Export to XML"]</span></a>
+                            <a class="nav-link export-json" href="#" title="Export to Json" role="button"><i class="fal fa-scroll fa-flip-horizontal"></i><span class="pl-2">@Localizer["Export to Json"]</span></a>
+                        </div>
+                    </div>
+                    <div id="@gridId"></div>
+                </div>
+                <div class="tab-pane" id="dataQueryTagTabContent" role="tabpanel" aria-labelledby="dataQueryTagTab">
+                    @await Html.PartialAsync("_GridDataQueryTag.cshtml")
+                </div>
+                <div class="tab-pane page-content cpiMainEntry" id="dataQueryRemarksTabContent" role="tabpanel" aria-labelledby="dataQueryRemarksTab">
+                    <div class="form-row">
+                        <div class="col">
+                            <textarea class="form-control form-control-sm" rows="12" id="aqbRemarks">Remarks</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-stamp"></div>
+    </div>
+
+    <div class="cpiContainerPopup"></div>
+
+<script src="~/lib/aqb/aqb.client.js"></script>
+<script>
+    $(document).ready(function () {
+
+        // instantiate AQB
+        const instanceName = "@Model";
+        AQB.Web.virtualDirectory = "@aqbPathBase";
+        AQB.Web.UI.QueryBuilder(instanceName, $("#cpiDQ"), {language: "@culture"});
+        AQB.Web.UI.QueryBuilder
+        AQB.Web.UI.ObjectTreeView(instanceName, $("#cpiDQtreeview"));
+        AQB.Web.UI.SubQueryNavigationBar(instanceName, $("#cpiDQnavbar"));
+        AQB.Web.UI.Canvas(instanceName, $("#cpiDQcanvas"));
+        AQB.Web.UI.StatusBar(instanceName, $("#cpiDQstatusbar"));
+        AQB.Web.UI.Grid(instanceName, $("#cpiDQgrid"), { orColumnCount: @whereColumnCount });
+        AQB.Web.UI.SqlEditor(instanceName, $("#cpiDQsql"));
+        AQB.Web.UI.startApplication("@createDQUrl", instanceName);           // pass query id instead of instance name; the parameter passed to controller is hard-coded by AQB as 'name'
+
+
+        dataQuery.initializeDetailContentMain({
+            dqMainContainerId: "#@dqMainContainer",
+            aqbContainerId: "#@aqbContainerId",
+            aqbResultGridId: "#@gridId"
+        });
+
+       AQB.Web.onQueryBuilderReady(function (qb) {
+            qb.on(qb.Events.SqlChanged, function () { // sample subscription to query changes made in the UI.
+                const aqbSqlExpr = qb.EditorComponent.getSql();
+
+                 if (!dataQuery.searchResultSelectedChanged) {
+                     console.log("change 1");
+                     $("#SQLExpr").val(aqbSqlExpr).trigger("change");
+                 }
+                dataQuery.searchResultSelectedChanged = false;
+
+            });
+            qb.on(qb.Events.SQLTextChanged, function () { // sample subscription to SQL text changes made by the user.
+                const aqbSqlExpr = qb.EditorComponent.getSql();
+
+                 if (!dataQuery.searchResultSelectedChanged) {
+                     console.log("change 2");
+                     $("#SQLExpr").val(aqbSqlExpr).trigger("change");
+                 }
+                dataQuery.searchResultSelectedChanged = false;
+            });
+
+        });
+    });
+
+    var showHideSQLLabel = "@Localizer["Hide SQL"]";
+    var ModifyWidgetLabel = "@Localizer["Modify Widget"]";
+    var CreateWidgetLabel = "@Localizer["Create Widget"]";
+
+    function toggleSQL(){
+        $("#cpiDQSQLContainer").toggle();
+        if(document.getElementById("cpiDQSQLContainer").style.display == "none")
+            document.getElementById("cpiDQDiagramContainer").style.height = "600pt";
+        else
+            document.getElementById("cpiDQDiagramContainer").style.height = "450pt";
+        var button = document.getElementById("showHideSQLButton");
+        var tempLabel = button.title;
+        button.title = showHideSQLLabel;
+        document.getElementById("showHideSQLButtonSpan").innerHTML = showHideSQLLabel;
+        showHideSQLLabel = tempLabel;
+    }
+    
+    function WidgetTypeChange(e) {
+        var widgetType = e.title;
+        var customWidgetType = document.getElementById("CustomWidgetType");
+        customWidgetType.value = widgetType;
+
+        document.querySelectorAll('.CustomWidgetType').forEach(element => {
+            element.style.backgroundColor  = "white";
+        });
+        var style = getComputedStyle(document.body);
+        e.style.backgroundColor = style.getPropertyValue('--btn-primary');
+
+        var widgetTypeInitLabel = document.getElementById("CustomWidgetInitLabel");
+        widgetTypeInitLabel.setAttribute("hidden", "hidden");
+
+        document.querySelectorAll('.WidgetTypeOptions').forEach(element => {
+            element.setAttribute("hidden", "hidden");
+        });
+        var currentOption = '.' + widgetType + '-Option';
+        document.querySelectorAll(currentOption).forEach(element => {
+            element.removeAttribute("hidden");
+        });
+    }
+</script>
+
+<style>
+      #@(gridId) .k-grid-content {
+        min-height: 100px;
+        max-height: 470px;
+    }
+    .open-collapsed-sidebar {
+        width: 130px;
+    }
+</style>

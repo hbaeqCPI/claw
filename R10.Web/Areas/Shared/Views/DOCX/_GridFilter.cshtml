@@ -1,0 +1,35 @@
+﻿@*@inject IStringLocalizer<SharedResource> Localizer*@
+
+
+@(Html.Kendo().Grid<DOCXFilterListViewModel>()
+        .Name("docxFilterGrid")
+        .Columns(column =>
+        {
+            column.Bound(f => f.RecSource).Width(100);
+            column.Bound(f => f.FieldName).Width(100);
+            column.Bound(f => f.Operator).Width(100);
+            column.Bound(f => f.Operand1).Width(100);
+            column.Bound(f => f.Operand2).Width(100);
+        })
+        .AutoBind(false)
+        .Pageable(page => page.PageSizes(true).Refresh(true))
+        .Sortable(sortable => sortable.SortMode(GridSortMode.SingleColumn).ShowIndexes(true))
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+        .Scrollable()
+        .DataSource(dataSource => dataSource
+            .Ajax()
+            .Read(read => read.Action("GridFilterListRead", "DOCXFilter").Data("docx.getSelectedDOCXId"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            .PageSize(5)
+        )
+        .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+<style>
+    #docxFilterGrid .k-grid-content {
+        min-height: 100px;
+        max-height: 150px;
+    }
+</style>

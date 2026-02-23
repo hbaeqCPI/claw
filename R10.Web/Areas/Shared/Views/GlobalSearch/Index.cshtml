@@ -1,0 +1,26 @@
+﻿@model GlobalSearchPageViewModel;
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["dataFieldList"] = Model.DataFilterFieldList;
+    ViewData["docFieldList"] = Model.DocFilterFieldList;
+    ViewData["logicalOperatorList"] = Model.LogicalOperators;
+    ViewData["docSearchMode"] = Model.DocSearchMode;
+    ViewData["docQueryType"] = Model.DocQueryType;
+}
+
+<div id="searchIndexContainer" class="page-main-flex">
+    @await Html.PartialAsync("_MidPane", Model.SystemScreens)
+    @await Html.PartialAsync("_RightPane")
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        globalSearch.initializeSearchIndex({
+            containerId: "#searchIndexContainer",
+            title: "@Model.Title",
+            url: "@Context.Request.PathBase@Context.Request.Path"
+        });
+    });
+</script>

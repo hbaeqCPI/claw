@@ -1,0 +1,63 @@
+﻿@model LetterDataSourcePageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var resultLabel = Localizer["Select the data source below that you want to view or modify."];
+    var gridName = $"{Model.PageId}-Grid";
+}
+
+
+@*<div class="pl-2"  style="font-size:small; font-style:italic;">
+    @resultLabel
+
+</div>*@
+@(Html.Kendo().Grid<LetterDataSourceSearchResultViewModel>()
+    .Name(gridName)
+    .Columns(columns =>
+    {
+        columns.Bound(l => l.DataSourceId).Hidden();
+        columns.Bound(l => l.DataSourceDescMain).Title(Localizer["Data Sources"]);
+    })
+    .AutoBind(false)
+    .Pageable(page => page.Responsive(false).Refresh(true))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Model(model =>
+                    {
+                        model.Id(l => l.DataSourceId);
+                    })
+                    .Events(events => events.Error("letterDataSourceSetup.searchResultGridError"))
+                    .Events(events => events.RequestEnd("letterDataSourceSetup.searchResultGridRequestEnd"))
+
+                    .PageSize(Model.GridPageSize)
+                    .PageSize(10)
+                    .Read(read => read.Action("PageRead", "LetterDataSourceSetup", new { sys = Model.SystemType })
+                    .Data("letterDataSourceSetup.gridMainSearchFilters"))
+                    .Sort(sort => sort.Add(i => i.DataSourceDescMain))
+                )
+    .Selectable()
+    .Scrollable()
+    .Events(events => events
+        .Change("letterDataSourceSetup.gridDisplayDetail")
+        .DataBound("letterDataSourceSetup.searchGridSelectRow")
+        )
+
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+
+
+<style>
+  #@gridName tr:hover {
+        cursor:pointer;
+    }
+    #@(gridName) tr.k-state-selected {
+        background-color: var(--grid-hover) !important;
+    }
+
+    #@(gridName) .k-grid-content {
+        min-height: 100px;
+        max-height: 450px;
+    }
+
+</style>

@@ -1,0 +1,37 @@
+﻿@model RemLogEmailDetail
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var systemType = ViewData["SystemType"]?.ToString();
+}
+<div class="reminder-email">
+    <div class="d-flex"><span class="h4 subject mr-auto">@Model.Subject</span></div>
+    <div class="header">
+        <div class="row">
+            <div class="col"><span class="from">@Model.Sender</span></div>
+            <div class="col text-right">@(((DateTimeOffset)Model.SentDate).DateTime.ToString("ddd dd-MMM-yyy hh:mm tt"))<span class="date"></span></div>
+        </div>
+        <div><span>@Localizer["To"]: </span><span class="to">@Model.ContactName &lt;@Model.Email&gt;</span></div>
+    </div>
+    @if(!string.IsNullOrEmpty(Model.Attachment))
+    {
+        <div class="attachments">
+            <button type="button" class="btn btn-outline-secondary attachment" title="@Model.Attachment" data-toggle="tooltip" data-placement="bottom" data-url="@Url.Action("GetReminderAttachment", new { systemType = systemType, fileName = Model.Attachment})">
+                <span class="attachment-icon"><i class="fal fa-file-pdf"></i></span>
+                <span class="attachment-file">
+                    <span class="attachment-name">@Model.Attachment</span>
+                </span>
+            </button>
+        </div>
+    }
+    <div class="body mt-2">
+        @Html.Raw(Model.Body)
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $(".reminder-email .attachment").on("click", function(e) {
+            pageHelper.fetchReport($(e.currentTarget).data("url"), {}, "");
+        });
+    });
+</script>

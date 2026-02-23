@@ -1,0 +1,12 @@
+﻿@model object
+@{
+    var maxLength = Convert.ToInt32(ViewData["maxLength"]);
+}
+@if (maxLength > 0)
+{
+    @Html.Kendo().TextBoxFor(model => model).HtmlAttributes(new { @maxlength = maxLength })
+}
+else
+{
+    @Html.Kendo().TextBoxFor(model => model)
+}

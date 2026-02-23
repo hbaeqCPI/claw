@@ -1,0 +1,48 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var agentLabel = settings.LabelAgent;
+    var agentNameLabel = settings.LabelAgentName;
+}
+
+@(Html.Kendo().Grid<AgentSearchResultViewModel>()
+                                        //.Name(resultsGrid)
+                                        .Name($"{Model.PageId}-Grid")
+                                        .Columns(columns =>
+                                        {
+                                            columns.Bound(c => c.AgentCode).Title(SharedLocalizer[agentLabel])
+                                                    //.ClientTemplate(detailsLinkTemplate)
+                                                    .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: AgentID#", fromSearch = true }), "AgentCode"))
+                                                    .Width(200);
+                                            columns.Bound(c => c.AgentName).Title(SharedLocalizer[agentNameLabel]);
+                                            columns.Bound(c => c.CreatedBy).Hidden();
+                                            columns.Bound(c => c.UpdatedBy).Hidden();
+                                            columns.Bound(c => c.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
+                                            columns.Bound(c => c.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
+                                        })
+                                        //.ToolBar(tools => tools.Excel())
+                                        .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), SharedLocalizer["Add"], SharedLocalizer["Export to Excel"])))
+                                        .AutoBind(false)
+                                        .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                                        .Sortable(sort => sort.AllowUnsort(false))
+                                        //.Selectable(selectable=>selectable.Mode(GridSelectionMode.Single))
+                                        //.ColumnMenu()
+                                        .Excel(excel => excel.FileName($"{agentLabel}List.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Agent")))
+                                        .DataSource(dataSource => dataSource
+                                            .Ajax()
+                                            .Events(events => events.Error("agentPage.searchResultGridError"))
+                                            .Events(events => events.RequestEnd("agentPage.searchResultGridRequestEnd"))
+                                            //.PageSize((int)ViewBag.PageSize)
+                                            .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                                            .Read(read => read.Action("PageRead", "Agent")
+                                            //.Data("page.gridMainSearchFilters('#agentSearchForm')")
+                                            .Data("agentPage.gridMainSearchFilters")
+                                            )
+                                        .Sort(sort => sort.Add(c => c.AgentName))
+                                    )
+                                    .HtmlAttributes(new { @class = "kendo-Grid" })
+
+)

@@ -1,0 +1,73 @@
+﻿@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    Layout = "_LayoutMain.cshtml";
+
+    var isDevelopment = Env.EnvironmentName.ToLower() == "development";
+    var showSiteHeader = ((bool?)ViewData["ShowSiteHeader"] ?? true);
+    var hideMenu = (Context.Request.Query["nomenu"].ToString() ?? "") == "1";
+}
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}
+    <div class="site-main @(User.Identity.IsAuthenticated ? "" : "user-anonymous")">
+        <div class="site-status alert alert-danger alert-dismissible boxy collapse" role="alert">
+            @*<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>*@
+            <span class="message"></span>
+        </div>
+        @if (showSiteHeader)
+        {            
+            <div class="site-header">
+                <nav class="navbar navbar-top navbar-light d-none d-lg-block pb-0">
+                    <div class="banner">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="navbar-brand font-italic">Computer Packages Inc.</a>
+                        @await Html.PartialAsync("_LoginPartial")
+                    </div>
+                </nav>
+                <nav class="navbar navbar-expand-lg navbar-menu navbar-light">
+                    <div class="container-fluid">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="navbar-brand d-lg-none pl-3">Computer Packages Inc.</a>
+                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                            @if (!hideMenu) {                                
+                                @await Component.InvokeAsync("Menu")
+                            }
+                            <div class="d-lg-none">
+                                @await Html.PartialAsync("_LoginPartial")
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        }
+        @RenderBody()
+    </div>
+    <footer class="site-footer">
+        <div class="row footer-nav">
+            <div class="col-sm-6 col-12 text-sm-left text-center">
+                <div class="d-flex flex-row justify-content-center justify-content-sm-start">
+                    @if (User.Identity.IsAuthenticated && isDevelopment)
+                    {
+                    <a asp-area="" asp-controller="Home" asp-action="About" title="System Info" class="footer-link">System Info</a>
+                    }
+                </div>
+            </div>
+            <div class="col-sm-6 col-12 text-sm-right text-center">
+                <div class="d-flex flex-row justify-content-center justify-content-sm-end">
+
+                </div>
+            </div>
+        </div>
+        <div class="row footer-copyright">
+            <div class="col text-sm-left text-center">
+                <span>&copy; @DateTime.Now.Year <a href="https://www.computerpackages.com" target="_blank" rel="noopener">Computer Packages Inc.</a> All rights reserved.</span>
+                <span class="d-block d-sm-inline ml-0 ml-sm-2">
+                    <a asp-area="" asp-controller="Home" asp-action="Terms" class="copyright-link" title="@SharedLocalizer["Terms of Service"]">
+                        @SharedLocalizer["Terms of Service"]</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="copyright-link" title="@SharedLocalizer["Privacy Policy"]">@SharedLocalizer["Privacy Policy"]</a>
+                </span>
+            </div>
+        </div>
+    </footer>

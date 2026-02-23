@@ -1,0 +1,117 @@
+﻿@model ChildQuickEmailViewModel
+@inject IStringLocalizer<QuickEmailResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+
+    var settings = await Settings.GetSetting();
+    var dataSourceId = Model.ParentViewModel.DataSourceID;
+    var qeSetupId = Model.ParentViewModel.QESetupID;
+
+    var systemType = Model.ParentViewModel.SystemType;
+    var systemName = QuickEmailHelper.GetSystem(systemType);
+
+    var attachmentLogScreenCode = "#=ScreenCode#";
+    var parentId = "#=ParentId#";
+    var autoAttachImages = Model.ParentViewModel.AutoAttachImages;
+    var attachFileNames = Model.ParentViewModel.AutoAttachFileNames;
+        
+    var param = $"{{dataSourceId: {dataSourceId}, parentId: {Model.ParentViewModel.ImageParentId},systemType:'{systemType}',autoAttachImages:{autoAttachImages.ToString().ToLower()},fileNames: '{attachFileNames}' }}";
+    var actionUrl = "ImageRead";
+
+    var onError = "this.src='" + Url.Content("~/UserFiles/Images/Thumbnails/logo_NoPreview.jpg") + "'";
+    var viewUrl = Url.Content("~/FileViewer/ViewImage?system=" + systemName);
+    var thumbnailUrl = Url.Content("~/FileViewer/GetThumbnail?system=" + systemName);
+    var logoThumbnailUrl = @Url.Content("~/images/");
+
+    var openFileTemplate = $"<a id='ThumbnailPath' title='#=ThumbnailFile#' target='_blank' href='{viewUrl}&thumbnailFile=#=FilePath#&screenCode={attachmentLogScreenCode}&key={parentId}'><img src='{thumbnailUrl}&thumbnailFile=#=ThumbnailFile#&screenCode={attachmentLogScreenCode}&key={parentId}' alt='#=ImageTitle #' Title='#=ImageTitle #' height='62' width='62' /></a>";
+    var openLogoTemplate = $"<a id='ThumbnailPath' title='#=ThumbnailFile#' target='_blank' href='{viewUrl}&thumbnailFile=#=FilePath#&screenCode={attachmentLogScreenCode}&key={parentId}'><img src='{logoThumbnailUrl}#=ThumbnailFile#' alt='#=ImageTitle #' Title='#=ImageTitle #' height='62' width='62' /></a>";
+
+    var openLinkTemplate = "<a id='ThumbnailPath' title='#=ThumbnailFile#' target='_blank' href='#=FilePath#'><img src='" +
+                   thumbnailUrl + $"&thumbnailFile=#=ThumbnailFile#&screenCode={attachmentLogScreenCode}&key={parentId}' alt='#=ImageTitle #' Title='#=ImageTitle #' height='62' width='62' /></a>";
+
+    var openTemplate = "# if (ThumbnailFile.startsWith('logo')){#" + openLogoTemplate + "# }" +
+                                                        "else { #" + openFileTemplate + "# }#";
+
+    switch (settings.DocumentStorage)
+    {
+        case DocumentStorageOptions.SharePoint:
+            param = $"{{docLibrary: '{Model.ParentViewModel.SharePointDocLibrary}', docLibraryFolder: '{Model.ParentViewModel.SharePointDocLibraryFolder}',recKey:'{Model.ParentViewModel.SharePointRecKey}',autoAttachImages:{autoAttachImages.ToString().ToLower()},fileNames: '{attachFileNames}' }}";
+            actionUrl = "ImageReadSharePoint";
+            openTemplate = "<a href='' class='sp-preview' data-lib='#=SharePointDocLibrary#' data-item='#=ItemId#'><span><i class='#=IconClass# pr-3'></i></span></a>";
+            break;
+
+        case DocumentStorageOptions.iManage:
+            param = $"{{parentKey: '{Model.ParentViewModel.ParentKey}', parentId: {Model.ParentViewModel.ParentId}, systemType: '{systemType}', autoAttachImages: {autoAttachImages.ToString().ToLower()}, fileNames: '{attachFileNames}' }}";
+            actionUrl = "ImageReadIManage";
+            openTemplate = "<a href='#=ThumbnailPath#' title='#=ImageTitle#' alt='#=ImageTitle#' target='_blank' rel='noopener'>#if (ThumbnailFile) {#<img src='#=ThumbnailFile#' title='#=ImageTitle#' alt='#=ImageTitle#' height='62' width='62'>#} else {#<i class='#=IconClass# fa-2x'>#}#</i></a>";
+            break;
+
+        case DocumentStorageOptions.NetDocuments:
+            param = $"{{parentKey: '{Model.ParentViewModel.ParentKey}', parentId: {Model.ParentViewModel.ParentId}, systemType: '{systemType}', autoAttachImages: {autoAttachImages.ToString().ToLower()}, fileNames: '{attachFileNames}' }}";
+            actionUrl = "ImageReadNetDocs";
+            openTemplate = "<a href='#=ThumbnailPath#' title='#=ImageTitle#' alt='#=ImageTitle#' target='_blank' rel='noopener'>#if (ThumbnailFile) {#<img src='#=ThumbnailFile#' title='#=ImageTitle#' alt='#=ImageTitle#' height='62' width='62'>#} else {#<i class='#=IconClass# fa-2x'>#}#</i></a>";
+            break;
+    }
+}
+<br />
+
+<script>
+    function qeImageLinkGridDataBound(e) {
+        $("#qeImageLinkGrid").find(".sp-preview").on("click",function(e) {
+            e.preventDefault();
+            const item=$(this);
+            sharePointGraphHelper.previewFile(item.data("lib"), item.data("item"));
+        });
+    }
+</script>
+<div id="imagesLinksContainer" class="row">
+    <div class="col">
+        @(Html.Kendo().Grid<QuickEmailImageLinkViewModel>
+        ()
+        .Name("qeImageLinkGrid")
+        .Columns(columns =>
+        {
+            columns.Bound(p => p.FileId).ClientTemplate("<input id='FileId' type='hidden' value='#=FileId#' />").Hidden();
+            columns.Bound(p => p.ImageTitle).Title(SharedLocalizer["File Name"]).ClientTemplate("<input id='ImageTitle' type='hidden' value='#=ImageTitle#' />").Hidden();
+            columns.Bound(p => p.FilePath).ClientTemplate("<input id='FilePath' type='hidden' value='#=FilePath#' />").Hidden();
+            columns.Bound(p => p.Send).ClientTemplate("<input class='k-checkbox k-checkbox-md k-rounded-md k-selector chkbox' data-role='checkbox' aria-checked='true' type='checkbox' #=Send ? checked='checked' : '' # >")
+        .HtmlAttributes(new { @class = "text-center" })
+        .HeaderHtmlAttributes(new { @class = "-text-center" }).Width(100).EditorTemplateName("CheckBox");
+            columns.Bound(p => p.ThumbnailPath).ClientTemplate(
+            "# if (ThumbnailFile.startsWith('logo_url')){#" + openLinkTemplate + "# }" +
+            "else { #" + openTemplate + "# }#");
+            columns.Bound(p => p.ImageTitle);
+        })
+                    //.Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                    //.Editable(editable => editable.Enabled(true).Mode(GridEditMode.InCell))
+                    .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Batch(true)
+                    .Model(model => {
+                        model.Id(i => i.FileId);
+                        model.Field(i => i.ThumbnailPath).Editable(false);
+                        model.Field(i => i.ImageTitle).Editable(false);
+                    })
+                    .ServerOperation(false)
+                    .PageSize(4)
+                    .Read(read => read.Action(@actionUrl, "QuickEmail").Data(@param))
+                    .Events(events =>
+                    {
+                        events.Error("pageHelper.onGridError");
+                    })
+                    )
+                    .Pageable(pageable => pageable
+                    .Refresh(true)
+                    .PageSizes(true)
+                    .ButtonCount(5))
+            .Events(events => events.DataBound($"function(e) {{qeImageLinkGridDataBound(e);}}"))
+                    .HtmlAttributes(new { @class = "mb-2 kendo-Grid"})
+            //.Scrollable()
+            )
+    </div>
+</div>
+<style>
+    #qeImageLinkGrid .k-dirty {
+        display: none;
+    }
+</style>

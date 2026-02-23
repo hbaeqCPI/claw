@@ -1,0 +1,25 @@
+﻿@model SystemSettingsViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+<div class="col-lg-8 col-xl-6">
+    <ul class="list-group">
+        <li class="d-flex justify-content-between">
+            <label for="ShowCookieConsent">Show Cookie Consent</label>
+            <span class="pl-4">
+                <label class="toggle-switch">
+                    <input id="ShowCookieConsent" type="checkbox" checked="@Model.CookieConsent?.Active" class="toggle-option">
+                    <span class="slider round"></span>
+                </label>
+            </span>
+        </li>
+        <li>
+            <label asp-for="CookieConsent.Message">Message</label>
+            <div style="width: 100%; padding-top: 5px;">
+                <textarea class="form-control" style="width: 100%" rows="4" asp-for="CookieConsent.Message" data-val-required="Please enter a notification message."></textarea>
+            </div>
+        </li>
+    </ul>
+</div>
+<div class="col-12">
+    <button id="SaveCookieConsent" class="btn btn-primary mt-2" data-confirm-title="@ViewData["Title"]" data-confirm-msg="@Localizer["Cookie Consent will be updated. Do you want to continue?"]" )>@Localizer["Update cookie consent"]</button>
+</div>

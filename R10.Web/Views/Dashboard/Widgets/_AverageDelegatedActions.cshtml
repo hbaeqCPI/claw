@@ -1,0 +1,213 @@
+﻿@model ChartDTO
+@using Newtonsoft.Json.Linq;
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.EntityFrameworkCore;
+@inject IAuthorizationService AuthorizationService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject ICPiUserGroupManager groupManager
+@inject UserManager<CPiUser> userManager
+@{
+    var settings = await Settings.GetSetting();
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-case-list";
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var currencyFormat = settings.WidgetCurrencyFormat.Split("|")[0];
+    var currencyString = settings.WidgetCurrencyFormat.Split("|")[1];
+
+    List<GroupListViewModel> userGroups = new List<GroupListViewModel>();
+
+    if (userSettings.Property("UserGroups") != null)
+    {
+        try
+        {
+            int[] userGroupFilter = ((JArray)userSettings.Property("UserGroups").Value).Select(a => (int)a).ToArray();
+
+            if (userGroupFilter.Count() > 0)
+            {
+                userGroups = await groupManager.GetGroups().Where(c => userGroupFilter.Contains(c.Id))
+                                        .Select(c => new GroupListViewModel
+                                        {
+                                            Id = c.Id, 
+                                            Name = c.Name
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }    
+
+    List<PickListViewModel> users = new List<PickListViewModel>();
+
+    if (userSettings.Property("Users") != null)
+    {
+        try
+        {
+            string[] userFilter = ((JArray)userSettings.Property("Users").Value).Select(a => (string)a).ToArray();
+
+            if (userFilter.Count() > 0)
+            {
+                users = await userManager.Users
+                                        .Where(c => userFilter.Contains(c.Id))
+                                        .Select(c => new PickListViewModel
+                                        {
+                                            Id = c.Id, 
+                                            Name = c.FirstName + " " + c.LastName + "(" + c.Email + ")"
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }  
+}
+
+<script>
+    $(document).ready(function () {        
+        var userGroupList = [@String.Join(",", userGroups.Select(a => a.Id).ToList())]; 
+        var userList = "@String.Join(",", users.Select(a => (string)a.Id).ToList())".split(",").filter(item => item);        
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .widget-settings .toggle-option");
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .widget-settings .toggle-option", function (e) {
+            saveSetting(@widget.Id, `{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`, function () { refresh = true; });
+        });
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+
+        $(document).off("click", "#userGroupFilter_@userWidgetId .delete-userGroup");
+        $(document).off("change", "#UserGroup_@userWidgetId");
+        $(document).on("click", "#userGroupFilter_@userWidgetId .delete-userGroup", function (e) {
+            var item = $.inArray($(this).data("id"), userGroupList);
+
+            if (item !== -1) {
+                userGroupList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ UserGroups: [${userGroupList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#UserGroup_@userWidgetId", function (e) {
+            var userGroup = $(this).data("kendoComboBox");
+
+            if (userGroup.selectedIndex >= 0) {
+                var dataItem = userGroup.dataItem(userGroup.selectedIndex);
+
+                var groupId = dataItem.Id;
+                var groupName = dataItem.Name;
+
+                if ($.inArray(groupId, userGroupList) == -1) {
+                    userGroupList.push(groupId);
+                    $("#userGroupFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="userGroup-code">${groupName}</span></div><div class="delete-filter delete-userGroup" data-id="${groupId}" title="Remove ${groupName}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ UserGroups: [${userGroupList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            userGroup.value("");
+        });
+
+        $(document).off("click", "#userFilter_@userWidgetId .delete-user");
+        $(document).off("change", "#User_@userWidgetId");
+        $(document).on("click", "#userFilter_@userWidgetId .delete-user", function (e) {
+            var item = $.inArray($(this).data("id"), userList);
+
+            if (item !== -1) {
+                userList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Users: [${userList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#User_@userWidgetId", function (e) {
+            var user = $(this).data("kendoComboBox");
+
+            if (user.selectedIndex >= 0) {
+                var dataItem = user.dataItem(user.selectedIndex);
+
+                var userId = dataItem.Id;
+                var userName = dataItem.Name;
+
+                if ($.inArray(userId, userList) == -1) {
+                    userList.push(userId);
+                    $("#userFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="user-code">${userName}</span></div><div class="delete-filter delete-user" data-id="${userId}" title="Remove ${userName}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Users: ['${userList.join("','")}'] }`, function () { refresh = true; });
+                }
+            }
+
+            user.value("");
+        });
+    });
+</script>
+
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="userGroupFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Group"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "UserGroup", controller = "Dashboard", action = "GetUserGroupList", screen = userWidgetId, textProperty = "Name", valueProperty = "Id" })
+                </span>
+            </li>
+            @foreach (GroupListViewModel grp in userGroups)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="userGroup-code">@grp.Name</span>
+                    </div>
+                    <div class="delete-filter delete-userGroup" data-id="@grp.Id" title="Remove @grp.Name"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>        
+        <ul id="userFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["User"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "User", controller = "Dashboard", action = "GetUserList", screen = userWidgetId, textProperty = "Name", valueProperty = "Id" })
+                </span>
+            </li>
+            @foreach (PickListViewModel usr in users)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="user-code">@usr.Name</span>
+                    </div>
+                    <div class="delete-filter delete-user" data-id="@usr.Id" title="Remove @usr.Name"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>             
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+
+<div class="text-center" style="font-size: 65px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
+        @if (Model?.Category == "in US Dollars")
+        {
+            <span>@currencyFormat</span>
+        }
+        @String.Format("{0:n0}", Model == null ? 0 : Model.Value)
+    </span>
+</div>
+<div class="text-center">
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? currencyString : Localizer[Model?.Category])</span>
+</div>

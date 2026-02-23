@@ -1,0 +1,86 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model DetailPagePermission
+
+@{
+    var systemType = ViewBag.SystemType;
+    var systemCriteria = $"{{systemType: '{systemType}'}}";
+    var permission = Model;
+    var label1 = "Records in the Selected Letter.";
+    var label2 = "Below are the records for generation.Refresh the screen if you have changed any data filter or the 'Include previously...' check box.";
+    var label3 = "Include previously generated documents";
+}
+
+<div class="form-row form-group">
+    <div class="col text-md-left ml-0">
+        <span style="font-size: small;"><b><i>@SharedLocalizer[label1]</i></b> @SharedLocalizer[label2]</span>
+    </div>
+    <div class="col text-md-right mr-0">
+        <input type="checkbox" id="includeGenerated" name="includeGenerated" value="true" checked />
+        <span style="font-size: small;">@SharedLocalizer[label3]</span> &nbsp;&nbsp;&nbsp;
+        <button class="k-button border" type="button" id="previewLog"><span class="far fa-file-word mr-2"></span> @SharedLocalizer["Preview & Log"]</button>
+        <button class="k-button k-primary mr-1" type="button" id="previewOnly"><span class="far fa-search mr-2"></span> @SharedLocalizer["Preview Only"]</button>
+    </div>
+</div>
+
+<div id="previewGrid"></div>
+
+<script>
+    $(document).ready(function () {
+        $("#previewLog, #previewOnly").click(function(e) {
+            var url = '@Url.Action("GenerateLetter", "LetterGeneration")';
+            var params = {
+                letId: $("#selLetId").val(), templateName: $("#selLetTemplate").val(),
+                includeGenerated: $("input[name='includeGenerated']").prop("checked"),
+                isLog: (e.target.id === "previewLog")
+            }
+
+            // post a form, ajax posting is not able to stream file to client
+            // reference: https://stackoverflow.com/questions/16086162/handle-file-download-from-ajax-post
+            var form = $('<form method="POST" action="' + url + '">');
+            $.each(params, function(k, v) {
+                form.append($('<input type="hidden" name="' + k +
+                    '" value="' + v + '">'));
+            });
+            $('body').append(form);
+            form.submit();
+            form.remove();
+
+        });
+
+
+
+        // (28-may-2019 fsn) file streaming via ajax post is not possible at this time
+        // as a work-around, submit a form after ajax call success
+        // reference: https://stackoverflow.com/questions/16086162/handle-file-download-from-ajax-post
+        @*$("#previewLog, #previewOnly").click(function(e) {
+            var url = '@Url.Action("GenerateLetter", "LetterGeneration")';
+            var params = {
+                letId: $("#selLetId").val(), templateName: $("#selLetTemplate").val(),
+                includeGenerated: $("input[name='includeGenerated']").prop("checked"),
+                isLog: (e.target.id === "previewLog")
+            }
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: params,
+                success: function(response, status, request) {
+                        var form = $('<form method="POST" action="' + url + '">');
+                        $.each(params, function(k, v) {
+                            form.append($('<input type="hidden" name="' + k +
+                                '" value="' + v + '">'));
+                        });
+                        form.append($('<input type="hidden" name="isGen" value="true">'));
+                        $('body').append(form);
+                        form.submit();
+               },
+                error: function (e) {
+                    alert(e.responseText);
+                }
+            });
+
+        });*@
+
+        
+    });
+   
+</script>

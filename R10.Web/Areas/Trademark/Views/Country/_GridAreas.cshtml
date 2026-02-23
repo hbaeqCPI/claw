@@ -1,0 +1,82 @@
+﻿@model ChildViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var countryParam = $"{{country: '{Model.Code}'}}";
+}
+
+
+@(Html.Kendo().Grid<CountryAreaViewModel>()
+            .Name("tmkCountryAreasGrid")
+            .Columns(columns =>
+            {
+                columns.Bound(ca => ca.Area).ClientTemplate("#=Area.Area#").Width(400)
+                                        .Editable("tmkCountryPage.isGridColumnEditable")
+                                        .EditorTemplateName("ComboBox")
+                                        .EditorViewData(new
+                                        {
+                                            dataTextField = "Area",
+                                            dataValueField = "AreaID",
+                                            action = "GetAreaList",
+                                            controller = "Area",
+                                            routeValues = new { area = "Trademark", property = "Area" },
+                                            template = "<div class='row combobox-item'><div class='col-sm-2'><span class='k-state-default'>#: data.Area #</span></div><div class='col-sm-5'><span class='k-state-default'>#: data.Description #</span></div></div>",
+                                            headerTemplate = $"<div class='row combobox-header'><div class='col-sm-2'><span>{SharedLocalizer["Area"]}</span></div><div class='col-sm-5'><span>{SharedLocalizer["Description"]}</span></div></div>",
+                                            width = "80",
+                                            onSelect = "function(e) { pageHelper.refreshGridNameField(e, 'Description'); }"
+                                        }
+                                        );
+                columns.Bound(ca => ca.Area.Description)
+                    .HtmlAttributes(new { @class = "d-none d-sm-table-cell name-field" })
+                    .HeaderHtmlAttributes(new { @class = "d-none d-sm-table-cell" });
+                columns.Command(command =>
+                {
+                    if (Model.Permission.CanDeleteRecord)
+                        command.Custom("Delete")
+                                .Click("function(e) {tmkCountryPage.deleteGridRow(e,this)}")
+                                .IconClass("k-icon fal fa-trash-alt")
+                                .Text($"<span class='grid-action-label'>{SharedLocalizer["Delete"]}</span>")
+                                .HtmlAttributes(new { @class = "grid-action" });
+                }).Width(10);
+            })
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+            .ToolBar(toolbar =>
+            {
+                if (Model.Permission.CanAddRecord)
+                {
+                    toolbar.Create().IconClass("k-icon fal fa-plus").Text(SharedLocalizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+                }
+                if (Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+                {
+                    toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(SharedLocalizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                    toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(SharedLocalizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                }
+
+            })
+            .Editable(editable => editable.Enabled(Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+                        .Mode(GridEditMode.InCell).
+                        ConfirmDelete(@SharedLocalizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+            //   .Sortable()
+            //.Scrollable()
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .Batch(true)
+            //.Batch(Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+            .ServerOperation(false)
+            .Model(model =>
+            {
+                model.Id(ca => ca.AreaCtryId);
+                model.Field(ca => ca.Country).DefaultValue(Model.Code);
+                model.Field(ca => ca.Area).DefaultValue(new AreaLookupViewModel() { Area = "" });
+                model.Field(ca => ca.Area.Description).Editable(false);
+                model.Field(ca => ca.Area.Area).Editable(false);
+            })
+            .Read(create => create.Action("AreasRead", "Country").Data(countryParam))
+            .Update(create => create.Action("AreasUpdate", "Country"))
+            .Destroy(create => create.Action("AreaDelete", "Country"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            )
+.HtmlAttributes(new { @class = "kendo-Grid" })
+)

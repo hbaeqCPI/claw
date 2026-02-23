@@ -1,0 +1,84 @@
+﻿@model string
+@using Microsoft.Extensions.Options
+@inject IStringLocalizer<SharedResource> Localizer
+@inject SignInManager<CPiUser> SignInManager
+@inject UserManager<CPiUser> UserManager
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IOptions<CPiIdentitySettings> IdentitySettings
+@inject IAuthorizationService AuthorizationService
+@{
+    var identitySettings = IdentitySettings.Value;
+    //hide if 2FA is required but disabled by user
+    //or if SSO is required
+    var isLocked = User.SSORequired() || User.TwoFactorRequired();
+    var showItem = !isLocked && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.SystemUser)).Succeeded;
+    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+    var user = await UserManager.GetUserAsync(User);    
+    var settings = await Settings.GetSetting();
+    var showNotifications = showItem && (User.GetUserType() != CPiUserType.Attorney || settings.ShowAttorneyNotificationsManager);
+    var isTimeTrackerOn = showItem && settings.IsTimeTrackerOn;
+    var isNotificationOn = showItem && settings.IsNotificationOn;
+}
+<div class="manage-nav sidebar-nav p-3">
+    <ul class="nav nav-pills cpi-nav-vertical flex-column">
+        <li class="nav-item">
+            <a asp-action="Profile" class="nav-link @(Model == ManageNavPages.Profile ? "active" : "")">
+                <span class="fad fa-user-alt fa-fixed-width"></span>@Localizer["Profile"]
+            </a>
+        </li>
+        @if (!(user.CannotChangePassword ?? false))
+        {
+            <li class="nav-item">
+                <a asp-action="ChangePassword" class="nav-link @(Model == ManageNavPages.ChangePassword ? "active" : "")">
+                    <span class="fad fa-unlock-alt fa-fixed-width"></span>@Localizer["Password"]
+                </a>
+            </li>
+        }
+        @if (hasExternalLogins)
+        {
+            <li class="nav-item">
+                <a asp-action="ExternalLogins" class="nav-link @(Model == ManageNavPages.ExternalLogins ? "active" : "")">
+                    <span class="fad fa-user-lock fa-fixed-width"></span>@Localizer["External Logins"]
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a asp-action="TwoFactorAuthentication" class="nav-link @(Model == ManageNavPages.TwoFactorAuthentication ? "active" : "")">
+                <span class="fad fa-mobile-android-alt fa-fixed-width"></span>@Localizer["Two-Factor Authentication"]
+            </a>
+        </li>
+        @if (!isLocked)
+        {
+            <li class="nav-item">
+                <a asp-action="Settings" class="nav-link @(Model == ManageNavPages.Settings ? "active" : "")">
+                    <span class="fad fa-cog fa-fixed-width"></span>@Localizer["Settings"]
+                </a>
+            </li>
+        }
+        @if (showNotifications) 
+        {
+            <li class="nav-item">
+                <a asp-action="Notifications" class="nav-link @(Model == ManageNavPages.Notifications ? "active" : "")">
+                    <span class="fad fa-bell fa-fixed-width"></span>@Localizer["Notifications Manager"]
+                </a>
+            </li>
+        }
+        @if (isTimeTrackerOn)
+        {
+            <li class="nav-item">
+                <a asp-action="TimeTrackers" class="nav-link @(Model == ManageNavPages.TimeTrackers ? "active" : "")">
+                    <span class="fad fa-clock fa-fixed-width"></span>@Localizer["Time Tracker"]
+                </a>
+            </li>
+        }
+        @if (isNotificationOn)
+        {
+            <li class="nav-item">
+                <a asp-action="Alerts" class="nav-link @(Model == ManageNavPages.Alerts ? "active" : "")">
+                    <span class="fad fa-bell-on fa-fixed-width"></span>@Localizer["Alerts"]
+                    <span class="global-message-count badge badge-pill badge-info"></span>
+                </a>
+            </li>
+        }
+    </ul>
+</div>

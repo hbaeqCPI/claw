@@ -1,0 +1,42 @@
+﻿@model ChildQuickEmailViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var qeSetupId = Model.ParentViewModel.QESetupID;
+    var parentId = Model.ParentViewModel.ParentId;
+    var parentTable = Model.ParentViewModel.ParentTable;
+    //var recipientParam = $"{{qeSetupId: {qeSetupId}, parentId: {parentId}, parentTable: '{parentTable}'}}";
+    var recipientParam = $"{{qeSetupId: {qeSetupId}, roleLink: '{Model.RoleLink}', systemType: '{Model.ParentViewModel.SystemType}'}}";
+}
+
+<br />
+<div id="recipientsContainer" class="row">
+    <div class="col-md-12">
+        <h5>@Localizer["Possible Addressee"]</h5>
+        @(Html.Kendo().Grid<QuickEmailRecipientRoleViewModel>()
+            .Name("qeRecipientGrid")
+            .Columns(columns =>
+            {
+                columns.Bound(r => r.SendAs).Width(100).MinScreenWidth(800); ;
+                columns.Bound(r => r.EntityCode).Width(100).MinScreenWidth(1120); ;
+                columns.Bound(r => r.EntityFullName).Width(280).MinScreenWidth(1000); ;
+                columns.Bound(r => r.EntityEmail).Width(280);
+                columns.Bound(r => r.EntityTitle).Width(150).MinScreenWidth(1270); ;
+            })
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
+            .PersistSelection(true)
+            .Events(events => events
+                //.DataBound("quickEmail.onDataBound_Addressee")
+                .Change("quickEmail.onChange_Addressee"))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .PageSize(50)
+                .Read(read => read.Action("RecipientRead","QuickEmail").Data(@recipientParam))
+                .Events(events =>
+                {
+                    events.Error("pageHelper.onGridError");
+                })
+            )
+          .HtmlAttributes(new { @class = "mb-2 kendo-Grid" })
+        )    
+    </div>
+</div>

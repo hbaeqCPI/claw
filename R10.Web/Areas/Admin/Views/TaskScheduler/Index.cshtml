@@ -1,0 +1,25 @@
+﻿@model SidebarPageViewModel
+@using R10.Web.Services
+@inject IStringLocalizer<AdminResource> Localizer
+@inject BackgroundTaskService BackgroundTaskService
+@{
+    ViewData["Title"] = Model.PageTitle;
+    ViewData["ActivePage"] = "taskSchedulerPage";
+    if (!BackgroundTaskService.IsRunning)
+    {
+        ViewData["PageWarningMessage"] = Localizer["The Background Service is not running."].Value;
+    }
+    else if (!TaskSchedulerSettings.Enabled)
+    {
+        ViewData["PageWarningMessage"] = Localizer["The Task Scheduler Service is disabled."].Value;
+    }
+}
+
+@await Html.PartialAsync("_SidebarPage", Model)
+
+@* @section Scripts {
+    <script>
+        var @ViewBag.ActivePage = new ActivePage();
+    </script>
+}
+ *@

@@ -1,0 +1,78 @@
+﻿@model PageViewModel
+@inject ISystemSettings<PatSetting> Settings;
+@inject IStringLocalizer<PatentResource> Localizer
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = Localizer[settings.LabelCaseNumber];
+    var clientLabel = Localizer[settings.LabelClient];
+
+    var gridId = $"{Model.PageId}-SearchGrid";
+
+    var dataKeyValue = ViewData["RecordId"] != null ? ViewData["RecordId"] : 0;
+    var screenCode = ViewData["ScreenCode"] != null ? ViewData["ScreenCode"].ToString() : "";
+}
+
+@(Html.Kendo().Grid<DocumentInventionResultsViewModel>()
+            .Name(gridId)
+            .Columns(columns =>
+            {
+                columns.Bound(i => i.CaseNumber).Title(caseNumberLabel)
+                        .HtmlAttributes(new { @class = "text-nowrap" });
+                columns.Bound(i => i.FamilyNumber)
+                    .HtmlAttributes(new { @class = "text-nowrap" });
+                columns.Bound(i => i.DisclosureStatus);
+                columns.Bound(i => i.InvTitle)
+                    .HtmlAttributes(new { style = "max-width: 200px;", @class = "cut-off" });
+                columns.Bound(i => i.ClientCode).Title(clientLabel);
+            })
+            .AutoBind(false)
+            .Pageable(page => page.PageSizes(true).Refresh(true))
+            .Sortable(sort => sort.AllowUnsort(false))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .Events(events => events.Error("documentPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("documentPage.searchResultGridRequestEnd"))
+                .PageSize(Model.GridPageSize)
+                .Read(read => read.Action("PageRead", "DocInvention").Data("documentPage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(i => i.CaseNumber))
+            )
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+            .Events(events => events
+                .Change("documentPage.loadDocumentTree")
+                .DataBound("function(e) {this.element.find('tbody tr:first').addClass('k-state-selected');}")
+            )
+            .HtmlAttributes(new { @class = "kendo-Grid" })
+    )
+
+<script>
+    $(document).ready(function () {
+        if (@dataKeyValue > 0) {
+            documentPage.initializeSearchResultPage({
+                resultGridId: "#@gridId",
+                screenCode: "@screenCode",
+                defaultRecordId: "@dataKeyValue"
+
+            });
+
+            @*var combobox = $("#ScreenCode_documentSearch").data("kendoComboBox");
+            var len = combobox.dataSource._data.length;
+            if (len > 0) {
+                var i;
+                for (i = 0; i < len; i++) {
+                    if (combobox.dataSource._data[i]["Value"] == '@screenCode') {
+                        combobox.select(i);
+                        combobox.value(combobox.dataSource._data[i]["Value"]);
+                        combobox.trigger("change");
+                        break;
+                    }
+                }
+            }
+            var resultGrid = $('#@gridId').data("kendoGrid");
+            resultGrid.dataSource.read({ keyId:@dataKeyValue}).then(function () { resultGrid.select("tr:eq(1)"); documentPage.loadDocumentTree(this); });*@
+        }
+
+     });
+</script>

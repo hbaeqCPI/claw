@@ -1,0 +1,149 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var responsibleList = (List<SelectListItem>)(ViewData["ResponsibleList"] ?? new List<SelectListItem>());
+    var docNames = (string)(ViewData["DocumentNames"] ?? "");
+    var docList = docNames.Split("|").Where(d => !string.IsNullOrEmpty(d)).ToList();
+    var respType = (DocRespLogType?)(ViewData["ResponsibleType"]);
+    var responsibleTypeLabel = respType == DocRespLogType.Docketing ? "(Docketing)" : respType == DocRespLogType.Reporting ? "(Reporting)" : "";
+
+    var popupTitle = Localizer["Document Responsible " + responsibleTypeLabel];
+    var multiSelectLabel = Localizer["Document(s)"];
+    if (!string.IsNullOrEmpty(Model) && (Model.ToLower().IndexOf("reqid") > -1 || Model.ToLower().IndexOf("dedocketid") > -1))
+    {
+        popupTitle = Localizer["Responsible " + responsibleTypeLabel];
+        multiSelectLabel = Localizer["Item(s)"];
+    }
+}
+<div class="modal fade" id="documentResponsibleDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true"
+     data-label-warning="@Localizer["Please select new responsible to update."]"
+     data-label-duplicate-error="@Localizer["Duplicate responsible in From and To."]">
+    <input type="hidden" id="idSystemTypes" value="@Model" />
+    <input type="hidden" id="respType" value="@respType" />
+
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-1">
+                <h4 class="modal-title">@popupTitle</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body pt-0 mainDocumentResponsibleDialog">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col">
+                            <div id="documentResponsibleContainer" class="record-link-search">
+                                <div class="form-row">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="DocumentNames">@multiSelectLabel</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("DocumentNames")
+                                                .BindTo(docList)
+                                                .Value(docList)
+                                                .Enable(false)
+                                                .ClearButton(false)
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="form-row @(respType == null ? "d-none" : "")">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="oldResponsible">@Localizer["From Responsible " + responsibleTypeLabel]</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("oldResponsible")
+                                                .BindTo(responsibleList)
+                                                .DataTextField("Text")
+                                                .DataValueField("Value")
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row @(respType == null ? "d-none" : "")">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="newResponsible">@Localizer["To Responsible " + responsibleTypeLabel]</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("newResponsible")
+                                                .DataTextField("Name")
+                                                .DataValueField("Id")
+                                                .AutoBind(false)
+                                                .DataSource(source =>
+                                                {
+                                                    source.Read(read =>
+                                                    {
+                                                        read.Action("GetDocResponsibleCombinedList", "DocumentVerification", new { Area = "Shared" });
+                                                    })
+                                                    .ServerFiltering(true);
+                                                })
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row @(respType == null ? "" : "d-none")">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="responsibleDocketing">@Localizer["Responsible (Docketing)"]</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("responsibleDocketing")
+                                                .DataTextField("Name")
+                                                .DataValueField("Id")
+                                                .AutoBind(false)
+                                                .DataSource(source =>
+                                                {
+                                                    source.Read(read =>
+                                                    {
+                                                        read.Action("GetDocResponsibleCombinedList", "DocumentVerification", new { Area = "Shared" });
+                                                    })
+                                                    .ServerFiltering(true);
+                                                })
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row @(respType == null ? "" : "d-none")">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="responsibleReporting">@Localizer["Responsible (Reporting)"]</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("responsibleReporting")
+                                                .DataTextField("Name")
+                                                .DataValueField("Id")
+                                                .AutoBind(false)
+                                                .DataSource(source =>
+                                                {
+                                                    source.Read(read =>
+                                                    {
+                                                        read.Action("GetDocResponsibleCombinedList", "DocumentVerification", new { Area = "Shared" });
+                                                    })
+                                                    .ServerFiltering(true);
+                                                })
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top:none">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                                <button type="button" class="btn btn-primary saveResponsible"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>           
+        </div>
+    </div>
+</div>
+<style>   
+    #DocumentNames_taglist .k-i-x {
+        display: none !important;
+    }
+</style>

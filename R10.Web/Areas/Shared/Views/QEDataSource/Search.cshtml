@@ -1,0 +1,70 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@using R10.Web.Extensions;
+@{
+    if (Context.Request.IsAjax())
+    {
+        Layout = null;
+    }
+    ViewBag.Title = SharedLocalizer["Quick Email Data Source Search"];
+    var searchUrl = Url.Action("Search", "QEDataSource").ToLower();
+    ViewBag.Url = $"{searchUrl}{(!searchUrl.EndsWith("search") ? "/search" : "")}";
+    var screen = "qeDataSourceSearch";
+}
+<form id="qeDataSourceSearchForm" method="post" asp-action="Search">
+    <vc:search-page-buttons can-add="ViewBag.CanAddRecord" title="@ViewData["Title"]"></vc:search-page-buttons>
+    <div class="container-fluid">
+        <div class="row form-group">
+            <div class="col-md-4">
+                <label for="DataSourceName">@SharedLocalizer["Data Source Name"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "DataSourceName", controller = "QEDataSource", area = "Shared", screen = screen })
+            </div>
+            <div class="col-md-4">
+                <label for="ViewName">@SharedLocalizer["View Name"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "ViewName", controller = "QEDataSource", area = "Shared", screen = screen })
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <label for="CreatedBy">@SharedLocalizer["Created By"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy", controller = "Client", area = "Shared", screen = screen })
+            </div>
+            <div class="col-md-4">
+                <label for="DateCreatedFrom">@SharedLocalizer["Date Created"]</label>
+                @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
+            </div>
+            <div class="col-md-4">
+                <label for="DateCreatedTo">@SharedLocalizer["To"]</label>
+                @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
+            </div>
+
+
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <label for="UpdatedBy">@SharedLocalizer["Updated By"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy", controller = "Client", area = "Shared", screen = screen })
+            </div>
+            <div class="col-md-4">
+                <label for="LastUpdateFrom">@SharedLocalizer["Last Update"]</label>
+                @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
+            </div>
+            <div class="col-md-4">
+                <label for="LastUpdateTo">@SharedLocalizer["To"]</label>
+                @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function () {
+        var url = '@ViewBag.Url';
+        var title = '@ViewBag.Title';
+        var searchForm = 'qeDataSourceSearchForm';
+        container = $("#"+searchForm);
+
+        pageHelper.initializeSearchPage(url, title, searchForm);
+        container.find(".cpiButtonsSearch").cpiMainButtons();
+    });
+    var qeDataSourcePage = new ActivePage();
+</script>

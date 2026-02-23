@@ -1,0 +1,17 @@
+﻿@model ChartDTO
+@inject IStringLocalizer<SharedResource> Localizer
+@{  
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-download-history";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;    
+}
+<div class="text-center" style="font-size: 45px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">        
+        @if (!string.IsNullOrEmpty(Model?.Group))
+        {<span>@Model?.Group</span>}
+    </span>
+</div>
+<div class="text-center">
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@Localizer[Model?.Category]</span>
+</div>

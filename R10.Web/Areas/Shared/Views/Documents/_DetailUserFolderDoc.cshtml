@@ -1,0 +1,221 @@
+﻿@model int
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var folderId = Model;
+    var fileSizeLimit = settings.FileUploadSizeLimit;
+
+    var viewTemplate = @"#<a role='button' href='' onclick='return zoomDocument(""#: SystemType #"", ""#: ScreenCode #"", ""#: DocFileName #"", #: ParentId #)' ><span class='#: IconClass #'></span></a>#";
+    var linkTemplate = @"#<a role='button' href='#: DocUrl #' target='_blank')><span class='#: IconClass #'></span></a>#";
+    var noZoomTemplate = "#<span class='#: IconClass #'></span>#";
+    var docTemplate = @"# if (IsDocViewable) { " + viewTemplate + " } else if (IsDocLinkable) { " + linkTemplate + " } else { " + noZoomTemplate + " } #";
+
+    var zoomUrl = @Url.Action("ZoomDocument", "DocViewer", new { fileType = ImageHelper.CPiSavedFileType.DocMgt });
+
+}
+
+<script>
+    function zoomDocument(systemType, screenCode, fileName, parentId) {
+        const url = "@zoomUrl" + "&system=" + systemType + "&screenCode=" + screenCode + "&fileName=" + fileName + "&key=" + parentId;
+        documentPage.zoomDocument(url);
+        return false;
+    }
+</script>
+
+<div>
+    @*<div class="form-row">
+        <div class="col">*@
+            <form cpi-detail-form>
+                @(Html.Kendo().Grid<DocDocumentListViewModel>()
+                        .Name("folderDocGrid")
+
+                        .Columns(column =>
+                        {
+                            column.Bound(doc => doc.DocId).Hidden();
+                            column.Bound(doc => doc.IconClass).Title(" ")
+                               .ClientTemplate(docTemplate).Width(50);
+
+                            column.Bound(doc => doc.DocName)
+                                .HtmlAttributes(new { @class = "cut-off" }).Width(150);
+                            column.Bound(doc => doc.Author)
+                                .HtmlAttributes(new { @class = "cut-off" }).Width(150);
+                            column.Bound(doc => doc.IsPrivate)
+                                .ClientTemplate("<input type='checkbox' class='form-check-input' #=IsPrivate ? 'checked=checked' : '' # disabled ></input>")
+                                .Editable("false")
+                                .HtmlAttributes(new { style = "text-align: center;" }).Width(100);
+                            column.Command(command =>
+                            {
+                                command.Custom("Edit").Click("function(e) {documentPage.editDocument(e,this)}").IconClass("k-icon fal fa-pencil-alt")
+                                        .Text(" ")
+                                        .HtmlAttributes(new { @class = "grid-action" });
+
+                            }).Width(50);
+                            column.Command(command =>
+                            {
+                                command.Custom("Delete")
+                                        .Click("function(e) {documentPage.deleteDocument(e,this)}")
+                                        .IconClass("k-icon fal fa-trash-alt")
+                                        .Text(" ")
+                                        .HtmlAttributes(new { @class = "grid-action" });
+                            }).Width(50);
+
+                        })
+                        .ToolBar(toolbar =>
+                        {
+                            toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { onclick = "documentPage.addDocument()" });
+                        })
+                        .AutoBind(false)
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .Pageable(page => page.PageSizes(true).Refresh(true))
+                        .Scrollable()
+                        .Sortable(sortable => sortable.SortMode(GridSortMode.SingleColumn).ShowIndexes(true))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Read(read => read.Action("GridRead", "DocDocument", new { folderId = folderId }))
+                            .Create(create => create.Action("GridAdd", "DocDocument", new { folderId = folderId }))
+                            .Update(update => update.Action("GridUpdate", "DocDocument"))
+                            .Destroy(update => update.Action("GridDelete", "DocDocument"))
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                            .Sort(sort => sort.Add(doc => doc.DocName))
+                            .PageSize(5)
+                            .Model(model =>
+                            {
+                                model.Field(d => d.IconClass).Editable(false);
+                                model.Field(d => d.Author).Editable(false);
+                                model.Field(d => d.DocName).Editable(false);
+                                model.Field(d => d.IsPrivate).Editable(false);
+                            })
+                        )
+
+                        .Editable(editable => editable
+                            .Enabled(true)
+                            .Mode(GridEditMode.InCell)
+                            .ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                        .HtmlAttributes(new { @class = "k-grid-border" })
+                    )
+            </form>
+        </div>
+        @*</div>*@
+        <div>
+            @*add for drag & drop box*@
+            <div class="drop-zone">
+                <div id="DropZoneDoc">
+                    <div class="dropZoneDocElement" style="width: 100%">
+                        <div class="textWrapper">
+                            @*<p class="dropImageHereText">@Localizer["Drop files here \n (no more than 7MB per document, 30MB in total)"]</p>*@
+                            <p class="dropImageHereText">@Localizer["Drop files here"]</p>
+                        </div>
+                    </div>
+                    <div id="UploadZoneDoc" style="width: 100%">
+                        @(Html.Kendo().Upload()
+                                .Name($"droppedDocs")
+                                .Async(a => a
+                                        .Save("SaveDocuments", "DocDocument",new { folderId = folderId})
+                                        .AutoUpload(true)
+                                        .Batch(true)
+                                    )
+                                .DropZone($".dropZoneDocElement")
+                                .ShowFileList(true)
+                                .Validation(validation => validation.AllowedExtensions(settings.ValidImageFileExtensions).MaxFileSize(fileSizeLimit))
+                                .Multiple(true)
+                                .Events(e=> e.Error("documentPage.onUploadDocFail").Success("documentPage.refreshFolderAfterUpload"))
+                        )
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*<div class="form-row pt-2" style="font-size: small">
+        <div class="col">
+            @(Html.Kendo().Upload()
+                    .Name("droppedFiles")
+                    .Messages(m => m.Select(Localizer["Select a file to upload..."]).DropFilesHere(Localizer["Drop file here to upload"]))
+                    .Async(a => a
+                        .Save("SaveUploadedDocument", "DocDocument")
+                            .AutoUpload(true)
+                        )
+                        .ShowFileList(false)
+                        .Validation(validation =>
+                        {
+                            validation.MaxFileSize(fileSizeLimit);
+                        })
+
+                        .Multiple(false) // limit upload to one file at a time
+                        .Events(e => e.Upload("function(e) { e.data = documentPage.getUploadFilter(" + folderId + ");}")
+                                        .Success("function(e) { documentPage.refreshFolderAfterUpload(e); }")
+                                        .Error("function(e) { pageHelper.showErrors(e); }"))
+
+                    )
+
+            </div>
+        </div>
+
+    </div>*@
+
+<style>
+    #folderDocGrid .k-grid-content {
+        min-height: 100px;
+        max-height: 200px;
+    }
+
+    .dropZoneDocElement {
+        position: relative;
+        display: inline-block;
+        background-color: #f8f8f8;
+        border: 1px solid #c7c7c7;
+        width: 100%;
+        height: 70px;
+        text-align: center;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 24px;
+        font-family: Arial,Helvetica,sans-serif;
+        color: #000;
+    }
+
+    .dropImageHereText {
+        /*color: #c7c7c7;*/
+        color: black;
+        text-transform: uppercase;
+        font-size: 12px;
+        white-space: pre-line;
+    }
+
+    #UploadZoneDoc .k-dropzone {
+        display: none;
+    }
+
+    div.k-dropzone {
+        border: 1px solid silver;
+    }
+
+    div.k-dropzone {
+        border: 1px solid silver;
+    }
+
+       /* div.k-dropzone em {
+            display: block !important;
+            visibility: visible !important;
+            text-align: right;
+            transform: translateY(-100%)
+        }
+
+    .k-button .k-clear-selected, .k-upload .k-clear-selected, .k-upload .k-upload-selected {
+        width: 25% !important;
+    }*/
+</style>
+

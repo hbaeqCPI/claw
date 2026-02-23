@@ -1,0 +1,11 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+<li class="nav-item">
+    <a class="nav-link active show" id="documentVerificationSearchCaseInfoTab" data-toggle="tab" aria-selected="true" href="#documentVerificationSearchCaseInfoTabContent" role="tab" aria-controls="documentVerificationSearchCaseInfoTabContent" title="@Localizer["Main Criteria"]">@Localizer["Main Criteria"]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" id="documentVerificationSearchEntitiesTab" data-toggle="tab" aria-selected="false" href="#documentVerificationSearchEntitiesTabContent" role="tab" aria-controls="documentVerificationSearchEntitiesTabContent" title="@Localizer["Entities"]">@Localizer["Entities"]</a>
+</li>

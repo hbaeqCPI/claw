@@ -1,0 +1,30 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<LetterSubCategory>()
+                    .Name($"{Model.PageId}-Grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(m => m.LetSubCat).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: LetSubCatId#", fromSearch = true }), "LetSubCat")).Width(200);
+                        columns.Bound(m => m.LetSubCatDesc);
+                    })
+                    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                    .AutoBind(false)
+                    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .Excel(excel => excel.FileName("LetterSubCategoryList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "LetterSubCategory")))
+                    .DataSource(dataSource => dataSource
+                    .Ajax().Events(events => events.Error("letterSubCategoryPage.searchResultGridError"))
+                    .Events(events => events.RequestEnd("letterSubCategoryPage.searchResultGridRequestEnd"))
+                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                    .Read(read => read.Action("PageRead", "LetterSubCategory")
+                    .Data("letterSubCategoryPage.gridMainSearchFilters")
+                    )
+                    .Sort(sort => sort.Add(m => m.LetSubCat))
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

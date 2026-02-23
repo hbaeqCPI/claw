@@ -1,0 +1,75 @@
+﻿@model ImageSearchViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var parentIdParam = $"{{docLibrary: '{Model.SharePointDocLibrary}',docLibraryFolder: '{Model.SharePointDocLibraryFolder}',recKey:'{Model.SharePointRecKey}',parentId: {Model.ParentId}}}";
+    var settings = await Settings.GetSetting();
+}
+
+<div class="form-row">
+    <input type="hidden" id="TreeNodeId" name="TreeNodeId" />
+    <input type="hidden" id="FromTreeView" name="FromTreeView" />
+
+    @*<input type="hidden" id="FolderId" name="FolderId" />
+    <input type="hidden" id="DocId" name="DocId" />
+    <input type="hidden" id="ScreenCode" name="ScreenCode" />
+    <input type="hidden" id="ParentId" name="ParentId" />*@
+   @* <div class="col">
+        <div class="form-group float-label">
+            <label for="ImagesLinks">@Localizer["Title"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "DocName", action = "GetImageSearchData", controller = Model.Controller, textProperty = "DocName", valueProperty = "DocName", data = parentIdParam })
+        </div>
+    </div>*@
+    <div class="col">
+        <div class="form-group float-label">
+            <label for="ImagesLinks">@Localizer["File name"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "Name", area="Shared", action = "GetImageSearchData", controller = "SharePointGraph", textProperty = "Name", valueProperty = "Name", data = parentIdParam })
+        </div>
+    </div>
+    <div class="col">
+        <div class="form-group float-label">
+            <label for="ImagesLinks">@Localizer["Tag"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "Tag", action = "GetImageSearchData", controller = Model.Controller, textProperty = "Tag", valueProperty = "Tag", data = parentIdParam })
+        </div>
+    </div>
+    @*<div class="col">
+        <div class="form-group float-label">
+            <label for="ImagesLinks">@Localizer["Image Type"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "DocTypeName", action = "GetImageSearchData", controller = Model.Controller, textProperty = "DocTypeName", valueProperty = "DocTypeName", data = parentIdParam })
+        </div>
+    </div>*@
+    @if (!settings.IsSharePointIntegrationByMetadataOn)
+    {
+        <div class="col">
+            <div class="form-group float-label">
+                <label for="ImagesLinks">@Localizer["Folder"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "Folder", area="Shared",action = "GetImageSearchData", controller = "SharePointGraph", textProperty = "Folder", valueProperty = "Folder", data = parentIdParam })
+            </div>
+        </div>
+    }
+    
+    @if (Model.HasScreenSource)
+    {
+       @* <div class="col">
+            <div class="form-group float-label">
+                <label for="ImagesLinks">@Localizer["Source Screen"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "ScreenCode", action = "GetImageSearchData", controller = Model.Controller, textProperty = "ScreenCode", valueProperty = "ScreenCode", data = parentIdParam })
+            </div>
+        </div>*@
+    }
+    <div class="col">
+        <div class="form-group float-label">
+            <div class="form-group float-label">
+                <label for="DateCreatedFrom">@Localizer["Last Modified From"]</label>
+                @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateModifiedFrom") )
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="form-group float-label">
+            <label for="DateCreatedTo">@Localizer["Last Modified To"]</label>
+            @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateModifiedTo"))
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,243 @@
+﻿@model SystemSettingsViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    //ViewData["Title"] = "Settings";
+    var title = ViewData["Title"].ToString();
+    var container = ViewData["PageId"].ToString();
+
+    if ((bool?)ViewData["ShowGlobalBadge"] ?? false)
+    {
+        title += $"<span class='ml-2 badge badge-secondary'>{Localizer["Global"].ToString()}</span>";
+    }
+}
+
+@await Component.InvokeAsync("ConfirmDialog")
+@await Component.InvokeAsync("LoadingSpinner")
+
+<style>
+    .system-settings label {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .system-settings .list-group {
+        list-style-type: none;
+    }
+
+        .system-settings .list-group li {
+            padding: 10px 0 10px 0;
+        }
+    .d-flex .toggle-switch {
+        margin-top: 0;
+    }
+</style>
+
+<div class="page-content">
+     @*todo: use page status*@
+@*     <div id="statusMessage" class="alert page-status alert-dismissible alert-danger collapse mb-4" role="alert">
+        <button type="button" class="close" data-hide="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <span class="message">&nbsp;</span>
+    </div> *@
+
+    <div class="row system-settings">
+        @await Html.PartialAsync(Model.ActivePartialViewName)
+    </div>
+</div>
+<script>
+    function saveSystemStatus(el) {
+        const statusType = $("#SystemStatus").data("kendoDropDownList").value();
+        const showNotification = $("#ShowNotification").is(":checked");
+        const message = $("#SystemStatus_Notification_Message");
+
+        if (showNotification && !message.val().trim()) {
+            showStatus(message.data("val-required"), false);
+            message.focus();
+        }
+        else {
+            cpiConfirm.confirm($(el).data("confirm-title"), $(el).data("confirm-msg"), function () {
+                saveSetting("", "@CPiSettings.SystemStatus", `{ StatusType: ${statusType}, Notification: { Active: ${showNotification}, Message: "${message.val()}"} }`, 
+                function() {
+                    cpiLoadingSpinner.show();
+                    setTimeout(function (){
+                        location.reload();
+                    }, 1000);
+                });
+            });
+        }
+    }
+
+    function saveCookieConsent(el) {
+        const showCookie = $("#ShowCookieConsent").is(":checked");
+        const message = $("#CookieConsent_Message");
+
+        if (showCookie && !message.val().trim()) {
+            showStatus(message.data("val-required"), false);
+            message.focus();
+        }
+        else {
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+            const localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1);
+            
+            cpiConfirm.confirm($(el).data("confirm-title"), $(el).data("confirm-msg"), function () {
+                saveSetting("", "@CPiSettings.CookieConsent", `{ Active: ${showCookie}, Message: "${message.val()}", ActiveFrom: "${localISOTime}"}`);
+            });
+        }
+    }
+
+    function saveActionIndicator(e) {
+        var el = e.target ? $(e.target) : $(this.element);
+        var indicators = el.closest(".indicators");
+        var data = {};
+        
+        data.Enabled = indicators.find("input[name=Enabled]").is(':checked');
+        data.Colors = indicatorColors(indicators.find(".indicator"));
+
+        saveSetting("", "@CPiSettings.ActionIndicator", JSON.stringify(data), undefined, undefined, false, false);
+    }
+
+    function indicatorColors(indicators) {        
+        var colors = {};
+
+        indicators.each(function() {
+            var key = $(this).data("key");
+            colors[key] = $(`#${key}`).data("kendoColorPicker").value();
+        })
+
+        return colors;
+    }
+
+    function saveDeDocketFields(e) {
+        var el = e.target ? $(e.target) : $(this.element);
+        var deDocketFields = el.closest(".deDocketFields");
+        var screens = deDocketFields.find("ul");
+        var data = {};
+        
+        var undo = function () {
+            el.prop("checked", !el.is(':checked'));
+        };
+
+        screens.each(function () {
+            var screen = $(this).data("screen");
+            var fields = $(this).find("li");
+            var obj = {};
+
+            fields.each(function () {
+                var field = $(this).data("field");
+                var val = $(this).find(".toggle-option").is(':checked');
+                
+                obj[field] = val;
+            });
+            data[screen] = obj;
+        });
+
+        saveSetting("", "@CPiSettings.DeDocketFields", JSON.stringify(data), undefined, undo, false, false);
+    }
+
+    function saveInventionDisclosureStatus(e) {
+        var el = e.target ? $(e.target) : $(this.element);
+        var statuses = el.closest(".statuses");
+        var data = {};
+
+        data.Enabled = statuses.find("input[name=Enabled]").is(':checked');
+        data.Colors = indicatorColors(statuses.find(".status"));
+
+        saveSetting("", "@CPiSettings.InventionDisclosureStatus", JSON.stringify(data), undefined, undefined, false, false);
+    }
+
+    function indicatorColors(indicators) {
+        var colors = {};
+
+        indicators.each(function() {
+            var key = $(this).data("key");
+            colors[key] = $(`#${key}`).data("kendoColorPicker").value();
+        })
+
+        return colors;
+    }
+
+    function saveSetting(systemId, settingName, setting, callback, errorCallback, showMessage = true, refresh = true) {
+        cpiLoadingSpinner.show();
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action("Save", "Settings")",
+            data: { systemId: systemId, settingName: settingName, setting: setting, refresh: refresh },
+            dataType: "json",
+            success: function (data) {
+                cpiLoadingSpinner.hide();
+
+                if (showMessage) 
+                    showStatus(data.message, data.success ? null : false);
+
+                if (callback !== undefined)
+                    callback();
+            },
+            error: function (error) {
+                cpiLoadingSpinner.hide();
+                showStatus(error.responseText, false);
+
+                if (errorCallback !== undefined)
+                    errorCallback();
+            }
+        });
+    }
+
+    function toggleMessageTextArea() {
+        $("#SystemStatus_Notification_Message").prop("disabled", !$("#ShowNotification").is(":checked"));
+        $("#CookieConsent_Message").prop("disabled", !$("#ShowCookieConsent").is(":checked"));
+    }
+
+    function showStatus(message, errors, alertId) {
+        alertId = alertId == null ? "statusMessage" : alertId;
+
+        $(`#${alertId} ul`).remove();
+        $(`#${alertId} .message`).text(message);
+
+        if (errors == null || errors.length == 0) {
+            $(`#${alertId}`).addClass("alert-success");
+            $(`#${alertId}`).removeClass("alert-danger");
+            //$(`#${alertId} i`).addClass("fa-check-circle");
+            //$(`#${alertId} i`).removeClass("fa-exclamation-triangle");
+        }
+        else {
+            $(`#${alertId}`).addClass("alert-danger");
+            $(`#${alertId}`).removeClass("alert-success");
+            //$(`#${alertId} i`).addClass("fa-exclamation-triangle");
+            //$(`#${alertId} i`).removeClass("fa-check-circle");
+
+            if (errors.length != undefined && errors[0] != "") {
+                var list = $(`#${alertId}`).append("<ul class='pt-4 errors'></ul>").find("ul");
+                for (var i = 0; i < errors.length; i++) {
+                    if (errors[i] != "") {
+                        list.append(`<li>${errors[i]}</li>`);
+                    }
+                }
+            }
+        }
+
+        $(`#${alertId}`).show();
+    }
+
+    $(document).ready(function () {
+        const container = "#@container";
+        const sidebar = pageHelper.initializeSidebarPage(`${container} .page-sidebar`, `${container} .page-main`);
+        pageHelper.moveBreadcrumbs(container);
+        window.cpiBreadCrumbs.addNode({
+            name: container,
+            label: "@Html.Raw(title)",
+            url: "",
+            updateHistory: true
+        });
+
+        toggleMessageTextArea();
+
+        $(".system-settings").on("click", "#SaveStatus", function (e) {
+            saveSystemStatus(this);
+        });
+        $(".system-settings").on("click", "#ShowNotification", toggleMessageTextArea);
+
+        $(".system-settings").on("click", "#SaveCookieConsent", function (e) {
+            saveCookieConsent(this);
+        });
+        $(".system-settings").on("click", "#ShowCookieConsent", toggleMessageTextArea);
+    })
+</script>

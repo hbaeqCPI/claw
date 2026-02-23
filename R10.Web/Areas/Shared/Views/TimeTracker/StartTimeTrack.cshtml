@@ -1,0 +1,65 @@
+﻿@model TimeTrackerPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+}
+
+<div class="modal fade" id="timeTrackAttorneyDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="StartTimeTrackPost" id="timeTrackAttorneyForm"
+                  data-success="@Localizer["Time Track started successfully."]">
+                <div class="modal-header">
+                    <h4 class="modal-title">@Localizer["Please select attorneys to track"]</h4>
+
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="SystemType" />
+                        <input type="hidden" id="AttorneyIds" asp-for="AttorneyIds" />
+                        @foreach(var attorney in Model.Attorneys)
+                        {
+                            <div class="row">
+                                <div class=" custom-control custom-checkbox">
+                                    <input type="checkbox" class="AttorneyCheckBox" data-id="@(string.IsNullOrEmpty(attorney.UserId)?attorney.AttorneyId.ToString():attorney.UserId)" checked="@attorney.Default" />
+                                    @if (string.IsNullOrEmpty(attorney.UserId))
+                                    {
+                                        <label>
+                                            @attorney.AttorneyPosition - @attorney.AttorneyCode - @attorney.AttorneyName
+                                        </label>
+                                    }else{
+                                        <label>
+                                            @attorney.AttorneyPosition - @attorney.UserName
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    function GetSelectedAttorneyIds() {
+        var attorneyIds = document.getElementById("AttorneyIds");
+        var result = "";
+        $("#timeTrackAttorneyDialog").find(".AttorneyCheckBox").each(function () {
+            if (this.checked) {
+                result += $(this).data("id") + "|";
+            }
+        });
+        attorneyIds.value = result.substring(0, result.length -1);
+    }
+</script>

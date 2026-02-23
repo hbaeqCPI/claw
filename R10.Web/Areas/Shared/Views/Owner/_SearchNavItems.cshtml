@@ -1,0 +1,27 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    
+    var ownerLabel = settings.LabelOwner;
+
+    var customFieldsLabel = settings.AuxCustomFieldsTabLabel;
+}
+<li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" id="ownerSearchMainTab" href="#ownerSearchMainTabContent" role="tab" aria-controls="ownerSearchMainTabContent" aria-selected="true">@SharedLocalizer[ownerLabel]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="ownerSearchAddressTab" href="#ownerSearchAddressTabContent" role="tab" aria-controls="ownerSearchAddressTabContent" aria-selected="false">@SharedLocalizer["Address"]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="ownerSearchPOBoxTab" href="#ownerSearchPOBoxTabContent" role="tab" aria-controls="ownerSearchPOBoxTabContent" aria-selected="false">@SharedLocalizer["PO Box"]</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-toggle="tab" id="ownerSearchOtherInfoTab" href="#ownerSearchOtherInfoTabContent" role="tab" aria-controls="ownerSearchOtherInfoTabContent" aria-selected="false">@SharedLocalizer["Other Info"]</a>
+</li>
+@if (settings.IsShowCustomFieldOn)
+{
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" id="ownerSearchCustomFieldsTab" href="#ownerSearchCustomFieldsTabContent" role="tab" aria-controls="ownerSearchCustomFieldsTabContent" aria-selected="false">@SharedLocalizer[customFieldsLabel]</a>
+    </li>
+}

@@ -1,0 +1,41 @@
+﻿@model string
+@{
+    var id = ViewData["id"].ToString();
+    //var linkUrl = Url.Action("DetailLink", "Attorney", new
+    //{
+    //    Area = "Shared",
+    //    id = "actualValue"
+    //});
+
+    //var headerTemplate = "<div class='row border-bottom'><div class='col-md-3 mt-2 mb-2'><span>&nbsp;&nbsp;Code</span></div><div class='col-md-5 mt-2 mb-2'><span>Name</span></div></div>";
+    var template = ComboBoxHelper.GetItemTemplate("AttorneyCode", "AttorneyName");
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                .DataTextField("AttorneyCode")
+                .DataValueField("AttorneyCode")
+                .ValuePrimitive(true)
+                .AutoBind(true)
+                .DataSource(source =>
+                {
+                    source.Read(read =>
+                    {
+                        read.Action("GetAttorneyList", "Attorney", new { area = "Shared", property = "AttorneyCode" });
+                    })
+                    .ServerFiltering(true);
+                })
+                .Template(template)
+                .HtmlAttributes(new { style = "width: 90%", id = @id})
+)
+@*<button type="button" class="btn btn-link">
+        <i class="fal fa-search-plus btn-link cpiDetailsLink" id="@id" data-source="@id" data-url="@linkUrl"></i>
+</button>*@
+<style>
+        @@media screen and (min-width: 576px) {
+            #@(id)-list {
+                width: 300px !important;
+            }
+        }
+</style>
+
+
+

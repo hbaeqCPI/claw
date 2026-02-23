@@ -1,0 +1,23 @@
+﻿@model string
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var groupId = (int)ViewData["GroupId"];
+    var headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Name"], @Localizer["Email"]);
+    var template = ComboBoxHelper.GetItemTemplate("Name", "Email");
+}
+@(Html.Kendo().DropDownListFor(m => m)
+    .HtmlAttributes(new { 
+        style = $"width: 450px;", 
+        //data_val_required = Localizer["The User field is required."].ToString() //data_val_required will trigger default validation
+    })
+    .DataValueField("Id")
+    .DataTextField("Name")
+    .Template(template)
+    .HeaderTemplate(headerTemplate)
+    .AutoBind(false)
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Read(read => read.Action("GroupUsers", "Group", new { area = "Admin", groupId = groupId }).Data("groupUsersReadData"))
+    )
+    .Events(e=> e.Change("groupUsersOnChange"))
+)

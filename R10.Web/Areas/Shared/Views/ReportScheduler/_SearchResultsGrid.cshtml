@@ -1,0 +1,54 @@
+﻿@using R10.Web.Areas.Shared.ViewModels.ReportScheduler
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailsUrl = Url.Action("Detail", "ReportScheduler", new { taskId = "#: TaskId#" });
+    var detailsAddUrl = Url.Action("Detail", "ReportScheduler", new { taskId = 0 });
+    var detailsLinkTemplate = $"<a href={detailsUrl} class='details-link' >#: Name#</a>";
+}
+
+@(Html.Kendo().Grid<RSMainDetailViewModel>()
+                            .Name($"{Model.PageId}-Grid")
+                            .Columns(columns =>
+                            {
+                                columns.Bound(p => p.Name)
+                                            .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", "ReportScheduler", new { id = "#: TaskId#", fromSearch = true }), "Name"))
+                                                                        .HtmlAttributes(new { @class = "name-field" });
+                                columns.Bound(p => p.NextRunTime)
+                                      .HtmlAttributes(new { @class = "name-field" });
+                                columns.Bound(p => p.CreatedBy)
+                                      .HtmlAttributes(new { @class = "name-field" });
+                                columns.Bound(p => p.DateCreated)
+                                      .HtmlAttributes(new { @class = "name-field" }).Format("{0:dd-MMM-yyyy hh:mm tt}");
+                            })
+                            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                            .ToolBar(toolbar =>
+                            {
+                                //toolbar.Custom().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @href = detailsAddUrl/*"RedirectToScheduleDetail"*/ });
+                            })
+                            .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                            .Sortable(sort => sort.AllowUnsort(false))
+                            .DataSource(dataSource => dataSource
+                                .Ajax()
+                                .Batch(true)
+                                .Model(model =>
+                                {
+                                    model.Id(s => s.TaskId);
+                                    model.Field(s => s.Name).Editable(false);
+                                    model.Field(s => s.NextRunTime).Editable(false);
+                                    model.Field(s => s.CreatedBy).Editable(false);
+                                    model.Field(s => s.DateCreated).Editable(false);
+                                    model.Field(s => s.TaskCreatorId);
+                                })
+                                .Read(read => read.Action("PageRead", "ReportScheduler").Data("ReportSchedulerPage.gridMainSearchFilters"))
+                                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                                .Sort(sort => sort.Add(i => i.Name))
+                                .Events(events =>
+                                {
+                                    events.Error("pageHelper.onGridError");
+                                })
+                            )
+                            .HtmlAttributes(new { @class = "k-grid-border" })
+)

@@ -1,0 +1,1144 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> PatSettings
+@inject ISystemSettings<TmkSetting> TmkSettings
+@inject ISystemSettings<GMSetting> GMSettings
+@inject IAuthorizationService AuthService
+@{
+    ViewData["Title"] = Localizer["Dashboard"].ToString();
+    var canAccessCustomQuery = User.IsInRoles(CPiPermissions.CustomQuery);
+    var deleteConfirmation = Html.Raw(Localizer["Delete the widget will delete this widget in other users dashboard too. Please confirm if you still want to delete it."].ToString());
+
+}
+<script src="~/lib/jquery/jquery.waypoints.min.js"></script>
+<script src="~/lib/jquery/inview.min.js"></script>
+
+<div class="widgetCategories form-row">
+    @foreach(var category in WidgetCategory.Categories.OrderBy(c => c.SortOrder))
+    {
+        if(!category.DisplayName.Equals("My Widgets") || canAccessCustomQuery)
+        {
+            <div class="form-group">
+            <input id="@category.Name" type="radio" name="widgetCat" value="@category.Id" @(category.Id == WidgetCategory.DefaultCategoryId ? "checked" : "") />
+            <label class="widgetCatLbl" for="@category.Name"><i class="@category.Icon widgetCatIcon"></i>@Localizer[category.DisplayName]</label>
+        </div>
+        }
+    }
+
+    <div class="form-group">
+        <nav class="nav">
+            <a id="exportPPTWidgets" class="nav-link" href="#" role="button"><i class="fal fa-file-powerpoint pr-2"></i>@Localizer["Export Widgets"]</a>
+        </nav>
+    </div>
+
+    <div class="form-group">
+        <nav class="nav">
+            <a id="removeWidgets" class="nav-link" href="#" role="button"><i class="fal fa-minus pr-2"></i>@Localizer["Clear Widgets"]</a>
+        </nav>
+    </div>
+
+    <div class="form-group">
+        <nav class="nav">
+            <a id="addWidgetPopup" class="nav-link" href="#" role="button"><i class="fal fa-plus pr-2"></i>@Localizer["Add Widget"]</a>           
+        </nav>
+    </div>
+</div>
+
+<div id="dashboard">
+</div>
+@(Html.Kendo().Sortable()
+    .Name("DashboardSortable")
+    .For("#dashboard")
+    //.Filter(">div")
+    .Filter(".widget")
+    .Handler(".widget-title")
+    .Ignore(".non-sortable, .non-sortable *")
+    //.Cursor("move")
+    .PlaceholderHandler("widgetPlaceholder")
+    .HintHandler("widgetHint")
+    .Events(e => e.Change("widgetsOnChange"))
+)
+
+<div class="cpiContainerPopup"></div>
+<script>    
+    var widgetCopy = {};
+    var refreshWidgetCopy = false;
+    var widgetCopyTempSetting = "";
+
+    var catWidgetList = [];
+    var widgetList = [];
+
+    var widgetCategory = $(':radio[name=widgetCat]:checked').val();
+
+    $(window).resize(function () {
+        kendo.resize($("div.k-chart[data-role='chart']"));
+    });    
+
+    function loadWidget(id, queueNext) {
+        if (id != null && $(`#${id}`).length > 0) {
+            //var title = $(`#${id}`).find(".widget-title").text().trim();
+            //kendo.alert(`${title} already exists.`);
+            return;
+        }
+
+        var $widget = $("<div>", { id: id, "class": "widget" });
+        $widget.html("<div class='widget-spinner text-center'><h4><span>Loading</span><i class='ml-2 fa fa-circle-notch fa-spin'></i></h4></div><div class='widget-container'></div>");
+
+        $("#dashboard").append($widget);
+        
+        var inview = new Waypoint.Inview({
+            element: $widget,
+            enter: function (direction) {
+                if (!$widget.hasClass("loaded")) {
+                    $widget.addClass("loaded");
+
+                    $.ajax({
+                        type: "POST",
+                        url: "@Url.Action("GetWidget", "Dashboard")",
+                        data: { id: id, queueNext: queueNext, widgetCategory: widgetCategory},
+                        dataType: "html",
+                        success: function (data) {
+                            var $container = $widget.find(".widget-container");
+                            $widget.find(".widget-spinner").hide();
+
+                            if (id == null) {
+                                $container.hide();
+                            }
+
+                            if (data.trim()) {
+                                $container.empty();
+                                $container.show();
+                                $container.append(data);
+                            }
+                            else {
+                                $widget.remove();
+                            }
+
+                            if (id == null) {
+                                $widget.attr("id", $widget.find(".widget-content").data("id"));
+                            }
+
+                            checkSettings($widget);
+
+                            var nextId = $widget.find(".widget-content").data("next-id");
+                            if (nextId != null) {
+                                loadWidget(nextId, true);
+                            }
+                        },
+                        error: function (data) {
+                            $widget.remove();
+                            if (id != null) {
+                                kendo.alert("@Localizer["Unable to load widget. Please try again."]");
+                            }
+                        }
+                    });
+                }
+            },
+            enable: false
+        });
+    }
+
+    function widgetPlaceholder(element) {
+        return element.clone().addClass("widget-placeholder");
+    }
+
+    function widgetHint(element) {
+        return element.clone().addClass("widget-hint")
+            .height(element.height())
+            .width(element.width());
+    }
+
+    function widgetsOnChange(e) {
+        var widget = e.item;
+        var id = widget.attr("id");
+        var newIndex = e.newIndex;
+        var oldIndex = e.oldIndex;;
+
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action("SortUserWidget", "Dashboard")",
+            data: { userWidgetId: id, newIndex: newIndex, widgetCategory: widgetCategory },
+            dataType: "json",
+            success: function (response) {
+                if (!response.success) {
+                    kendo.alert(response.message);
+                }
+            },
+            error: function (response) {
+                kendo.alert("@Localizer["Unable to sort widgets. Please try again."]");
+            }
+        });
+    }
+        
+    function checkSettings(widget) {
+        var settings = widget.find(".widget-settings");
+        if (settings.length) {
+            settings.hide();
+        } else {
+            widget.find(".widget-header .settings").remove();
+        }
+
+        var widgetCopyPopup = $("#widgetCopyDialog");
+        var dashboardSettingPopup = $("#dashboardSettingDialog");
+
+        if (widgetCopyPopup.length === 0 && dashboardSettingPopup.length === 0) {
+            var view = widget.find(".widget-header .view")
+            if (view != null) {
+                if (widget.hasClass("double-width")) {
+                    view.addClass("fa-compress-alt");
+                    view.removeClass("fa-expand-alt");
+                    view.attr("title", "Compress view");
+                }
+            }
+        }
+
+        applyChartOptions(widget);
+    }    
+       
+    function saveSetting(id, setting, successCallback, errorCallback) {        
+        var widgetCopyPopup = $("#widgetCopyDialog");
+        var dashboardSettingPopup = $("#dashboardSettingDialog");
+        if (widgetCopyPopup.length > 0) {
+            let widgetSetting = widgetCopy.Setting;
+            if (widgetSetting) {
+                let newSetting = eval('(' + setting + ')');
+                let savedSetting = eval('(' + widgetSetting + ')');
+
+                var mergedSetting = Object.assign(savedSetting, newSetting);
+                if (mergedSetting) {
+                    widgetCopy.Setting = JSON.stringify(mergedSetting);
+                }
+            }
+            else {
+                if (widgetCopyTempSetting > "") {
+                    let newSetting = eval('(' + setting + ')');
+                    let savedSetting = eval('(' + widgetCopyTempSetting + ')');
+
+                    var mergedSetting = Object.assign(savedSetting, newSetting);
+                    if (mergedSetting) {
+                        widgetCopy.Setting = JSON.stringify(mergedSetting);
+                    }
+                }
+                else {
+                    widgetCopy.Setting = setting;
+                }                
+            }
+            widgetCopyTempSetting = widgetCopy.Setting;            
+
+            if (successCallback && typeof successCallback === "function") {
+                successCallback();
+            }
+
+            if (widgetSetting != widgetCopy.Setting) {
+                refreshWidgetCopy = true;
+            }
+            else {
+                refreshWidgetCopy = false;
+            }
+        }
+        else if (dashboardSettingPopup.length > 0) {
+            var widgetPreview = $("#" + id);
+            if (widgetPreview.length > 0) {
+                if (widgetList.filter(d => d.Id === id).length > 0) {
+                    let widget = widgetList.filter(d => d.Id === id);
+                    let widgetSetting = widget[0].Setting;
+                    let objIndex = widgetList.findIndex(d => d.Id == id);
+
+                    if (widgetSetting) {
+                        let newSetting = eval('(' + setting + ')');
+                        let savedSetting = eval('(' + widgetSetting + ')');
+
+                        var mergedSetting = Object.assign(savedSetting, newSetting);
+                        if (mergedSetting) {
+                            widgetList[objIndex].Setting = JSON.stringify(mergedSetting);
+                        }
+                    }
+                }
+                else {
+                    let widget = { Id: id, Setting: setting, Title: null };
+                    widgetList.push(widget);
+                }
+
+                if (successCallback && typeof successCallback === "function") {
+                    successCallback();
+                }
+            }
+        }
+        else {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("SaveSetting", "Dashboard")",
+                data: { id: id, setting: setting },
+                dataType: "json",
+                success: function (data) {
+                    if (successCallback && typeof successCallback === "function") {
+                        successCallback();
+                    }
+                },
+                error: function (data) {
+                    if (errorCallback && typeof errorCallback === "function") {
+                        errorCallback();
+                    }
+                }
+            });       
+        }
+    };
+
+    function getWidgetTempSetting(widgetId) {
+        var widgetCopyPopup = $("#widgetCopyDialog");
+        var dashboardSettingPopup = $("#dashboardSettingDialog");
+        var tempSettings = "";
+        if (widgetCopyPopup.length > 0) {
+            tempSettings = widgetCopyTempSetting;
+        }
+        else if (dashboardSettingPopup.length > 0) {
+            if (widgetList && widgetList.length > 0 && widgetList.filter(d => d.Id === widgetId).length > 0) {
+                let widget = widgetList.filter(d => d.Id === widgetId);
+                tempSettings = widget[0].Setting;
+            }
+        }
+
+        return { tempSettings: tempSettings };
+    }
+
+    function handleSPFileDownload(event) {
+        event.preventDefault();
+        const baseUrl = $("body").data("base-url");
+        const sharePointURL = `${baseUrl}/Graph/SharePoint`;
+        var retry = 0;
+        
+        downloadFile();
+
+        function downloadFile() {            
+            fetch(event.target.href)
+                .then(response => {
+                    if (!response.ok) {
+                        if ((response.url.indexOf("/Graph/SharePoint") > -1 || response.status == 401) && retry < 3) {
+                            retry++;                            
+                            sharePointGraphHelper.getGraphToken(sharePointURL, () => {
+                                downloadFile();
+                            });
+                        }
+                        else {
+                            throw new Error(response.statusText);
+                        }
+                    }
+                    else {
+                        return response.blob();
+                    }                    
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = event.target.download;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                })
+                .catch(error => {  
+                    if (error && error.status && error.status == 401 && retry < 3) {
+                        retry++;
+                        sharePointGraphHelper.getGraphToken(sharePointURL, () => {
+                            downloadFile();
+                        });
+                    }
+                    else {
+                        pageHelper.showErrors(error.responseText);
+                    }
+                });
+        }
+    }
+
+    function applyChartOptions(widget) {
+        if (!widget || widget.length === 0) {
+            return;
+        }
+
+        var chartElement = widget.find("div.k-chart[data-role='chart']");
+
+        if (!chartElement || chartElement.length === 0) {
+            return;
+        }
+                  
+        const kendoChart = chartElement.data("kendoChart");
+
+        if (!kendoChart) {
+            return;
+        }
+
+        var redrawChart = false;
+
+        // Estimate the plot area width by subtracting the chart's margins and padding.
+        const containerWidth = kendoChart.element.width();        
+        const chartPadding = 20;
+        const plotAreaWidth = containerWidth - (chartPadding * 2);
+        const moderateRotation = -45;
+        const fullRotation = -90;
+
+        // --- Category Label START---
+        const chartType = kendoChart.options.series ? kendoChart.options.series[0].type : "";
+        const showCategoryAxisLabels = (kendoChart.options.categoryAxis.labels.visible == undefined ? true: kendoChart.options.categoryAxis.labels.visible) && kendoChart.options.categoryAxis.categories;
+        if (showCategoryAxisLabels && chartType === "column") {
+            const labels = kendoChart.options.categoryAxis.categories;
+            const numItems = labels.length;
+
+            // Calculate the maximum available width for a single label
+            const maxSingleLabelWidth = plotAreaWidth / numItems;
+
+            // Get the font from the chart options to ensure accurate measurement
+            const categoryAxisLabelFont = kendoChart.options.categoryAxis.labels.font || "12px Arial, sans-serif";
+
+            let totalCategoryAxisLabelWidth = 0;
+            let hasLongCategoryAxisLabel = false;
+
+            // Iterate through labels to check for both total and individual width
+            labels.forEach(label => {
+                const labelWidth = getTextWidth(label, categoryAxisLabelFont);
+                totalCategoryAxisLabelWidth += labelWidth;
+
+                if (labelWidth > maxSingleLabelWidth) {
+                    hasLongCategoryAxisLabel = true;
+                }
+            });
+
+            const spacingBetweenLabels = 10;
+            const requiredWidth = totalCategoryAxisLabelWidth + ((numItems - 1) * spacingBetweenLabels);
+
+            // Define thresholds for rotation            
+            const moderateRotationThreshold = 1.2; // Rotate -45deg if required width is > X available width
+            const fullRotationThreshold = 1.6; // Rotate -90deg if required width is > X available width
+
+            // Check for the need for moderate rotation
+            if (requiredWidth > plotAreaWidth * moderateRotationThreshold || hasLongCategoryAxisLabel) {
+                // Check for the need for full rotation
+                if (requiredWidth > plotAreaWidth * fullRotationThreshold) {
+                    kendoChart.options.categoryAxis.labels.rotation = fullRotation;
+                } else {
+                    kendoChart.options.categoryAxis.labels.rotation = moderateRotation;
+                }
+            } else {
+                kendoChart.options.categoryAxis.labels.rotation = 0;
+            }
+
+            redrawChart = true;
+        }        
+        // --- Category Label END---
+
+        // --- Series Label START---
+        const series = kendoChart.options.series[0];
+        const hasSeriesLabels = series.labels && series.labels.visible;
+        if (hasSeriesLabels && series.type === "column") {
+            const seriesLabelFont = series.labels.font || "11px Arial, sans-serif";
+            const seriesFieldName = series.field;
+            const longestSeriesLabel = series.data.reduce((max, item) => {                
+                const text = String(item[seriesFieldName]); // Convert the value to a string                
+                const width = getTextWidth(text, seriesLabelFont);
+                return Math.max(max, width);
+            }, 0);
+
+            // Compare longest label width to the available space
+            const requiredSeriesWidth = longestSeriesLabel * series.data.length;
+            if (requiredSeriesWidth > plotAreaWidth) {
+                series.labels.rotation = fullRotation;
+            } else {
+                series.labels.rotation = 0;
+            }
+            series.labels.background = "transparent";
+
+            redrawChart = true;
+        }
+        // --- Series Label END---
+
+        // --- Category Axis Label sort ---
+        var axis = kendoChart.options.categoryAxis;        
+        const hasCustomSort = chartElement.hasClass("customSort");
+        if (hasCustomSort === false && axis && axis.categories) {
+            axis.categories = axis.categories.sort(function(a, b) {                
+                if (a.toLowerCase() > b.toLowerCase()) {
+                    return 1;
+                }
+                if (a.toLowerCase() < b.toLowerCase()) {
+                    return -1;
+                }
+                return 0;
+            });
+            
+            redrawChart = true;
+        }       
+
+        if (redrawChart) {
+            kendoChart.redraw();
+        }        
+    }
+
+    function getTextWidth(text, font) {
+        const canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+        const context = canvas.getContext("2d");
+        context.font = font;
+        const metrics = context.measureText(text);
+        return metrics.width;
+    }
+
+    $(document).ready(function () {
+        
+        @((bool)(ViewData["HasWidgets"] ?? false)? "loadWidget();" : "");
+        
+        //remove individual widget
+        $(document).on("click", ".widget .remove", function (e) {
+            var widget = $(e.target).closest(".widget");
+            var id = widget.attr("id");
+
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("RemoveWidget", "Dashboard")",
+                data: { id: id, widgetCategory: widgetCategory },
+                dataType: "json",
+                success: function (response) {
+                    if (response.success) {
+                        widget.fadeOut();
+                        widget.remove();
+
+                        //getAvailableWidgets();
+                    } else {
+                        kendo.alert(response.message);
+                    }
+                },
+                error: function (response) {
+                    kendo.alert("@Localizer["Unable to remove widget. Please try again."]");
+                }
+            });
+        });
+
+        //remove custom query widget
+        $(document).on("click", ".widget .delete", function (e) {
+            cpiConfirm.confirm('@deleteConfirmation', null, function () {
+                var widget = $(e.target).closest(".widget");
+                var id = widget.attr("id");
+
+                $.ajax({
+                type: "POST",
+                url: "@Url.Action("DeleteWidget", "Dashboard")",
+                data: { id: id, widgetCategory: widgetCategory },
+                dataType: "json",
+                success: function (response) {
+                    if (response.success) {
+                        widget.fadeOut();
+                        widget.remove();
+
+                        //getAvailableWidgets();
+                    } else {
+                        kendo.alert(response.message);
+                    }
+                },
+                error: function (response) {
+                    kendo.alert("@Localizer["Unable to delete widget. Please try again."]");
+                }
+                });
+                },
+                {
+                    "action": { "class": "btn-primary", "label": "Confirm", "icon": "fa fa-check" },
+                    "close": { "class": "btn-secondary", "label": "Cancel", "icon": "fa fa-undo-alt" }
+                });  
+                
+            //if (confirm('@deleteConfirmation')) {
+            //    var widget = $(e.target).closest(".widget");
+            //    var id = widget.attr("id");
+
+            //    $.ajax({
+            //    type: "POST",
+            //    url: "@Url.Action("DeleteWidget", "Dashboard")",
+            //    data: { id: id, widgetCategory: widgetCategory },
+            //    dataType: "json",
+            //    success: function (response) {
+            //        if (response.success) {
+            //            widget.fadeOut();
+            //            widget.remove();
+
+            //            getAvailableWidgets();
+            //        } else {
+            //            kendo.alert(response.message);
+            //        }
+            //    },
+            //    error: function (response) {
+            //        kendo.alert("@Localizer["Unable to delete widget. Please try again."]");
+            //    }
+            //    });
+            //}
+        });
+
+        //expand widget size
+        $(document).on("click", ".widget .view", function (e) {
+            var widget = $(e.target).closest(".widget");
+            var id = widget.attr("id");
+            var viewMode;
+
+            if (widget.hasClass("double-width")) {
+                $(this).removeClass("fa-compress-alt");
+                $(this).addClass("fa-expand-alt");
+                $(this).attr("title", "Expand view");
+                widget.removeClass("double-width");
+                viewMode = 1;
+            }
+            else {
+                $(this).addClass("fa-compress-alt");
+                $(this).removeClass("fa-expand-alt");
+                $(this).attr("title", "Compress view");
+                widget.addClass("double-width");
+                viewMode = 2;
+            }
+            //Resize for k-chart            
+            kendo.resize(widget.find("div.k-chart[data-role='chart']"));
+            //Resize for k-treemap
+            kendo.resize(widget.find("div.k-treemap[data-role='treemap']"));
+
+            saveSetting(id, `{ ViewMode: ${viewMode} }`);
+
+            var widgetViewMode = $("#viewMode_" + id);
+            if (widgetViewMode) {
+                widgetViewMode.val(viewMode);
+            }
+
+            applyChartOptions(widget);
+        });
+
+        //widget setting open/close
+        $(document).on("click", ".widget .settings, .widget .widget-settings .settings-close, .widgetPreview .settings, .widgetPreview .widget-settings .settings-close, .copyWidgetPreview .settings, .copyWidgetPreview .widget-settings .settings-close", function (e) {
+            var widgetCopyPopup = $("#widgetCopyDialog");
+            var dashboardSettingPopup = $("#dashboardSettingDialog");
+
+            var widget = $(e.target).closest(".widget");
+            if (dashboardSettingPopup.length > 0) {
+                widget = $(e.target).closest(".widgetPreview");
+            }
+            else if (widgetCopyPopup.length > 0) {
+                widget = $(e.target).closest(".copyWidgetPreview")
+            }
+
+            var id = widget.attr("id");
+            var settings = widget.find(".widget-settings");
+
+            settings.slideToggle("fast");
+
+            if (widgetCopyPopup.length > 0) {
+                if (refreshWidgetCopy) {
+                    refreshWidgetCopy = false;
+                    var id = widget.attr("id");
+                    if (id) {
+                        $("#" + id + " .refresh").click();
+                    }
+                }
+            }
+        });
+
+        //refresh widget data
+        $(document).on("click", ".widget .refresh, .widgetPreview .refresh, .copyWidgetPreview .refresh", function (e) {
+            var widgetCopyPopup = $("#widgetCopyDialog");
+            var dashboardSettingPopup = $("#dashboardSettingDialog");
+
+            var widget = $(e.target).closest(".widget");
+            var id = widget.attr("id");
+            var url = "";
+            var data = { };
+
+            if (widgetCopyPopup.length > 0) {
+                widget = $(e.target).closest(".copyWidgetPreview");
+                id = widget.attr("id");
+                if (id) {
+                    id = id.replace("copyWidget-", "");
+                }
+                url = "@Url.Action("GetCopyPreviewWidgetDetail", "Dashboard")";
+                data = { widgetId: id, isRefresh: true, widgetSettings: widgetCopy.Setting, title: widgetCopy.Title };                 
+            }
+            else if (dashboardSettingPopup.length > 0) {
+                widget = $(e.target).closest(".widgetPreview");
+                id = widget.attr("id");                
+                var settings = "{}";
+                var title = "";
+                if (widgetList.filter(d => d.Id == id).length > 0) {
+                    settings = widgetList.filter(d => d.Id == id)[0].Setting;
+                    title = widgetList.filter(d => d.Id == id)[0].Title;
+                }
+                url = "@Url.Action("GetPreviewWidgetDetail", "Dashboard")";
+                data = { widgetId: id, isRefresh: true, widgetSettings: settings, title: title };                
+            }
+            else {
+                widget = $(e.target).closest(".widget");
+                id = widget.attr("id");                
+                url = "@Url.Action("GetWidget", "Dashboard")";
+                data = { id: id, widgetCategory: widgetCategory, isRefresh: true };
+            }
+
+            var spinner = widget.find(".widget-spinner");
+            var container = widget.find(".widget-container");
+            var content = widget.find(".widget-content");
+
+            spinner.show();
+            content.css('visibility', 'hidden');
+
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: data,
+                dataType: "html",
+                success: function (data) {
+                    spinner.hide();
+                    container.empty();
+                    container.show();
+                    container.append(data);
+
+                    checkSettings(widget);
+                },
+                error: function (data) {
+                    spinner.hide();
+                    content.css('visibility', 'visible');
+                    kendo.alert("@Localizer["Unable to refresh widget. Please try again."]");
+                }
+            });
+            
+        });
+
+        //copy widget
+        $(document).on("click", ".widget .copy", function (e) {
+            var widget = $(e.target).closest(".widget");
+            var id = widget.attr("id");    
+            
+            //Direct Copy
+            // if (id) {
+            //     $.ajax({
+            //         type: "POST",
+            //         url: "@Url.Action("CopyWidget", "Dashboard")",
+            //         data: { id: id, loadedWidgets: $(".widget").length, widgetCategory: widgetCategory },
+            //         dataType: "json",
+            //         success: function (response) {
+            //             if (response.success) {
+            //                 if (response.allWidgetsLoaded && response.newId) {
+            //                     loadWidget(response.newId);
+            //                 }                            
+            //                 $(".k-animation-container").hide();
+            //             } else {
+            //                 kendo.alert(response.message);
+            //             }
+            //         },
+            //         error: function (response) {
+            //             kendo.alert("@Localizer["Unable to copy widget. Please try again."]");
+            //         }
+            //     });
+            // }            
+
+            //Popup Copy
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("WidgetCopy", "Dashboard")",
+                data: { widgetId: id, widgetCategory: widgetCategory },
+                success: function (response) {                   
+                    const popupContainer = $(".cpiContainerPopup").last();
+                    popupContainer.html("");
+                    popupContainer.html(response);
+                    const dialog = $("#widgetCopyDialog");
+                    dialog.unbind();
+                    dialog.modal("show");
+                    cpiLoadingSpinner.hide();
+
+                    dialog.on('hidden.bs.modal', function (e) {  
+                        dialog.remove();
+                        popupContainer.html("");
+                        $("#dashboard").empty();
+                        loadWidget();
+                    })
+
+                    widgetCopy = {};
+                    refreshWidgetCopy = false;
+                    widgetCopyTempSetting = "";
+                },
+                error: function (response) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showErrors(response);
+                }
+            });
+        });
+
+        //category change
+        $(':radio[name=widgetCat]').change(function () {
+            //alert($(this).val());
+            widgetCategory = $(this).val();
+            $("#dashboard").empty();
+            loadWidget();
+            //getAvailableWidgets();
+        });
+
+        //remove all widgets on current category
+        $(document).on("click", "#removeWidgets", function (e) {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("RemoveWidgetsByCategory", "Dashboard")",
+                data: { widgetCategory: widgetCategory },
+                dataType: "html",
+                success: function (data) {
+                    $("#dashboard").empty();
+                    //getAvailableWidgets();
+                    loadWidget();
+                },
+                error: function (data) {
+                    kendo.alert("@Localizer["Unable to remove widgets. Please try again."]");
+                }
+            });
+        });
+
+        //export widget to PowerPoint
+        $(document).on("click", "#exportPPTWidgets", function (e) {
+            var exportList = [];
+
+            var checkedWidgets = document.querySelectorAll('.fa-check-square.pptChkBox');
+            checkedWidgets.forEach(function(widget) {
+                const widgetId = widget.dataset.widgetid;
+                const viewName = widget.dataset.viewname.split("/");
+                const widgetName = widgetId + viewName[viewName.length - 1];
+                const strData = widgetName + "|" + widget.dataset.title;
+                exportList.push(strData);
+            });
+
+            if (exportList.length > 0) {
+
+                getPPTData(exportList);
+            }
+            else {
+                cpiAlert.popUp('@Localizer["Export Widgets"]', '@Localizer["Nothing to export."]');
+            }
+        });
+
+        //open widget popup
+        $(document).on("click", "#addWidgetPopup", function (e) {
+            cpiLoadingSpinner.show();
+            $.get("@Url.Action("DashboardSetting", "Dashboard")")
+                .done(function (response) {
+                    const popupContainer = $(".cpiContainerPopup").last();
+                    popupContainer.html("");
+                    popupContainer.html(response);
+                    const dialog = $("#dashboardSettingDialog");
+                    dialog.unbind();
+                    dialog.modal("show");
+                    cpiLoadingSpinner.hide();
+
+                    dialog.on('hidden.bs.modal', function (e) {
+                        dialog.remove();
+                        popupContainer.html("");
+                        $("#dashboard").empty();
+                        loadWidget();
+                    })
+
+                    catWidgetList = [];
+                    widgetList = [];
+                })
+                .fail(function (error) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showErrors(error);
+                });
+        });
+
+        //widget title START
+        $(document).off("click", ".widgetTitleClearIcon");
+        $(document).on("click", ".widgetTitleClearIcon", function (e) {
+            var widgetCopyPopup = $("#widgetCopyDialog");
+            var dashboardSettingPopup = $("#dashboardSettingDialog");
+
+            const userWidgetId = $(e.target).data("widgetid");
+            var titleInput = $('#widgetTitle-' + userWidgetId);  
+            
+            if (widgetCopyPopup.length > 0) {
+                titleInput = $('#copyPreviewTitle-' + userWidgetId);
+            }
+            else if (dashboardSettingPopup.length > 0) {
+                titleInput = $('#previewTitle-' + userWidgetId);
+            }            
+
+            var defaultValue = titleInput.data("default-value"); 
+            titleInput.val(defaultValue);
+            titleInput.blur();            
+            $('#saveTitleIcon-' + userWidgetId).hide();            
+            $('#clearTitleIcon-' + userWidgetId).hide();
+
+            if (widgetCopyPopup.length === 0 && dashboardSettingPopup.length === 0) {
+                var editRow = $("#editTitleRow-" + userWidgetId);
+                if (editRow) {
+                    editRow.addClass("d-none");
+                }
+                var widgetTitle = $("#" + userWidgetId + " .widget-header .widget-title");
+                if (widgetTitle)
+                    widgetTitle.text(defaultValue);
+            }            
+        });
+
+        $(document).off("click", ".widgetTitleSaveIcon");
+        $(document).on("click", ".widgetTitleSaveIcon", function (e) {
+            var widgetCopyPopup = $("#widgetCopyDialog");
+            var dashboardSettingPopup = $("#dashboardSettingDialog");
+
+            const userWidgetId = $(e.target).data("widgetid");
+            var titleInput = $('#widgetTitle-' + userWidgetId);            
+            var value = titleInput.val();     
+
+            if (widgetCopyPopup.length > 0) {
+                titleInput = $('#copyPreviewTitle-' + userWidgetId);
+                value = titleInput.val();
+                widgetCopy.Title = value;
+            }
+            else if (dashboardSettingPopup.length > 0) {
+                titleInput = $('#previewTitle-' + userWidgetId);
+                value = titleInput.val();
+                if (widgetList.filter(d => d.Id == userWidgetId).length > 0) {
+                    widgetList.filter(d => d.Id == userWidgetId)[0].Title = value;
+                }
+                else {
+                    let widget = { Id: userWidgetId, Setting: "{}", Title: value };
+                    widgetList.push(widget);
+                }
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("SaveWidgetTitle", "Dashboard")",
+                    data: { userWidgetId: userWidgetId, widgetTitle: value },
+                    dataType: "json",
+                    success: function (data) {                        
+                        $("#" + userWidgetId + " .widget-actions .refresh").trigger("click");
+                    },
+                    error: function (data) {
+                        kendo.alert("@Localizer["Unable to update title."]");
+                    }
+                });
+            }
+            titleInput.blur();
+            $('#saveTitleIcon-' + userWidgetId).hide();
+            $('#clearTitleIcon-' + userWidgetId).hide();                        
+        });
+
+        $(document).off("keyup", ".widgetTitleInput");
+        $(document).on("keyup", ".widgetTitleInput", function (e) {
+            const userWidgetId = $(e.target).data("id");
+            $('#saveTitleIcon-' + userWidgetId).show();
+            $('#clearTitleIcon-' + userWidgetId).show();
+        });
+
+        $(document).off("focus", ".widgetTitleInput");
+        $(document).on("focus", ".widgetTitleInput", function (e) {
+            const userWidgetId = $(e.target).data("id");
+            $('#titleEditIcon-' + userWidgetId).hide();            
+        });
+
+        $(document).off("blur", ".widgetTitleInput");
+        $(document).on("blur", ".widgetTitleInput", function (e) {
+            const userWidgetId = $(e.target).data("id");
+            $('#titleEditIcon-' + userWidgetId).show();
+        });
+        //widget title END  
+    });    
+        
+    //get widget data for PowerPoint
+    async function getPPTData(widgets) {
+        var exportData = [];
+        
+        for (const item of widgets) {
+
+            var pptData = await drawWidgetPPT(item.split("|")[0], item.split("|")[1]);
+            exportData.push(pptData);
+        }     
+        if (exportData.length > 0) {             
+            $.ajax({
+                cache: false,
+                url: "@Url.Action("ExportPowerPointList", "Dashboard")",
+                data: JSON.stringify(exportData),
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                type: "POST",                        
+                success: function (result) {                    
+                    if (result.isSuccess) {
+                        var linkUrl = '@Url.Action("GetPPTExportList", "Dashboard", new { fileGuid = "-1" })';
+                        linkUrl = linkUrl.replace("-1", result.fileGuid);
+                        window.location = linkUrl;
+                    }
+                },
+                error: function (error) {
+                    pageHelper.showErrors(error.responseText);
+                }
+            });                         
+        }
+    }
+    
+    //get PowerPoint data
+    function drawWidgetPPT(widgetName, widgetTitle) {
+      return new Promise(resolve => {
+
+        var kendoChart = $("#" + widgetName).data("kendoChart");
+        if (kendoChart) {  
+            kendoChart.exportImage({
+                    paperSize: "auto",
+                    margin: { left: "1cm", top: "1cm", right: "1cm", bottom: "1cm" }
+            })
+            .done(function (widgetData) {  
+                resolve({ WidgetData: widgetData.replace("data:image/png;base64,", ""), WidgetTitle: widgetTitle + "|chart" });
+            });           
+        }   
+        var kendoMap = $("#" + widgetName).data("kendoMap");
+        if (kendoMap) {
+            kendoMap.exportImage({
+                    paperSize: "auto",
+                    margin: { left: "1cm", top: "1cm", right: "1cm", bottom: "1cm" }
+            })
+            .done(function (widgetData) {
+                resolve({ WidgetData: widgetData.replace("data:image/png;base64,", ""), WidgetTitle: widgetTitle + "|map" });
+            });
+        }   
+        
+      });
+    }
+
+    //creates and manages a tooltip for chart.
+    function ChartTooltipManager(widgetName) {
+        var $widget = $("#" + widgetName);
+        var $chartWrapper = $widget.closest('.widget-content');
+
+        // Create a unique tooltip element for this chart
+        var $customTooltip = $('<div class="custom-chart-tooltip"></div>');
+        $chartWrapper.append($customTooltip);
+
+        var tooltipShowTimeout;
+        var tooltipHideTimeout;
+        var currentHoveredDrawingElement = null;
+
+        // Public method to attach handlers to a chart's surface
+        this.attachHandlers = function(surface) {
+            surface.unbind("mouseenter", onSurfaceMouseEnter);
+            surface.unbind("mouseleave", onSurfaceMouseLeave);
+
+            surface.bind("mouseenter", onSurfaceMouseEnter);
+            surface.bind("mouseleave", onSurfaceMouseLeave);
+        };
+
+        function onSurfaceMouseEnter(args) {
+            clearTimeout(tooltipHideTimeout);
+
+            var hoveredElement = args.element;
+
+            // Traverse up the drawing hierarchy to find an element with tooltipContent
+            while (hoveredElement && !hoveredElement.tooltipContent && hoveredElement.parent) {
+                hoveredElement = hoveredElement.parent;
+            }
+
+            if (hoveredElement && hoveredElement.tooltipContent && hoveredElement !== currentHoveredDrawingElement) {
+                currentHoveredDrawingElement = hoveredElement;
+
+                $customTooltip.text(hoveredElement.tooltipContent);
+
+                // Calculate position relative to the chart wrapper
+                var wrapperOffset = $chartWrapper.offset();
+                $customTooltip.css({
+                    left: args.originalEvent.pageX - wrapperOffset.left + 15,
+                    top: args.originalEvent.pageY - wrapperOffset.top + 15
+                });
+
+                clearTimeout(tooltipShowTimeout);
+                tooltipShowTimeout = setTimeout(function() {
+                    $customTooltip.addClass("visible");
+                }, 10);
+            } else if (hoveredElement && hoveredElement === currentHoveredDrawingElement) {
+                // Still hovering over the same element, do nothing.
+            } else {
+                // No valid element found, hide tooltip
+                hideTooltipImmediately();
+            }
+        }
+
+        function onSurfaceMouseLeave() {
+            clearTimeout(tooltipShowTimeout);
+            currentHoveredDrawingElement = null;
+            hideTooltipImmediately();
+        }
+
+        function hideTooltipImmediately() {
+            clearTimeout(tooltipHideTimeout);
+            $customTooltip.removeClass("visible");
+        }
+    }
+
+</script>
+
+<style>
+    .widgetCategories input {
+        margin: 0;
+        padding: 0;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    .widgetCategories {
+        margin-top: 8px;
+        display: flex;
+        justify-content: flex-end
+    }
+
+    .widgetCategories .form-group .nav-link {
+        padding-top: 0;
+    }
+        
+
+    .widgetCategories input:active + .widgetCatLbl {
+        opacity: .9;
+    }
+
+    .widgetCategories input:checked + .widgetCatLbl {
+        -webkit-filter: none;
+        -moz-filter: none;
+        filter: none;
+    }
+
+    .widgetCatLbl {
+        margin-right: 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        background-size: contain;
+        background-repeat: no-repeat;
+        -webkit-transition: all 100ms ease-in;
+        -moz-transition: all 100ms ease-in;
+        transition: all 100ms ease-in;
+        -webkit-filter: brightness(1.8) grayscale(1);
+        -moz-filter: brightness(1.8) grayscale(1) opacity(.7);
+        filter: brightness(1.8) grayscale(1) opacity(.7);
+    }
+
+    .widgetCatLbl:hover {
+        -webkit-filter: brightness(1.2) grayscale(.5);
+        -moz-filter: brightness(1.2) grayscale(.5) opacity(.9);
+        filter: brightness(1.2) grayscale(.5) opacity(.9);
+    }
+
+    #widgetList .k-menu-expand-arrow {
+        right: 0px;
+    }
+
+    .widgetCatIcon {
+        font-size: 20px;
+        padding-right: 5px;
+    }
+
+    /* Custom tooltip styling */
+    .custom-chart-tooltip {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        white-space: pre-wrap; /* Allows line breaks if content has them */
+        max-width: 300px;
+        pointer-events: none; /* Important: allows mouse events to pass through to elements below */
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .custom-chart-tooltip.visible {
+        opacity: 1;
+    }
+</style>

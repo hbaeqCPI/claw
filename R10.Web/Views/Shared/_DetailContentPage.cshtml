@@ -1,0 +1,52 @@
+﻿@model PageViewModel
+@using Newtonsoft.Json
+@{
+    bool addMode = Model.RecordId == 0;
+    bool addFromOtherScreen = false;
+    if (addMode)
+    {
+        string referer = ViewContext.HttpContext.Request.Headers["Referer"].ToString().ToLower();
+        string controller = ViewContext.ActionDescriptor.RouteValues["controller"]?.ToString().ToLower();
+        addFromOtherScreen = (!ViewContext.HttpContext.Request.IsAjax() || !referer.Contains(controller));
+    }
+}
+
+@await Html.PartialAsync(string.IsNullOrEmpty(Model.PartialViewName) ? "_DetailContent" : Model.PartialViewName, Model.Data, new ViewDataDictionary(this.ViewData) { { "PagePermission", Model.PagePermission }, { "PageId", Model.PageId } })
+
+<script>
+    $(document).ready(function () {
+        var pageReady = function () {
+            @*if (typeof @ViewBag.ActivePage === 'undefined') {
+                setTimeout(pageReady, 50);
+                return;
+            }*@
+
+            @(ViewBag.ActivePage).initializeDetailContentPage({
+                requestedUrl: "@Context.Request.PathBase@Context.Request.Path",
+                detailUrl: "@Url.Action("Detail", new { id = addMode ? "recid" : Model.RecordId.ToString(), singleRecord = Model.FromSearch || Model.SingleRecord })", //todo: singleRecord = fromSearch ???
+                searchUrl: "@Url.Action("Index")",
+                title: "@Html.Raw(Model.Title)",
+                recordStampsUrl: "@Url.Action("GetRecordStamps", new { id = Model.RecordId })",
+                recordStampsContainer: "DetailRecordStamps",
+                deleteForm: "",
+                id: @Model.RecordId,
+                addMode: @(Model.RecordId == 0 ? "true" : "false"),
+                addFromSearch: @(Model.FromSearch ? "true" : "false"),  //todo: persist through steps
+                addFromOtherScreen: @(addFromOtherScreen ? "true" : "false"),
+                activeTab: "@Model.ActiveTab",
+                addModeOptions: {
+                    @Html.Raw(string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit}, ")
+                    @Html.Raw(string.IsNullOrEmpty(Model.AfterInsert) ? "" : $"afterSubmit: {Model.AfterInsert}, ")
+                    @Html.Raw(Model.AfterInsertOptions == null ? "" : $"afterSubmitOptions: {JsonConvert.SerializeObject(Model.AfterInsertOptions)}, ")
+                    @Html.Raw(string.IsNullOrEmpty(Model.AfterCancelledInsert) ? "" : $"onCancel: {Model.AfterCancelledInsert}, ")
+                },
+                editModeOptions: {
+                    @Html.Raw(Model.RecordId == 0 || string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit} ")
+
+                }
+            });
+        };
+
+        pageReady();
+    });
+</script>

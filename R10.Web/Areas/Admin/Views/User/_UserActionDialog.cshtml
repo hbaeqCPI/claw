@@ -1,0 +1,28 @@
+﻿@model UserActionViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+
+<form id="ReactivateAccount" method="post" data-url="@(Url.Action("Update"))" data-on-success="onConfirmSuccess">
+    <input class="form-data" type="hidden" name="UserId" value="@Model.UserDetail.Id" />
+    <input class="form-data" type="hidden" name="Action" value="@Model.Action" />
+    <div class="message">
+        <div class="row message-wrap">
+            <div class="col-2 text-center pl-md-4 pt-1"><i class="text-danger far fa-exclamation-triangle fa-2x"></i></div>
+            <div class="col-10">      
+                <div class="pb-3">
+                    @await Html.PartialAsync("_DialogHeader", Model.UserDetail)
+                </div>
+                <p>@Model.Message</p>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+    function onConfirmSuccess(e) {
+        //refresh detail
+        pageHelper.showDetails(userSetupPage, e.id, function() {
+            //then show success message
+            pageHelper.showSuccess(e.message);
+        })
+    }
+</script>
+

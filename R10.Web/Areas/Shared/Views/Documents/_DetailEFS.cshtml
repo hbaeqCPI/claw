@@ -1,0 +1,98 @@
+﻿@model DocEFSLogDetailDTO
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var docLink = Model.DocumentLink.Split("|");
+    var system = docLink[0];
+    var screenCode = docLink[1];
+    var key = docLink[3] != null ? Convert.ToInt32(docLink[3]) : 0;
+
+    var zoomUrl = @Url.Action("ZoomDocument", "DocViewer", new { fileName = Model.DocFileName, system = system, screenCode, key, fileType = ImageHelper.CPiSavedFileType.EFS });
+}
+
+<div class="page-content">
+    <div class="form-row">
+        <div class="col">
+            <span id="efsLogHeader" style="font-weight:600">@Model.FormName</span>
+        </div>
+        <div class="col d-flex justify-content-end">
+            <span style="font-style: italic">@Localizer["Generated Electronic Form"]</span>
+        </div>
+    </div>
+</div>
+
+<div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="userFolderTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="efsLogDetailTab" data-toggle="tab" role="tab" aria-controls="efsLogDetailTabContent" aria-selected="true" href="#efsLogDetailTabContent">@Localizer["Electronic Form Details"]</a>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content">
+    <div class="tab-pane show active" id="efsLogDetailTabContent" role="tabpanel" aria-labelledby="efsLogDetailTab">
+        <div class="form-row">
+            <div class="col-10">
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label asp-for="FormName"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="FormName" readonly />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label asp-for="GenDate"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="GenDate" asp-format="{0:dd-MMM-yyyy hh:mm tt}" readonly />
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label asp-for="GenBy"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="GenBy" readonly />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label asp-for="PageNo"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="PageNo" readonly />
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label asp-for="PageCount"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="PageCount" readonly />
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="col-2">
+                <div class="text-wrap text-center pt-5" style="max-width: 100%;">
+                    @*<a role="button" href="" onclick="return zoomDocument('@Model.DocFileName')"><span class="details-link"></span>@Localizer["Click here to view document."]</a>*@
+                    <a href='@zoomUrl' id="docOpenViewer" class='details-link'>@Localizer["Click here to view document."]</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        $("#docOpenViewer").on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var url = $(this).attr("href");
+            documentPage.zoomDocument(url);
+        });
+    });
+</script>

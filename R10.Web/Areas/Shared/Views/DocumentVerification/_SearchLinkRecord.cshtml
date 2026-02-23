@@ -1,0 +1,212 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var rowTemplate = $"<div class='row'><div class='col'>" +
+                "<span class='badge badge-pill badge-warning #=SystemName#' title='New'>#=SystemName#</span>" +
+                "<a href=\"javascript: globalSearch.redirectToRecord('#:Link#')\"> #=ScreenName#</a> " +
+             "</div></div><span>#=FieldValues#</span>";
+
+    var systemTypes = (List<QuickDocketSystemTypeViewModel>)ViewData["SystemTypes"];
+    var docNames = (string)ViewData["DocumentNames"] ?? "";
+    var docList = docNames.Split("|").Where(d => !string.IsNullOrEmpty(d)).ToList();
+}
+<script>
+    $(document).ready(function () {
+        $('#searchLinkGrid').on('click', '.isActRequired-chkbx', function () {
+            var checked = $(this).is(':checked');            
+            var grid = $('#searchLinkGrid').data("kendoGrid");
+            //Current item
+            var dataItem = grid.dataItem($(this).closest('tr'));
+            //Set current item back to true
+            dataItem.set('IsActRequired', checked);
+        })
+    });
+</script>
+<div class="modal fade" id="searchLinkDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <input type="hidden" id="docIds" value="@Model" />
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-1">
+                <h4 class="modal-title">@Localizer["Search records to link"]</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body pt-0 mainSearchDialog">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col">
+                            <div id="searchLinkContainer" class="record-link-search">
+                                <div class="form-row">
+                                    <div class="col">
+                                        <div class="form-group float-label">
+                                            <label for="DocumentNames">@Localizer["Document(s)"]</label>
+                                            @(Html.Kendo().MultiSelect()
+                                                .Name("DocumentNames")
+                                                .BindTo(docList)
+                                                .Value(docList)
+                                                .Enable(false)
+                                                .ClearButton(false)
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="form-row">
+                                    <div class="col-lg-6 pr-4">
+                                        <div class="border rounded pl-1 def-system-types">
+                                            <p>@Localizer["System"]</p>
+                                            @foreach (var item in systemTypes)
+                                            {
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" name="basicSearchSystem" checked value="@item.TypeId">
+                                                    <label class="form-check-label" for="@item.SystemId">@Localizer[item.SystemName]</label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="col-10 col-md-10 col-lg-8 col-xl-8">
+                                        <div class="form-group float-label">
+                                            <label for="BasicSearchTerm">@Localizer["Search Term"]</label>
+                                            <input type="text" class="form-control" id="BasicSearchTerm" name="BasicSearchTerm" />
+                                            <i class="far fa-search text-muted search-submit" title="@Localizer["Search"]"></i>
+                                            <span>
+                                                <i class="fal fa-cog search-setting" title="@Localizer["Settings"]"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="col-12">
+                                        @(
+                                            Html.Kendo().Grid<DocVerificationSearchLinkViewModel>()
+                                            .Name("searchLinkGrid")
+                                            .Columns(column =>
+                                            {
+                                                column.Select().Width(55);
+
+                                                column.Bound(gs => gs.SystemName).ClientTemplate(@rowTemplate).Title(Localizer["Your Data Results"]);
+
+                                                column.Bound(p => p.RespDocketings)
+                                                .EditorTemplateName("MultiSelect")
+                                                .EditorViewData(new
+                                                {
+                                                    name = "RespDocketings",
+                                                    action = "GetDocResponsibleCombinedList",
+                                                    controller = "DocumentVerification",
+                                                    dataValueField = "Id",
+                                                    dataTextField = "Name",                                                        
+                                                    routeValues = new { area = "Shared" },
+                                                    onChange = "documentVerificationPage.onRespDocketingComboBoxChange",
+                                                    serverFiltering = false
+                                                })     
+                                                .ClientTemplate("#=RespDocketing == null ? '' : RespDocketing#")
+                                                .HtmlAttributes(new { @class = "editable-cell" })
+                                                .Width(250);
+
+                                                column.Bound(p => p.RespReportings)
+                                                .EditorTemplateName("MultiSelect")
+                                                .EditorViewData(new
+                                                {
+                                                    name = "RespReportings",
+                                                    action = "GetDocResponsibleCombinedList",
+                                                    controller = "DocumentVerification",
+                                                    dataValueField = "Id",
+                                                    dataTextField = "Name",                                                        
+                                                    routeValues = new { area = "Shared" },
+                                                    onChange = "documentVerificationPage.onRespReportingComboBoxChange",
+                                                    serverFiltering = false
+                                                })
+                                                .ClientTemplate("#=RespReporting == null ? '' : RespReporting#")
+                                                .HtmlAttributes(new { @class = "editable-cell" })
+                                                .Width(250);
+
+                                                column.Bound(c => c.IsActRequired).Title(Localizer["Docket Required?"])
+                                                .ClientTemplate("<input type='checkbox' #= (IsActRequired == true) ? checked ='checked' : '' # class='isActRequired-chkbx'/>")
+                                                .Width(100)
+                                                .HtmlAttributes(new { @class = "editable-cell isActRequired-checkbox" });
+
+                                            })
+                                            .PersistSelection()
+                                            .Editable(editable => editable.Enabled(true).Mode(GridEditMode.InCell))
+                                            .AutoBind(false)
+                                            .Pageable(pageable => pageable
+                                            .Refresh(false)
+                                            .ButtonCount(5)
+                                            .PageSizes(settings.SearchResultsPageSizeOptions)
+                                            )
+                                            .Scrollable(s => s.Height("auto"))
+                                            .DataSource(dataSource => dataSource
+                                                .Ajax()
+                                                .ServerOperation(false)
+                                                .Model(model =>
+                                                {
+                                                    model.Id(id => id.Link);
+                                                    model.Field(i => i.Link).Editable(false);
+                                                    model.Field(i => i.SystemName).Editable(false);
+                                                    model.Field(i => i.RespDocketing).Editable(true);
+                                                    model.Field(i => i.RespReporting).Editable(true);
+                                                })
+                                                .Read(read => read.Action("SearchLinkRead", "DocumentVerification").Data("documentVerificationPage.getSearchLinkCriteriaData"))
+                                                .Events(events =>
+                                                {
+                                                    events.Error("function(e) { pageHelper.onGridError(e); }");
+                                                    events.RequestEnd("function(e) {cpiLoadingSpinner.hide();}");
+                                                    events.RequestStart("function(e) {cpiLoadingSpinner.show();}");                                                
+                                                })
+                                            )
+                                            .Events(events => {
+                                                events.CellClose("documentVerificationPage.onSearchLinkGridCellClose");
+                                            })
+                                            .NoRecords(d => d.Template(Localizer["Your search did not match any records."]))                                            
+                                            .HtmlAttributes(new { @class = "kendo-Grid" })
+                                            )
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top:none">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                                <button type="button" class="btn btn-primary saveLinks"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="search-settings">
+                <div class="search-settings-detail"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary search-settings-cancel"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                    <button type="submit" class="btn btn-primary search-settings-submit"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #searchLinkDialog {
+        overflow-y: auto;
+    }
+
+    #DocumentNames_taglist .k-i-x {
+        display: none !important;
+    }
+
+    i.fa-cog.search-setting {
+        position: absolute;
+        top: 15px;
+        right: -20px;
+        cursor: pointer;
+    }
+
+    i.fa-search.search-submit {
+        position: absolute;
+        top: 15px;
+        right: 10px;
+        cursor: pointer;
+    }
+</style>

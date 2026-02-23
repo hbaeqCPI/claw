@@ -1,0 +1,94 @@
+﻿@model ChildViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{ var settings = await Settings.GetSetting();
+
+    var Id = Model.Id;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var Link = $"<a href = '{Url.Action("DetailLink", "Product", new { area = "Shared", id = "#: RelProductId#" })}' target = '_blank' rel = 'noopener noreferrer' class='details-link'>#: RelatedProductName#</a>";
+
+}
+@(Html.Kendo().Grid<RelatedProductDTO>()
+      .Name("prodRelatedProductsGrid")
+      .Columns(columns =>
+      {
+          columns.Bound(r => r.RelatedProductCode)
+            .Title(Localizer["Product Code"])
+            .EditorTemplateName("ComboBox")
+            .ClientTemplate("#=RelatedProductCode? kendo.htmlEncode(RelatedProductCode) : ''#")
+            .EditorViewData(new
+            {
+                action = "GetProductList",
+                controller = "Product",
+                dataTextField = "ProductCode",
+                dataValueField = "ProductCode",
+                limitToList = true,
+                template = ComboBoxHelper.GetItemTemplate("ProductCode", "ProductName"),
+                headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Product Code"], @Localizer["Product Name"]),
+                onSelect = "productPage.onChange_RelatedProduct",
+                required = true,
+                //template = ComboBoxHelper.GetItemTemplate("ProductCode", "ProductName"),
+                //headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Product Code"], Localizer["Product Name"])
+            })
+            .Width(150)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+          columns.Bound(r => r.RelatedProductName)
+            .Title(Localizer["Product Name"])
+            .ClientTemplate(Link)
+            .Width(300).HtmlAttributes(new { @class = "productName-field" });
+          columns.Command(command =>
+          {
+              if (fullModify)
+                  command.Custom("Delete")
+                          .Click("function(e) {productPage.deleteGridRow(e,this)}")
+                          .IconClass("k-icon fal fa-trash-alt")
+                          .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                          .HtmlAttributes(new { @class = "grid-action" });
+
+          }).Width(10);
+      })
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .ToolBar(toolbar =>
+    {
+        if (detailPagePermission.CanAddRecord)
+        {
+            toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+        }
+        if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+        {
+            toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+            toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+        }
+
+    })
+    .Editable(editable => editable.Enabled(fullModify)
+                .Mode(GridEditMode.InCell).
+                ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Pageable()
+    .DataSource(dataSource => dataSource
+            .Ajax()
+            .Batch(true)
+            .PageSize(settings.SubFormPageSize)
+            .ServerOperation(false)
+            .Model(model =>
+            {
+                model.Id(r => r.RelProductId);
+                model.Field(r => r.RelatedProductName).Editable(false);
+            })
+            .Read(create => create.Action("RelatedProdcutsRead", "Product", new { productId = Id }))
+            .Update(create => create.Action("RelatedProductsUpdate", "Product", new { parentId = Id }))
+            .Destroy(create => create.Action("RelatedProductsDelete", "Product"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+    )
+    .Events(events =>
+    {
+        events.Edit("productPage.relatedProductsEdit");
+        events.Save("productPage.relatedProductsRowSave");
+    })
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+    )

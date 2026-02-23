@@ -1,0 +1,31 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<Brand>()
+                    .Name($"{Model.PageId}-Grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(m => m.BrandName).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: BrandId#", fromSearch = true }), "BrandName")).Width(200);
+                        columns.Bound(m => m.BrandType);
+                    })
+                    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                    .AutoBind(false)
+                    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    //.ColumnMenu()
+                    .Excel(excel => excel.FileName("BrandList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Area")))
+                    .DataSource(dataSource => dataSource
+                    .Ajax().Events(events => events.Error("BrandPage.searchResultGridError"))
+                    .Events(events => events.RequestEnd("BrandPage.searchResultGridRequestEnd"))
+                    .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                    .Read(read => read.Action("PageRead", "Brand")
+                    .Data("BrandPage.gridMainSearchFilters")
+                    )
+                    .Sort(sort => sort.Add(m => m.BrandName))
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

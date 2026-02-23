@@ -1,0 +1,192 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+    
+@{ 
+    string systemType = Model;
+    string[] validFileExt = { "docx" };
+    //string linkTemplate = "<a href='" + Url.Action("GridDownload", "DOCXTemplate", new { sys = systemType, templateFile = "#: TemplateFile#" }) + "' class='details-link'>#: TemplateFile#</a>";
+}
+
+<div id="fileManagerDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="fileManagerDialogTitle" aria-hidden="true">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-1">
+                <h5 class="modal-title" >@Localizer["DOCX Template Manager"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="@Localizer["Close"]">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid">
+                <div id="errorSummary" class="alert alert-danger d-none alert-dismissible fade show" role="alert">
+                    <div class="content"></div>
+                    <button type="button" class="close alert-close" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <span class="p-2 font-italic" style="font-size: small;">
+                                @Localizer["This screen is used to UPLOAD a new template file from your local drive, OPEN or DOWNLOAD an existing template for modification or DELETE previously uploaded template. Modified templates must be uploaded before changes can take effect. Only MS Word .docx file can be used as template."]
+                            </span>
+
+                        </div>
+
+                    </div>
+                    </div>
+                <div class="form-row" id="fileTemplateGridContainer" data-download-url="@Url.Action("GridDownload", "DOCXTemplate")" > 
+                    <div class="col">
+                        <form cpi-detail-form>
+                            @(Html.Kendo().Grid<DOCXTemplateViewModel>()
+                                .Name("fileTemplateGrid")
+                                
+                                .Columns(column =>
+                                {
+                                    column.Bound(tf => tf.TemplateFile).ClientHeaderTemplate(Localizer["Template File"]).Width(250);
+                                    column.Bound(tf => tf.FileSize).ClientHeaderTemplate(Localizer["File Size"]).ClientTemplate("#= (FileSize/1000).toFixed(0)   # KB").Width(100);
+                                    column.Command(command =>
+                                    {
+                                        command.Custom("Download")
+                                                .Click("function(e) {docxSetup.downloadTemplate(e,this)}")
+                                                .IconClass("k-icon fal fa-download")
+                                                .Text($"<span class='grid-action-label'>{Localizer["Download"]}</span>")
+                                                .HtmlAttributes(new { @class = "grid-action" });
+                                    }).Width(75);
+                                    column.Command(command =>
+                                    {
+                                        command.Custom("Delete")
+                                                .Click("function(e) {docxSetup.deleteTemplate(e,this)}")
+                                                .IconClass("k-icon fal fa-trash-alt")
+                                                .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                                                .HtmlAttributes(new { @class = "grid-action" });
+                                    }).Width(75);
+
+                                })
+                                .AutoBind(true)
+                                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                                .Pageable(page => page.PageSizes(true).Refresh(true))
+                                .Scrollable()
+                                .Sortable(sortable => sortable.SortMode(GridSortMode.SingleColumn).ShowIndexes(true))
+                                .DataSource(dataSource => dataSource
+                                    .Ajax()
+                                    .Read(read => read.Action("GridRead", "DOCXTemplate").Data($"{{sys: '{systemType}'}}"))
+                                    .Destroy(update => update.Action("GridDelete", "DOCXTemplate"))
+                                    .Events(events =>
+                                    {
+                                        events.Error("pageHelper.onGridError");
+                                    })
+                                    .Sort(sort => sort.Add(tf => tf.TemplateFile))
+                                    .PageSize(10)
+                                )
+                                .Editable(editable => editable
+                                    .Enabled(true)
+                                    .ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false)
+                                    )
+                                .HtmlAttributes(new { @class = "k-grid-border" })
+                            )
+                        </form>
+                        
+                    </div>
+                </div>
+               
+                <div class="form-row pt-2" style="font-size: small" >
+                    <div class="col">
+                        @(Html.Kendo().Upload()
+                            .Name("droppedFiles")
+                            .Messages(m => m.Select(Localizer["Select a template file to upload..."]))
+                            .Async(a => a
+                                    .Save("SaveTemplateFile", "DOCXTemplate")
+                                    //.Remove("Remove", "Upload")
+                                    .AutoUpload(false)
+                                )
+                            .DropZone(".dropZoneElement")
+                            .ShowFileList(true)
+                            .Validation(validation => {
+                                validation.AllowedExtensions(validFileExt);
+                                validation.MaxFileSize(1500000);
+                            })
+
+                            .Multiple(false) // limit upload to one file at a time
+                            .Events(e => e.Upload("function(e) { e.data = docxSetup.getUploadFilter('" + systemType + "');}")
+                                          .Success("function(e) { docxSetup.refreshTemplateGrid(e); }")
+                                          .Error("function(e) { docxSetup.uploadError(e); }"))
+                        )
+                        <div class="form-check">
+                            <input type="checkbox" class="k-checkbox" id="overwriteExisting" name="overwriteExisting">
+                            <label class="k-checkbox-label" for="overwriteExisting">@Localizer["Overwrite if existing?"]</label>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="dropZoneElement">
+                            <div class="textWrapper">
+                                <p>@Localizer["Drag & Drop Template File Here"]</p>
+                                <p class="dropImageHereText">@Localizer["Drop template file to upload here"]</p>
+                            </div>
+                            </div>
+                    </div>
+
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                @*<button id="generateDOCXButton" type="button" class="btn btn-primary float-right"><i class="fal fa-file-plus pr-2"></i>@Localizer["Preview & Log"]</button>*@
+                <button id="cancel" type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times-circle pr-2"></i>@Localizer["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    #fileTemplateGrid .k-grid-content {
+        min-height: 100px;
+        max-height: 300px;
+    }
+
+    .dropZoneElement {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        height: 200px;
+        text-align: center;
+    }
+
+    .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 18px;
+        line-height: 1.2em;
+        font-family: Arial,Helvetica,sans-serif;
+        color: var(--text-body);
+    }
+
+    .dropImageHereText {
+        color: var(--text-body);
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .wrapper:after {
+        content: ".";
+        display: inline-block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
+    }
+
+    .k-button .k-clear-selected, .k-upload .k-clear-selected, .k-upload .k-upload-selected  {
+        width: 25% !important;
+    }
+</style>
+
+<script>
+  
+    $(document).ready(function () {
+        const dialogContainer = $("#fileManagerDialog");
+        dialogContainer.modal("show");
+
+    });
+
+</script>

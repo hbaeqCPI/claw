@@ -1,0 +1,9 @@
+﻿@model DateTime?
+@{
+    var parseFormats = Context.GetKendoDateParseFormats();
+}
+@(Html.Kendo().DatePickerFor(m => m)
+        .Format("dd-MMM-yyyy").ParseFormats(parseFormats)
+        .Max(new DateTime(9999, 12, 31))
+        .Min(new DateTime(1800, 1, 1))
+)

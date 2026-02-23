@@ -1,0 +1,13 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+
+    ViewData["Title"] = Localizer["Country Law"];
+    ViewData["ActivePage"] = "tmkCountryLawPage";
+}
+
+@*@section Scripts {
+    <script src="~/js/@(ViewBag.ActivePage).js" asp-append-version="true"></script>
+}*@
+
+@await Html.PartialPageAsync(Model.Page, Model)

@@ -1,0 +1,168 @@
+﻿@model DocTrademarkViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<TmkSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var headerLabel = Model.CaseNumber + "/" + Model.Country + (string.IsNullOrEmpty(Model.SubCase) ? "" : "-" + Model.SubCase) + "/" + Model.CaseType;
+
+    var caseNumberLabel = Localizer[settings.LabelCaseNumber];
+    var clientNameLabel = Localizer[settings.LabelClientName];   
+    var ownerNameLabel = Localizer[settings.LabelOwnerName];   
+    var agentNameLabel = Localizer[settings.LabelAgentName];
+}
+
+<div class="page-content">
+    <div class="form-row">
+        <div class="col">
+            <span id="trademarkDocumentHeader" style="font-weight:600">@headerLabel</span>
+        </div>
+        <div class="col d-flex justify-content-end">
+            <span style="font-style: italic">@Localizer["Trademark"]</span>
+        </div>
+    </div>
+</div>
+
+<div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="trademarkDocumentTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="trademarkDetailTab" data-toggle="tab" role="tab" aria-controls="trademarkDetailTabContent" aria-selected="true" href="#trademarkDetailTabContent">@Localizer["Trademark Details"]</a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane show active" id="trademarkDetailTabContent" role="tabpanel" aria-labelledby="trademarkDetailTab">
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="CaseNumber">@caseNumberLabel</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseNumber" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Country"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="SubCase"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="SubCase" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="CaseType"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseType" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="ClientName">@clientNameLabel</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="ClientName" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="OwnerName">@ownerNameLabel</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="OwnerName" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="AgentName">@agentNameLabel</label>
+                        <input type="text" class="form-control form-control-sm" asp-for="AgentName" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="TrademarkName"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="TrademarkName" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Attorney1"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Attorney1" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Attorney2"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Attorney2" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Attorney3"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Attorney3" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Attorney4"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Attorney4" readonly />
+                    </div>
+                </div>                
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="Attorney5"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Attorney5" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="TrademarkStatus"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="TrademarkStatus" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="AppNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="AppNumber" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="FilDate"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="FilDate" asp-format="{0:dd-MMM-yyyy}" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="RegNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="RegNumber" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="RegDate"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="RegDate" asp-format="{0:dd-MMM-yyyy}" readonly />
+                    </div>
+                </div>
+            </div>  
+            <div class="form-row">                
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="RegNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="RegNumber" readonly />
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label asp-for="RegDate"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="RegDate" asp-format="{0:dd-MMM-yyyy}" readonly />
+                    </div>
+                </div>
+            </div> 
+        </div>
+    </div>
+</div>

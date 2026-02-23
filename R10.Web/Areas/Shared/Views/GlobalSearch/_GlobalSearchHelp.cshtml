@@ -1,0 +1,428 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+
+
+<div id="globalSearchHelpDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="globalSearchHelpDialogTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="globalSearchHelpDialogTitle">@Localizer["Global Search Help"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid">
+                <div>
+                    <ul class="nav nav-tabs detail nav-tabs-horizontal" id="gsHelpTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="gsHelpBasicTab" data-toggle="tab" role="tab" aria-controls="gsHelpBasicTabContent" aria-selected="true" href="#gsHelpBasicTabContent">@Localizer["Basic Search"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="gsHelpAdvancedTab" data-toggle="tab" role="tab" aria-controls="gsHelpAdvancedTabContent" aria-selected="true" href="#gsHelpAdvancedTabContent">@Localizer["Advanced Search"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="gsHelpLuceneTab" data-toggle="tab" role="tab" aria-controls="gsHelpLuceneTabContent" aria-selected="true" href="#gsHelpLuceneTabContent">@Localizer["Lucene Query"]</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content border p-2">
+                        <div class="tab-pane show active" id="gsHelpBasicTabContent" role="tabpanel" aria-labelledby="gsHelpBasicTab">
+                            <div class="form-row pt-2">
+                                <div class="col-12">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <i>@Localizer["Basic search allows you to search for the occurence of a word or phrase (group of words) in ALL searchable field of your system data and/or document content."]</i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-6">
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Search Term"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["Enter a word or phrase to search in your database and/or in the document content"]</li>
+                                                <li>@Localizer["To treat a phrase as a single term, surround it with double quotes"]</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Scope"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["Your Data"] - @Localizer["check this option to search the records in your database"]</li>
+                                                <li>@Localizer["Document Content"] - @Localizer["check this option to search the content of uploaded or generated documents"]</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["System Criteria"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["Only screens checked will be included in the search"]</li>
+                                                <li>@Localizer["Click on the chevron or the vertical ellipsis icons to show/hide specific screens"] </li>
+                                                <li>@Localizer["Check/un-check the 'System Criteria' box to select/de-select all screens"]</li>
+                                                <li>@Localizer["Check/un-check a specific System box to select/de-select all screens for that system"]</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Document Type Criteria"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["This section is visible only if Search Scope 'Document Content' is checked"]</li>
+                                                <li>@Localizer["Only documents selected will be included in the search"]</li>
+                                                <li>@Localizer["Check/un-check the 'Document Type Criteria' box to select/de-select all documents"]</li>
+                                                <li>
+                                                    @Localizer["Word Match"]
+                                                    <br />  &nbsp;&nbsp; &nbsp; @Localizer["Any word"] - @Localizer["at least one word in the Search Term must be in the document"]
+                                                    <br />  &nbsp;&nbsp; &nbsp; @Localizer["All words"] - @Localizer["all words must be in the document regardless of order"]
+                                                </li>
+                                                <li>
+                                                    @Localizer["Query Type"] - @Localizer["available only for 'Document Content' ('Your Data' should not be selected)"]
+                                                    <br />  &nbsp;&nbsp; &nbsp; @Localizer["Simple"] - @Localizer["do a simple search"]
+                                                    <br />  &nbsp;&nbsp; &nbsp; @Localizer["Full"] - @Localizer["do a Lucene search"]
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Your Data Search Result"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["This shows the records in your database that satisfy the search criteria"]</li>
+                                                <li>@Localizer["Click on the screen name of a record to open its details in a separate window"]</li>
+                                                <li>@Localizer["'Export to Excel' downloads the search results to an Excel file"]</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Documents Search Result"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>@Localizer["This shows the documents in your system that satisfy the search criteria"]</li>
+                                                <li>@Localizer["Click on the screen name of a document to open its parent record in a separate window"]</li>
+                                                <li>@Localizer["Click on the magnifying glass to view the document in the Document Viewer"]</li>
+                                                <li>@Localizer["'Export to Excel' downloads the search results to an Excel file"]</li>
+                                                <li>
+                                                    @Localizer["'Download Selected' downloads the selected documents to a zip file"] <br />
+                                                    @Localizer["To select a document for download, check the box at the end of its row; to select all documents, check the box below the 'Download Selected' label"]
+                                                </li>
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 help-subtitle">
+                                            @Localizer["Note"]
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul>
+                                                <li>
+                                                    @Localizer["Wildcard characters (*, ?) do not work with 'Your Data' search; DO NOT use it if you selected 'Your Data' in the scope"]
+                                                </li>
+                                                <li>
+                                                    @Localizer["If a phrase is entered in the Search Term, 'Your Data' search does an exact match of the phrase (case-insensitive)."]
+                                                    @Localizer["For example, if the search term is 'method and apparatus', a record with 'Method and apparatus for ...' will be in the result but 'Method for making research apparatus' will not be in the result"]
+                                                </li>
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="gsHelpAdvancedTabContent" role="tabpanel" aria-labelledby="gsHelpAdvancedTab">
+                            <div class="form-row pt-2">
+                                <div class="col-12">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <i>@Localizer["Advanced search allows for a more refined search by segregating the database and document criteria with the option to search for different terms per database field and/or document content."]</i>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="col-6">
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Cascade Term"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Useful only if you have existing data or document criteria; replaces all search terms with the 'Cascade term'"]</li>
+                                                        <li>@Localizer["To replace search terms, enter the term in the 'Cascade term...' field and click the down arrow to the right of the field"]</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Your Data Criteria"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["This grid allows you to specify fields and search term per field; ONLY fields you entered will be searched"]</li>
+                                                        <li>@Localizer["To add a criteria, click the '+' button, enter the field name and search term"]</li>
+                                                        <li>@Localizer["To search for multiple terms for a field, add rows with the same field name but different search terms"]</li>
+                                                        <li>@Localizer["To load all searchable fields in the database, click 'Load All Searchables'"]</li>
+                                                        <li>@Localizer["To remove all field criteria you have entered, click 'Delete All Criteria'"]</li>
+                                                        <li>@Localizer["To clear all search terms but keep the fields, click 'Clear All Search Terms'"]</li>
+                                                        <li>@Localizer["Do not use wildcard characters (*, ?) in the search terms "]</li>
+
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Documents Criteria"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["This grid allows you to specify documents and search term per document; ONLY documents you entered will be searched"]</li>
+                                                        <li>@Localizer["To add a criteria, click the '+' button, enter the document name, search term, word match and query type"]</li>
+                                                        <li>@Localizer["To search for multiple terms for a document, add rows with the same document name but different search terms"]</li>
+                                                        <li>@Localizer["To load all searchable documents in the database, click 'Load All Searchables'"]</li>
+                                                        <li>@Localizer["To remove all document criteria you have entered, click 'Delete All Criteria'"]</li>
+                                                        <li>@Localizer["To clear all search terms but keep the document names, click 'Clear All Search Terms'"]</li>
+                                                        <li>
+                                                            @Localizer["Word Match"]
+                                                            <br />  &nbsp;&nbsp; &nbsp; @Localizer["Any word"] - @Localizer["at least one word in the Search Term must be in the document"]
+                                                            <br />  &nbsp;&nbsp; &nbsp; @Localizer["All words"] - @Localizer["all words must be in the document regardless of order"]
+                                                        </li>
+                                                        <li>
+                                                            @Localizer["Query Type"]
+                                                            <br />  &nbsp;&nbsp; &nbsp; @Localizer["Simple"] - @Localizer["do a simple search"]
+                                                            <br />  &nbsp;&nbsp; &nbsp; @Localizer["Full"] - @Localizer["do a Lucene search"]
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="gsHelpLuceneTabContent" role="tabpanel" aria-labelledby="gsHelpLuceneTab">
+                            <div class="form-row pt-2">
+                                <div class="col-12">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <i>@Localizer["Lucene query allows formulation of a more complex and powerful search."]</i>
+                                            <i>@Localizer["It CAN ONLY be used for document content search with Query Type = 'Full'. It CANNOT be used for database search (Your Data)."]</i>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Search Term"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["It can be a single word by itself without quotations such as:"] <i>process</i></li>
+                                                        <li>@Localizer["Or, it can be a phrase (group of words) surrounded by double quotes such as:"] <i>"testing apparatus"</i></li>
+                                                        <li>@Localizer["Multiple terms can be combined together using Boolean operators"]</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Fielded Search"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Fields to be searched can be specified in the query; if omitted, all searchable fields will be scanned"]</li>
+                                                        <li>@Localizer["Document search fields: content, merged_content, text, layoutText"]</li>
+                                                        <li>@Localizer["For example, to search for the phrase 'Just do it' in content field:"] <i>content: "Just do it"</i></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Wildcard Search"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Wildcard (* ?) characters can be used in the search; for example:"] <i>te?t, test*</i></li>
+                                                        <li>@Localizer["However, wildcards characters cannot be used as the first character of a term"]</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Fuzzy Search"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Fuzzy search is used to search for similar terms"]</li>
+                                                        <li>@Localizer["To do a fuzzy search, append the tilde ~ at the end of a word with an optional number, between 0 and 2, called the 'edit distance'"]</li>
+                                                        <li>@Localizer["For example, blue~ or blue~1 would return blue, blues, glue"]</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Proximity Search"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Proximity search finds words within a specific distance of each other"]</li>
+                                                        <li>@Localizer["To do a proximity search, enclose the terms in double quotation marks, followed by the tilde ~ and a number called 'proximity boundary'"]</li>
+                                                        <li>@Localizer["For example, to search for documents that have words 'computer' and 'tutorial' within 5 words of each other:"] <i>"computer tutorial"~5</i></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Regular Expressions"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Regular expression search finds a match based on (regular expression) patterns between forward slashes '/'"]</li>
+                                                        <li>@Localizer["For example, to search for the words 'Hotel' or 'Motel' in the text field:"] <i>text: /(Ho|Mo)tel/</i></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Boolean Operators"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["Boolean operators allow search terms to be combined"]</li>
+                                                        <li>
+                                                            OR -
+                                                            @Localizer["default conjunction, if none is specified; matches documents where either terms exists; to search for documents that contain 'linear search' or 'binary search':"] <i>"linear search" OR "binary search"</i><br />
+                                                            @Localizer["to implicitly search for documents that contain 'microscope' or 'test tube':"] <i>microscope "test tube"</i><br />
+                                                        </li>
+                                                        <li>AND - @Localizer["matches documents where both terms exist; to search for documents with 'John Smith' and 'Jane Doe':"] <i>"John Smith" AND "Jane Doe"</i></li>
+                                                        <li>+ - @Localizer["requires that the term after the '+' exists somewhere in the document; to search for documents that must contain 'US' and may contain 'GB':"] <i>+US GB</i></li>
+                                                        <li>
+                                                            NOT -
+                                                            @Localizer["excludes documents that contain the term after NOT; to search for documents with 'Microsoft' but not 'Apple':"] <i>Microsoft NOT Apple</i><br />
+                                                            @Localizer["NOT cannot be used by itself; this search will not yield anything:"] <i>NOT Apple</i><br />
+                                                        </li>
+                                                        <li>- - @Localizer["excludes documents that contain the term after the '-'; to search for documents that contain 'apple cider' but not 'apple juice':"] <i>"apple cider" - "apple juice"</i></li>
+                                                        <li>@Localizer["Grouping - use parentheses to group clauses or form sub queries; to search for either 'apple' or 'orange' and 'peach':"] <i>(apple OR orange) AND peach</i></li>
+                                                        <li>@Localizer["Field Grouping - use parentheses to group multiple clauses to a single field; to search for documents that contain 'tiger' and 'pink panther' in the text field:"] <i>text: (+tiger +\"pink panther\")</i></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 help-subtitle">
+                                                    @Localizer["Escaping Special Characters"]
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <ul>
+                                                        <li>@Localizer["These are the Lucene special characters: + - && || ! ( ) { } [ ] ^ \" ~ * ? : \\"]</li>
+                                                        <li>@Localizer["To use these characters in the search term, use the '\\' before the character; for example to search for '(1+1):2':"] <i>\(1\+1\)\:2</i></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="form-row pt-2">
+                                <div class="col-12" align="center">
+                                    <i>
+                                        @Localizer["References:"]
+                                        <a href="https://docs.microsoft.com/en-us/azure/search/search-query-lucene-examples" target="_blank" rel="noopener noreferrer">Microsoft Lucene Search</a> •
+                                        <a href="https://lucene.apache.org/core/2_9_4/queryparsersyntax.html" target="_blank" rel="noopener noreferrer">Apache Lucene Search</a> •
+                                        <a href="https://lucene.apache.org/core/6_6_1/core/org/apache/lucene/util/automaton/RegExp.html" target="_blank" rel="noopener noreferrer">Regular Expressions</a>
+                                    </i>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button id="cancel" type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times pr-2"></i>@Localizer["Close"]</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+@*<div class="col-1">•</div>*@
+<style>
+    .form-row {
+        font-size: small;
+    }
+
+    .help-subtitle {
+        font-size: medium;
+        font-weight: bold;
+        color: #3A587E;
+        margin-top: 10px;
+    }
+
+    ul.no-bullets {
+        list-style-type: none;
+        margin-left: 10px;
+        padding: 0;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        $("#globalSearchHelpDialog").modal("show");
+    });
+</script>

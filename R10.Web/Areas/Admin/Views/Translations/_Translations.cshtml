@@ -1,0 +1,11 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Translations"];
+    ViewData.AddActivePage(AdminNavPages.Translations);
+}
+
+<div id="translationList" class="mt-3">
+    @await Html.PartialAsync("_TranslationList")
+</div>
+@await Component.InvokeAsync("LoadingSpinner")
+

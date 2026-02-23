@@ -1,0 +1,671 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IAttorneyService _attyService
+@inject IClientService ClientService
+@inject IParentEntityService<TmkCountry, TmkAreaCountry> CountryService
+@inject IEntityService<TmkCaseType> CaseTypeService;
+@inject IStringLocalizer<TrademarkResource> Localizer
+@inject ISystemSettings<TmkSetting> Settings
+@using System.Globalization;
+@{
+    var tmkSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[tmkSettings.LabelClient ?? "Client"];
+    var clientNameLabel = Localizer[tmkSettings.LabelClientName ?? "Client Name"];
+    var caseNumberLabel = Localizer[tmkSettings.LabelCaseNumber ?? "Case Number"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = Localizer[widget.Title + " - {0}"];
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var settings = widget.UserSettings;
+
+    List<AttorneyListViewModel> attorneys = new List<AttorneyListViewModel>();
+    var attorneySettingProperty = settings.Property("Attorneys");
+    if (attorneySettingProperty != null)
+    {
+        try
+        {
+            int[] attyFilter = ((JArray)attorneySettingProperty.Value).Select(a => (int)a).ToArray();
+
+            if (attyFilter.Count() > 0)
+            {
+                attorneys = await _attyService.QueryableList
+                                        .Where(a => attyFilter.Contains(a.AttorneyID))
+                                        .Select(a => new AttorneyListViewModel
+                                        {
+                                            AttorneyID = a.AttorneyID,
+                                            AttorneyCode = a.AttorneyCode,
+                                            AttorneyName = a.AttorneyName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    List<AttorneyListViewModel> attorneyPositions = new List<AttorneyListViewModel>();
+
+    List<AttorneyListViewModel> fixedAttyPositions = new List<AttorneyListViewModel>()
+    {
+        new AttorneyListViewModel {AttorneyID = 0, AttorneyCode = "", AttorneyName = ""},
+        new AttorneyListViewModel {AttorneyID = 1, AttorneyCode = "Attorney1", AttorneyName = "Attorney1"},
+        new AttorneyListViewModel {AttorneyID = 2, AttorneyCode = "Attorney2", AttorneyName = "Attorney2"},
+        new AttorneyListViewModel {AttorneyID = 3, AttorneyCode = "Attorney3", AttorneyName = "Attorney3"},
+        new AttorneyListViewModel {AttorneyID = 4, AttorneyCode = "Attorney4", AttorneyName = "Attorney4"},
+        new AttorneyListViewModel {AttorneyID = 5, AttorneyCode = "Attorney5", AttorneyName = "Attorney5"}
+    };
+    var attyPositionSettingProperty = settings.Property("AttorneyPositions");
+    if (attyPositionSettingProperty != null)
+    {
+        try
+        {
+            int[] attyFilter = ((JArray)attyPositionSettingProperty.Value).Select(a => (int)a).ToArray();
+
+            if (attyFilter.Count() > 0)
+            {
+                attorneyPositions = fixedAttyPositions.Where(a => attyFilter.Contains(a.AttorneyID))
+                                .Select(a => new AttorneyListViewModel
+                                {
+                                    AttorneyID = a.AttorneyID,
+                                    AttorneyCode = a.AttorneyCode,
+                                    AttorneyName = a.AttorneyName
+                                })
+                                .ToList();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    var clientSettingProperty = settings.Property("Clients");
+    if (clientSettingProperty != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)clientSettingProperty.Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    var countrySettingProperty = settings.Property("Countries");
+    if (countrySettingProperty != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)countrySettingProperty.Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                                {
+                                                    CountryID = c.CountryID,
+                                                    Country = c.Country,
+                                                    CountryName = c.CountryName
+                                                })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    List<TmkCaseType> excludeCaseTypes = new List<TmkCaseType>();
+    var caseTypeSettingProperty = settings.Property("ExcludeCaseTypes");
+    if (caseTypeSettingProperty != null)
+    {
+        try
+        {
+            int[] caseTypeFilter = ((JArray)caseTypeSettingProperty.Value).Select(a => (int)a).ToArray();
+
+            if (caseTypeFilter.Count() > 0)
+            {
+                excludeCaseTypes = await CaseTypeService.QueryableList
+                        .Where(c => caseTypeFilter.Contains(c.CaseTypeId))
+                        .Select(c => new TmkCaseType
+                                {
+                                    CaseTypeId = c.CaseTypeId,
+                                    CaseType = c.CaseType
+                                })
+                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+
+    bool showInactiveCases = settings.Property("ShowInactiveCases") != null ? (settings["ShowInactiveCases"] ?? false).Value<bool>() : false;
+
+    string filDateFromStr = settings.Property("FilDateFrom") != null ? (settings["FilDateFrom"] ?? "").Value<string>() ?? "" : "";
+    DateTime? filDateFrom = !string.IsNullOrEmpty(filDateFromStr) ? DateTime.ParseExact(filDateFromStr, "MM/dd/yyyy", CultureInfo.InvariantCulture) : null;
+    string filDateToStr = settings.Property("FilDateTo") != null ? (settings["FilDateTo"] ?? "").Value<string>() ?? "": "";
+    DateTime? filDateTo = !string.IsNullOrEmpty(filDateToStr) ? DateTime.ParseExact(filDateToStr, "MM/dd/yyyy", CultureInfo.InvariantCulture) : null;
+}
+
+<style>   
+    .clearFilDateRange_@userWidgetId {      
+        color: dimgray;
+        padding: 8px 10px;
+    }
+
+    .clearFilDateRange_@userWidgetId:hover {
+        cursor: pointer;
+        color: black;
+        background-color: #e7e7e7;
+    }
+</style>
+<script>
+    var selectedAtty = "";
+    var selectedGroup = "";
+    var refresh = false;
+
+    function saveFilDateRange(e) {                
+        var widgetId = parseInt('@widget.Id');
+        var dateRange = this.range();
+        var selectedStartDate = "";
+        var selectedEndDate = "";
+        if (dateRange) {
+            if (dateRange.start) {
+                selectedStartDate = kendo.toString(dateRange.start, 'MM/dd/yyyy');
+            }
+            if (dateRange.end) {
+                selectedEndDate = kendo.toString(dateRange.end, 'MM/dd/yyyy');
+            }
+        }       
+        saveSetting(widgetId, `{ FilDateFrom: "${selectedStartDate}", FilDateTo: "${selectedEndDate}" }`, function () { refresh = true;});        
+    }
+
+    function filDateRangeOnClose(e) {        
+        $("#FilDateRange_@userWidgetId input").blur();  
+    }
+
+    $(document).ready(function () {
+        var attyList = [@String.Join(",", attorneys.Select(a => a.AttorneyID).ToList())];
+        var attyPositionsList = [@String.Join(",", attorneyPositions.Select(a => a.AttorneyID).ToList())];        
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var excludeCaseTypeList = [@String.Join(",", excludeCaseTypes.Select(c => c.CaseTypeId).ToList())];                 
+
+        $(document).on("click", ".clearFilDateRange_@userWidgetId", function (e) {            
+            var daterangepicker = $("#FilDateRange_" + '@userWidgetId').data("kendoDateRangePicker");
+            daterangepicker.range({
+                start: null,
+                end: null
+            });
+            daterangepicker.trigger('change');
+        });
+
+        $("#FilDateRange_@userWidgetId input").addClass("non-sortable");
+        var filDateRange = { start: null, end: null };        
+        if ('@filDateFrom') {            
+            filDateRange.start = new Date('@filDateFrom');
+        }  
+        if ('@filDateTo') {            
+            filDateRange.end = new Date('@filDateTo');
+        }   
+        var drPicker = $("#FilDateRange_@userWidgetId").data("kendoDateRangePicker");
+        drPicker.range(filDateRange);
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#@widget.Id .widget-settings .toggle-option");
+        $(document).on("click", "#@widget.Id .widget-settings .toggle-option", function (e) {
+            saveSetting(@widget.Id, `{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`, function () { refresh = true; });
+        });
+
+        $(document).off("click", "#attorneyFilter_@userWidgetId .delete-atty");
+        $(document).off("change", "#AttorneyCode_@userWidgetId");
+        $(document).on("click", "#attorneyFilter_@userWidgetId .delete-atty", function (e) {
+            var item = $.inArray($(this).data("id"), attyList);
+
+            if (item !== -1) {
+                attyList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Attorneys: [${attyList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#AttorneyCode_@userWidgetId", function (e) {
+            var atty = $(this).data("kendoMultiColumnComboBox");
+
+            if (atty.selectedIndex >= 0) {
+                var dataItem = atty.dataItem(atty.selectedIndex);
+
+                var attyId = dataItem.AttorneyID;
+                var attyCode = dataItem.AttorneyCode;
+                var attyName = dataItem.AttorneyName;
+
+                if ($.inArray(attyId, attyList) == -1) {
+                    attyList.push(attyId);
+                    $("#attorneyFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="atty-code">${attyCode}</span><span class="atty-name">${attyName}</span></div><div class="delete-filter delete-atty" data-id="${attyId}" title="Remove ${attyCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Attorneys: [${attyList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            atty.value("");
+        });
+
+
+        $(document).off("click", "#attorneyPositionFilter_@userWidgetId .delete-attyPos");
+        $(document).off("change", "#AttorneyPosition_@userWidgetId");
+        $(document).on("change", "#AttorneyPosition_@userWidgetId", function (e) {
+            var attyPositions = $(this).data("kendoDropDownList");
+
+            if (attyPositions.selectedIndex >= 0) {
+                var dataItem = attyPositions.dataItem(attyPositions.selectedIndex);
+
+                var attyId = dataItem.AttorneyID;
+                var attyCode = dataItem.AttorneyCode;
+                var attyName = dataItem.AttorneyName;
+
+                if ($.inArray(attyId, attyPositionsList) == -1) {
+                    attyPositionsList.push(attyId);
+                    $("#attorneyPositionFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="atty-code">${attyCode}</span></div><div class="delete-filter delete-attyPos" data-id="${attyId}" title="Remove ${attyCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ AttorneyPositions: [${attyPositionsList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            attyPositions.value("");
+        });
+        $(document).on("click", "#attorneyPositionFilter_@userWidgetId .delete-attyPos", function (e) {
+            var item = $.inArray($(this).data("id"), attyPositionsList);
+
+            if (item !== -1) {
+                attyPositionsList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ AttorneyPositions: [${attyPositionsList.toString()}] }`, function () { refresh = true; });
+            }
+        });                
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+
+        $(document).off("click", "#ExcludeCaseTypeFilter_@userWidgetId .delete-caseType");
+        $(document).off("change", "#ExcludeCaseType_@userWidgetId");
+        $(document).on("click", "#ExcludeCaseTypeFilter_@userWidgetId .delete-caseType", function (e) {
+            var item = $.inArray($(this).data("id"), excludeCaseTypeList);
+
+            if (item !== -1) {
+                excludeCaseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ ExcludeCaseTypes: [${excludeCaseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ExcludeCaseType_@userWidgetId", function (e) {
+            var patCaseType = $(this).data("kendoComboBox");
+
+            if (patCaseType.selectedIndex >= 0) {
+                var dataItem = patCaseType.dataItem(patCaseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, excludeCaseTypeList) == -1) {
+                    excludeCaseTypeList.push(caseTypeId);
+                    $("#ExcludeCaseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="patCaseType-code">${caseTypCode}</span></div><div class="delete-filter delete-caseType" data-id="${caseTypeId}" title="Remove ${caseTypCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ ExcludeCaseTypes: [${excludeCaseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+            patCaseType.value("");
+        });
+
+
+        if ('@(widget.IsDetail)' === '@true') {
+            var chart = $("#@userWidgetId").data("kendoChart");
+            chart.bind("seriesClick", onSeriesClick);
+            $("#@userWidgetId").attr("style", "position: static !important;");
+            $("#@userWidgetId-grid-header").hide();
+
+            var grid = $("#@userWidgetId-grid").data("kendoGrid");
+            grid.dataSource.read();
+        }
+    });
+
+    function onSeriesClick(e) {
+        var grid = $("#@userWidgetId-grid").data("kendoGrid");
+        grid.dataSource.read({ userWidgetId: @widget.Id, attorney: e.dataItem["Color"], selectedGroup: e.dataItem["Name"] });
+
+        var gridTitle = "@gridDetailTitle";
+        $("#@userWidgetId-grid-title").text(gridTitle.replace("{0}", e.category));
+        $("#@userWidgetId-grid-header").show();
+
+        selectedAtty = e.dataItem["Color"];
+        selectedGroup = e.dataItem["Name"];
+    };
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("TmkAttorneyCaseLoadByFilingAndActionDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id, attorney: selectedAtty, selectedGroup: selectedGroup });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+
+    function gridDetailSearchFilters() {
+        return { userWidgetId: @widget.Id, attorney: selectedAtty, selectedGroup: selectedGroup };
+    };
+
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul class="list-group">
+           <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Filing Date Range"]</span>
+                <span style="display:flex;">                    
+                    @(Html.Kendo().DateRangePicker()
+                      .Name("FilDateRange_" + userWidgetId)                       
+                      .Format("dd-MMM-yyyy")    
+                      .Range(r => r.Start(filDateFrom).End(filDateTo))
+                      .Labels(false)
+                      .Events(e => e.Change("saveFilDateRange").Close("filDateRangeOnClose"))                        
+                      .HtmlAttributes(new { style = "width: 100%" })
+                    )                       
+                    <i class="fal fa-times clearFilDateRange_@userWidgetId" title=@Localizer["Remove"]></i>
+                </span>  
+            </li>            
+        </ul>
+        <ul id="attorneyPositionFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Attorney Position"]</span>
+                <span>
+                    @(Html.Kendo().DropDownList()
+                      .Name("AttorneyPosition_"+@userWidgetId)
+                      .DataTextField("AttorneyName")
+                      .DataValueField("AttorneyID")
+                      .HtmlAttributes(new { style = "width: 100px" })
+                      .BindTo(fixedAttyPositions)
+                      .Events(events => events.Open("function() {this.element.getKendoDropDownList().list.find('li.k-item').first().hide();}"))
+                      )
+                </span>
+            </li>
+            @foreach (AttorneyListViewModel atty in attorneyPositions)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="atty-code">@atty.AttorneyCode</span>
+                    </div>
+                    <div class="delete-filter delete-attyPos" data-id="@atty.AttorneyID" title="Remove @atty.AttorneyCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="attorneyFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Attorney"]</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.AttorneyID("AttorneyCode", Localizer["Attorney"], Localizer["Attorney Name"], "TmkTrademarkLookup", "Trademark", userWidgetId))</span>
+            </li>
+            @foreach (AttorneyListViewModel atty in attorneys)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="atty-code">@atty.AttorneyCode</span>
+                        <span class="atty-name">@atty.AttorneyName</span>
+                    </div>
+                    <div class="delete-filter delete-atty" data-id="@atty.AttorneyID" title="Remove @atty.AttorneyCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>       
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", clientLabel, clientNameLabel, "TmkTrademarkLookup", "Trademark", userWidgetId))</span>
+            </li>
+            @foreach (ClientListViewModel client in clients)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "TmkTrademarkLookup", "Trademark", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="ExcludeCaseTypeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Exclude Case Type(s)"]</span>
+                <span>@await Component.InvokeAsync("ComboBox", new { 
+                    name = "ExcludeCaseType",
+                    action = "GetCaseTypesList", 
+                    controller = "CaseType", 
+                    area = "Trademark", 
+                    screen = userWidgetId, 
+                    textProperty = "CaseType", 
+                    valueProperty = "CaseTypeId",                     
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Case Type"], Localizer["Description"]),
+                    itemTemplate = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                    listWidth = 450 
+                })</span>
+            </li>
+            @foreach (TmkCaseType caseType in excludeCaseTypes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="tmkCaseType-code">@caseType.CaseType</span>
+                    </div>
+                    <div class="delete-filter delete-caseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Include inactive cases"]</span>
+                <span>
+                    <label class="toggle-switch">
+                        <input id="@userWidgetId-show-inactive-cases" type="checkbox" checked="@showInactiveCases" data-state="@showInactiveCases.ToString().ToLower()" data-setting="ShowInactiveCases" class="toggle-option">
+                        <span class="slider round"></span>
+                    </label>
+                </span>
+            </li>
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Chart(Model)
+    .Name(userWidgetId)
+    .Title("")
+    .Legend(legend => legend
+        .Visible(true)
+        .Position(ChartLegendPosition.Top)
+    )
+    .ChartArea(chartArea => chartArea
+        .Background("transparent")
+    )
+    .Series(series => series
+        .Bar(model => model.Value, model => model.Category)
+        //.ColorField("Color")
+        .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+        .Labels(labels => labels
+            .Visible(true)
+            .Template("#= value == null ? '' : value #")
+            .Background("transparent")
+            .Position(ChartBarLabelsPosition.OutsideEnd)
+        )
+    )
+    .DataSource(dataSource => dataSource
+        .Group(group => group.Add(model => model.Group))
+    )
+    .SeriesColors((string[])widget.SeriesColors)
+    .Tooltip(tooltip => tooltip
+        .Visible(true)
+        .Template("#= category #/#= series.name #: #= value == null ? 0 : value #")
+    )
+    .Pdf(pdf => pdf
+        .FileName(@widget.Title.ToString())
+        //.PaperSize("A4")
+        .Landscape(false)
+        .Margin(m => m
+            .Left(10)
+            .Right(10)
+            .Top(10)
+            .Bottom(10))
+    )
+)
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title"></span></h4>
+    </div>
+
+    @(Html.Kendo().Grid<TmkAttyCaseLoadDrillDownViewModel>()
+                    .Name(userWidgetId+"-grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                        columns.Bound(a => a.Country);
+                        columns.Bound(a => a.SubCase);
+                        columns.Bound(a => a.Status);
+                        columns.Bound(a => a.FilDate).Format("{0:dd-MMM-yyyy}");
+                        columns.Bound(a => a.BaseDate).Format("{0:dd-MMM-yyyy}");
+                        columns.Bound(a => a.ActionType);
+                        columns.Bound(a => a.DueDate).Format("{0:dd-MMM-yyyy}");
+                    })
+                    .ToolBar(tools => tools.Excel())
+                    .AutoBind(false)
+                    //.Excel(excel => excel.AllPages(true).ProxyURL(Url.Action("ExportToExcel", "Dashboard")))
+                    .Pageable(page => page.PageSizes(tmkSettings.SearchResultsPageSizeOptions))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .PageSize(tmkSettings.SearchResultsPageSize)
+                        .Read(read => read.Action("TmkAttorneyCaseLoadByFilingAndActionDetailRead", "Dashboard", new { userWidgetId = widget.Id }).Data("gridDetailSearchFilters"))
+                    )
+                    .Events(e => e.ExcelExport("gridExcelExport"))
+                    .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" })
+)
+
+    <style>
+        .k-chart {
+            margin: auto;
+        }
+    </style>
+}

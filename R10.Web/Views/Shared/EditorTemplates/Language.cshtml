@@ -1,0 +1,25 @@
+﻿@model Language
+@{
+    var area = ViewData["Area"] != null ? ViewData["Area"].ToString() : "Shared";
+    var controller = ViewData["Controller"] != null ? ViewData["Controller"].ToString() : "Language";
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                .DataTextField("LanguageName")
+                .DataValueField("KeyID")
+                .AutoBind(false)
+                .DataSource(source =>
+                {
+                    source.Read(read =>
+                    {
+                        read.Action("GetLanguageList", controller, new { area = area, property = "LanguageName" });
+                        //read.Action("GetLanguageList", "Language", new { area = "Shared", textProperty = "LanguageName" });
+                    })
+                    .ServerFiltering(true);
+                })
+
+                //.Template("<span class='k-state-default'><strong>#: data.LanguageName #</strong></span>&nbsp;<span class='k-state-default'>#: data.LanguageName #</span>")
+                .Template("<span class='k-state-default'>#: data.LanguageName #</span>")
+                .HtmlAttributes(new { style = "width: 100%" })
+
+)
+

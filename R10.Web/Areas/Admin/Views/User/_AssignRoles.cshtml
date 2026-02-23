@@ -1,0 +1,179 @@
+﻿@model UserDetailViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+
+<div class="page-content">
+@await Html.PartialAsync("_DialogHeader", Model)
+</div>
+<form id="AssignRoles" method="post">
+    <div class="modal-status page-status alert alert-danger collapse" role="alert" style="margin-top: -10px;"><span class="message"></span></div>
+    <input asp-for="Id" class="form-control" value="@Model.Id" hidden />@*!!! renders PkId without value="@Model.Id" !!!*@
+    @(Html.Kendo().Grid<UserSystemRoleViewModel>()
+                        .Name("gridUserSystemRoles")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(u => u.System).Sortable(false)
+                                        .ClientTemplate("#=System.Name#")
+                                        .Title(Localizer["System"].ToString())
+                                        .HtmlAttributes(new { @class = "grid-cell" });
+                            columns.Bound(u => u.Role).Sortable(false)
+                                        .ClientTemplate("#=Role.Name#")
+                                        .Title(Localizer["Role"].ToString())
+                                        .HtmlAttributes(new { @class = "grid-cell" }); ;
+                            columns.Bound(u => u.RespOffice)
+                                        .Title(Localizer["Resp Ofc"].ToString())
+                                        .Hidden(!User.IsRespOfficeOn())
+                                        .HtmlAttributes(new { @class = "grid-cell" });
+                            columns.Command(command =>
+                            {
+                                command.Edit()
+                                        .Text("Edit")
+                                        .IconClass("fal fa-edit fa-fixed-width")
+                                        .UpdateText(Localizer["Save"].ToString())
+                                        .UpdateIconClass("fal fa-check fa-fixed-width")
+                                        .CancelText(Localizer["Cancel"].ToString())
+                                        .CancelIconClass("fal fa-undo fa-fixed-width");
+                                command.Destroy()
+                                        .Text("Delete")
+                                        .IconClass("fal fa-trash-alt fa-fixed-width");
+                            }).HtmlAttributes(new { @class = "d-none d-md-table-cell" }).HeaderHtmlAttributes(new { @class = "d-none d-md-table-cell" });
+                            columns.Command(command =>
+                            {
+                                command.Edit()
+                                        .Text(" ")
+                                        .IconClass("fal fa-edit fa-fixed-width")
+                                        .UpdateText(" ")
+                                        .UpdateIconClass("fal fa-check fa-fixed-width")
+                                        .CancelText(" ")
+                                        .CancelIconClass("fal fa-undo fa-fixed-width");
+                                command.Destroy()
+                                        .Text(" ")
+                                        .IconClass("fal fa-trash-alt fa-fixed-width");
+                            }).HtmlAttributes(new { @class = "d-sm-table-cell d-md-none" }).HeaderHtmlAttributes(new { @class = "d-sm-table-cell d-md-none" });
+                            //columns.Command(command => command.Destroy().Text("Delete").IconClass("fal fa-trash-alt fa-fixed-width"));
+                            //columns.Command(command => command.Destroy().Text("Delete").IconClass("fal fa-trash-alt fa-fixed-width")).HtmlAttributes(new { @class = "d-none d-md-table-cell" }).HeaderHtmlAttributes(new { @class = "d-none d-md-table-cell" });
+                            //columns.Command(command => command.Destroy().Text(" ").IconClass("fal fa-trash-alt fa-fixed-width")).HtmlAttributes(new { @class = "d-sm-table-cell d-md-none" }).HeaderHtmlAttributes(new { @class = "d-sm-table-cell d-md-none" });
+                        })
+                        .ToolBar(toolBar =>
+                        {
+                            toolBar.Create().Text(Localizer["Add role"].ToString()).IconClass("fal fa-plus fa-fixed-width");
+                        })
+                        .Editable(editable => editable
+                                    .Mode(GridEditMode.InLine)
+                                    .DisplayDeleteConfirmation(false)
+                        //todo:custom confirmation
+                        //.DisplayDeleteConfirmation("Are you sure?")
+                        )
+                        //.Pageable(pager => pager.AlwaysVisible(false).PageSizes(true).Refresh(true))
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .Selectable()
+                        //.Events(e => e.Change("gridUserSystemRolesOnChange"))
+                        .AutoBind(true)
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Events(events => events.Error("userSetupPage.gridUserSystemRolesOnError"))
+                            .Create(create => create.Action("UserSystemRoleGrid_Create", "Roles", new { userId = Model.Id }))
+                            .Read(read => read.Action("UserSystemRoleGrid_Read", "Roles", new { userId = Model.Id }))
+                            .Update(update => update.Action("UserSystemRoleGrid_Update", "Roles"))
+                            .Destroy(destroy => destroy.Action("UserSystemRoleGrid_Delete", "Roles"))
+                            .Model(model =>
+                            {
+                                model.Id(u => u.Id);
+                                model.Field(f => f.UserId).DefaultValue(Model.Id);
+                                model.Field(f => f.System).DefaultValue(new PickListViewModel());
+                                model.Field(f => f.Role).DefaultValue(new PickListViewModel());
+                            })
+                            .Sort(sort => sort.Add(u => u.System.Name))
+                        )
+                .HtmlAttributes(new { @class = "kendo-Grid k-grid-popup" })
+    )
+</form>
+<script type="text/kendo-template" id="message">
+    <div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg field-validation-error"
+         style="margin: 0.5em; display: block; " data-for="#=field#" data-valmsg-for="#=field#" id="#=field#_validationMessage">
+        <span class="k-icon k-i-warning"> </span>#=message#<div class="k-callout k-callout-n"></div>
+    </div>
+</script>
+
+<style>
+    .k-widget.field-validation-error {
+        width: unset !important;
+    }
+    #gridUsers,
+    #gridUserSystemRoles {
+        border: 0px;
+    }
+
+        #gridUsers th,
+        #gridUserSystemRoles th {
+            text-transform: capitalize;
+        }
+
+        #gridUsers .email {
+            margin-top: -7px;
+        }
+
+        #gridUsers .name {
+            font-weight: 500;
+        }
+
+        #gridUsers .menu {
+            cursor: pointer;
+        }
+
+        #gridUsers .badge {
+            text-transform: lowercase;
+        }
+
+        #gridUserSystemRoles .k-button {
+            background-color: transparent;
+            margin: 0px;
+            padding: 0 5px 0 5px;
+            border: 0px;
+            min-width: 25px;
+        }
+
+        #gridUserSystemRoles .k-grid-toolbar {
+            padding-top: 5px;
+        }
+
+        #gridUserSystemRoles th,
+        #gridUserSystemRoles td {
+            padding-right: 0px;
+        }
+</style>
+
+<script>    
+    var validationMessageTmpl = kendo.template($("#message").html());
+
+    /*system/role/respofc editor methods*/
+    function userSystemsOnChange(e) {
+        const row = $(e.sender.element).closest("tr");
+        const roles = row.find("#Role").data("kendoDropDownList");
+        const respOffices = row.find("#RespOffice").data("kendoDropDownList");
+
+        roles.dataSource.read();
+        respOffices.dataSource.read();
+    }
+
+    function getUserSystemFilter(e) {
+        const row = $(event.srcElement).closest("tr");
+        const grid = $(event.srcElement).closest("[data-role=grid]").data("kendoGrid");
+        const item = grid.dataItem(row);
+        const form = $(event.srcElement).closest("form");
+        const id = form.find("#Id").val();
+        const system = item.System == undefined ? "" : item.System.Id;        
+        return { userId: id, systemId: system };
+    }
+
+    function getUserRoleFilter(e) {
+        return { systemId: getSystemId() }
+    }
+
+    function getUserRespOfficeFilter(e) {
+        return { systemId: getSystemId() }
+    }
+
+    function getSystemId() {
+        return $("#gridUserSystemRoles").find("#System").data("kendoDropDownList").value();
+    }
+</script>

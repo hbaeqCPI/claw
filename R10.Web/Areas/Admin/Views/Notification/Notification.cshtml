@@ -1,0 +1,92 @@
+﻿@model List<R10.Core.Entities.Notification>
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var request = ViewContext.HttpContext.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-content">
+    <h4><i class="fal fa-bell pr-3" style="font-size:20px"></i>@Localizer["Alerts"]</h4>
+
+    <div class="row">
+        @if (Model.Count > 0)
+        {
+            foreach (var item in Model)
+            {
+                @*<div class="col-md-6 ml-1 mb-1 border rounded notification">*@
+                <div class="col-md-6 notification">
+                    <div class="mb-1 mr-1 p-1 border rounded">
+                        <div class="d-flex justify-content-between">
+                            <div class="pt-2">
+
+                                @if (item.Type.ToLower() == "i")
+                                {
+                                    <i class="fal fa-info-circle notify-info" style="font-size:18px"></i>
+                                }
+                                else
+                                {
+                                    <i class="fal fa-exclamation-circle notify-alert" style="font-size:18px"></i>
+                                }
+
+                                @if (!string.IsNullOrEmpty(item.NavigateToUrl))
+                                {
+                                    <a target="_blank" href="@(baseUrl+item.NavigateToUrl)"><span class="notify-title @(item.Type.ToLower() == "i" ? "notify-info":"notify-alert")">@item.Title</span></a>
+                                }
+                                else
+                                {
+                                    <span class="notify-title @(item.Type.ToLower() == "i" ? "notify-info":"notify-alert")">@item.Title</span>
+                                }
+
+                            </div>
+                            <span class="notify-dismiss" data-message-id="@item.MessageId"><i class="fal fa-times-circle pt-2" title="@Localizer["Dismiss"]" style="cursor:pointer"></i></span>
+                        </div>
+                        <p>@item.Message</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col">@Localizer["No new alerts available"]</div>
+        }
+    </div>
+</div>
+<style>
+    .notify-title {
+        font-size: .9rem;
+    }
+
+    .notify-info {
+        color: var(--link-text);
+    }
+
+    .notify-alert {
+        color: #b4070d;
+    }
+</style>
+<script>
+    $(".notify-dismiss").on("click", function () {
+        const baseUrl = $("body").data("base-url");
+        const messageId = $(this).data("message-id");
+        const url = `${baseUrl}/Admin/Notification/Dismiss`;
+
+        $.post(url, { messageId })
+            .done(() => {
+                $(this).closest(".notification").remove();
+                let count = $(".global-message-count").html();
+                if (count) {
+                    count = +count;
+                    if (count > 1)
+                        $(".global-message-count").html(count - 1);
+                    else
+                        $(".global-message-count").html("");
+                }
+            })
+            .fail((e => {
+                pageHelper.showErrors(e);
+            }));
+    });
+
+
+</script>

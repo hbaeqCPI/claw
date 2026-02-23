@@ -1,0 +1,143 @@
+﻿@using  R10.Web.Areas
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@model CustomReportViewModel
+@{
+    var title = Localizer["Custom Report"].ToString();
+    ViewData["Title"] = title;
+    ViewData["ActivePage"] = "ReportCriteriaPage";
+
+    var screen = "customReport";
+    ViewBag.PageId = "CustomReport";
+
+    var childViewModel = new ChildViewModel { Permission = (DetailPagePermission)ViewBag.Permission };
+    //var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent) || User.IsRespOfficeOn(SystemType.Trademark) || User.IsRespOfficeOn(SystemType.GeneralMatter);
+    var settings = await Settings.GetSetting();
+
+    var partialViewModel = new ReportPartialLookUpViewModel { Controller = "CustomReportLookUp", Area = "Shared" };
+    var reportPageOption = new ReportPageOption { CanPrint = true, CanEmail = true, CanSave = true, CanLoad = true, CanClear = true, Url = ViewBag.Url };
+}
+
+<style>
+    .input-validation-error {
+        border-color: red;
+    }
+</style>
+
+<div class="page-main">
+    <form method="post"
+          id="ReportCriteriaForm"
+          data-url="@ViewBag.Url"
+          data-email-report-url="@Url.Action("EmailCustomReport","Report", new { Area = "Shared", subjectTitle = title})">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="container-fluid cpiMainEntry page-header">
+            <div class="row">
+                <div class="row col-md-6 col-lg-7" style="padding:0px 0px 0px 0px; margin:0px 0px 0px 0px">
+                    <h2>@title</h2>
+                    <div class="col-1"></div>
+                    <div>
+                        <div class="form-group vertical-center">
+                            <label for="ReportFormat">@Localizer["Report Format"]</label>
+                            @(Html.Kendo().DropDownList()
+                            .Name("ReportFormat")
+                            .HtmlAttributes(new { style = "width: 100px" })
+                            .BindTo(Html.GetEnumSelectList<ReportOutputType>())
+                            .Events(events => events.Open("function() {this.element.getKendoDropDownList().list.find('li.k-item').first().hide();}"))
+                            )
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-5" style="padding:0px 15px 0px 0px; margin:0px 0px 0px 0px">
+                    @await Component.InvokeAsync("ReportPageNavLinks", reportPageOption)
+                </div>
+            </div>
+        </div>
+
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="container-fluid cpiMainEntry">
+            <div class="form-row group">
+                <div class="form-group float-label col-6">
+                    <label for="CustomReportName">@Localizer["Report Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ReportName", controller = partialViewModel.Controller, action = "GetCustomReportNameList", area = partialViewModel.Area, screen = screen })
+                </div>
+                <span asp-validation-for="ReportName"></span>
+            </div>
+            @*</div>*@
+
+            <hr />
+            @*<ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="dueDateListTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="selectionCriteriaTab" data-toggle="tab" href="#selectionCriteriaTabContent" role="tab" aria-controls="selectionCriteriaTabContent" aria-selected="true">@Localizer["Selection Criteria"]</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" id="schedulesTab" href="#schedulesTabContent" role="tab" aria-controls="schedulesTabContent" aria-selected="false">@Localizer["Schedules"]</a>
+                </li>
+            </ul>*@
+
+            <div class="tab-content detail">
+                @*<div class="tab-pane page-content show active" id="selectionCriteriaTabContent" role="tabpanel" aria-labelledby="selectionCriteriaTab" style="padding:0px 0px 0px 0px; margin:0px 0px 0px 0px">*@
+                <div class="container-fluid">
+                    @await Html.PartialAsync("_CustomReport", childViewModel)
+                </div>
+                @*</div>*@
+                @*<div class="tab-pane page-content" id="schedulesTabContent" role="tabpanel" aria-labelledby="schedulesTab" style="padding:0px 0px 0px 0px; margin:0px 0px 0px 0px">
+                    <div class="col-12">
+                        <div class="form-control-grid">
+                            @await Component.InvokeAsync("GridSchedules", new PageViewModel { RecordId = 2 })
+                        </div>
+                    </div>
+                </div>*@
+            </div>
+        </div>
+    </form>
+    <div class="cpiContainerPopup"></div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        const formName = "#ReportCriteriaForm";
+        ReportCriteriaPage.initialize(formName);
+        const form = $(formName);
+
+        $(document).off("change", "#ReportFormat");
+        $(document).on("change", "#ReportFormat", function (e) {
+            ReportCriteriaPage.ReportFormatChange();
+        });
+
+        const reportPageId = 'CustomReport';
+
+        form.find(".email-report").on("click", function (e) { ReportCriteriaPage.emailReport(form) })
+
+        form.find(".search-save").on("click", function () {
+            pageHelper.getSearchCriteriaScreen(formName, reportPageId, true);
+        })
+        form.find(".search-load").on("click", function () {
+            pageHelper.getSearchCriteriaScreen(formName, reportPageId, false, function (response) {
+                form.clearSearch();
+                pageHelper.loadSearchCriteria(response, { refineSearchContainer: formName });
+                setTimeout(function () { ReportCriteriaPage.showMultiWhenNotEmpty(); }, 1000);
+                ReportCriteriaPage.ReportFormatChange();
+            });
+        })
+        pageHelper.loadDefaultSearchCriteria(formName, reportPageId, { refineSearchContainer: formName });
+        setTimeout(function () { ReportCriteriaPage.showMultiWhenNotEmpty(); }, 1000);
+        ReportCriteriaPage.ReportFormatChange();
+    })
+
+    function printReport(form) {
+        var reportName = document.getElementById("ReportName_customReport").value;
+        if (reportName == null || reportName== "") {
+            pageHelper.showErrors("Report Name is Required.");
+            return;
+        }
+        cpiLoadingSpinner.show();
+        ReportCriteriaPage.submitForm(form, reportName);
+    }  
+
+    function CombineFields() {
+
+    }
+</script>

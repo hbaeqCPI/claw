@@ -1,0 +1,55 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    Layout = "~/Views/Shared/_LayoutMain.cshtml";
+}
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+    <script>
+        $(document).ready(function () {
+            const spinner = $(".login-page .login-bulletin .content-spinner");
+            const timer = setTimeout(function (){
+                spinner.show();
+            }, 500);
+
+            $.get("@Url.Action("GetLoginMessage", "Bulletin")")
+                .done((result) => {
+                    clearTimeout(timer);
+                    spinner.hide();
+                    if (result)
+                        $(".login-page .login-bulletin").html(result);
+                })
+                .fail(() => {
+                    clearTimeout(timer);
+                    spinner.hide();
+                });
+        })
+    </script>
+}
+<div class="site-status alert alert-danger alert-dismissible boxy collapse" role="alert">
+    @*<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>*@
+    <span class="message"></span>
+</div>
+<div id="page" class="row login-page ml-0 mr-0">
+    <div class="d-none d-lg-block col login-bulletin pl-0 pr-0">
+        <div class="content-spinner w-100 h-100 text-center" style="display: none;"><i class="vertical-center fad fa-spinner-third fa-spin fa-2x" style="color:var(--bg-menu-bar);"></i></div>
+    </div>
+    <div class="col login-content pl-0 pr-0">
+        <div class="site-content">
+            <div class="login-form">
+                @RenderBody()
+            </div>
+        </div>
+        <footer class="site-footer">
+            <div class="row footer-copyright">
+                <div class="col text-center">
+                    <span>&copy; @DateTime.Now.Year <a href="https://www.computerpackages.com" target="_blank" rel="noopener">Computer Packages Inc.</a> All rights reserved.</span>
+                    <span class="d-block d-sm-inline ml-0 ml-sm-2">
+                        <a asp-area="" asp-controller="Home" asp-action="Terms" class="copyright-link" title="@SharedLocalizer["Terms of Service"]">
+                            @SharedLocalizer["Terms of Service"]</a>
+                        <a asp-area="" asp-controller="Home" asp-action="Privacy" class="copyright-link" title="@SharedLocalizer["Privacy Policy"]">@SharedLocalizer["Privacy Policy"]</a>
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>

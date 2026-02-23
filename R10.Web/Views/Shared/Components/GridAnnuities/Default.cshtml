@@ -1,0 +1,155 @@
+﻿@model AnnuitiesGridOptions
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<AMSSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var id = Model.ParentId;
+    var pageName = ViewBag.ActivePage;
+    var gridName = $"annuitiesGrid_{ViewData["PageId"]}";
+    var optionName = $"showOutstandingAnnuitiesOnly_{ViewData["PageId"]}";
+    var labelClient = settings.LabelClient;
+
+    var detailsUrl = Url.Action("Detail", "AnnuitiesDue", new { area = "AMS", id = "#: DueId#", fromSearch = true });
+    var detailsLinkTemplate = $"<a href='{detailsUrl}' class='details-link' data-id='#: DueId#'>#: kendo.toString(AnnuityDueDate,'dd-MMM-yyyy')#</a>";
+    //"#= (AnnuityDueDate == null) ? '' : kendo.toString(AnnuityDueDate,'dd-MMM-yyyy')#")
+}
+<script>
+        @(gridName)_gridReadData = function() {
+            return { parentId: @id, outstandingOnly: $(".grid-options #@(optionName)").is(':checked') };
+        };
+
+        $(document).ready(function () {
+            $(".grid-options #@(optionName)").change(function () {
+                const grid = $("#@(gridName)").data("kendoGrid");
+                const outstandingOnly = $(this).is(':checked');
+
+                @(pageName).showOutstandingAnnuitiesOnly = outstandingOnly;
+                grid.dataSource.page(1);
+            });
+
+            $("#@gridName").on("click", ".mark-deleted", function (e) {
+                const checkbox = $(e.target);
+                const grid = $("#@(gridName)").data("kendoGrid");
+                const item = grid.dataItem(checkbox.closest("tr"));
+
+                const noInstruction = !item.ClientInstruction;
+                const notPaid = !item.CPIPaymentDate;
+                const ignoreRecord = !item.IgnoreRecord;
+                const markDeleted = function () {
+                    const url = "@(Url.Action("MarkDeleted", "AnnuitiesDue", new { area = "AMS"}))";
+                    const data = {
+                        dueId: item.DueId,
+                        ignoreRecord: ignoreRecord,
+                        tStamp: item.tStamp,
+                        __RequestVerificationToken: checkbox.closest("form").find("input[name=__RequestVerificationToken]").val()
+                    };
+
+                    cpiLoadingSpinner.show();
+                    $.post(url, data)
+                        .done(function (result) {
+                            cpiLoadingSpinner.hide();
+
+                            item.IgnoreRecord = ignoreRecord;
+                            item.tStamp = result.tStamp;
+
+                            if (ignoreRecord) {
+                                checkbox.addClass("fa-check-square");
+                                checkbox.removeClass("fa-square");
+                            }
+                            else {
+                                checkbox.removeClass("fa-check-square");
+                                checkbox.addClass("fa-square");
+                            }
+                            pageHelper.showSuccess("@SharedLocalizer["Annuity Due has been saved successfully."]");
+                        })
+                        .fail(function (error) {
+                            cpiLoadingSpinner.hide();
+
+                            cpiAlert.warning(pageHelper.getErrorMessage(error), function () {
+                                grid.dataSource.read();
+                            });
+                        });
+                };
+
+                if (!ignoreRecord)
+                    markDeleted();
+                else
+                {
+                    const title = "@SharedLocalizer["Annuities"]";
+                    const excludeReportMessage = "@SharedLocalizer["Record will be excluded when generating Reports."]";
+                    const excludeMessage = noInstruction ? "@SharedLocalizer["Record will be excluded when sending Reminders and generating Reports."]" : excludeReportMessage;
+                    const instructionMessage = noInstruction ? "@SharedLocalizer["Record can no longer be instructed on."]" : "@SharedLocalizer["Instruction can no longer be sent to CPI."]"
+                    const warningMessage = notPaid ? `${excludeMessage} ${instructionMessage}` : excludeReportMessage;
+                    const content = `@SharedLocalizer["Annuity Due will be marked as deleted."]<br><br><strong>${warningMessage}</strong><br><br>@SharedLocalizer["Do you want to continue?"]`;
+                    cpiConfirm.delete(title, content, markDeleted);
+                }
+            });
+        })
+</script>
+    <div class="grid-options">
+        <div class="show-outstanding-annuities">
+            <label class="option-name" for="@(optionName)">@SharedLocalizer["Show Outstanding Annuities Only"]</label>
+            <span>
+                <label class="toggle-switch">
+                    <input id="@(optionName)" type="checkbox" class="toggle-option">
+                    <span class="slider round"></span>
+                </label>
+            </span>
+        </div>
+    </div>
+
+        @(Html.Kendo().Grid<AMSDueListViewModel>().Name(gridName)
+                    .Columns(columns =>
+                    {
+                        columns.Bound(d => d.AnnuityNoDue).MinScreenWidth(576);
+                        columns.Bound(d => d.AnnuityDueDate)
+                                .ClientTemplate(detailsLinkTemplate)
+                                .HtmlAttributes(new { @class = "text-nowrap" })
+                                .Width(150);
+                        columns.Bound(d => d.AnnuityCost).Format("{0:n2}").Width(150)
+                                .HtmlAttributes(new { @class = "text-right" })
+                                .HeaderHtmlAttributes(new { @class = "text-right" });
+                        columns.Bound(d => d.CostToExpiration).Format("{0:n2}").Width(150)
+                                .HtmlAttributes(new { @class = "text-right" })
+                                .HeaderHtmlAttributes(new { @class = "text-right" }).MinScreenWidth(576);
+                        columns.Bound(d => d.ClientInstruction)
+                                .Title(SharedLocalizer[$"{labelClient} Instruction"]);
+                        columns.Bound(d => d.ClientInstructionDate)
+                                .Title(SharedLocalizer[$"{labelClient} Instruction Date"])
+                                .ClientTemplate("#= (ClientInstructionDate == null) ? '' : kendo.toString(ClientInstructionDate,'dd-MMM-yyyy')#")
+                                .Width(150).MinScreenWidth(768);
+                        columns.Bound(d => d.CPIPaymentDate)
+                                .ClientTemplate("#= (CPIPaymentDate == null) ? '' : kendo.toString(CPIPaymentDate,'dd-MMM-yyyy')#")
+                                .Width(150).MinScreenWidth(992);
+                        @* columns.Bound(d => d.CPIPaymentStatus).MinScreenWidth(992); *@
+                        columns.Bound(d => d.CPIReceiptPostDate)
+                                .ClientTemplate("#= (CPIReceiptPostDate == null) ? '' : kendo.toString(CPIReceiptPostDate,'dd-MMM-yyyy')#")
+                                .Width(150).MinScreenWidth(992);
+                        columns.Bound(d => d.CPIInstructionType).MinScreenWidth(768);
+                        columns.Bound(d => d.PaidThru).MinScreenWidth(1200);
+                        columns.Bound(d => d.IgnoreRecord)
+                                .ClientTemplate(Model.CanEditRecord ? "<i class=\'mark-deleted fal fa#= IgnoreRecord ? '-check' : ''#-square\'>" : "<i class='#: IgnoreRecord ? 'fal fa-check' : ''#' />")
+                                .HtmlAttributes(new { @class = "text-center" })
+                                .Title(Model.CanEditRecord ? SharedLocalizer["Mark Deleted"] : SharedLocalizer["Deleted"])
+                                .HeaderHtmlAttributes(new { @class = "text-center" });
+                    })
+                .Pageable(page => page.Responsive(false))
+                    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                    .Editable(e => e.Enabled(false))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .AutoBind(false)
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .Batch(true)
+                        .PageSize(settings.SubFormPageSize)
+                        .Model(model => { model.Id(d => d.DueId); })
+                        .Read(create => create.Action("GridRead", Model.Controller).Data($"{gridName}_gridReadData"))
+                        .Sort(sort => sort.Add("AnnuityDueDate").Descending())
+                        .Events(events =>
+                        {
+                            events.Error("pageHelper.onGridError");
+                        })
+                    )
+                    .HtmlAttributes(new { @class = "kendo-Grid annuities-grid" })
+        )
+

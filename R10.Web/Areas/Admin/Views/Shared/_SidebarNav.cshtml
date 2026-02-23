@@ -1,0 +1,169 @@
+﻿@model string
+@using Microsoft.AspNetCore.Authorization
+@using R10.Web.Security
+@using Microsoft.Extensions.Options;
+@using R10.Web.Services
+@inject IStringLocalizer<AdminResource> Localizer
+@inject SignInManager<CPiUser> SignInManager
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthService
+@inject IOptions<GraphSettings> GraphSettings
+@inject BackgroundTaskService BackgroundTaskService
+@{
+    var settings = await Settings.GetSetting();
+    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+    var isNotificationOn = settings.IsNotificationOn;
+    var isShowCustomFieldOn = settings.IsShowCustomFieldOn;
+    var isDeDocketOn = (await AuthService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessDeDocket)).Succeeded;
+    var graphSettings = GraphSettings.Value;
+    var showTradeSecret = (await AuthService.AuthorizeAsync(User, SharedAuthorizationPolicy.TradeSecretAdmin)).Succeeded;    
+    var isDMSOn = User.IsSystemEnabled(SystemType.DMS);
+}
+<div class="manage-nav sidebar-nav p-3">
+    <ul class="nav nav-pills cpi-nav-vertical flex-column">
+        <li class="nav-item">
+            <a asp-controller="User" asp-action="Index" class="nav-link @(Model == AdminNavPages.Users ? "active" : "")">
+                <span class="fad fa-user-friends fa-fixed-width"></span>@Localizer["Users"]
+            </a>
+        </li>
+        <li class="nav-item">
+            <a asp-controller="Group" asp-action="Index" class="nav-link @(Model == AdminNavPages.Groups ? "active" : "")">
+                <span class="fad fa-users-class fa-fixed-width"></span>@Localizer["Groups"]
+            </a>
+        </li>
+        @if (User.IsSuper())
+        {
+            <li class="nav-item">
+                <a asp-controller="MenuPage" asp-action="Index" class="nav-link @(Model == AdminNavPages.MenuPages ? "active" : "")">
+                    <span class="fad fa-bars fa-fixed-width"></span>@Localizer["Menu Pages"]
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Navigation" asp-action="Index" class="nav-link @(Model == AdminNavPages.Navigation ? "active" : "")">
+                    <span class="fad fa-compass fa-fixed-width"></span>@Localizer["Navigation"]
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a asp-controller="DefaultWidgets" asp-action="Index" class="nav-link @(Model == AdminNavPages.DefaultWidgets ? "active" : "")">
+                <span class="fad fa-tachometer fa-fixed-width"></span>@Localizer["Default Widgets"]
+            </a>
+        </li>
+        <li class="nav-item">
+            <a asp-controller="Translations" asp-action="Index" class="nav-link @(Model == AdminNavPages.Translations ? "active" : "")">
+                <span class="fad fa-text fa-fixed-width"></span>@Localizer["Translations"]
+            </a>
+        </li>
+        @if (showTradeSecret)
+        {
+            <li class="nav-item">
+                <a asp-controller="TradeSecret" asp-action="Index" class="nav-link @(Model == AdminNavPages.TradeSecret ? "active" : "")">
+                    <span class="fad fa-lock-keyhole fa-fixed-width"></span>@Localizer["Trade Secret Requests"]
+                </a>
+            </li>
+        }
+        @if (isNotificationOn)
+        {
+            <li class="nav-item">
+                <a asp-controller="Notification" asp-action="List" class="nav-link @(Model == AdminNavPages.Notifications ? "active" : "")">
+                    <span class="fad fa-bell-on fa-fixed-width"></span>@Localizer["Alerts"]
+                </a>
+            </li>
+        }
+        @if (isShowCustomFieldOn)
+        {
+            <li class="nav-item">
+                <a asp-controller="CustomFields" asp-action="List" class="nav-link @(Model == AdminNavPages.CustomFields ? "active" : "")">
+                    <span class="fad fa-table fa-fixed-width"></span>@Localizer["Custom Fields"]
+                </a>
+            </li>  
+        }
+        @if (graphSettings.HasMail)
+        {
+            <li class="nav-item">
+                <a asp-controller="MailDataMap" asp-action="Index" class="nav-link @(Model == AdminNavPages.MailDataMap ? "active" : "")">
+                    <span class="fad fa-envelopes-bulk fa-fixed-width"></span>@Localizer["Mail Data Patterns"]
+                </a>
+            </li>
+        }
+        @if (User.IsSuper())
+        {
+            <li class="nav-item">
+                <a asp-controller="TaskScheduler" asp-action="Index" class="nav-link @(Model == AdminNavPages.TaskScheduler ? "active" : "")">
+                    <span class="fad fa-clock fa-fixed-width"></span>@Localizer["Task Scheduler"]
+                    @if (!BackgroundTaskService.IsRunning)
+                    {
+                        <span class="badge badge-pill badge-danger">Stopped</span>
+                    }
+                    else if (!TaskSchedulerSettings.Enabled)
+                    {
+                        <span class="badge badge-pill badge-danger">Disabled</span>
+                    }
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a asp-controller="Catalog" asp-action="Index" class="nav-link @(Model == AdminNavPages.Catalog ? "active" : "")">
+                <span class="fad fa-map fa-fixed-width"></span>@Localizer["Catalog"]
+            </a>
+        </li>
+        @if (User.IsSuper())
+        {
+            <li class="nav-item">
+                <a asp-controller="HelpPage" asp-action="List" class="nav-link @(Model == AdminNavPages.HelpPages ? "active" : "")">
+                    <span class="fad fa-question-circle fa-fixed-width"></span>@Localizer["Help Pages"]
+                </a>
+            </li>  
+            <li class="nav-separator mt-2">
+                <h5>@Localizer["Logs"]</h5>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="ActivityLog" asp-action="Index" class="nav-link @(Model == AdminNavPages.ActivityLog ? "active" : "")">
+                    <span class="fad fa-analytics fa-fixed-width"></span>@Localizer["Activity Logs"]
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="ErrorLog" asp-action="Index" class="nav-link @(Model == AdminNavPages.Logs ? "active" : "")">
+                    <span class="fad fa-bug fa-fixed-width"></span>@Localizer["Error Logs"]
+                </a>
+            </li> 
+        }
+        <li class="nav-separator mt-2">
+            <h5>@Localizer["Settings"]</h5>
+        </li>
+        @if (User.IsSuper())
+        {
+            <li class="nav-item">
+                <a asp-controller="Settings" asp-action="Status" class="nav-link @(Model == AdminNavPages.Status ? "active" : "")">
+                    <span class="fad fa-power-off fa-fixed-width"></span>@Localizer["System Status"]
+                </a>
+            </li> 
+            <li class="nav-item">
+                <a asp-controller="Settings" asp-action="Cookie" class="nav-link @(Model == AdminNavPages.Cookies ? "active" : "")">
+                    <span class="fad fa-cookie-bite fa-fixed-width"></span>@Localizer["Cookie Consent"]
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a asp-controller="Settings" asp-action="ActionIndicator" class="nav-link @(Model == AdminNavPages.ActionIndicator ? "active" : "")">
+                <span class="fad fa-highlighter fa-fixed-width"></span>@Localizer["Action Indicator"]
+            </a>
+        </li>
+        @if (isDeDocketOn)
+        {
+            <li class="nav-item">
+                <a asp-controller="Settings" asp-action="DeDocketFields" class="nav-link @(Model == AdminNavPages.DeDocketFields ? "active" : "")">
+                    <span class="fa-duotone fa-input-text fa-fixed-width"></span>@Localizer["DeDocket Fields"]
+                </a>
+            </li>
+        }
+        @if (isDMSOn)
+        {
+            <li class="nav-item">
+                <a asp-controller="Settings" asp-action="InventionDisclosureStatus" class="nav-link @(Model == AdminNavPages.InventionDisclosureStatus ? "active" : "")">
+                    <span class="fad fa-highlighter fa-fixed-width"></span>@Localizer["Invention Disclosure Status"]
+                </a>
+            </li>
+        }
+    </ul>
+</div>

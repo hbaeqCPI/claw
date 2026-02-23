@@ -1,0 +1,134 @@
+﻿@model ChildViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{ var settings = await Settings.GetSetting();
+    var Id = Model.Id;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize; }
+
+@(Html.Kendo().Grid<ProductSale>()
+    .Name("productSaleGrid")
+    .Columns(columns =>
+    {
+        columns.Bound(ps => ps.Yr)
+                            .Title(Localizer["Year"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Country)
+                            .Width(150)
+                            .Title(Localizer["Country"])
+                            .ClientTemplate("#= Country? kendo.htmlEncode(Country) : ''#")
+                            //.Editable("gmMatterPage.isGridColumnEditable")
+                            .EditorTemplateName("ComboBox")
+                            .EditorViewData(new
+                            {
+                                dataValueField = "Country",
+                                dataTextField = "Country",
+                                action = "GetCountryList",
+                                controller = "Country",
+                                property = "Country",
+                                valuePrimitive = true,
+                                template = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                                headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"])
+                            }
+                            )
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Q1)
+                            .Title(Localizer["Q1"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Q2)
+                            .Title(Localizer["Q2"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Q3)
+                            .Title(Localizer["Q3"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Q4)
+                            .Title(Localizer["Q4"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(ps => ps.Net)
+                            //.Width(300)
+                            .Title(Localizer["Total Amount"].ToString());
+        columns.Bound(ps => ps.CurrencyType)
+                            .ClientTemplate("#=CurrencyType? kendo.htmlEncode(CurrencyType) : ''#")
+                            .EditorTemplateName("ComboBox")
+                            .EditorViewData(new
+                            {
+                                action = "GetCurrencyTypeList",
+                                controller = "CurrencyType",
+                                //dataTextField = "CurrencyType",
+                                dataValueField = "CurrencyType",
+                                property = "CurrencyType",
+                                limitToList = false,
+                                template = "<div class='row combobox-item'><div class='col-sm-2'><span class='k-state-default'>#: data.CurrencyType !=null ? data.CurrencyType : ' ' #</span></div><div class='col-sm-5'><span style='white-space: pre-wrap !important;'>#: data.Description !=null ? data.Description : ' ' #</span></div></div>",
+                                headerTemplate = $"<div class='row combobox-header'><div class='col-sm-2'><span style='white-space: pre-wrap !important;'>{Localizer["Currency Type"]}</span></div><div class='col-sm-5' ><span>{Localizer["Description"]}</span></div></div>",
+                                //template = ComboBoxHelper.GetItemTemplate("CurrencyType", "Description"),
+                                //headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Currency Type"], Localizer["Description"]),
+                                //ListWidth = 200,
+                                //width = 100,
+                                //onSelect = "productPage.onSelect_CurrencyType",
+                                //onOpen = "productPage.onSelect_CurrencyType"
+                                //headerTemplate = ComboBoxHelper.GetHeaderTemplate(new Dictionary<string, int>() { { Localizer["Currency Type"], 1 }, { Localizer["Description"], 2 } }),
+                                //template = ComboBoxHelper.GetItemTemplate(new Dictionary<string, int>() { { "CurrencyType", 1 }, { "Description", 2 } }),
+                            })
+                            .Title(Localizer["Currency Type"].ToString())
+                            //.Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+
+        columns.Command(command =>
+        {
+            if (detailPagePermission.CanDeleteRecord)
+                command.Custom("Delete")
+                        .Click("function(e) {productPage.deleteGridRow(e,this)}")
+                        .IconClass("k-icon fal fa-trash-alt")
+                        .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                        .HtmlAttributes(new { @class = "grid-action" });
+
+        })//.Width(10)
+          ;
+    })
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .ToolBar(toolbar =>
+    {
+        if (detailPagePermission.CanAddRecord)
+        {
+            toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+        }
+        if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+        {
+            toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+            toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+        }
+
+    })
+    .Editable(editable => editable.Enabled(fullModify)
+                .Mode(GridEditMode.InCell).
+                ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Pageable()
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Batch(true)
+        .PageSize(settings.SubFormPageSize)
+        .ServerOperation(false)
+        .Model(model =>
+        {
+            model.Id(ps => ps.SaleId);
+            model.Field(ps => ps.Net).Editable(false);
+        })
+        .Read(create => create.Action("ProductSalesRead", "Product", new { productId = Id}))
+        .Update(create => create.Action("ProductSalesUpdate", "Product", new { productId = Id }))
+        .Destroy(create => create.Action("ProductSalesDelete", "Product"))
+        .Events(events =>
+        {
+            events.Error("pageHelper.onGridError");
+            events.RequestEnd("function(e) { var saleChart = $('#Sales-Chart').data('kendoChart'); saleChart.dataSource.read(); saleChart.refresh(); }");
+        })
+    )
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

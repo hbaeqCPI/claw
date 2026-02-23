@@ -1,0 +1,22 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using R10.Core.Entities;
+using R10.Core.Entities.Patent;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace R10.Infrastructure.Data.Patent.mappings
+{
+    public class PatIRRemunerationValuationMatrixTypeMap : IEntityTypeConfiguration<PatIRRemunerationValuationMatrixType>
+    {
+        public void Configure(EntityTypeBuilder<PatIRRemunerationValuationMatrixType> builder)
+        {
+            builder.ToTable("tblPatIRRemunerationValuationMatrixType");
+            builder.Property(c => c.MatrixTypeId).ValueGeneratedOnAdd();
+            builder.Property(m => m.MatrixTypeId).UseIdentityColumn();
+            builder.HasIndex(c => c.MatrixType).IsUnique();
+        }
+    }
+}

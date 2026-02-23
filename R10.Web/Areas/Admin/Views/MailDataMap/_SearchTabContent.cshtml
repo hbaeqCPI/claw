@@ -1,0 +1,27 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="mailDataMapMainInfoTabContent" aria-labelledby="mailDataMapMainInfoTab" role="tabpanel">        
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Name">@Localizer["Map Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Name" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AttributeName">@Localizer["Field Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AttributeName" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Pattern">@Localizer["Pattern"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { action = "GetPatterns", name = "Pattern" })
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

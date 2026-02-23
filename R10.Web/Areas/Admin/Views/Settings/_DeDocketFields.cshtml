@@ -1,0 +1,78 @@
+﻿@model SystemSettingsViewModel
+@using R10.Core.Entities.Patent;
+@using R10.Core.Entities.Trademark;
+@using R10.Core.Entities.GeneralMatter;
+@using System.Reflection;
+@using System.ComponentModel.DataAnnotations;
+@inject ISystemSettings<PatSetting> PatSettings
+@inject ISystemSettings<TmkSetting> TmkSettings
+@inject ISystemSettings<GMSetting> GmSettings
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var patSettings = await PatSettings.GetSetting();
+    var tmkSettings = await TmkSettings.GetSetting();
+    var gmSettings = await GmSettings.GetSetting();
+    var isPatDeDocketOn = User.IsSystemEnabled(SystemType.Patent) && patSettings.IsDeDocketOn;
+    var isTmkDeDocketOn = User.IsSystemEnabled(SystemType.Trademark) && tmkSettings.IsDeDocketOn;
+    var isGmDeDocketOn = User.IsSystemEnabled(SystemType.GeneralMatter) && gmSettings.IsDeDocketOn;
+    var groups = Model.DeDocketFields.GetType().GetProperties();
+}
+
+<div class="col-12 card-columns deDocketFields">
+    @foreach(var group in groups)
+    {
+        var system = group.GetCustomAttribute<DisplayAttribute>()?.GroupName ?? "";
+
+        @if(system == SystemType.Patent && isPatDeDocketOn ||
+            system == SystemType.Trademark && isTmkDeDocketOn ||
+            system == SystemType.GeneralMatter && isGmDeDocketOn)
+        {
+            var deDocketFields = group.GetValue(Model.DeDocketFields);
+            var screen = group.Name;
+
+            <div class="card border-0 bg-transparent">
+                <h5 class="nav-header">@Localizer[group.GetCustomAttribute<DisplayAttribute>()?.Name ?? group.Name]</h5>
+                <ul data-screen="@screen">
+                @foreach(var field in group.PropertyType.GetProperties())
+                {
+                    var fieldName = field.Name;
+                    var elementName = $"{screen}{fieldName}";
+                    var elementLabel = field.GetCustomAttribute<DisplayAttribute>()?.Name ?? field.Name;
+
+                    if (elementLabel.StartsWith("Label")) 
+                    {
+                        elementLabel = await PatSettings.GetValue<string>(system, elementLabel);
+                    }
+
+                    <li class="d-flex justify-content-between" data-field="@fieldName">
+                        <label for="@elementName">@Localizer[elementLabel]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@elementName" name="@elementName" type="checkbox" checked="@(deDocketFields?.GetType().GetProperty(fieldName).GetValue(deDocketFields))" class="toggle-option" onchange="saveDeDocketFields(event);">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                }
+                </ul>
+            </div>
+        }
+    }
+</div>
+<style>
+    .deDocketFields.card-columns {
+        height: 100%;
+    }
+    .deDocketFields ul {
+        padding: 0 40px 0 0;
+    }
+
+    @@media (min-width: 75em) {
+        .deDocketFields.card-columns {
+            -webkit-column-count: 3;
+            -moz-column-count: 3;
+            column-count: 3;
+        }
+    }
+</style>

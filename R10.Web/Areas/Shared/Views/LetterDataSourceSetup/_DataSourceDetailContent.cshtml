@@ -1,0 +1,89 @@
+﻿@model LetterDataSourceDetailViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var id = Model.DataSourceId;
+    var addMode = id == 0;
+    var noRecord = id < 0;
+    var systemType = Model.SystemType;
+    ViewData["SystemType"] = systemType;            // save, some children partial views will use this info
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord;        // no edit remarks only for letters
+    bool isReadOnly = !fullModify || noRecord;
+
+    var pageId = ViewData["PageId"];
+
+    // var letterTemplateAction = "GetTemplateList";
+    // var letterTemplateController = "LetterTemplate";
+
+    // if (settings.IsSharePointIntegrationOn)
+    // {
+    //     letterTemplateAction = "GetLetterTemplateList";
+    //     letterTemplateController = "SharePointGraph";
+    // }
+    var qeSetupUrl = Url.Action("DetailLink", "QuickEmailSetup", new { area = "Shared", id = "actualValue" });
+
+    var customFieldViewModel = new ChildViewModel { Id = id, Permission = ViewBag.customFieldPermission };
+}
+
+
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="DataSourceId" />
+    <input type="hidden" asp-for="SystemType" />    
+
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-4">
+                <div class="form-group float-label">
+                    <label asp-for="DataSourceDescMain" class="required"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="DataSourceDescMain" asp-is-readonly="true" />
+                    <span asp-validation-for="DataSourceDescMain"></span>
+                </div>
+            </div>            
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="dataSourceTab" role="tablist">
+        <li class="nav-item @(addMode ? "d-none" : null)">
+            <a class="nav-link active" id="fieldListTab" data-toggle="tab" role="tab" aria-controls="fieldListTabContent" aria-selected="true" href="#fieldListTabContent">@Localizer["Field List"] </a>
+        </li>
+        <li class="nav-item @(addMode ? "d-none" : null)">
+            <a class="nav-link" id="customFieldsTab" data-toggle="tab" role="tab" aria-controls="customFieldsTabContent" aria-selected="false" href="#customFieldsTabContent">@Localizer["Custom Merged Fields"] </a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane show active" id="fieldListTabContent" role="tabpanel" aria-labelledby="fieldListTab">
+            @await Html.PartialAsync("_GridFieldList.cshtml", id)
+        </div>
+        <div class="tab-pane" id="customFieldsTabContent" role="tabpanel" aria-labelledby="customFieldsTab">
+            @await Html.PartialAsync("_GridCustomFields.cshtml", customFieldViewModel)
+        </div>
+    </div>
+@*     @if (!addMode && Model.tStamp != null)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    } *@
+</form>
+
+<script>
+    $(document).ready(function () {
+        letterDataSourceSetup.initializeDetailPage({
+            detailContainer: "@pageId",
+            id: @id,
+            addMode: @(id == 0 ? "true" : "false"),
+            readOnly: @(isReadOnly ? "true" : "false"),
+            recordStampsUrl: "@Url.Action("GetRecordStamps", new { id = id })",
+            systemType: "@systemType"
+        });
+
+    });
+</script>
+

@@ -1,0 +1,235 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<AMSSetting> Settings
+@inject IClientService ClientService
+@{
+    var amsSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[amsSettings.LabelClient];
+    var clientNameLabel = Localizer[amsSettings.LabelClientName];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+    var userSettings = widget.UserSettings;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (string)a).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<string> regions = new List<string>();
+    if (userSettings.Property("Regions") != null)
+    {
+        try
+        {
+            string[] regionFilter = ((JArray)userSettings.Property("Regions").Value).Select(a => (string)a).Where(a => !string.IsNullOrEmpty(a)).ToArray();
+
+            if (regionFilter.Count() > 0)
+            {
+                regions = new List<string>(regionFilter);
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+$(document).ready(function () {
+        var refresh = false;
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        var regionList = "@String.Join(",", regions.Select(a => (string)a).ToList())".split(",").filter(item => item);
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#regionFilter_@userWidgetId .delete-region");
+        $(document).off("change", "#Area_@userWidgetId");
+        $(document).on("click", "#regionFilter_@userWidgetId .delete-region", function (e) {
+            var item = $.inArray($(this).data("id"), regionList);
+
+            if (item !== -1) {
+                regionList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Regions: ['${regionList.join("','")}'] }`, function () { refresh = true; });
+                }
+        });
+        $(document).on("change", "#Area_@userWidgetId", function (e) {
+            var updated = $(this).data("kendoComboBox");
+
+            if (updated.selectedIndex >= 0) {
+                var dataItem = updated.dataItem(updated.selectedIndex);
+                var area = dataItem.Area;
+
+                if ($.inArray(updated, regionList) == -1) {
+                    regionList.push(area);
+                    $("#regionFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="region">${area}</span></div><div class="delete-filter delete-region" data-id="${area}" title="Remove ${area}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Regions: ['${regionList.join("','")}'] }`, function () { refresh = true; });
+                    }
+                }
+            updated.value("");
+        });
+    });
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">       
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                </li>
+            }
+        </ul>      
+        <ul id="regionFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Region"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Area", area = "AMS", controller = "Area", action = "GetAreaList", screen = userWidgetId })
+                </span>
+            </li>
+            @foreach (string reg in regions)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="region">@reg</span>
+                    </div>
+                    <div class="delete-filter delete-region" data-id="@reg" title="Remove @reg"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Chart(Model)
+            .Name(userWidgetId)
+            .ChartArea(chartArea => chartArea
+                .Background("transparent"))
+            .Title(title => title
+                .Text("")
+                .Position(ChartTitlePosition.Top)
+            )
+            .Legend(legend => legend
+                .Visible(true)
+                .Position(ChartLegendPosition.Top)
+            )
+            .Series(series => series
+                .Donut(m => m.Value, m => m.Category)
+                .StartAngle(-45)
+                //.ColorField("Color")
+                .ExplodeField("Explode")
+                .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+                .Labels(labels => labels
+                    .Visible(true)
+                    .Template("#= category#\n#= value#%")
+                    .Background("transparent")
+                    .Position(ChartPieLabelsPosition.OutsideEnd)
+                    .Align(ChartPieLabelsAlign.Column)
+                )
+            )
+            .SeriesColors(widget.SeriesColors)
+            .Tooltip(tooltip => tooltip
+                .Visible(true)
+                .Template("#= category # (#= dataItem.Group #) #= value #%")
+            )
+            //Settings for PDF export using kendo built-in function
+            .Pdf(pdf => pdf
+                .FileName(@widget.Title.ToString())
+                //.PaperSize("A4")
+                .Landscape(false)
+                .Margin(m => m
+                    .Left(10)
+                    .Right(10)
+                    .Top(10)
+                    .Bottom(10))
+            )
+)

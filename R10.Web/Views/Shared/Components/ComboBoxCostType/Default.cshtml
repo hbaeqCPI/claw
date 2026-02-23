@@ -1,0 +1,32 @@
+﻿@model ComboBoxOptions
+@{
+    var onChange = Model.OnChange.Length > 0 ? Model.OnChange : "function() {}";
+    var headerTemplate = "<div class='row border-bottom'><div class='col-md-2 mt-2 mb-2'><span>&nbsp;&nbsp;Code</span></div><div class='col-md-5 mt-2 mb-2'><span>Description</span></div></div>";
+    var template = "<div class='row'><div class='col-md-2'><span>#: data.CostType #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>";
+}
+@(Html.Kendo().ComboBox()
+        .Name(Model.Name)
+        .DataTextField(Model.DataTextProperty)
+        .DataValueField(Model.DataValueProperty)
+        .Value(Model.DefaultValue)
+        .Text(Model.DefaultValue)
+        .Filter(Model.ListFilterType)
+        .AutoWidth(true)
+        .AutoBind(false)
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action(Model.Action, Model.Controller, new { area = Model.Area, property = Model.DataTextProperty, filterType = Model.ListFilterType, requiredRelation = Model.RequiredRelation }).Data(Model.ParamsProvider);
+            })
+            .ServerFiltering(false); //just handle on the client (list is short)
+        })
+        .Template(template)
+        .HeaderTemplate(headerTemplate)
+        .HtmlAttributes(new { style = "width: " + Model.Width.ToString() + "%", id = Model.Id })
+        .Events(e => e.Open($"function(e) {{ if (this.element.data('fetched')===0) {{this.dataSource.read();}} this.element.data('fetched',1); }}").Change(onChange))
+)
+@if (Model.LinkButtonUrl.Length > 0)
+{
+    <i class="btn btn-link fal fa-search-plus cpiButtonLink" data-source="@Model.Id" data-url="@Model.LinkButtonUrl"></i>
+}

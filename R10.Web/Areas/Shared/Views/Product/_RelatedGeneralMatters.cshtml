@@ -1,0 +1,53 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<GMSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    string product = Model;
+    var Link = $"<a href = '{Url.Action("Detail", "Matter", new { area = "GeneralMatter", id = "#: MatId#", fromSearch = true })}' class='details-link'>#: RelatedGMCaseNumber#</a>";
+    var detailsLinkTemplate = $"#if (!(RelatedGMCaseNumber===null || RelatedGMCaseNumber==='')) {{# {Link} #}}#";
+
+    var toolbarTemplate = $"<nav class='nav nav-left'><a class='k-button k-button-icontext k-grid-excel no-results-hide' href='\\#'><i class='fal fa-file-excel pr-2'></i>{Localizer["Export to Excel"]}</a></nav>";
+
+    var parentIdParam = $"{{systemType: '{SystemType.GeneralMatter}', productCode: '{product}'}}";
+}
+
+@(Html.Kendo().Grid<ProductGeneralMatterViewModel>()
+          .Name("prodRelatedGeneralMattersGrid")
+          .Columns(columns =>
+          {
+              columns.Bound(r => r.RelatedGMCaseNumber).Width(300).ClientTemplate(detailsLinkTemplate).Title(caseNumberLabel).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedGMCountry).Width(180).HtmlAttributes(new { @class = "country-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedGMSubCase).Width(180).HtmlAttributes(new { @class = "subCase-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.MatterType).Width(180).HtmlAttributes(new { @class = "matterType-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.RelatedGMStatus).Width(180).HtmlAttributes(new { @class = "status-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.EffectiveOpenDate).Width(180).Format("{0:dd-MMM-yyyy}").HtmlAttributes(new { @class = "effectiveOpenDate-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.TerminationEndDate).Width(180).Format("{0:dd-MMM-yyyy}").HtmlAttributes(new { @class = "terminationEndDate-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+              columns.Bound(r => r.MatterTitle).HtmlAttributes(new { @class = "title-field" }).Filterable(ftb => ftb.Multi(true).Search(true));
+          })
+          .ToolBar(tools =>
+          {
+              tools.ClientTemplate(toolbarTemplate);
+          })
+          .Filterable(ftb => ftb.Enabled(true))
+          .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+          .Sortable(sort => sort.AllowUnsort(false))
+          .Pageable()
+          .DataSource(dataSource => dataSource
+              .Ajax()
+              .Batch(true)
+              .PageSize(settings.SubFormPageSize)
+              .ServerOperation(false)
+              .Model(model =>
+              {
+                  model.Id(r => r.MatId);
+              })             
+              .Read(create => create.Action("RelatedGeneralMattersRead", "Product", new { product = product }))
+              .Events(events =>
+              {
+                  events.Error("pageHelper.onGridError");
+              })
+          )
+          .HtmlAttributes(new {@class = "kendo-Grid" })
+          )

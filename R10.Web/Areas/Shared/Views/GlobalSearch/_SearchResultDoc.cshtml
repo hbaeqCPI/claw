@@ -1,0 +1,123 @@
+﻿@inject ISystemSettings<DefaultSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+    var columnTemplate =
+           $"<div class='row'>" +
+               "<div class='col-8'>" +
+                   "<span class='badge badge-pill badge-warning #=SystemName#' title='New'>#=SystemName#</span>" +
+                       "<a href=\"javascript: globalSearch.redirectToRecord('#:Link#')\"> #=ScreenName#</a> " +
+               "</div>" +
+               "<div class='col'>" +
+                   "<span class='docViewerLink'><i class='fal fa-search pr-1' style='cursor: pointer;' title='#=DocumentTypeName#' ></i> <i>#=DocumentTypeName#</i></span>" +
+               "</div>" +
+           "</div>" +
+           "<span>#=FieldValues#</span>";
+
+    var docViewerUrl = Url.Action("ZoomGSDoc", "DocViewer", new { Area = "Shared" });
+    var downloadUrl = Url.Action("DownloadDoc", "GlobalSearch", new { Area = "Shared" });
+    var excelTitle = Localizer["Document Search Results"];
+}
+
+<div>
+    @(Html.Kendo().Grid<GSSearchDocDTO>()
+            .Name("globalSearchResultGridDoc")
+            .Columns(column =>
+            {
+                column.Bound(gs => gs.RecordId).ClientTemplate(columnTemplate).Title(Localizer["Document Results"]);
+                column.Select().Width(50);
+            })
+            .AutoBind(false)
+            .ToolBar(toolbar =>
+            {
+                toolbar.ClientTemplateId("downloadToolbarTemplate");
+            })
+            .Pageable(pageable => pageable
+                    .Refresh(false)
+                    .ButtonCount(5)
+                    .PageSizes(settings.SearchResultsPageSizeOptions)
+                )
+            .Scrollable(s => s.Height("auto"))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .Model(model => model.Id(id =>  id.RecordKey))
+                .ServerOperation(false)
+                .Read(read => read.Action("SearchReadDoc", "GlobalSearch").Data("globalSearch.getSearchCriteriaDoc"))
+                .Events(events => { events.Error("pageHelper.onGridError"); })
+            )
+        .Events(events => events.DataBound("globalSearch.hideSpinner"))
+    //.HtmlAttributes(new { @class = "kendo-Grid" })
+    )
+</div>
+            
+<script id="downloadToolbarTemplate" type="text/x-kendo-template">
+    <div class="toolbar">
+        <a role='button' class='k-button k-button-icontext k-grid-ExportDoc' href='\\#'><span class='k-icon fal fa-file-excel'></span>@Localizer["Export to Excel"]</a>
+        <a role='button' class='k-button k-button-icontext k-grid-DownloadDoc' href='\\#' title='@Localizer["Download selected documents"]'>
+            <span class='k-icon fal fa-download' ></span>@Localizer["Download Selected"]</a>
+    </div>
+</script>
+
+<style>
+    /*
+    PL = #304364
+    TL = #008B8B
+    */
+    .badge.Patent {
+        background: #51a0ed;
+        color: #fff;
+    }
+
+    .badge.Trademark {
+        background: #008000;
+        color: #fff;
+    }
+
+    .badge.General.Matter {
+        background: #D0ECBB;
+        color: #fff;
+    }
+
+    .badge.Disclosure.Management {
+        background: #969b9f;
+        color: #fff;
+    }
+
+    #grid .k-grid-toolbar {
+        padding: .6em 1.3em .6em .4em;
+    }
+
+    .k-grid .toolbar {
+        /*float: right;*/
+    }
+
+    #globalSearchResultGridDoc table {
+        width: 100%;
+        table-layout: fixed;
+        font-size: .8rem;
+    }
+
+    .k-grid-header .k-header {
+        padding: 10px 20px;
+    }
+
+    .k-grid .k-alt td, k-grid .k-alt td a {
+        background-color: var(--grid-alt-row);
+    }
+
+    #globalSearchResultGridDoc td, #globalSearchResultGridDoc th, .item td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border-spacing: 1px;
+        padding: .5em .6em .4em .6em;
+        font-size: .8rem;
+        text-align: left;
+        outline: 0;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        globalSearch.initializeSearchDocResult("@docViewerUrl", "@downloadUrl", "@excelTitle");
+    });
+</script>

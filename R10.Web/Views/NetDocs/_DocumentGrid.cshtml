@@ -1,0 +1,76 @@
+﻿@model DocumentViewerViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var permission = Model.Permission ?? new DocumentViewerPermission();
+    var viewerName = $"DocViewerDocumentGrid_{Model.PageId}";
+    var showDocumentLink = permission.CanDownload;
+    var controllerName = ViewContext.RouteData.Values["controller"]?.ToString();
+    var allowMoveDocument = false; // netdocs has no move document endpoint
+}
+<div class="results grid" data-name="@viewerName">
+    @(
+        Html.Kendo().Grid<DocumentViewModel>()
+            .Name(viewerName)
+            .Columns(columns =>
+            {
+                if (allowMoveDocument) {
+                    columns.Template("<span><input type='checkbox' data-document-id='#:Id#' draggable='true' ondragstart='docViewer.documentOnDragStart(event)'/><i class='far fa-grip-dots-vertical'></i></span>").HeaderHtmlAttributes(new { @class = "grab" }).HtmlAttributes(new { @class = "grab" });
+                }
+                columns.Select().HeaderHtmlAttributes(new { @class = "select"}).HtmlAttributes(new { @class = "select" }).Width(50);
+                columns.Bound(d => d.Extension).ClientTemplate("<i class='#:IconClass# fa-fixed-width'></i>").ClientHeaderTemplate("<i class='fal fa-file fa-fixed-width'></i>");
+                if (showDocumentLink) 
+                {
+                    columns.Bound(d => d.Title).Title(Localizer["Name"].ToString()).ClientTemplate("<a href='##' onclick='docViewer.documentOnClick(event)' data-document-id='#:Id#' data-filename='#:Title#' rel='noopener' draggable='false'>#:Title#</a>").HtmlAttributes(new { @class = "view-details-icon" });
+                }
+                else 
+                {
+                    columns.Bound(d => d.Title).Title(Localizer["Name"].ToString());
+                }
+                columns.Bound(d => d.ContainerName).Title(Localizer["Folder"].ToString());
+                columns.Bound(d => d.Version).Title(Localizer["Version"].ToString());
+                columns.Bound(d => d.EditDate).Title(Localizer["Edit Date"].ToString()).ClientTemplate("#: (EditDate == null) ? '' : kendo.toString(EditDate,'dd-MMM-yyyy h:mm tt')#");                
+                columns.Bound(d => d.LastUser).Title(Localizer["Last User"].ToString());
+                columns.Bound(d => d.Size).Title(Localizer["File Size"].ToString()).ClientTemplate("#:pageHelper.formatFileSize(Size)#");
+                columns.Command(command => {
+                    command.Custom("Open").Text(" ").Click("docViewer.gridOnCommand").IconClass("k-icon fal fa-arrow-up-right-from-square fa-fixed-width").HtmlAttributes(new { title = Localizer["Open"], draggable = false });
+                    if (permission.CanDownload)
+                    {
+                        command.Custom("Download").Text(" ").Click("docViewer.gridOnCommand").IconClass("k-icon fal fa-download fa-fixed-width").HtmlAttributes(new { title = Localizer["Download"], draggable = false });
+                    }
+                    if (permission.CanEdit)
+                    {
+                        command.Custom("Edit").Text(" ").Click("docViewer.gridOnCommand").IconClass("k-icon fal fa-pencil fa-fixed-width").HtmlAttributes(new { title = Localizer["Edit"], draggable = false });
+                    }
+                    if (permission.CanDelete)
+                    {
+                        command.Custom("Delete").Text(" ").Click("docViewer.gridOnCommand").IconClass("k-icon fal fa-trash-alt fa-fixed-width").HtmlAttributes(new { title = Localizer["Delete"], draggable = false });
+                    }
+                }).HtmlAttributes(new { @class = "text-right" });
+            })
+            .Sortable(sort => sort.AllowUnsort(false))
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
+            .Pageable(pageable => pageable.Refresh(true).PageSizes(true).Responsive(false))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .ServerOperation(false)
+                .PageSize(settings.SubFormPageSize)
+                .Model(model =>
+                {
+                    model.Id(d => d.Id);
+                })
+                .Sort(sort => sort.Add(d => d.Title))
+                .Read(read => read.Action("ViewerRead", controllerName, new { Area = "" }).Data("docViewer.viewerReadData"))
+                .Events(events =>
+                {
+                    events.Error("docViewer.viewerOnError");
+                    events.RequestEnd("docViewer.viewerOnRequestEnd");
+                })
+            )
+            .Events(events => {
+                events.Change("docViewer.viewerOnChange");
+                events.DataBound("docViewer.viewerOnDataBound");
+            })
+    )
+</div>

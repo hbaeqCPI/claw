@@ -1,0 +1,109 @@
+﻿@model RegisterViewModel
+@using  System.Web
+@using Microsoft.Extensions.Options
+@using Microsoft.AspNetCore.Identity
+@inject IOptions<IdentityOptions> IdentityOptions
+@{
+    ViewData["Title"] = "Inventor Registration";
+    var passwordOptions = IdentityOptions.Value.Password;
+    var focusEmail = ViewData.ModelState["Email"]?.Errors.Any() ?? false;
+}
+
+
+
+<div class="row mt-3">
+    <div class="col">
+        @if (ViewData["SuccessMessage"] == null)
+        {
+            <form id="register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" autocomplete="off">
+                <div class="card card-account border-secondary mx-auto">
+                    <h3 class="card-header bg-transparent border-0 mt-0 text-center">@ViewData["Title"]</h3>
+                    <div class="card-body">
+                        <div class="card-title pb-3">Sign up to access Disclosure Management System (DMS).</div>
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Keys.Any(key => string.IsNullOrEmpty(key)))
+                        {
+                            <div class="alert alert-danger alert-dismissible validation-summary-errors mb-4" role="alert">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                @*<h4 class='alert-heading'>Registration failed.</h4>*@
+                                <ul class="list-unstyled">
+                                    @foreach (var key in ViewData.ModelState.Keys.Where(key => string.IsNullOrEmpty(key)))
+                                    {
+                                        @foreach (var error in ViewData.ModelState[key].Errors)
+                                        {
+                                            <li>@Html.Raw(error.ErrorMessage)</li>
+                                        }
+                                    }
+                                </ul>
+                            </div>
+                        }
+                        <div class="form-group float-label">
+                            <label asp-for="FirstName"></label>
+                            <input asp-for="FirstName" asp-is-autofocus="true" class="form-control form-control-sm" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="form-group float-label">
+                            <label asp-for="LastName"></label>
+                            <input asp-for="LastName" class="form-control form-control-sm" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                        <div class="form-group float-label">
+                            <label asp-for="Email"></label>
+                            <input asp-for="Email" class="form-control form-control-sm" asp-is-autofocus=@focusEmail />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="form-group float-label">
+                            <label asp-for="Password"></label>
+                            <input asp-for="Password" class="form-control form-control-sm" data-val-length="@($"The Password must be at least {passwordOptions.RequiredLength} characters long.")" data-val-length-max="100" , data-val-length-min="@passwordOptions.RequiredLength" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="form-group float-label">
+                            <label asp-for="ConfirmPassword"></label>
+                            <input asp-for="ConfirmPassword" class="form-control form-control-sm" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="UserConsent" class="custom-control-input" />
+                                <label for="UserConsent" class="custom-control-label label-wrap">
+                                    I have read and agree to the <a asp-area="" asp-controller="Home" asp-action="Terms" title="Terms of Service">Terms of Service</a>
+                                    and <a asp-area="" asp-controller="Home" asp-action="Privacy" title="Privacy Policy">Privacy Policy</a>.
+                                </label>
+                            </div>
+
+                            <span asp-validation-for="UserConsent" class="text-danger"></span>
+                            <input asp-for="IsTrue" class="form-control" value="true" hidden />
+                        </div>
+                        <div class="form-group pt-4">
+                            <button type="submit" class="btn btn-primary btn-block-xs">Register</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            @*@section Scripts {
+                    @await Html.PartialAsync("_ValidationScriptsPartial")
+                }*@
+
+        }
+        else
+        {
+            <div class="card card-account border-secondary mx-auto">
+                <h3 class="card-header bg-transparent border-0 mt-0 text-center">@ViewData["Title"]</h3>
+                <div class="card-body">
+                    <p class="card-text">@Html.Raw(ViewData["SuccessMessage"])</p>
+                    <p class="card-text text-center">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-primary">Continue</a>
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $("#register").floatLabels();
+        })
+    </script>
+}

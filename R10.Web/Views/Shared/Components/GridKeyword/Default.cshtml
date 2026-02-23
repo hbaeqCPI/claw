@@ -1,0 +1,106 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+    var id = Model.ParentId;
+    bool addMode = id == 0;
+    var keywordLabel = Localizer[settings.LabelKeyword ?? "Keyword"];
+    var gridName = $"keywordsGrid{Model.ParentScreen}";
+
+    IDictionary<string, object> htmlAttributes = new Dictionary<string, object>();    
+    htmlAttributes.Add("maxlength", "50");
+
+    var patentSearchURL = Url.Action("Index", "PatentSearch", new
+    {
+        Area = "Patent",
+        SearchStr = "actualValue"
+    });
+    var keywordTemplate = $"#=Keyword#";    
+    var areasWithPatentSearch = new string[] { "PatClearance", "DMS" };
+    if (User.IsInSystem(SystemType.Patent) && User.IsInUserType(R10.Core.Identity.CPiUserType.User) && areasWithPatentSearch.Contains(Model.Area))
+    {
+        keywordTemplate = $"#=kendo.htmlEncode(Keyword)# <i class='fal fa-search-plus btn-link kwPatentSearchLink pl-2 align-text-bottom' data-url='{patentSearchURL}' title='{Localizer["Open Patent Search Screen"]}'></i>";
+    }
+}
+<script>
+    $(document).ready(function () {
+        var grid = $("#@(gridName)");
+        grid.off("click", ".kwPatentSearchLink")
+        grid.on("click", ".kwPatentSearchLink", (e) => {
+            e.stopPropagation();
+
+            let url = $(e.target).data("url");
+            const row = $(e.target).closest("tr");
+            const dataItem = grid.data("kendoGrid").dataItem(row);
+            const encodedKeyword = encodeURIComponent(dataItem.Keyword);
+            const linkUrl = url.replace("actualValue", encodedKeyword);           
+            window.open(linkUrl, "_blank");
+        });
+    });
+</script>
+@(Html.Kendo().Grid<KeywordViewModel>()
+                 .Name(gridName)
+                .Columns(columns =>
+                {
+                    columns.Bound(p => p.Keyword).Title(keywordLabel)
+                        .ClientTemplate(keywordTemplate)
+                        .EditorTemplateName("ComboBox")
+                        .EditorViewData(new { action = "GetPicklistData", controller = Model.Controller, dataValueField = "Keyword", limitToList = false, htmlAttributes = htmlAttributes })
+                        .Editable($"{pageName}.isGridColumnEditable")
+                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                    columns.Command(command =>
+                    {
+                        if (detailPagePermission.CanDeleteRecord)
+                            command.Custom("Delete")
+                                    .Click("function(e) {" + pageName + ".deleteGridRow(e,this)}")
+                                    .IconClass("k-icon fal fa-trash-alt")
+                                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                                    .HtmlAttributes(new { @class = "grid-action" });
+
+                    }).Width(10);
+                })
+                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                .ToolBar(toolbar =>
+                {
+                    //HIDE ADD BUTTON IF PARENT IS READONLY
+                    if (detailPagePermission.CanEditRecord && detailPagePermission.CanAddRecord & !addMode)
+                    {
+                        toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+                    }
+                    if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                    {
+                        toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                        toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                    }
+
+                })
+                .Editable(editable => editable.Enabled(detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                                .Mode(GridEditMode.InCell).
+                                ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Pageable(page => page.Responsive(false))
+                .AutoBind(false)
+                .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Batch(true)
+                    .PageSize(settings.SubFormPageSize)
+                    .ServerOperation(false) //allow pending changes to persist when paging or sorting
+                    .Model(model =>
+                    {
+                        model.Id(k => k.KwdId);
+                    })
+                    .Read(read => read.Action("GridRead", Model.Controller, new { parentId = Model.ParentId }))
+                    .Sort(sort => sort.Add("Keyword").Ascending())
+                    .Update(update => update.Action("GridUpdate", Model.Controller))
+                    .Destroy(destroy => destroy.Action("GridDelete", Model.Controller))
+                    .Events(events =>
+                    {
+                        events.Error("pageHelper.onGridError");
+                    })
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

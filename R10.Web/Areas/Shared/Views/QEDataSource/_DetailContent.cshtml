@@ -1,0 +1,112 @@
+﻿@model QEDataSource
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.DataSourceID;
+    string title = SharedLocalizer["Quick Email Data Source Detail"];
+    var addMode = id == 0;
+    var addFromSearch = ViewBag.FromSearch != null && (bool)ViewBag.FromSearch;
+
+    var detailUrl = Url.Action("Detail", "QEDataSource", new { id = "recId", singleRecord = addFromSearch }).ToLower();
+    var recordStampsUrl = Url.Action("GetRecordStamps", "QEDataSource", new { id = id });
+
+    var detailPagePermission = (DetailPagePermission)ViewBag.PermissionViewModel;
+    var fullModify = detailPagePermission.CanEditRecord;
+    bool isReadOnly = !fullModify;
+
+    bool addFromOtherScreen = false;
+    if (addMode)
+    {
+        string referer = ViewContext.HttpContext.Request.Headers["Referer"].ToString().ToLower();
+        addFromOtherScreen = (!referer.Contains("qeDataSource"));
+    }
+
+}
+
+@if (!addMode)
+{
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="@title"></vc:detail-page-nav-links>
+}
+<div class="container-fluid">
+    <form id="qeDataSourceDetailForm" asp-action="Save" method="post">
+        <input type="hidden" asp-for="DataSourceID" />
+
+        <div class="mb-md-2 text-right">
+            <div class="row @(addMode ? "":"d-none")" id="editActionButtons">
+                <div class="col-md-4 text-left">
+                    <h3 class="page-title">@title</h3>
+                </div>
+                <div class="col-md mb-md-2 ml-md-3 pt-3 text-right">
+                    <button class="btn btn-link cpiSaveButton" type="submit" id="save"><span class="fal fa-save"></span> @SharedLocalizer["Save"]</button>
+                    <button class="btn btn-link cpiButtonClear" type="button" id="cancel"><span class="fal fa-times"></span> @SharedLocalizer["Cancel"]</button>
+                </div>
+            </div>
+        </div>
+        <fieldset class="cpiMainEntry">
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label asp-for="DataSourceName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="DataSourceName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="DataSourceName"></span>
+                </div>
+                <div class="col-md-1">
+                    <label asp-for="SystemType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="SystemType" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="SystemType"></span>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="ViewName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ViewName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="ViewName"></span>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="DataKey"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="DataKey" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="DataKey"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="OrderBy"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="OrderBy" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="OrderBy"></span>
+                </div>
+                <div class="col-md-1">
+                    <label asp-for="InUse"></label><br />
+                    <input type="checkbox" asp-for="InUse">
+                </div>
+            </div>
+        </fieldset>
+
+        @if (!addMode)
+        {
+            <div id="qeDataSourceDetailRecordStamps">
+                <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            </div>
+        }
+    </form>
+</div>
+<form id="deleteQEDataSource" asp-action="Delete" method="post">
+    <input type="hidden" name="DataSourceID" asp-for="DataSourceID" />
+    <input type="hidden" name="DataSourceName" asp-for="DataSourceName" />
+    <input type="hidden" name="RowVersion" asp-for="tStamp" />
+</form>
+
+<script>
+    $(document).ready(function () {
+        var params = {
+            activePage: qeDataSourcePage,
+            requestedUrl: '@ViewBag.Url',
+            detailUrl: '@detailUrl',
+            searchUrl: '@detailPagePermission.SearchScreenUrl',
+            recordStampsUrl: '@recordStampsUrl',
+            recordStampsContainer: 'qeDataSourceDetailRecordStamps',
+            deleteForm: 'deleteQEDataSource',
+            id: @id,
+            addMode: @(addMode ? "true" : "false"),
+            addFromSearch: @(addFromSearch ? "true" : "false"),
+            addFromOtherScreen: @(addFromOtherScreen ? "true" : "false")
+        };
+        pageHelper.manageDetailPage(params);
+    });
+
+</script>
+
+

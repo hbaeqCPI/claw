@@ -1,0 +1,19 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var clientLabel = settings.LabelClient;
+
+    ViewData["Title"] = Localizer[clientLabel];
+    ViewData["ActivePage"] = "clientPage";
+}
+
+@*@section Scripts {
+    <script>
+        var @ViewBag.ActivePage = new ActivePage();
+    </script>
+}*@
+
+@await Html.PartialPageAsync(Model.Page, Model)

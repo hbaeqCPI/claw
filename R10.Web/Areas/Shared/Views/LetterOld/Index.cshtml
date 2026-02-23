@@ -1,0 +1,116 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    ViewBag.Title = SharedLocalizer["Letter Generation"];
+    var pagePermission = (DetailPagePermission)ViewData["PagePermission"];
+}
+
+<div class="container-fluid">
+    <div >
+        <h3 class="page-title">@ViewBag.Title</h3>
+    </div>
+    <div id="searchCriteriaContainer">
+        @await Html.PartialAsync("_SearchCriteria")
+    </div>
+    <div id="letterListContainer">
+        <br/>
+        <div class="row" style="height: 100%">
+            <div class="col-12 fade show active border px-4 cpi-tab">
+                @await Html.PartialAsync("_LetterList", pagePermission)
+            </div>
+        </div>
+    </div>
+
+    <div class="text-md-center">
+        <input type="hidden" id="selLetId" name="selLetId" value="0">
+        <input type="hidden" id="selLetTemplate" name="selLetId" value="">
+        <span id="selLetterLabel" style="color: red; font-style: italic;">@SharedLocalizer["Selected Letter"]: </span>
+        <span id="selLetterName" style="font-weight: bold">@SharedLocalizer["None"]</span>
+    </div>
+
+    <ul class="nav nav-tabs" id="letter-tab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="Preview-tab" data-toggle="tab" href="#Preview" role="tab" aria-controls="Preview-tab" aria-selected="true">@SharedLocalizer["Records Preview"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="DataSource-tab" data-toggle="tab" href="#DataSource" role="tab" aria-controls="DataSource-tab" aria-selected="false">@SharedLocalizer["Data Source"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="UserData-tab" data-toggle="tab" href="#UserData" role="tab" aria-controls="UserData-tab" aria-selected="false">@SharedLocalizer["User Data"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="Fields-tab" data-toggle="tab" href="#Fields" role="tab" aria-controls="Fields-tab" aria-selected="false">@SharedLocalizer["Data Fields"]</a>
+        </li>
+
+
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade border border-top-0 px-4 show active" id="Preview" role="tabpanel">
+            <br />
+            @await Html.PartialAsync("_ScreenPreview", pagePermission)
+
+        </div>
+        <div class="tab-pane fade border border-top-0 px-4" id="DataSource" role="tabpanel">
+            <br />
+            @await Html.PartialAsync("_DataSource", pagePermission)
+        </div>
+        <div class="tab-pane fade border border-top-0 px-4" id="UserData" role="tabpanel">
+            <br />
+            @await Html.PartialAsync("_UserData", pagePermission)
+        </div>
+        <div class="tab-pane fade border border-top-0 px-4" id="Fields" role="tabpanel">
+            <br />
+            @await Html.PartialAsync("_FieldList", pagePermission)
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        letterGen.controllerUrl =  '@(ViewContext.HttpContext.Request.PathBase)/Shared/';
+        letterGen.initializePage();
+    });
+</script>
+
+
+<style>
+    .cpi-tab {
+        background-color: #f5f5f5;
+    }
+
+    #panelbar {
+        margin: 0 auto;
+    }
+
+    .k-panelbar.k-header {
+        border-color: #dee2e6;
+    }
+
+    .k-panelbar .k-content, .k-panelbar .k-item, .k-panelbar .k-panel {
+        color: #444;
+        border-color: #e6e6e6;
+        background-color: #f5f5f5; /*#DBE6F4;*/
+    }
+
+    .k-panelbar > .k-item > .k-link.k-header {
+        font-size: 1em;
+        line-height: 2em;
+    }
+
+    .k-panelbar > li.k-state-default > .k-link.k-state-selected, .k-panelbar > li > .k-state-focused.k-state-hover, .k-panelbar > li > .k-state-selected, .k-panelbar > li > .k-state-selected.k-state-hover {
+        color: #444;
+        background-color: white;
+    }
+
+    .k-panelbar .k-content, .k-panelbar .k-item, .k-panelbar .k-panel {
+        color: #444;
+        border-color: #e6e6e6;
+        /*background-color: #DBE6F4;*/
+    }
+
+    .k-header {
+        border-color: #c9c9c9;
+    }
+</style>
+

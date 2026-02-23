@@ -1,0 +1,39 @@
+﻿@model R10.Core.Entities.GeneralMatter.GMMatterOtherParty
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = ViewData["id"].ToString();
+
+    var linkUrl = Url.Action("DetailLink", "OtherParty", new
+    {
+        Area = "GeneralMatter",
+        id = "actualValue"
+    });
+
+    //var headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Other Party"], @Localizer["Contact Person"]);
+    var headerTemplate = ComboBoxHelper.GetHeaderTemplate(new Dictionary<string, int>() { { @Localizer["Other Party"], 300 }, { @Localizer["Contact Person"], 300 } });
+    var template = ComboBoxHelper.GetItemTemplate(new Dictionary<string, int>() { { "OtherParty", 300 }, { "ContactPerson", 300 } });
+
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                                    .DataTextField("OtherParty")
+                                    .DataValueField("OtherParty")
+                                    .AutoBind(false)
+                                    .AutoWidth(true)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetOtherPartyList", "OtherParty", new { area = "GeneralMatter", property = "OtherParty" });
+                                        })
+                                        .ServerFiltering(true);
+                                    })
+                                    .Filter(FilterType.Contains)
+                                    .Events(e => e.Select("function(e) { pageHelper.refreshGridNameField(e, 'ContactPerson'); }"))
+                                    .Template(template)
+                                    .HeaderTemplate(headerTemplate)
+                                    .HtmlAttributes(new { style = "width: 80%", id = @id })
+
+)
+<button type="button" class="btn">
+    <i class="fal fa-search-plus btn-link cpiButtonLink" style="display:block !important" data-source="@id" data-url="@linkUrl"></i>
+</button>

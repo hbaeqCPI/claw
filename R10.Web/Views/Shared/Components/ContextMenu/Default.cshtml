@@ -1,0 +1,66 @@
+﻿@model ContextMenuOptions
+@{
+    var canDelete = Model.Permission == null ? false : Model.Permission.CanDeleteRecord;
+    var canEdit = Model.Permission == null ? false : Model.Permission.CanEditRecord;
+    
+    @(Html.Kendo().ContextMenu()
+        .Name(Model.Name)
+        .Target(Model.Target)
+        .Filter(Model.Filter)
+        .ShowOn(Model.ShowOn)
+        .Orientation(Model.MenuOrientationType)
+        .Animation(animation =>
+        {
+            animation.Open(open =>
+            {
+                open.Fade(FadeDirection.In);
+                open.Duration(500);
+            });
+        })
+
+      .Events(e =>
+      {
+          if (Model.OnOpen != null)
+          {
+              e.Open(Model.OnOpen);
+          }
+
+          e.Select(Model.OnSelect);
+      })
+
+        .Items(items =>
+        {
+            if (Model.OnOpen == null)
+            {
+                if (canDelete)
+                {
+                    items.Add().Text("Delete").SpriteCssClasses("fas fa-trash fa-fixed-width").HtmlAttributes(new { action = "delete" });
+                }
+
+                if (canEdit)
+                {
+                    items.Add().Text("Edit").SpriteCssClasses("fas fa-edit fa-fixed-width").HtmlAttributes(new { action = "edit", partialView = "" });
+                }
+            }
+        }
+
+        )
+
+        .HtmlAttributes(new { style = "width: " + Model.Width.ToString() + "px;" })
+
+    )
+}
+
+<style>
+
+
+    /* set font-size because there are styles for "k-sprite" that set font size equal to 0 pixels and that's why you don't see the icons. */
+    .k-sprite {
+        font-size: 14px;
+    }
+
+    .k-context-menu {
+        color: #094ab2;
+        font-size: 14px;
+    }
+</style>

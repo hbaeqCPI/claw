@@ -1,0 +1,111 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var downloadUrl = "";
+    var downloadLink = "";
+    var isSharePointIntegrationOn = settings.IsSharePointIntegrationOn;
+    //var actId = (int)ViewBag.ActionId;
+
+    // if (isSharePointIntegrationOn)
+    // {
+    //     downloadUrl = Url.Action("DownloadDeDocketSharePointFile", Model.Controller, new { area = Model.Area });
+    //     downloadLink = $"<a href='{downloadUrl}?fileName=#=DocFile#&ddid=#=DDId#' title='{Localizer["Download?"]}' target='_blank'>#=CurrentDocFile#</a>";
+    // }
+    // else
+    // {
+    //     downloadUrl = Url.Action("ViewImage", "FileViewer", new { area = "", system = Model.Area, screenCode = "act", key = actId, fileType = ImageHelper.CPiSavedFileType.DeDocket });
+    //     downloadLink = $"<a href='{downloadUrl}&thumbnailFile=#=DocFile#' title='{Localizer["Download?"]}' target='_blank'>#=CurrentDocFile#</a>";
+    // }
+    // var downloadTemplate = "#if(CurrentDocFile){#" + downloadLink + " #}else{##}#";
+}
+
+<script>
+    $(document).ready(function () { 
+        $("#docketRequestHistoryDialog").find("#showOutstandingRequestsOnly").change(function () {
+            const grid = $("#docketRequestHistory").data("kendoGrid");
+            grid.dataSource.read();
+        });
+    });
+
+    function requestDocketHistoryReadData() {
+        const container = $("#docketRequestHistoryDialog");
+        const outstandingOnly = container.find("#showOutstandingRequestsOnly").is(':checked');
+
+        return {
+            parentId: @Model.ParentId,
+            outstandingOnly: outstandingOnly
+        }
+    }
+</script>
+
+<div class="modal fade" id="docketRequestHistoryDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-1">
+                <h4 class="modal-title">@Localizer["Request Docket History"]</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="show-outstanding-requests pt-3 pl-2">
+                <label class="option-name" for="showOutstandingRequestsOnly">@Localizer["Show Outstanding Requests Only"]</label>
+                <span>
+                    <label class="toggle-switch">
+                        <input id="showOutstandingRequestsOnly" type="checkbox" class="toggle-option">
+                        <span class="slider round"></span>
+                    </label>
+                </span>
+            </div>
+            <div class="modal-body py-1 mx-2">
+                @(
+                    Html.Kendo().Grid<DocketRequest>().Name("docketRequestHistory")
+                                        .Columns(columns =>
+                                        {
+                                            columns.Bound(h => h.RequestType).Width(150);
+                                    columns.Bound(h => h.CreatedBy).Width(150).Title(Localizer["Request By"].Value);
+                                    columns.Bound(h => h.DateCreated).Width(150).Title(Localizer["Request Date"].Value).Format("{0:dd-MMM-yyyy}");
+                                            columns.Bound(h => h.DueDate).Width(150)
+                            .ClientTemplate("#= (DueDate == null) ? '' : kendo.toString(DueDate,'dd-MMM-yyyy')#");
+                                        columns.Bound(h => h.CompletedBy).Width(150);
+                                        columns.Bound(h => h.CompletedDate).Width(150)
+                                            .ClientTemplate("#= (CompletedDate == null) ? '' : kendo.toString(CompletedDate,'dd-MMM-yyyy')#");
+                                    columns.Bound(h => h.Remarks).Title(Localizer["Request Remarks"].Value);
+                                        columns.Bound(r => r.CurrentDocFile);
+                                        //.ClientTemplate(downloadTemplate);
+                                    })
+                    .Pageable(page => page.Responsive(false))
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        //.Scrollable()
+                        .AutoBind(true)
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Batch(false)
+                            .PageSize(settings.SubFormPageSize)
+                            .ServerOperation(true)
+                            .Model(model =>
+                            {
+                        model.Id(h => h.ReqId);
+                            })
+                    .Read(create => create.Action("RequestDocketHistoryRead", Model.Controller).Data("requestDocketHistoryReadData"))
+                            .Sort(sort => sort.Add("DateCreated").Descending())
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                        )
+                        .HtmlAttributes(new { @class = "kendo-Grid" })
+                )
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal"><i class="fal fa-times-circle pr-2"></i>@Localizer["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+

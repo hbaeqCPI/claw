@@ -1,0 +1,32 @@
+﻿using R10.Core.Entities.Patent;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace R10.Web.Areas.Patent.ViewModels
+{
+    public class PatCEAnnuitySetupCopyViewModel
+    {
+        public int CopyCEAnnuityId { get; set; }
+
+        [Required]
+        [Display(Name = "Country")]
+        public string? Country { get; set; }
+
+        [Display(Name = "Entity Status")]
+        public string? EntityStatus { get; set; }
+
+        [Display(Name = "Currency Type")]
+        public string? CurrencyType { get; set; }
+
+        [Display(Name = "Case Types")]
+        public bool CopyCaseTypes { get; set; } = true;
+
+        [Display(Name = "Costs")]
+        public bool CopyCosts { get; set; } = true;
+        
+    }
+}

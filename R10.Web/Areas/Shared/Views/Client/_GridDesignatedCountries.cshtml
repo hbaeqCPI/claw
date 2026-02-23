@@ -1,0 +1,244 @@
+﻿@model ChildViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var clientIdParam = $"{{clientId: {Model.Id}}}";
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var parentDesCtryTemplate = $"<span>#=kendo.htmlEncode(DesCtry)#</span>#if (EntityDesCtryID > 0 ){{#<i class='far fa-list-alt pl-2 desig-entry' title='{Localizer["Show Designated Countries"]}'></i>#}}#";
+}
+<div class="row">
+    <div class="col-md-6" id="clientDesCountryContainer" data-unsave-country-msg="@Localizer["Please save or cancel your changes first."]">
+        <label class="mb-2 d-inline-block pl-2">@Localizer["Specify here the organization or treaty. To enter countries to designate, select a parent country first."]</label>
+        @(Html.Kendo().Grid<ClientDesignatedCountryViewModel>()
+            .Name("clientDesCountryGrid")
+            .Columns(columns =>
+            {
+                columns.Bound(cd => cd.SystemTypeName)
+                .Width(150)
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("ComboBox")
+                .EditorViewData(new
+                {
+                    dataValueField = "SystemTypeName",
+                    dataTextField = "SystemTypeName",
+                    action = "GetActiveSystemsWithDesignatedCountry",
+                    controller = "ClientDesignatedCountry"
+                }
+                )
+                .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                columns.Bound(cd => cd.DesCtry)
+                .Width(150)
+                .ClientTemplate(parentDesCtryTemplate)
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("ComboBox")
+                .EditorViewData(new
+                {
+                    dataValueField = "Country",
+                    action = "GetParentCountryList",
+                    controller = "ClientDesignatedCountry",
+                    template = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]),
+                    onSelect = "function(e) { pageHelper.refreshGridNameField(e, 'CountryName'); }",
+                    readData = "clientPage.parentDesig_getSystemType",
+                    serverFiltering = false
+                }
+                )
+                .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                columns.Bound(cd => cd.DesCtryName)
+                .HtmlAttributes(new { @class = "name-field" });
+                columns.Bound(cd => cd.DesCaseType)
+                .Width(150)
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("ComboBox")
+                .EditorViewData(new
+                {
+                    dataValueField = "CaseType",
+                    action = "GetParentCaseTypeList",
+                    controller = "ClientDesignatedCountry",
+                    template = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Case Type"], Localizer["Description"]),
+                    readData = "clientPage.parentDesig_getCaseTypeParam",
+                    serverFiltering = false
+                }
+                )
+                .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                columns.Command(command =>
+                {
+                    if (Model.Permission.CanDeleteRecord)
+                        command.Custom("Delete")
+                    .Click("function(e) {clientPage.deleteParentDesigRow(e,this)}")
+                    .IconClass("k-icon fal fa-trash-alt")
+                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+                }).Width(10);
+            })
+            .Events(events =>
+            {
+                events.Change("clientPage.parentDesig_onRowSelect");
+                events.Remove("clientPage.parentDesig_onRemove");
+                events.Edit("clientPage.parentDesig_onEdit");
+            })
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+            .ToolBar(toolbar =>
+            {
+                if (fullModify)
+                {
+                    toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]);
+                }
+                if (Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+                {
+                    toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                    toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                }
+
+            })
+            .Sortable(sort => sort.AllowUnsort(false))
+            .Pageable(page => page.Responsive(false))
+            .Editable(editable => editable.Enabled(Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+            .Mode(GridEditMode.InCell).
+            ConfirmDelete(Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .Batch(true)
+            .PageSize(settings.SubFormPageSize)
+            .ServerOperation(false)
+            .Model(model =>
+            {
+                model.Id(cd => cd.EntityDesCtryID);
+                model.Field(cd => cd.DesCtryName).Editable(false);
+            })
+            .Read(create => create.Action("DesignatedCountryRead", "ClientDesignatedCountry").Data(@clientIdParam))
+            .Update(create => create.Action("DesignatedCountriesUpdate", "ClientDesignatedCountry").Data(@clientIdParam))
+            .Destroy(create => create.Action("DesignatedCountryDelete", "ClientDesignatedCountry").Data(@clientIdParam))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            )
+            .Events(events =>
+            {
+                events.DataBound("clientPage.setGridReadOnlyRow");
+            })
+            .HtmlAttributes(new { @class = "mb-2 kendo-Grid" })
+            )
+    </div>
+    <div class="col-md-6" style="display:none;" id="clientChildDesCountry">
+        <label class="mb-2 d-inline-block pl-2">@Localizer["Specify here the countries to generate for the selected organization or treaty."]</label>
+        @(Html.Kendo().Grid<ClientDesignatedCountryViewModel>()
+            .Name("clientChildDesCountryGrid")
+            .Columns(columns =>
+            {
+                columns.Bound(cd => cd.DesCtry)
+                .Width(150)
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("ComboBox")
+                .EditorViewData(new
+                {
+                    dataValueField = "Country",
+                    action = "GetChildCountryList",
+                    controller = "ClientDesignatedCountry",
+                    @* template = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+        headerTemplate  = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]), *@
+                    onSelect = "function(e) { pageHelper.refreshGridNameField(e, 'CountryName'); clientPage.getDefaultCaseType(e);}",
+                    readData = "clientPage.parentDesig_getCountryParam",
+                    serverFiltering = false,
+                    listWidth=500,
+                    columns = new List<ComboBoxColumn> {
+        new ComboBoxColumn{Name="Country",Header=Localizer["Country"],Width=100},
+        new ComboBoxColumn{Name="CountryName",Header=Localizer["Country Name"]},
+        new ComboBoxColumn{Name="DesCaseType",Header=Localizer["Case Type"],Width=100},
+        }
+                }
+            )
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                columns.Bound(cd => cd.DesCtryName)
+                .HtmlAttributes(new { @class = "name-field" });
+
+                columns.Bound(cd => cd.DesCaseType)
+                .Width(150)
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("ComboBox")
+                .EditorViewData(new
+                {
+                    dataValueField = "CaseType",
+                    action = "GetChildCaseTypeList",
+                    controller = "ClientDesignatedCountry",
+                    template = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Case Type"], Localizer["Description"]),
+                    readData = "clientPage.childDesig_getCaseTypeParam",
+                    serverFiltering = false
+                }
+                )
+                .HtmlAttributes(fullModify ? new { @class = "des-case-type editable-cell" } : null);
+                columns.Bound(cd => cd.GenApp)
+                .Width(100)
+                .ClientTemplate("<i class='fa fal #: GenApp ? 'fa-check' : ''#'></i>")
+                .Editable("clientPage.isGridColumnEditable")
+                .EditorTemplateName("CheckBox")
+                .HtmlAttributes(new { @class = "editable-cell" });
+                columns.Command(command =>
+                {
+                    if (Model.Permission.CanDeleteRecord)
+                        command.Custom("Delete")
+                    .Click("function(e) {clientPage.deleteGridRow(e,this)}")
+                    .IconClass("k-icon fal fa-trash-alt")
+                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+                }).Width(10);
+            })
+            .Events(events =>
+            {
+                events.Change("clientPage.childDesig_onRowSelect");
+            })
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+            .ToolBar(toolbar =>
+            {
+                if (fullModify)
+                {
+                    toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]);
+                }
+                if (fullModify)
+                {
+                    toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                    toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+
+                }
+
+            })
+            .Editable(editable => editable.Enabled(Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly)
+            .Mode(GridEditMode.InCell).
+            ConfirmDelete(Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+            .AutoBind(false)
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .Batch(true)
+            .ServerOperation(false)
+            .Model(model =>
+            {
+                model.Id(cd => cd.EntityDesCtryID);
+                model.Field(cd => cd.DesCtryName).Editable(false);
+                model.Field(cd => cd.GenApp).DefaultValue(true);
+            })
+            .Read(create => create.Action("ChildDesignatedCountryRead", "ClientDesignatedCountry").Data("clientPage.parentDesig_getDesigCtryFilter"))
+            .Update(create => create.Action("ChildDesignatedCountriesUpdate", "ClientDesignatedCountry"))
+            .Destroy(create => create.Action("DesignatedCountryDelete", "ClientDesignatedCountry"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            )
+            .Sortable(sort => sort.AllowUnsort(false))
+            .Pageable()
+            .HtmlAttributes(new { @class = "mb-2 kendo-Grid" })
+            )
+    </div>
+</div>
+
+<style>
+    #clientDesCountryGrid tr.k-state-selected.parent-desig-selected {
+        background-color: var(--grid-hover) !important;
+    }
+</style>

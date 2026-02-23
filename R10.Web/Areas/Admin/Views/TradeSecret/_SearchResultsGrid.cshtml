@@ -1,0 +1,45 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailsUrl = Url.Action("Detail", new { id = "#: RequestId#", fromSearch = true });
+    var detailsLinkTemplate = $"<a href='{detailsUrl}' class='details-link' data-id='#: RequestId#'>#: Email#</a>";
+}
+@(
+Html.Kendo().Grid<TradeSecretRequestListViewModel>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(r => r.Email).ClientTemplate(detailsLinkTemplate);
+        columns.Bound(r => r.ScreenId);
+        columns.Bound(r => r.RecId);
+        columns.Bound(r => r.Status);
+        columns.Bound(r => r.RequestDate).Format("{0:dd-MMM-yyyy h:mm tt}");
+        columns.Bound(r => r.IsExpired).Sortable(false).ClientTemplate("<i class='small fa fal #: IsExpired ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" }).HeaderHtmlAttributes(new { @class = "text-center" }).Width(100);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"], Localizer["Clear Filters"])))
+    .AutoBind(false)
+    .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+    .Sortable(sort => sort.AllowUnsort(false))
+    //.ColumnMenu()
+    .Excel(excel => excel.FileName("TradeSecretRequest.xlsx").AllPages(true))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Events(events => events.Error($"{ViewBag.ActivePage}.searchResultGridError"))
+        .Events(events => events.RequestEnd($"{ViewBag.ActivePage}.searchResultGridRequestEnd"))
+        .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+        .Read(read => read
+            .Action("PageRead", "TradeSecret")
+            .Data($"{ViewBag.ActivePage}.gridMainSearchFilters")
+        )
+        .Sort(sort => sort.Add(r => r.RequestDate).Descending())
+      )
+      .HtmlAttributes(new { @class = "kendo-Grid" })
+    )
+
+    <script>
+        $(document).ready(function () {
+            $(".kendo-Grid .k-grid-toolbar").addClass("show");
+        });
+    </script>

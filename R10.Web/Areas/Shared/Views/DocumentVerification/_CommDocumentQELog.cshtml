@@ -1,0 +1,161 @@
+﻿@model DocVerificationCommDocZoomViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var viewerAction = ViewBag.FromTemp != null && (bool)ViewBag.FromTemp ? "GetTempFileDocumentViewer" : "GetDocumentViewer";
+    var docUrl = Url.Action(viewerAction, "DocViewer", new { Area = "Shared", docFileName = Model.DocFileName, system = Model.System, screenCode = Model.ScreenCode, key = Model.ParentId, fileType = Model.FileType });    
+    var qeLogUrl = Url.Action("GetDocumentViewer", "DocViewer", new { Area = "Shared" });
+
+    var isSharePointLoggingOn = settings.IsSharePointIntegrationOn && settings.IsSharePointLoggingOn;
+    if (isSharePointLoggingOn)
+    {
+        qeLogUrl = Url.Action("GetQELogSharePointViewer", "DocumentVerification", new { Area = "Shared" });
+    }
+}
+
+<div id="docVerificationCommDocQELogDialog" class="modal" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="docVerificationCommDocQELogDialogTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width:80%; max-height:92vh;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="docVerificationCommDocQELogDialogTitle">@Model.DocName</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="@Localizer["Close"]">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="col-6">                                                
+                        <div class="form-row">
+                            <div class="col">
+                                @(Html.Kendo().Grid<DocsOutDTO>()
+                                    .Name("docVerificationCommQELogGrid")
+                                    .Columns(columns =>
+                                    {
+                                        @* columns.Bound(d => d.DocumentType).Width(120); *@
+                                        columns.Bound(d => d.Document);
+                                        columns.Bound(d => d.GeneratedOn).Format("{0:dd-MMM-yyyy hh:mm tt}").Width(190);
+                                        columns.Bound(d => d.GeneratedBy);
+                                    })
+                                    .Pageable(page => page.Responsive(false).Refresh(true))
+                                    .Sortable(sort => sort.AllowUnsort(false))
+                                    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                                    .DataSource(dataSource => dataSource
+                                    .Ajax()
+                                    .PageSize(5)
+                                    .Model(model =>
+                                    {
+                                        model.Field(p => p.DocumentType).Editable(false);
+                                        model.Field(p => p.Document).Editable(false);
+                                        model.Field(p => p.GeneratedOn).Editable(false);
+                                        model.Field(p => p.GeneratedBy).Editable(false);
+                                        model.Field(p => p.SentToDocuSign).Editable(false);
+                                    })
+                                    .Read(create => create.Action("CommDocumentQELogRead", "DocumentVerification", new { Area = "Shared", systemTypeCode = Model.SystemTypeCode, docId = Model.DocId }))
+                                    .Events(events =>
+                                    {
+                                        events.Error("pageHelper.onGridError");
+                                    })
+                                    )
+                                    .HtmlAttributes(new { @class = "mb-2 kendo-Grid", style = "height: 25vh !important;" })
+                                    .Events(events => {
+                                        events.DataBound("function(e) { setTimeout(() => { e.sender.select('tr:eq(1)'); }, 250); }");
+                                        events.Change("function() { commQELogGridRowSelect(this);}");
+                                    })
+                                )
+                            </div>
+                            <script>
+                                var loadedRowIndex = null;
+                                function commQELogGridRowSelect(row) {
+                                    let url = "@qeLogUrl";
+                                    const data = row.dataItem(row.select());
+                                    const selectedRowIndex = row.select().index();
+                                    if (url && data && data.LogFile && selectedRowIndex != loadedRowIndex) {
+                                        loadedRowIndex = selectedRowIndex;
+                                        url += "?docFileName=" + data.LogFile + "&system=" + data.SystemType + "&screenCode=" + data.ScreenCode + "&key=" + data.RecKey + "&fileType=" + '@R10.Web.Helpers.ImageHelper.CPiSavedFileType.QE';
+                                        if ("@isSharePointLoggingOn" == "True") {
+                                            url += "&itemId=" + data.ItemId;
+                                        }
+                                        else {
+                                            url += "&isPartialView=true";
+                                        }
+
+                                        var qeLogViewerContainer = $("#docVerificationCommDocQELogItemViewerContainer");
+                                        if (qeLogViewerContainer) {
+                                            cpiLoadingSpinner.show();
+                                             $.ajax({
+                                                url: url,
+                                                dataType: "html",
+                                                cache: false,
+                                                beforeSend: function () { },
+                                                success: function (result) {
+                                                    cpiLoadingSpinner.hide();
+                                                    qeLogViewerContainer.empty();
+                                                    qeLogViewerContainer.html(result);
+                                                },
+                                                error: function (e) {
+                                                    cpiLoadingSpinner.hide();
+                                                    pageHelper.showErrors(e);
+                                                }
+                                            });
+                                        }
+                                    }
+
+                                }
+                            </script>
+                        </div>
+                        <div class="form-row" style="margin-top:10px;">
+                            <div class="col">
+                                <div id="docVerificationCommDocQELogViewerContainer" data-viewer-url="@docUrl"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div id="docVerificationCommDocQELogItemViewerContainer"></div>                        
+                    </div>
+                </div>                
+            </div>
+            <div class="modal-footer" style="display:block !important;">
+                <div class="row">
+                    <div class="col-8" id="docVerificationCommDocQELogDialogPager">
+                        <div class="k-pager-wrap k-grid-pager k-widget k-floatwrap">
+                            <a class="k-link k-pager-nav navigate" data-dir="top" tabindex="-1">
+                                <span class="k-icon k-i-seek-w"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="prev" tabindex="-1">
+                                <span class="k-icon k-i-arrow-w"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="next" tabindex="-1">
+                                <span class="k-icon k-i-arrow-e"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="last" tabindex="-1">
+                                <span class="k-icon k-i-seek-e"></span>
+                            </a>
+                            <input type="text" style="border: 1px solid var(--control-border); width:80px;height: 80%; text-align:center;" class="currentRecPosition" />&nbsp;@Localizer["of"]&nbsp;<span class="navTotalRecs"></span>&nbsp;@Localizer["records"]
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <button id="cancel" type="button" class="btn btn-secondary  float-right" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #docVerificationCommDocQELogViewerContainer .ui-resizable {
+        width: 100% !important;
+        height: 50vh !important;
+    }
+
+    #docVerificationCommDocQELogItemViewerContainer .ui-resizable {
+        width: 100% !important;
+        height: 77vh !important;
+    }
+
+    #docVerificationCommDocQELogDialog .modal-body {
+        min-height: 68vh !important;
+    }
+</style>

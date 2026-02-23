@@ -1,0 +1,213 @@
+﻿@inject IStringLocalizer<AdminResource> Localizer
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-content">
+    <div class="row">
+        <div class="col-lg-2 d-lg-block cpi-admin-menu">
+            <div class="d-flex justify-content-between">
+                <h3 class="pb-3">@Localizer["Administration"]</h3><span class="pt-3 pl-2 pr-1 fal fa-cogs h4 d-lg-none cpi-admin-menu-close" style="cursor: pointer;"><i class="far fa-chevron-up pl-2 pr-2 h6"></i></span>
+            </div>
+            @await Html.PartialAsync("_AdminNav")
+        </div>
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between">
+                <h3 id="pageTitle">@ViewData["Title"]</h3><span class="pt-3 pl-2 pr-1 fal fa-cogs h4 d-lg-none cpi-admin-menu-open" style="cursor: pointer;"><i class="far fa-chevron-down pl-2 pr-2 h6"></i></span>
+            </div>
+            <div id="statusMessage" class="alert alert-dismissible alert-danger collapse mb-4" role="alert">
+                <button type="button" class="close" data-hide="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                @*<i class="fal fa-exclamation-triangle pr-2"></i>*@<span class="message">&nbsp;</span>
+            </div>
+            @RenderBody()
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="statusMessageModal" tabindex="-1" role="dialog" aria-labelledby="statusMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="statusMessageModalLabel"><i class="fal fa-check-circle text-success"></i><span class="text pl-2">Success</span></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <span class="message"></span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">@Localizer["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="saving" tabindex="-1" role="dialog" aria-labelledby="savingLabel" aria-hidden="true" aria-busy="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <h4 id="savingLabel"><i class="fa fa-circle-notch fa-spin"></i><span class="pl-2">@Localizer["Saving. Please wait."]</span></h4>
+</div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        var delayTimer;
+
+        function updatePendingBadge() {
+            $.ajax({
+                url: "@Url.Action("PendingCount", "User", new { Area = "Admin" })",
+                type: "POST",
+                dataType: "json",
+                success: function (response) {
+                    var pending = parseInt(response);
+                    if (pending > 0) {
+                        var title = response + " pending user";
+                        $(".pending-badge").text(response).prop("title", title.concat(pending == 1 ? "" : "s"));
+                    }
+                    else {
+                        $(".pending-badge").text("").prop("title", "No pending users");
+                    }
+                }
+            });
+        }
+
+        function spinner(action) {
+            if (action.toLowerCase() == "show") {
+                $("#saving").modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
+            }
+            else {
+                $("#saving").modal("hide");
+            }
+        }
+
+        function showStatus(message, errors, alertId) {
+            alertId = alertId == null ? "statusMessage" : alertId;
+
+            $(`#${alertId} ul`).remove();
+            $(`#${alertId} .message`).text(message);
+
+            if (errors == null || errors.length == 0) {
+                $(`#${alertId}`).addClass("alert-success");
+                $(`#${alertId}`).removeClass("alert-danger");
+                //$(`#${alertId} i`).addClass("fa-check-circle");
+                //$(`#${alertId} i`).removeClass("fa-exclamation-triangle");
+            }
+            else {
+                $(`#${alertId}`).addClass("alert-danger");
+                $(`#${alertId}`).removeClass("alert-success");
+                //$(`#${alertId} i`).addClass("fa-exclamation-triangle");
+                //$(`#${alertId} i`).removeClass("fa-check-circle");
+
+                if (errors.length != undefined && errors[0] != "") {
+                    var list = $(`#${alertId}`).append("<ul class='pt-4 errors'></ul>").find("ul");
+                    for (var i = 0; i < errors.length; i++) {
+                        if (errors[i] != "") {
+                            list.append(`<li>${errors[i]}</li>`);
+                        }
+                    }
+                }
+            }
+
+            $(`#${alertId}`).show();
+        }
+
+        function showStatusModal(message, errors) {
+            $("#statusMessageModal .modal-body ul").remove();
+            $("#statusMessageModal .modal-body .message").text(message);
+
+            if (errors == null || errors.length == 0) {
+                //$("#statusMessageModal .modal-title i").addClass("fa-check-circle");
+                //$("#statusMessageModal .modal-title i").removeClass("fa-exclamation-triangle");
+                //$("#statusMessageModal .modal-title i").addClass("text-success");
+                //$("#statusMessageModal .modal-title i").removeClass("text-danger");
+                $("#statusMessageModal .modal-title .text").text("Success");
+            }
+            else {
+                //$("#statusMessageModal .modal-title i").addClass("fa-exclamation-triangle");
+                //$("#statusMessageModal .modal-title i").removeClass("fa-check-circle");
+                //$("#statusMessageModal .modal-title i").addClass("text-danger");
+                //$("#statusMessageModal .modal-title i").removeClass("text-success");
+                $("#statusMessageModal .modal-title .text").text("Error");
+
+                if (errors[0] != "") {
+                    var list = $("#statusMessageModal .modal-body").append("<ul class='pt-4 errors'></ul>").find("ul");
+                    for (var i = 0; i < errors.length; i++)
+                        list.append(`<li>${errors[i]}</li>`);
+                }
+            }
+
+            $("#statusMessageModal").modal("show");
+        }
+
+        function searchGrid() {
+            var grid = $(".search-grid").data("kendoGrid");
+            var sort = grid.dataSource.sort();
+
+            grid.dataSource.query({
+                sort: { field: sort[0].field, dir: sort[0].dir },
+                page: 1,
+                pageSize: grid.dataSource.pageSize(),
+            });
+
+            $("#statusMessage").hide();
+        }
+
+        function showSpinner(el) {
+            clearTimeout(delayTimer);
+            delayTimer = setTimeout(function () {
+                el.show();
+            }, 500)
+        }
+
+        function hideSpinner(el) {
+            clearTimeout(delayTimer);
+            el.hide();
+        }
+
+        $(document).ready(function () {
+            $(".cpi-admin-menu").hide();
+
+            updatePendingBadge();
+
+            $(".cpi-admin-menu-open").on("click", function (e) {
+                $(".cpi-admin-menu-open").hide();
+                $(".cpi-admin-menu").slideDown("fast");
+            });
+            $(".cpi-admin-menu-close").on("click", function (e) {
+                $(".cpi-admin-menu").slideUp("fast", function () {
+                    $(".cpi-admin-menu-open").show();
+                });
+            });
+
+            $("[data-hide]").on("click", function () {
+                $(this).closest("." + $(this).attr("data-hide")).hide();
+            });
+
+            $(".search-input").on("input", function (e) {
+                clearTimeout(delayTimer);
+                delayTimer = setTimeout(function () {
+                    searchGrid();
+                }, 500);
+            });
+
+            $(".search-dropdown").on("change", function () {
+                searchGrid();
+            });
+
+            $(".search-clear").on("click", function () {
+                $(".search-dropdown input").data("kendoDropDownList").value("");
+                $(".search-input").val("");
+                searchGrid();
+            });
+        });
+    </script>
+}
+

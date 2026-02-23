@@ -1,0 +1,56 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization;
+@using R10.Web.Extensions;
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model QEDataSource
+
+@{
+    var requestContext = Context.Request;
+    if (requestContext.IsAjax())
+    {
+        Layout = null;
+    }
+    ViewBag.Title = SharedLocalizer["Quick Email Data Source Detail"];
+    ViewBag.DetailUrl = Url.Action("Detail", "QEDataSource", new { id = "recId" }).ToLower();
+    ViewBag.SearchUrl = Url.Action("Search", "QEDataSource").ToLower();
+    var fromSearch = ViewBag.FromSearch != null && (bool)ViewBag.FromSearch;
+    var mainContainer = "qeDataSourceDetailsView";
+    var navContainer = "qeDataSourceDetailNavigator";
+    var infoContainer = "qeDataSourceInfo";
+}
+<div id="@mainContainer">
+    <script>
+        if (qeDataSourcePage === undefined) {
+            var qeDataSourcePage = new ActivePage();
+        }
+
+        $(document).ready(function () {
+            var params = {
+                detailUrl: '@ViewBag.DetailUrl',
+                searchUrl: '@ViewBag.SearchUrl',
+                title: '@ViewBag.Title',
+                recordId: @Model.DataSourceID,
+                mainDetailContainer: '@mainContainer',
+                recordNavigatorContainer: '@navContainer',
+                detailContentContainer: '@infoContainer',
+                activePage: qeDataSourcePage,
+                singleRecord: @(ViewBag.SingleRecord !=null && (bool)ViewBag.SingleRecord ? "true":"false")
+            };
+            pageHelper.initializeDetailPage(params);
+
+        });
+    </script>
+    <div id="@infoContainer" class="cpiDataContainer">
+        @await Html.PartialAsync("_DetailContent", Model)
+    </div>
+    <div class="cpiContainerPopup"></div>
+
+    @if (Model.DataSourceID > 0)
+    {
+        <div id="@navContainer" class="mt-md-3">
+            @await Html.PartialAsync("_RecordNavigator")
+        </div>
+    }
+</div>
+
+
+

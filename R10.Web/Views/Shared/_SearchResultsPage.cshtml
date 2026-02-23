@@ -1,0 +1,61 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{ 
+    string gridId = $"{Model.PageId}-Grid";
+    string formId = $"{Model.PageId}-RefineSearch";
+}
+
+<div id="@Model.PageId" class="page-main-flex">
+    <div class="page-sidebar refine-search" data-show-filters="@Localizer["Show filters"]" data-hide-filters="@Localizer["Hide filters"]">
+        <form id="@formId" method="post">
+            <div class="header">
+                @*remove search screen*@
+                @*<h4>@Localizer["Refine search"]</h4>*@
+                <div class="d-flex justify-content-between">
+                    <div class="title">@Localizer["Search"]</div>
+                    <a href="#" class="show-results" title="@Localizer["Show results"]" role="button">@Localizer["Show results"]<span class="total-results-count"></span><i class="fal fa-long-arrow-right pl-1"></i></a>
+                </div>
+                <nav class="nav">
+                    @if (Model.HasSavedCriteria)
+                    {
+                        <a class="nav-link load-filters" href="#" title="@Localizer["Load saved filters"]" role="button"><i class="fal fa-download pr-1"></i><span>@Localizer["Load"]</span></a>
+                        <a class="nav-link save-filters" href="#" title="@Localizer["Save search filters"]" role="button"><i class="fal fa-save pr-1"></i><span>@Localizer["Save"]</span></a>
+                    }
+                    <a class="nav-link search-clear" href="#" title="@Localizer["Clear"]" role="button"><i class="fal fa-times pr-1"></i><span>@Localizer["Clear"]</span></a>
+                    @*hide search button by default*@
+                    @*add no-refine-search className on search results grid 
+                    to disable refineSearch plugin and show search button*@
+                    <a class="nav-link search-submit" style="display:none;" href="#" title="@Localizer["Search"]" role="button"><i class="fal fa-search pr-1"></i><span>@Localizer["Search"]</span></a>
+                </nav>
+            </div>
+            @await Html.PartialAsync("_SearchNavBanner")
+            <ul class="nav nav-tabs refine-search" role="tablist">
+                @await Html.PartialAsync("_SearchNavItems")
+            </ul>
+        </form>
+    </div>
+    <div class="page-main">
+        <div class="page-message"></div>
+        <div class="page-header page-crumbs">
+            @*remove search screen*@
+            @*<a class="back-to-search" href="#" title="@Localizer["Back to search screen"]" role="button"><i class="fal fa-arrow-left pr-2"></i><span>@Localizer["Back to search screen"]</span></a>*@
+        </div>
+        <div class="page-grid">
+            @await Html.PartialAsync("_SearchResultsGrid", Model)
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+    @(ViewBag.ActivePage).initializeSearchResultPage({
+            container: "#@Model.PageId",
+            url: "@Context.Request.PathBase@Context.Request.Path",
+            title: "@Model.Title",
+            grid: "#@gridId",
+            //gridPageSize: gridPageSize,
+            refineSearchContainer: "#@formId"
+        });
+    });
+</script>

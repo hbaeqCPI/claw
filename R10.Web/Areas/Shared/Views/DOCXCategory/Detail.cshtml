@@ -1,0 +1,55 @@
+﻿@using Microsoft.AspNetCore.Internal
+@using Microsoft.AspNetCore.Mvc.Localization;
+@using R10.Web.Extensions;
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model DOCXCategory
+
+@{
+    var requestContext = Context.Request;
+    if (requestContext.IsAjax())
+    {
+        Layout = null;
+    }
+    ViewBag.Title = SharedLocalizer["DOCX Category Detail"];
+    ViewBag.DetailUrl = Url.Action("Detail", "DOCXCategory", new {id = "recId"}).ToLower();
+    ViewBag.SearchUrl = Url.Action("Search", "DOCXCategory").ToLower();
+    var fromSearch = ViewBag.FromSearch != null && (bool)ViewBag.FromSearch;
+    var mainContainer = "docxCategoryDetailsView";
+    var navContainer = "docxCategoryDetailNavigator";
+    var infoContainer = "docxCategoryInfo";
+}
+
+<div id="@mainContainer">
+    <script>
+        if (docxCategoryPage === undefined) {
+            var docxCategoryPage = new ActivePage();
+        }
+
+        $(document).ready(function () {
+            var params = {
+                detailUrl: '@ViewBag.DetailUrl',
+                searchUrl: '@ViewBag.SearchUrl',
+                title: '@ViewBag.Title',
+                recordId: @Model.DOCXCatId,
+                mainDetailContainer: '@mainContainer',
+                recordNavigatorContainer: '@navContainer',
+                detailContentContainer: '@infoContainer',
+                activePage: docxCategoryPage,
+                singleRecord: @(ViewBag.SingleRecord !=null && (bool)ViewBag.SingleRecord ? "true":"false")
+            };
+            page.initializeDetailPage(params);
+
+        });
+    </script>
+    <div id="@infoContainer" class="cpiDataContainer">
+        @await Html.PartialAsync("_DetailContent", Model)
+    </div>
+    <div class="cpiContainerPopup"></div>
+
+    @if (Model.DOCXCatId > 0)
+    {
+        <div id="@navContainer" class="mt-md-3">
+            @await Html.PartialAsync("_RecordNavigator")
+        </div>
+    }
+</div>

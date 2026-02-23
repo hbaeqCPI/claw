@@ -1,0 +1,464 @@
+﻿@model PageViewModel
+
+@inject ISystemSettings<PatSetting> Settings
+@inject IStringLocalizer<PatentResource> Localizer
+@{
+    var settings = await Settings.GetSetting();
+
+    var caseNumberLabel = Localizer[settings.LabelCaseNumber];
+    var oldCaseNumberLabel = Localizer[settings.LabelOldCaseNumber];
+    var ownerLabel = Localizer[settings.LabelOwner];
+    var ownerNameLabel = Localizer[settings.LabelOwnerName];
+    var clientLabel = Localizer[settings.LabelClient];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+    var agentLabel = Localizer[settings.LabelAgent];
+    var agentNameLabel = Localizer[settings.LabelAgentName];
+
+    var attorneyLabel = Localizer["Attorney"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var clientRefLabel = Localizer[settings.LabelClientRef];
+    var agentRefLabel = Localizer[settings.LabelAgentRef];
+
+    var area = "Patent";
+    var controller = "CountryApplication";
+
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent);
+    var screen = Model.PageId;
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+}
+
+<ul class="nav nav-tabs refine-search nav-tabs-vertical" role="tablist">
+    <li class="nav-item">
+        <a id="docMgtMainTab" href="#docMgtMainTabContent" class="nav-link active" data-toggle="tab" role="tab"
+           aria-controls="docMgtMainTabContent" title="@Localizer["Country Application"]">@Localizer["Country Application"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="applicationSearchEntitiesTab" data-toggle="tab" href="#applicationSearchEntitiesTabContent" role="tab" aria-controls="applicationSearchEntitiesTabContent" aria-selected="true">@Localizer["Entities"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="applicationSearchBiblioTab" data-toggle="tab" href="#applicationSearchBiblioTabContent" role="tab" aria-controls="applicationSearchBiblioTabContent" aria-selected="true">@Localizer["Bibliographic Info"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="applicationSearchDocumentsTab" data-toggle="tab" href="#applicationSearchDocumentsTabContent" role="tab" aria-controls="applicationSearchDocumentsTabContent" aria-selected="true">@Localizer["Documents"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" id="applicationSearchOtherInfoTab" href="#applicationSearchOtherInfoTabContent" role="tab" aria-controls="applicationSearchOtherInfoTabContent" title="@Localizer["Other Info"]">@Localizer["Other Info"]</a>
+    </li>
+</ul>
+
+<div class="accordion-content show">
+    <div class="tab-pane show form-sidebar active" id="docMgtMainTabContent" aria-labelledby="docMgtMainTab" role="tabpanel" data-case-number-mapper-url="@Url.Action("CaseNumberSearchValueMapper", "CountryApplicationLookup", new { Area = "Patent" })">
+        <div class="form-row group">
+            <div class="col-12">
+                <div class="form-group float-label" >
+                    <label for="CaseNumber">@caseNumberLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CaseNumber", controller = "CountryApplicationLookup", area = area, enablePaging = enableComboPaging, pagingSize = comboPagingSize, valueMapper = "patCountryAppPage.caseNumberSearchValueMapper" })
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="CountryOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "CountryOp" })
+                </div>
+
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="Country">@countryLabel</label>
+                    @await Component.InvokeAsync("MultiSelect", MultiSelectOptions.Country("Country", countryLabel, countryNameLabel, "CountryApplicationLookup", null, area))
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label>@countryNameLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CountryName", controller = "CountryApplicationLookup", action = "GetCountryList", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="SubCase">@Localizer["Sub Case"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SubCase", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-12">
+                @if (isRespOfficeOn)
+                {
+                    <div class="form-group float-label">
+                        <label for="RespOffice">@Localizer["Responsible Office"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "RespOffice", controller = "Invention", area = "Patent", screen = screen })
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="form-row group">
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="AppTitle">@Localizer["Application Title"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AppTitle", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="CaseTypeOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "CaseTypeOp" })
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="CaseType">@Localizer["Case Type"]</label>
+                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions { Name = "CaseType", Controller = "CountryApplicationLookup", Screen = screen, Area = area })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label for="Area">@Localizer["Area"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", action = "GetAreasWithCountryApplications", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentAppId">@Localizer["Family Reference"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ParentCase", controller = "CountryApplicationLookup", action = "GetFamilyReferenceList", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="ActiveSwitch1">@Localizer["Status Codes"]</label>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="PatApplicationStatus.ActiveSwitch" class="form-control" value="true" data-role="option"> @Localizer["Active"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="PatApplicationStatus.ActiveSwitch" class="form-control" value="false" data-role="option"> @Localizer["Inactive"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="PatApplicationStatus.ActiveSwitch" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row group">
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label for="CaseTypeOp"></label>
+                    @await Component.InvokeAsync("FilterOperatorList", new { name = "ApplicationStatusOp" })
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label for="CaseType">@Localizer["Status"]</label>
+                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions { Name = "ApplicationStatus", Controller = "CountryApplicationLookup", Screen = screen, Area = area })
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="ApplicationStatusDateFrom">@Localizer["Status Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ApplicationStatusDateFrom"))
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="ApplicationStatusDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ApplicationStatusDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="applicationSearchEntitiesTabContent" role="tabpanel" aria-labelledby="applicationSearchEntitiesTab">
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label for="Client.ClientCode">@clientLabel</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("Client.ClientCode", clientLabel, clientNameLabel, "CountryApplicationLookup", "", area))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Client.ClientName">@clientNameLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Client.ClientName", textProperty = "ClientName", controller = "CountryApplicationLookup", action = "GetClientList", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AppClientRef">@clientRefLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AppClientRef", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label for="Attorney.AttorneyCode">@attorneyLabel</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.AttorneyCode("Attorney.AttorneyCode", attorneyLabel, attorneyNameLabel, "CountryApplicationLookup", "", "GetAttorneyList", area))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Attorney.AttorneyName">@attorneyNameLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Attorney.AttorneyName", textProperty = "AttorneyName", controller = "CountryApplicationLookup", area = area, action = "GetAttorneyList", screen = screen })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label for="Agent.AgentCode">@agentLabel</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.AgentCode("Agent.AgentCode", agentLabel, agentNameLabel, "CountryApplicationLookup", "", area))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Agent.AgentName">@agentNameLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Agent.AgentName", textProperty = "AgentName", screen = screen, area = "Patent", controller = "CountryApplicationLookup", action = "GetAgentList" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AgentRef">@agentRefLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AgentRef", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label for="Owner.OwnerCode">@ownerLabel</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.OwnerCode("Owner.OwnerCode", ownerLabel, ownerNameLabel, "CountryApplicationLookup", "", area))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Owner.OwnerName">@ownerNameLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Owner.OwnerName", textProperty = "OwnerName", screen = screen, area = "Patent", controller = "CountryApplicationLookup", action = "GetOwnerList" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AppInventor">@Localizer["Application Inventor"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AppInventor", textProperty = "Inventor", controller = "PatInventorApp", area = "Patent", screen = screen })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="applicationSearchBiblioTabContent" role="tabpanel" aria-labelledby="applicationSearchBiblioTab">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AppNumber">@Localizer["Application No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AppNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FilDateFrom">@Localizer["Filing Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FilDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FilDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FilDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PubNumber">@Localizer["Publication No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "PubNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PubDateFrom">@Localizer["Publication Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PubDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PubDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PubDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PatNumber">@Localizer["Patent No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "PatNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="IssDateFrom">@Localizer["Issue Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("IssDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="IssDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("IssDateTo"))
+                </div>
+            </div>
+        </div>
+
+        <div cpi-more-info id="moreAppBiblioInfo"></div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentAppNumber">@Localizer["Parent Application No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ParentAppNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentFilDateFrom">@Localizer["Parent Filing Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ParentFilDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentFilDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ParentFilDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentPatNumber">@Localizer["Parent Patent No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ParentPatNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentIssDateFrom">@Localizer["Parent Issue Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ParentIssDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ParentIssDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ParentIssDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PCTNumber">@Localizer["PCT No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "PCTNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PCTDateFrom">@Localizer["PCT Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PCTDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="PCTDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("PCTDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ConfirmationNumber">@Localizer["Confirmation No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ConfirmationNumber", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ExpDateFrom">@Localizer["Expiration Date"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ExpDateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ExpDateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ExpDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="applicationSearchDocumentsTabContent" role="tabpanel" aria-labelledby="applicationSearchDocumentsTab">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="ImagesLinks">@Localizer["Documents"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Images.ImageTitle", controller = "PatImageApp", textProperty = "ImageTitle", valueProperty = "ImageTitle", area = area })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="applicationSearchOtherInfoTabContent" role="tabpanel" aria-labelledby="applicationSearchOtherInfoTab">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Remarks">@Localizer["Remarks"]</label>
+                    <input type="text" name="Remarks" class="form-control form-control-sm" />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="CreatedBy">@Localizer["Created By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DateCreatedFrom">@Localizer["Date Created"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DateCreatedTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="UpdatedBy">@Localizer["Updated By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy", controller = "CountryApplicationLookup", area = "Patent", screen = screen })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastUpdateFrom">@Localizer["Last Update"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastUpdateTo">@Localizer["To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        documentPage.initializeSubSearchPage({
+            tabNameId: "#docMgtMainTab",
+            systemTabId  : "#systemTab"
+        })
+     });
+</script>

@@ -1,0 +1,144 @@
+﻿@model AuditTrailSearchSubCriteriaViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var screen = "auditSearchCriteria";
+    var labelCaseNumber = Model.LabelCaseNumber;
+}
+
+@if (Model.SystemName != SystemType.DMS && Model.SystemName != SystemType.Shared)
+{
+    <div class="col-md-4 col-lg-4 col-xl-3">
+        <div class="form-group float-label">
+            <label for="CaseNumber">@SharedLocalizer["Case Number"]</label>
+            @await Component.InvokeAsync("ComboBox", new
+                {
+                    name = "CaseNumber",
+                    system = Model.SystemName,
+                    screen = screen,
+                    enablePaging = Model.EnableComboPaging,
+                    pagingSize = Model.ComboPagingSize,
+                    //valueMapper = Model.ValueMapper                
+                    controller = Model.ControllerName == "CountryApplicationLookup" ? "Invention" : Model.ControllerName,                 
+                    area = Model.AreaName
+                })
+        </div>
+    </div>
+    @if (Model.SystemName != SystemType.GeneralMatter && Model.SystemName != SystemType.PatClearance && Model.SystemName != SystemType.SearchRequest)
+    {
+        <div class="col-md-4 col-lg-4 col-xl-3">
+            <div class="form-group float-label">
+                <label for="Country">@SharedLocalizer["Country"]</label>
+                @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = Model.ControllerName, area = Model.AreaName, screen = screen })
+            </div>
+        </div>
+    }
+    @if (Model.SystemName != SystemType.PatClearance && Model.SystemName != SystemType.SearchRequest)
+    {
+    <div class="col-md-4 col-lg-4 col-xl-3">
+        <div class="form-group float-label">
+            <label for="SubCase">@SharedLocalizer["Sub Case"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "SubCase", controller = Model.ControllerName, area = Model.AreaName, screen = screen })
+        </div>
+    </div>
+    }
+}
+else if (Model.SystemName == SystemType.DMS)
+{
+    <div class="col-md-4 col-lg-4 col-xl-3">
+        <div class="form-group float-label">
+            <label for="DisclosureNumber">@SharedLocalizer["Disclosure Number"]</label>
+            @await Component.InvokeAsync("ComboBox", new { name = "DisclosureNumber", controller = Model.ControllerName, area = Model.AreaName, screen = screen })
+        </div>
+    </div>
+}
+
+<script>
+    $(document).ready(function () {
+        switch ("@Model.SystemType") {
+            case "@SystemTypeCode.Patent":
+                patCountryAppPage.caseNumberSearchValueMapperUrl = '@(ViewContext.HttpContext.Request.PathBase)/Patent/CountryApplicationLookup/';
+                break;
+            case "@SystemTypeCode.ForeignFiling":
+                patCountryAppPage.caseNumberSearchValueMapperUrl = '@(ViewContext.HttpContext.Request.PathBase)/Patent/CountryApplicationLookup/';
+                break;
+            case "@SystemTypeCode.GeneralMatter":
+                break;
+            case "@SystemTypeCode.DMS":
+                break;
+            case "@SystemTypeCode.Trademark":
+                tmkTrademarkPage.caseNumberSearchValueMapperUrl = '@(ViewContext.HttpContext.Request.PathBase)/TmkTrademark/TmkTrademarkLookup/';
+                break;
+            case "@SystemTypeCode.RMS":
+                tmkTrademarkPage.caseNumberSearchValueMapperUrl = '@(ViewContext.HttpContext.Request.PathBase)/TmkTrademark/TmkTrademarkLookup/';
+                break;
+            case "@SystemTypeCode.PatClearance":
+                break;
+            case "@SystemTypeCode.Clearance":
+                break;
+            case "@SystemTypeCode.Shared":
+                break;
+            default:
+                patCountryAppPage.caseNumberSearchValueMapperUrl = '@(ViewContext.HttpContext.Request.PathBase)/Patent/CountryApplicationLookup/';
+                break;
+        }
+
+        //TODO reuse floatLabels.js
+        $(this).find(".float-label").each(function () {
+            const container = $(this);
+
+            const input = container.find('input, textarea');
+            input.resetFloatLabel();
+
+            var activate = function (el) {
+                el.closest(".float-label").addClass("active").removeClass("inactive");
+
+                if (el.attr("data-placeholder") !== null)
+                    el.attr("placeholder", el.attr("data-placeholder"));
+
+                if (!el.is(":focus"))
+                    el.resetFloatLabel();
+            };
+
+            input.on("focus input change", function (e) {
+                activate($(this));
+            });
+
+
+            //workaround for clear button (x) on kendo combobox
+            //which fires combobox change but not input change
+            //and does not set focus on combobox
+            container.find("input[data-role='combobox']").each(function () {
+                const comboBox = $(this).data("kendoComboBox");
+                if (comboBox) {
+                    comboBox.bind("change", function () {
+                        //TODO: fix issue --> have to click "x" twice if combo has default value (detail screen)
+                        const el = this.input;
+                        if (this.text() === "" && !el.is(":focus")) {
+                            el.focus();
+                        }
+                        else
+                            activate(el);
+                    });
+                }
+            });
+
+            //workaround for clear button (x) on kendo multiselect
+            //which fires multiselect change but not input change
+            container.find("select[data-role='multiselect']").each(function () {
+                $(this).data("kendoMultiSelect").bind("change", function () {
+                    this.element.resetFloatLabel();
+                });
+            });
+
+            input.on("blur", function () {
+                $(this).resetFloatLabel();
+            });
+
+            if ($(input).attr("autofocus") !== undefined)
+                $(input).focus();
+        });
+
+        //END TODO
+    })
+
+</script>

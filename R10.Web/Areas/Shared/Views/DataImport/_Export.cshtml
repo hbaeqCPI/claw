@@ -1,0 +1,34 @@
+﻿@inject IStringLocalizer<DataImportResource> Localizer
+@{ 
+    var dataTypes = new DataTypeSelectionViewModel {SelectionType="ex",DataTypes= ViewBag.DataImportTypes };
+    var updateDataTypes = new DataTypeSelectionViewModel { SelectionType = "ex-upd", UpdateDataTypes = ViewBag.DataUpdateTypes };
+    var canAccessUpdate = ViewBag.DataUpdateTypes != null && (List<DataImportType>)ViewBag.DataUpdateTypes != null && ((List<DataImportType>)ViewBag.DataUpdateTypes).Count > 0;
+}
+<div class="col-md-12 col-xl-8 pt-5">
+    <form id="exportFileForm" asp-action="ExportFile" method="post">
+        <h4>@Localizer["Import Data Type Structure"]</h4>
+        <h5>@Localizer["Please select the type of data you are exporting:"]</h5>
+        @await Html.PartialAsync("_DataTypeSelection", dataTypes)
+        <div class="d-flex justify-content-end pt-3">
+            <button class="btn btn-primary" type="submit" disabled><span class="fal fa-arrow-down"></span> @Localizer["Export"]</button>
+        </div>
+    </form>
+
+    @if (canAccessUpdate)
+    {
+        <form id="exportUpdateFileForm" asp-action="ExportFile" method="post">
+            <h4>@Localizer["Update Data Type Structure"]</h4>
+            <h5>@Localizer["Please select the type of data you are exporting:"]</h5>
+            @await Html.PartialAsync("_DataTypeSelection", updateDataTypes)
+            <div class="d-flex justify-content-end pt-3">
+                <button class="btn btn-primary" type="submit" disabled><span class="fal fa-arrow-down"></span> @Localizer["Export"]</button>
+            </div>
+        </form>
+    }
+</div>
+
+<style>
+    .import-icon {
+        background-color: var(--btn-primary);
+    }
+</style>

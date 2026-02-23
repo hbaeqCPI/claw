@@ -1,0 +1,17 @@
+﻿@model string
+@inject IStringLocalizer<AdminResource> Localizer
+
+@(Html.Kendo().DropDownListFor(m => m)
+    .HtmlAttributes(new { 
+        style = $"width: 190px;", 
+        data_val_required = Localizer["The System field is required."].ToString() //data_val_required will trigger default validation
+    })
+    .DataValueField("Id")
+    .DataTextField("Name")
+    .AutoBind(false)
+    .Events(e => e.Change("userSystemsOnChange").Open("function (e) { e.sender.list.width(280); }"))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Read(read => read.Action("UserSystems", "Roles").Data("getUserSystemFilter"))
+    )
+)

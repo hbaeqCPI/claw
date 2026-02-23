@@ -1,0 +1,44 @@
+﻿@model Attorney
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+
+    var id = ViewData["id"].ToString();
+
+    var linkUrl = Url.Action("DetailLink", "Attorney", new
+    {
+        Area = "Shared",
+        id = "actualValue"
+    });
+    var headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Attorney"], @Localizer["Attorney Name"]);
+    var template = ComboBoxHelper.GetItemTemplate("AttorneyCode", "AttorneyName");
+
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+                .DataTextField("AttorneyCode")
+                .DataValueField("AttorneyID")
+                .AutoBind(false)
+                .AutoWidth(true)
+                .DataSource(source =>
+                {
+                    source.Read(read =>
+                    {
+                        read.Action("GetAttorneyList", "Attorney", new { area = "Shared", property = "AttorneyCode" });
+                    })
+                    .ServerFiltering(false);
+                })
+                .Template(template)
+                .Filter(FilterType.Contains)
+                .HeaderTemplate(headerTemplate)
+                .Events(e => e.Filtering("function(e) {pageHelper.comboBoxFiltering(e,this,'AttorneyCode,AttorneyName');}"))
+                .HtmlAttributes(new { style = "width: 80%", id = @id })
+
+)
+
+<button type="button" class="btn">
+    <i class="fal fa-search-plus btn-link cpiButtonLink" style="display:block !important" id="@id" data-source="@id" data-url="@linkUrl"></i>
+</button>
+
+
+
+
+

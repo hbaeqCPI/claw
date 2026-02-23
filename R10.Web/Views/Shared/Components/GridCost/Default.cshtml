@@ -1,0 +1,72 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var id = Model.ParentId;
+    var idParam = $"{{parentId: {id}}}";
+    var pageName = ViewBag.ActivePage;
+    var gridName = $"costsGrid_{ViewData["PageId"]}";
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"];
+    var detailsUrl = Url.Action("DetailLink", "CostTracking", new { id = "#: CostTrackId#" });
+    var addUrl = Url.Action("DetailLink", "CostTracking", new { id = 0, parentId = id });
+    if (gridName == "costsGrid_patInventionDetail")
+    {
+        detailsUrl = Url.Action("DetailLink", "CostTrackingInv", new { id = "#: CostTrackInvId#" });
+        addUrl = Url.Action("DetailLink", "CostTrackingInv", new { id = 0, parentId = id });
+    }
+    var detailsLinkTemplate = string.Format("<a href='{0}' class='details-link' >#: CostType#</a>", detailsUrl);
+}
+
+        @(Html.Kendo().Grid<CostViewModel>
+    ().Name(gridName)
+    .Columns(columns =>
+    {
+    columns.Bound(p => p.CostType).Width(200).ClientFooterTemplate($"{Localizer["Record Count"].ToString()}: #=count#").ClientTemplate(detailsLinkTemplate);
+    //columns.Bound(c => c.CostType).Width(200).ClientFooterTemplate("Record Count: #=count#");
+    columns.Bound(c => c.InvoiceNumber).Width(300);
+    columns.Bound(c => c.InvoiceDate).Format("{0:dd-MMM-yyyy}").Width(150);
+    columns.Bound(c => c.PayDate).Format("{0:dd-MMM-yyyy}").Width(150);
+    columns.Bound(c => c.NetCost).Format("{0:n2}").Width(150).ClientFooterTemplate($"{Localizer["Total Cost"].ToString()}: #=kendo.format('{{0:n2}}', sum)#")
+    .HtmlAttributes(new { style = "text-align:right;" }).HeaderHtmlAttributes(new { @class="cost-col", style = "text-align:right;padding-right:15px" })
+    .FooterHtmlAttributes(new { style = "text-align:right;" });
+
+    })
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Pageable(p => p.Refresh(true).Responsive(false))
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .ToolBar(toolbar =>
+    {
+    if (detailPagePermission.CanAddRecord)
+    {
+        @* toolbar.Custom().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action details-link", href = Url.Action("DetailLink", "CostTracking", new { id = 0, parentId = id }) }); *@
+        toolbar.Custom().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action details-link", href = addUrl });
+    }
+    //if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+    //{
+    //    toolbar.Custom().Name("Undo").IconClass("k-icon fas fa-undo");
+    //}
+    })
+    .AutoBind(false)
+    .DataSource(dataSource => dataSource
+    .Ajax()
+    .PageSize(settings.SubFormPageSize)
+    .ServerOperation(false)
+    .Aggregates( ag =>
+    {
+    ag.Add(c => c.NetCost).Sum();
+    ag.Add(c => c.CostType).Count();
+    })
+    .Read(create => create.Action("GridRead", Model.Controller).Data(@idParam))
+    .Events(events =>
+    {
+    events.Error("pageHelper.onGridError");
+    })
+    )
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+    )
+    <script>
+        $(document).ready(()=> {
+            $(".kendo-Grid .cost-col .k-cell-inner").removeClass("k-cell-inner");
+        });
+    </script>

@@ -1,0 +1,129 @@
+﻿@model UserDetailViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var entityTypes = Html.GetEnumSelectList<CPiEntityType>().Where(e => int.Parse(e.Value) < 6).OrderBy(o => o.Value);
+    foreach(var entityType in entityTypes) {
+        if (entityType.Text.StartsWith("Label")) {
+            entityType.Text = await Settings.GetValue<string>("General", entityType.Text);
+        }
+    }
+}
+<div class="pb-2">
+@await Html.PartialAsync("_DialogHeader", Model)
+</div>
+<form id="SetEntityFilter" method="post" data-on-close="userSetupPage.onEntityFilterClose"
+    data-update-url="@Url.Action("UserEntityFilter_Update", "EntityFilter", new { Area = "Admin" })"
+    data-add-url="@Url.Action("UserEntityList_Add", "EntityFilter", new { Area = "Admin" })" 
+    data-remove-url="@Url.Action("UserEntityList_Remove", "EntityFilter", new { Area = "Admin" })" 
+    data-confim-change-message="@Localizer["Entity filters will be removed. Do you want to continue?"]" 
+    data-warning-close-message="@Localizer["Please select at least one entity filter. Choose entity type 'None' if filter is not required."]" 
+    >
+    <div class="modal-status page-status alert alert-danger collapse" role="alert" style="margin-top: -10px;"><span class="message"></span></div>
+    <input asp-for="Id" class="form-control" value="@Model.Id" hidden />@*!!! renders PkId without value="@Model.Id" !!!*@
+    <div class="form-row">
+        <div class="col-12">
+            <div class="form-group float-label">
+                <label for="entityFilterType">@Localizer["Entity type"]</label>
+                @(Html.Kendo().DropDownList()
+                                        .Name("entityFilterType")
+                                        .HtmlAttributes(new { style = "width: 98%;" })
+                                        .Events(events => events
+                                        .Change("userSetupPage.entityFilterTypeOnChange")
+                                        .Select("userSetupPage.entityFilterTypeOnSelect"))
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .Value((Model.EntityFilterType).ToString())
+                                        .BindTo(entityTypes)
+                )
+            </div>
+        </div>
+        <div class="col-12 col-md-6 pr-3 pr-md-0">         
+            <div class="form-group float-label">
+                <label for="entitySearch">@Localizer["Search"]</label>
+                <input type="text" class="form-control form-control-sm listOptionsSearch" id="entitySearch" />
+                <span asp-validation-for="FirstName"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-row mt-2">
+        <div class="col-12">
+            @(Html.Kendo().ListBox()
+                                    .Name("listEntityFilter")
+                                    .HtmlAttributes(new { @class = "listOptions" })
+                                    .Toolbar(toolbar =>
+                                    {
+                                        toolbar.Position(ListBoxToolbarPosition.Right);
+                                        toolbar.Tools(tools => tools
+                                            .TransferTo()
+                                            .TransferFrom()
+                                            .TransferAllTo()
+                                            .TransferAllFrom()
+                                        );
+                                    })
+                                    .ConnectWith("listUserEntityFilter")
+                                    .DataTextField("Code")
+                                    .DataValueField("Id")
+                                        .Selectable(ListBoxSelectable.Multiple)
+                                    .AutoBind(true)
+                                    .DataSource(dataSource => dataSource
+                                        .Ajax()
+                                        .Read(read => read.Action("EntityList_Read", "EntityFilter").Data("userSetupPage.getEntityListFilter"))
+                                    )
+                                    .TemplateId("entityFilteItemTemplate")
+            )
+
+            @(Html.Kendo().ListBox()
+                                    .Name("listUserEntityFilter")
+                                    .HtmlAttributes(new { @class = "listSelected" })
+                                    .DataTextField("Code")
+                                    .DataValueField("Id")
+                                    .Selectable(ListBoxSelectable.Multiple)
+                                    .AutoBind(true)
+                                    .DataSource(dataSource => dataSource
+                                        .Ajax()
+                                        .Read(read => read.Action("UserEntityList_Read", "EntityFilter").Data("userSetupPage.getUserEntityListFilter"))
+                                        .Sort(sort => sort.Add("Code"))
+                                    )
+                                    .TemplateId("entityFilteItemTemplate")
+                                    .Events(events => events
+                                        .Add("userSetupPage.userEntityListOnAdd")
+                                        .Remove("userSetupPage.userEntityListOnRemove")
+                                    )
+            )
+        </div>
+    </div>
+</form>
+<script id="entityFilteItemTemplate" type="text/x-kendo-template">
+    <span class="k-state-default h5">#: data.Code #</span>
+    <span class="k-state-default h5 font-weight-light" style="white-space: nowrap;">#: data.Name #</span>
+</script>
+<style>
+    #SetEntityFilter .k-list .k-item {
+        white-space: nowrap;
+    }
+
+    #SetEntityFilter .listOptions {
+        width: 54%;
+    }
+
+    #SetEntityFilter .listSelected {
+        width: 43%;
+    }
+</style>
+<script>  
+    $(document).ready(function () {  
+        let delayTimer;  
+
+        $("#entitySearch").on("input", function (e) {
+            const form = $("#SetEntityFilter");
+            const entityFilterList = form.find("#listEntityFilter").data("kendoListBox");
+            clearTimeout(delayTimer);
+            delayTimer = setTimeout(function () {
+                entityFilterList.dataSource.read(userSetupPage.getEntityListFilter());
+            }, 500);
+        });
+
+        $("#SetEntityFilter").floatLabels();
+    });
+</script>

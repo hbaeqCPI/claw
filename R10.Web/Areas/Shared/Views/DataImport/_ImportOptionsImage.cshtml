@@ -1,0 +1,12 @@
+﻿@inject IStringLocalizer<DataImportResource> Localizer
+@{
+    var options = (DataImportOptionsImageViewModel)ViewBag.ImportOptions;
+}
+<div>
+    <h5>@Localizer["Option:"]</h5>
+    <form method="post" id="optionsForm">
+        @Html.Kendo().CheckBox().Name("IgnoreOrphans").Checked(options.IgnoreOrphans).Label(Localizer["Ignore records that don't exist (based on key)"])
+        <br/>
+        @Html.Kendo().CheckBox().Name("UseTrademarkName").Checked(options.UseTrademarkName).Label(Localizer["Use Trademark Name as the filename for the image"])
+    </form>
+</div>

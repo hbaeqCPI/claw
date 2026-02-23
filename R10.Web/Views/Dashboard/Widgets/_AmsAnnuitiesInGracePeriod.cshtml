@@ -1,0 +1,218 @@
+﻿@model IEnumerable<CaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IStringLocalizer<SharedResource> sharedLocalizer
+@inject ISystemSettings<AMSSetting> Settings
+@{
+    var amsSettings = await Settings.GetSetting();
+    var clientLabel = sharedLocalizer[amsSettings.LabelClient ?? ""];
+    var clientNameLabel = sharedLocalizer[amsSettings.LabelClientName ?? ""];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-annuities-in-grace-period";
+
+    var template = string.IsNullOrEmpty(widget.Template) ? "<div class='name d-flex  justify-content-between'><span><a href='./#=System#/#=IdType#/detail/#=Id#'>#= kendo.htmlEncode(CaseNumber)# #= Country == null ? '' :  kendo.htmlEncode(Country)# #= SubCase == null ? '' :  kendo.htmlEncode(SubCase)#</a><span class='badge badge-pill badge-warning #= IsNew == 1 ? '' : 'd-none' #' title='New'>new</span></span><span class='due-date #= IsPastDue == 1 ? 'past-due' : '' #'>#= DueDate == null ? '' : kendo.format('{0:dd-MMM-yyyy}', DueDate)#</span></div><div class='title small ellipsis'>#= Action == null ? Title == null ? '&nbsp;' :  kendo.htmlEncode(Title) :  kendo.htmlEncode(Action)#</div>" : widget.Template;
+    template = template.Replace("./#=System#/", $"{Url.ApplicationBaseUrl(Context.Request.Scheme)}/#=System#/");
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    bool showAllowPaging = widgetSettings.Property("ShowAllowPaging") != null ? (widgetSettings["ShowAllowPaging"] ?? false).Value<bool>() : false;
+    bool allowPaging = !showAllowPaging || userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? widgetSettings.Property("PageSize") != null ? (widgetSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    int includeInstructedSwitch = userSettings.Property("IncludeInstructedSwitch") != null ? userSettings["IncludeInstructedSwitch"].Value<int>() : -1;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (string)a).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }    
+</style>
+<script>
+    $(document).ready(function () {
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#@widget.Id .widget-settings .toggle-option");
+        $(document).on("click", "#@widget.Id .widget-settings .toggle-option", function (e) {
+            saveSetting(@widget.Id, `{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`, function () { refresh = true; });
+        });
+
+        $(document).on("click", "#@userWidgetId-includeinstructed-switch", function (e) {
+            saveSetting(@widget.Id, `{ IncludeInstructedSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+    });
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@sharedLocalizer["Include instructed"]</span>
+                <span>
+                    <label class="toggle-switch">
+                        <input id="@userWidgetId-includeinstructed-switch" type="checkbox" checked="@(includeInstructedSwitch==-1)">
+                        <span class="slider round"></span>
+                    </label>
+                </span>
+            </li>
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .ServerOperation(false)
+        )
+    .Events(events => {
+        events.DataBound("function(e) {const data = e.sender.dataSource.data(); const rows = e.sender.tbody.children(); for (var i = 0; i < rows.length; i++) { const row = rows[i]; const rowData = data[i]; if (!rowData.IsInstructable) { $(row).addClass('warning-not-instructable'); } }}");
+    })
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+<style>
+    #dashboard .widget-grid .due-date {
+        font-size: .75rem;
+        /*font-weight: 600;*/
+    }
+
+        #dashboard .widget-grid .due-date.past-due {
+            /*color: #D00000;*/
+            color: #dc3545;
+        }
+
+    #dashboard .widget-grid tr:hover .due-date.past-due {
+        color: white;
+    }
+
+    .option-disabled {
+        color: #ccc;
+    }
+</style>
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

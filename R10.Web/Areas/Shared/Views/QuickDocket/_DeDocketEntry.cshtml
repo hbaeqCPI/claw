@@ -1,0 +1,124 @@
+﻿@model DueDateDeDocket
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+
+    var screen = $"{Model.System}_{Model.DDId}";
+    var systemType = "";
+    if (Model.System == SystemTypeCode.Patent)
+        systemType = SystemType.Patent;
+    else if (Model.System == SystemTypeCode.Trademark)
+        systemType = SystemType.Trademark;
+    else if (Model.System == SystemTypeCode.GeneralMatter)
+        systemType = SystemType.GeneralMatter;
+
+    var formId = $"ddd-form-{Model.DDId}";
+    
+    var downloadUrl = "";
+    var downloadLink = "";
+    var viewLink = "";
+    var isSharePointIntegrationOn = settings.IsSharePointIntegrationOn;
+
+    if (isSharePointIntegrationOn)
+    {
+        downloadUrl = Url.Action("DownloadDeDocketSharePointFile", "ActionDueDate", new { area = systemType });
+        downloadLink = $"<a href='{downloadUrl}?fileName={Model.DocFile}&ddid={Model.DDId}' title='{Localizer["Download?"]}' target='_blank'>{Model.DocFile}</a>";
+    }
+    else
+    {
+        //downloadUrl = Url.Action("ViewImage", "FileViewer", new { area = "", system = systemType, screenCode = "act", key = Model.ActId, fileType = ImageHelper.CPiSavedFileType.DeDocket });
+        //downloadLink = $"<a href='{downloadUrl}&thumbnailFile={Model.DocFile}' title='{Localizer["Download?"]}' target='_blank'>{Model.CurrentDocFile}</a>";
+        downloadUrl = Url.Action("ZoomImageLink", "DocViewer", new { area = "Shared", system = systemType, imageFile=Model.DocFile, screenCode = "act", key = Model.ActId, fileType = (int)ImageHelper.CPiSavedFileType.DeDocket });
+        viewLink = $"<span>{Model.CurrentDocFile}</span>&nbsp;<i class='fal fa-search-plus doc-viewer' style='cursor:pointer'  title='{Localizer["View?"]}'></i>";
+    }
+    downloadLink = $"{viewLink}<a href='##' class='pl-3 delete-file-link' data-act-id='{Model.ActId}' data-dd-id='{Model.DDId}' data-ddd-id='{Model.DeDocketId}' data-file-name='{Model.DocFile}'  title='{Localizer["Delete file"].ToString()}'><i class='fal fa-times-circle'></i></a>";
+    var deleteFileUrl = Url.Action("DeDocketFileDelete", "ActionDueDate", new { area = systemType});
+}
+<div id="@formId" class="form-row ddd-form"
+     data-upload-msg="@Localizer["Uploading a new file will overwrite the previous one. \n Do you want to continue?"]"
+     data-upload-title="@Localizer["Please Confirm"]"
+     data-delete-file-url="@deleteFileUrl"
+     data-delete-file-msg="@Localizer["Are you sure you want to delete this uploaded file?"]"
+     data-upload-success="@Localizer["File uploaded successfully."]">
+    <div class="col-md-4 mr-3">
+        <div class="form-group float-label">
+            <label asp-for="Instruction"></label>
+            @if (Model.CanDeDocket)
+            {
+                @await Component.InvokeAsync("ComboBox", new
+           {
+               name = "Instruction",
+               controller = "DeDocketInstruction",
+            action = "GetQDDeDocketInstructionList",
+               property = "Instruction",
+               validationMessage = Localizer["The Instruction field is required."].ToString(),
+               defaultValue = Model.Instruction,
+               screen = screen,
+               width = 100,
+               limitToList=true,
+            data=$"{{systemType:'{systemType}',indicator: '{Model.Indicator}'}}"
+           })
+                if (Model.CanUploadDocument)
+                {
+                    <a href="#" class="upload-dd-doc" data-id="@Model.DDId"><span class="pt-3"><i class='fal fa-file-upload pt-3 pr-2'></i>@Localizer["Upload Document"]</span></a>
+                    <input type="file" id="DocFile" name="DocFile" style="display:none" />
+
+                    @if (!string.IsNullOrEmpty(Model.CurrentDocFile) || !string.IsNullOrEmpty(Model.DocFile))
+                    {
+                        <span class="pl-4 upload-dd-doc-filename">@Html.Raw(@downloadLink)</span>
+                    }
+                    else
+                    {
+                        <span class="pl-4 upload-dd-doc-filename"></span>
+                    }
+                    <div>@Localizer["(Or drag and drop the file here)"]</div>
+                }
+            }
+            else
+            {
+                <input type="text" class="form-control form-control-sm" asp-for="Instruction" readonly style="height:35px" />
+                if (!string.IsNullOrEmpty(Model.CurrentDocFile) || !string.IsNullOrEmpty(Model.DocFile))
+                {
+                    <div class="pt-2">@Localizer["Saved Doc"]:&nbsp;@Html.Raw(@viewLink)</div>
+                }
+            }
+        </div>
+        @if (Model.CanCompleteInstruction)
+        {
+            <div class="d-flex justify-content-end">
+                @(Html.Kendo().CheckBoxFor(m => m.InstructionCompleted).Label(Localizer["Instruction Completed?"]).HtmlAttributes(new {@id=$"{screen}_InstrxCompleted"}))
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="InstructionCompleted" />
+        }
+    </div>
+    <div class="col-md">
+        <div class="form-group float-label pr-3">
+            <label asp-for="Remarks"></label>
+            <textarea class="form-control form-control-sm" rows="3" asp-for="Remarks" asp-is-readonly="@(!Model.CanDeDocket)" ></textarea>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="pl-5">
+            <div class="dd-save-icon pt-3" title="@Localizer["Save"]"><i class="fas fa-check" style="cursor:pointer"></i></div>
+            <div class="dd-cancel-icon pt-3" title="@Localizer["Cancel"]"><i class="fal fa-times" style="cursor:pointer"></i></div>
+        </div>
+    </div>
+</div>
+<script>
+  quickDocket.initializeFormFileUpload("#@formId");
+  $(document).ready(() => {
+      $("#@formId").on("click", ".doc-viewer", function () {
+            const baseUrl = $("body").data("base-url");
+          const url = `${baseUrl}@Html.Raw(downloadUrl)`;
+          documentPage.zoomDocument(url);
+        });
+      
+
+  });
+</script>
+
+

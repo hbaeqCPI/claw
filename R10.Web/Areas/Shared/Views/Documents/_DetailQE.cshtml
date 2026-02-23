@@ -1,0 +1,116 @@
+﻿@model DocQELogDetailDTO
+@inject IStringLocalizer<SharedResource> Localizer
+@{ 
+    string zoomUrl = "";
+    var aFileName = Model.DocFileName.Split(@"\");
+    var fileName = aFileName[aFileName.Length - 1];
+    if (string.IsNullOrEmpty(fileName))
+    {
+        zoomUrl = Url.Action("Open", "DocsOut", new { Area = "Shared", documentCode = "QE", docLogId = Model.DocId, systemType = Model.SystemType, parentKey = Model.DataKey, parentValue = Model.DataKeyValue });
+    }
+    else
+    {
+        var docLink = Model.DocumentLink.Split("|");
+        var system = docLink[0];
+        var screenCode = docLink[1];
+        var key = docLink[3] != null ? Convert.ToInt32(docLink[3]) : 0;
+
+        zoomUrl = @Url.Action("ZoomDocument", "DocViewer", new { fileName = Model.DocFileName, system = system, screenCode, key, fileType = ImageHelper.CPiSavedFileType.QE });
+    }
+}
+
+<div class="page-content">
+    <div class="form-row">
+        <div class="col">
+            <span id="qeLogHeader" style="font-weight:600">@Model.TemplateName</span>
+        </div>
+        <div class="col d-flex justify-content-end">
+            <span style="font-style: italic">@Localizer["Sent Quick Email"]</span>
+        </div>
+    </div>
+</div>
+
+<div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="userFolderTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="qeLogDetailTab" data-toggle="tab" role="tab" aria-controls="qeLogDetailTabContent" aria-selected="true" href="#qeLogDetailTabContent">@Localizer["Quick Email Details"]</a>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content">
+    <div class="tab-pane show active" id="qeLogDetailTabContent" role="tabpanel" aria-labelledby="qeLogDetailTab" >
+        <div class="form-row">
+            <div class="col-10">
+                <div class="p-2">
+                    <div class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="toText">@Localizer["To"]</span>
+                        </div>
+                        <textarea type="text" name="To" class="form-control form-control-sm" rows="1" asp-for="To"></textarea>
+                    </div>
+                    <div class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="ccText">@Localizer["Cc"]</span>
+                        </div>
+                        <textarea type="text" name="CopyTo" class="form-control form-control-sm" rows="1" asp-for="Cc"></textarea>
+                    </div>
+                    <div id="bccContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="bccText">@Localizer["Bcc"]</span>
+                        </div>
+                        <textarea type="text" name="Bcc" class="form-control form-control-sm" rows="1" asp-for="Bcc"></textarea>
+                    </div>
+                    <div id="fromContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="fromText">@Localizer["From"]</span>
+                        </div>
+                        <textarea type="text" name="FromAddress" class="form-control form-control-sm" rows="1" asp-for="From"></textarea>
+                    </div>
+                    <div id="replyToContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="replyToText">@Localizer["Reply-to"]</span>
+                        </div>
+                        <textarea type="text" name="ReplyToAddress" class="form-control form-control-sm" rows="1" asp-for="ReplyTo"></textarea>
+                    </div>
+                    <div id="genDateContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="genDateText">@Localizer["Sent On"]</span>
+                        </div>
+                        <textarea type="text" name="GenDate" class="form-control form-control-sm" rows="1">@(Model.GenDate.ToString("dd-MMM-yyyy hh:mm tt"))</textarea>
+                    </div>
+                    <div id="subjectContainer" class="input-group input-group-sm mb-1">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="subjectText">@Localizer["Subject"]</span>
+                        </div>
+                        <textarea type="text" name="Subject" class="form-control form-control-sm" rows="1" asp-for="Subject"></textarea>
+                    </div>
+
+                </div>
+                
+
+            </div>
+
+            <div class="col-2">
+                @if (!string.IsNullOrEmpty(Model.DocFileName))
+                {
+                    <div class="text-wrap text-center pt-5" style="max-width: 100%;">
+                        <a href='@zoomUrl' id="docOpenViewer" class='details-link'>@Localizer["Click here to view document."]</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#docOpenViewer").on('click',  function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).attr("href");
+            documentPage.zoomDocument(url, quickEmail.initializeLogViewer);
+        });
+    });
+</script>

@@ -1,0 +1,124 @@
+﻿@model SystemSettingsViewModel
+@using R10.Core.Entities.DMS
+@using R10.Core.Interfaces.DMS
+@using R10.Web.Areas.Admin.Services
+@using System.Text.RegularExpressions
+@inject IDisclosureService DisclosureService
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var statuses = (await DisclosureService.GetDMSDisclosureStatusesForColorSetting())
+        .Select(d =>
+        {
+            var StatusKey = Regex.Replace(d.DisclosureStatus.ToLower(), @"[^a-zA-Z0-9_]+", "-");
+            return new { StatusKey, d.DisclosureStatus, d.GroupName, d.WorkflowOrder };
+        })
+        .OrderBy(d => d.WorkflowOrder).ThenBy(d => d.DisclosureStatus).ToDictionary(d => d.StatusKey);
+}
+
+<div class="col-12 statuses">
+    <ul class="enabled">
+        <li class="d-flex justify-content-between">
+            <label for="Enabled">@Localizer["Enable"]</label>
+            <span>
+                <label class="toggle-switch">
+                    <input id="Enabled" name="Enabled" type="checkbox" checked="@Model.InventionDisclosureStatus.Enabled" class="toggle-option" onchange="saveInventionDisclosureStatus(event);">
+                    <span class="slider round"></span>
+                </label>
+            </span>
+        </li>
+    </ul>
+    <ul class="colors">
+        <li class="status-header d-flex justify-content-between">
+            <span class="name col-5 p-0">@Localizer["Status"]</span>
+            <span class="group col-4">@Localizer["Group"]</span>
+            <span class="order col-3">@Localizer["Workflow Order"]</span>
+            <span class="color"></span>
+        </li>
+        @foreach (var status in statuses)
+        {
+            <li class="status d-flex justify-content-between" data-key="@status.Key">
+                <span class="name col-5 p-0">@status.Value.DisclosureStatus</span>
+                <span class="group col-4">@status.Value.GroupName</span>
+                <span class="order col-3">@status.Value.WorkflowOrder</span>
+                <span class="color">
+                @(Html.Kendo().ColorPicker()
+                    .Name(status.Key)
+                    .Palette(new string[]
+                    {
+                        "#cccccc", "#80ffff", "#80ff80", "#ffff80", "#ffc080", "#ff8080", "#ff80ff",
+                        "#ffffff", "#bfffff", "#bfffbf", "#ffffbf", "#ffdfbf", "#ffbfbf", "#ffbfff"
+                    })
+                    .Columns(7)
+                    .TileSize(30)
+                    .View(ColorPickerView.Palette)
+                    //uncomment to disable gradient view
+                    //.Views(new string[] { "palette" })
+                    .Buttons(false)
+                    .CloseOnSelect(true)
+                    .Preview(false)
+                    .Value(Model.InventionDisclosureStatus.Colors.ContainsKey(status.Key) ? Model.InventionDisclosureStatus.Colors[status.Key] : "#FFFFFF")
+                    .Events(events => events.Change("saveInventionDisclosureStatus"))
+                )
+                </span>
+            </li>
+        }
+    </ul>
+</div>
+<style>
+    .status-header {
+        color: var(--link-label);
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+    }
+
+    .statuses ul.colors {
+        height: 100vh;
+    }
+
+    .statuses ul {
+        column-fill: auto;
+        padding: 10px 0;
+        padding-inline-start: 0px;
+    }
+
+    .statuses ul li {
+        list-style-type: none;
+        break-inside: avoid-column;
+    }
+
+    @@media (min-width: 34em) {
+        .statuses ul {
+          columns: 1;
+          -webkit-columns: 1;
+          -moz-columns: 1;
+        }
+    }
+
+    @@media (min-width: 48em) {
+        .statuses ul {
+          columns: 2;
+          -webkit-columns: 2;
+          -moz-columns: 2;
+          column-gap: 10%;
+        }
+    }
+
+    @@media (min-width: 62em) {
+        .statuses ul {
+          columns: 2;
+          -webkit-columns: 2;
+          -moz-columns: 2;
+          column-gap: 10%;
+        }
+    }
+
+    @@media (min-width: 75em) {
+        .statuses ul {
+          columns: 2;
+          -webkit-columns: 2;
+          -moz-columns: 2;
+          column-gap: 5%;
+        }
+    }
+</style>

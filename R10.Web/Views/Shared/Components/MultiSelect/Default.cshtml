@@ -1,0 +1,91 @@
+﻿@model MultiSelectOptions
+@{
+    IDictionary<string, object> htmlAttributes = new Dictionary<string, object>();
+    htmlAttributes.Add("style", "width: " + Model.Width.ToString() + "%");
+    htmlAttributes.Add("id", Model.Id);
+    if (Model.Required) { htmlAttributes.Add("required", "required"); }
+
+    //kendo
+    //if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("validationmessage", Model.ValidationMessage); }
+
+    //bootstrap
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val", "true"); }
+    if (!string.IsNullOrEmpty(Model.ValidationMessage)) { htmlAttributes.Add("data-val-required", Model.ValidationMessage); }
+
+
+    Microsoft.AspNetCore.Routing.RouteValueDictionary dataRouteValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary(
+        new { property = Model.DataTextProperty, filterType = Model.ListFilterType, requiredRelation = Model.RequiredRelation });
+
+    if (Model.Area != null)
+    {
+        dataRouteValues.Add("area", Model.Area);
+    }
+
+    var filterColumns = "";
+    if (Model.FilterColumns != null && Model.FilterColumns.Length > 0)
+    {
+        filterColumns = String.Join(',', Model.FilterColumns);
+    }
+}
+
+<div class="cpi-combobox d-flex">
+    @(Html.Kendo().MultiSelect()
+                    .Name(Model.Name)
+                    .Enable(Model.Enable ?? true)
+                    .DataTextField(Model.DataTextProperty)
+                    .DataValueField(Model.DataValueProperty)
+                    //.Filter(Model.ListFilterType)
+                    .Filter(FilterType.Contains)
+                    .Value(Model.DefaultValue)
+                    .AutoBind(Model.DefaultValue?.Length > 0)
+                    .Height(400)
+                    .DataSource(source =>
+                    {
+                        if (Model.EnablePaging)
+                        {
+                            source.Ajax().PageSize(Model.PageSize);
+                        }
+                        source.Read(read =>
+                        {
+                            read.Action(Model.Action, Model.Controller, dataRouteValues)
+                                .Data(Model.Data);
+                        })
+                        .ServerFiltering(Model.ServerFiltering || Model.EnablePaging);                        
+                    })
+                    .Virtual(v =>
+                    {
+                        if (Model.EnablePaging)
+                        {
+                            v.ItemHeight(26);
+                            v.MapValueTo("dataItem");
+                            v.ValueMapper(Model.ValueMapper);
+                        }
+                    })
+                    .Virtual(Model.EnablePaging)
+                    .ItemTemplate(Model.ItemTemplate)
+                    .HeaderTemplate(Model.HeaderTemplate)
+                    .HtmlAttributes(htmlAttributes)
+                    .Events(e => { if (!string.IsNullOrEmpty(Model.OnOpen)) { e.Open(Model.OnOpen); } })
+                    .Events(e => { if (!string.IsNullOrEmpty(Model.OnChange)) { e.Change(Model.OnChange); } })
+                    .Events(e => { if (!string.IsNullOrEmpty(Model.OnSelect)) { e.Select(Model.OnSelect); } })                  
+                    .Events(e => { if (!string.IsNullOrEmpty(filterColumns)) { e.Filtering($"function(e) {{pageHelper.comboBoxFiltering(e,this,'{filterColumns}');}}"); } })
+                    @* .Events(e => { if (Model.DefaultValue?.Length > 0) { e.DataBound("function(e) { this.element.resetFloatLabel(); if (!this.triggered) { this.trigger('change'); this.triggered = true;} }"); } })
+                    .Events(e => { if (Model.AllowCustom) { e.DataBound($"function(e) {{ var multiselect = e.sender; var input = multiselect.input; input.on('keyup', function(evt) {{ if (evt.keyCode === 13) {{ var newValue = input.val().trim(); if (newValue > '') {{ var values = multiselect.value().slice(); multiselect.dataSource.filter({{}}); var dataTemplate = JSON.parse(JSON.stringify(multiselect.dataSource.data()[0])); if (dataTemplate) {{ if (Object.hasOwn(dataTemplate, '{@Model.DataValueProperty}')) {{dataTemplate.{@Model.DataValueProperty} = newValue; }} var observable = new kendo.data.ObservableObject(dataTemplate); dataTemplate.uid = observable.uid; multiselect.dataSource.add(dataTemplate); var add = [newValue]; if (values.length > 0) {{var merge = $.merge(add,values); multiselect.value($.unique(merge)); }} else {{ multiselect.value(add); }} multiselect.trigger('change'); }} }} }} }}); }}"); } }) *@
+                    @* .Events(e => { e.DataBound($"function(e) {{ if('{Model.DefaultValue?.Length > 0}' === 'True') {{ this.element.resetFloatLabel(); if (!this.triggered) {{ this.trigger('change'); this.triggered = true; }} }} if('{Model.AllowCustom}' === 'True') {{ var multiselect = e.sender; var input = multiselect.input; input.on('keyup', function(evt) {{ if (evt.keyCode === 13) {{ var newValue = input.val().trim(); if (newValue > '') {{ var values = multiselect.value().slice(); multiselect.dataSource.filter({{}}); var dataTemplate = JSON.parse(JSON.stringify(multiselect.dataSource.data()[0])); if ('{Model.DataValueProperty}'.indexOf('Name') < 0) {{ var nameProp = '{Model.DataValueProperty}'.replace('Code', 'Name'); if (Object.hasOwn(dataTemplate, nameProp)) {{ dataTemplate[nameProp] = ''; }} }} if (dataTemplate) {{ if (Object.hasOwn(dataTemplate, '{@Model.DataValueProperty}')) {{dataTemplate.{@Model.DataValueProperty} = newValue; }} var observable = new kendo.data.ObservableObject(dataTemplate); dataTemplate.uid = observable.uid; multiselect.dataSource.add(dataTemplate); var add = [newValue]; if (values.length > 0) {{var merge = $.merge(add,values); multiselect.value($.unique(merge)); }} else {{ multiselect.value(add); }} multiselect.trigger('change'); }} }} }} }}); }} }}"); }) *@
+                    .Events(e => { e.DataBound($"function(e) {{ if('{Model.DefaultValue?.Length > 0}' === 'True') {{ this.element.resetFloatLabel(); if (!this.triggered) {{ this.trigger('change'); this.triggered = true; }} }} if('{Model.AllowCustom}' === 'True') {{ var multiselect = e.sender; var input = multiselect.input; input.on('keyup', function(evt) {{ if (evt.keyCode === 13) {{ var newValue = input.val().trim(); if (newValue > '') {{ var values = multiselect.value().slice(); multiselect.dataSource.filter({{}}); var dataTemplate={{}}; if (multiselect.dataSource.data().length==0) {{dataTemplate.{@Model.DataValueProperty} = newValue;}} else {{dataTemplate = JSON.parse(JSON.stringify(multiselect.dataSource.data()[0]))}}; console.log('dataTemplate',dataTemplate); if ('{Model.DataValueProperty}'.indexOf('Name') < 0) {{ var nameProp = '{Model.DataValueProperty}'.replace('Code', 'Name'); if (Object.hasOwn(dataTemplate, nameProp)) {{ dataTemplate[nameProp] = ''; }} }} if (dataTemplate) {{ if (Object.hasOwn(dataTemplate, '{@Model.DataValueProperty}')) {{dataTemplate.{@Model.DataValueProperty} = newValue; }} var observable = new kendo.data.ObservableObject(dataTemplate); dataTemplate.uid = observable.uid; multiselect.dataSource.add(dataTemplate); var add = [newValue]; if (values.length > 0) {{var merge = $.merge(add,values); multiselect.value($.unique(merge)); }} else {{ multiselect.value(add); }} multiselect.trigger('change'); }} }} }} }}); }} }}"); })
+
+
+                    
+    )
+</div>
+
+@if (Model.ListWidth > 0)
+{
+    <style>
+        @@media screen and (min-width: 576px) {
+            #@Model.Id-list {
+                min-width: @(Model.ListWidth)px !important;
+            }
+        }
+    </style>
+}

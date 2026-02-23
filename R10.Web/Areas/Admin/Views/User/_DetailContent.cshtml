@@ -1,0 +1,308 @@
+﻿@model UserDetailViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@inject Microsoft.Extensions.Options.IOptions<CPiIdentitySettings> CPiSettings
+@inject ISystemSettings<DefaultSetting> Settings
+@inject SignInManager<CPiUser> SignInManager
+@{
+    var addMode = Model.PkId == 0;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var screen = ViewData["PageId"];
+
+    var isLoggedInUser = Model.Id == User.GetUserIdentifier();
+    var cpiSettings = CPiSettings.Value;
+    var showPasswordNeverExpires = cpiSettings.Password.ExpireDays != 0;
+
+    var settings = await Settings.GetSetting();
+    var showUserUseOutlookAddIn = settings.IsOutlookToCPiOn;
+    var isTimeTrackerOn = settings.IsTimeTrackerOn;
+
+    var hasSSO = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList().Count > 0;
+}
+<form cpi-detail-form action="Save" 
+data-label-reactivate="@Localizer["Reactivate"]" 
+data-label-unlock="@Localizer["Unlock"]" 
+data-label-cancel="@Localizer["Cancel"]" 
+>
+    <input asp-for="PkId" class="form-control" hidden />
+    <input asp-for="Id" class="form-control" value="@Model.Id" hidden />
+    <input asp-for="CopyId" class="form-control" hidden />
+    <input asp-for="EntityId" class="form-control" hidden />
+    <input asp-for="EntityFilterType" class="form-control" hidden />
+    @if(!addMode)
+    {
+        <input type="hidden" name="Password" value="*" />
+        <input type="hidden" name="ConfirmPassword" value="*" />   
+    }
+    @if(isLoggedInUser)
+    {
+        <input asp-for="Status" class="form-control" hidden />
+        <input asp-for="UserType" class="form-control" hidden />
+    }
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-row">
+                    <div class="col-12">
+                        <div class="form-group float-label">
+                            <label for="@(screen)_Status">@Localizer["Status"]</label>
+                            @(Html.Kendo().DropDownList()
+                                                        .Name("Status")
+                                                        .DataTextField("Text")
+                                                        .DataValueField("Value")
+                                                        .BindTo(Html.GetEnumSelectList<CPiUserStatus>().OrderBy(u => u.Text))
+                                                        .Value((Model.Status).ToString())
+                                                        .HtmlAttributes(new { id = $"{screen}_Status" })
+                                                        .Enable(!isLoggedInUser))
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group float-label">
+                            <label for="@(screen)_UserType">@Localizer["User Type"]</label>
+                            @(Html.Kendo().DropDownList()
+                                                        .Name("UserType")
+                                                        .DataTextField("Text")
+                                                        .DataValueField("Value")
+                                                        .BindTo(Html.GetUserTypeSelectList(User).OrderBy(u => u.Text))
+                                                        .Value((Model.UserType).ToString())
+                                                        .HtmlAttributes(new { id = $"{screen}_UserType" })
+                                                        .Enable(!isLoggedInUser))
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group float-label">
+                            <label asp-for="Email"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="Email" />
+                            <span asp-validation-for="Email"></span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group float-label">
+                            <label asp-for="FirstName"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="FirstName" />
+                            <span asp-validation-for="FirstName"></span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group float-label">
+                            <label asp-for="LastName"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="LastName" />
+                            <span asp-validation-for="LastName"></span>
+                        </div>
+                    </div>
+                    @if (isTimeTrackerOn)
+                    {
+                        <div class="col-12">
+                            <div class="form-group float-label">
+                                <label asp-for="HourlyRate"></label>
+                                <input type="number" class="form-control form-control-sm" asp-for="HourlyRate" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-row">                    
+                    <div class="col-12">
+                        <div class="form-group float-label valid-date-range">
+                            <label asp-for="ValidDateFrom"></label>
+                            @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ValidDateFrom") { Value = Model.ValidDateFrom })
+                            <span asp-validation-for="ValidDateFrom"></span>   
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group float-label valid-date-range">
+                            <label asp-for="ValidDateTo"></label>
+                            @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ValidDateTo") { Value = Model.ValidDateTo })
+                            <span asp-validation-for="ValidDateTo"></span> 
+                        </div>
+                    </div>
+
+                    @if(addMode)
+                    {
+                        <div class="col-12">
+                            <div class="form-group float-label">
+                                <label asp-for="Password"></label>
+                                <div class="input-group">
+                                    <input asp-for="Password" class="form-control gen-pwd" />
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary btn-toggle-pwd" type="button"><i class="toggle-pwd far fa-eye-slash"></i></button>
+                                        <button class="btn btn-outline-secondary btn-gen-pwd" type="button" data-url="@Url.Action("GeneratePassword", new { Area = "Admin" })"><i class="gen-pwd-spinner fa fa-circle-notch fa-fixed-width fa-spin" style="display: none;"></i>Generate</button>
+                                    </div>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group float-label">
+                                <label asp-for="ConfirmPassword"></label>
+                                <input asp-for="ConfirmPassword" class="form-control gen-pwd" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="form-group">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="EmailNewPassword" class="custom-control-input" />
+                                    <label asp-for="EmailNewPassword" class="custom-control-label">
+                                    </label>
+                                </div>
+                                <span asp-validation-for="EmailNewPassword"></span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="RequireChangePassword" class="custom-control-input pwd-option" />
+                                    <label asp-for="RequireChangePassword" class="custom-control-label">
+                                    </label>
+                                </div>
+                                <span asp-validation-for="RequireChangePassword"></span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {                        
+                        @if (Model.IsLockedOut)
+                        {
+                            <div class="col-12">
+                                <div class="form-group float-label">
+                                    <label asp-for="LockoutEnd"></label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-sm" asp-for="LockoutEnd" value="@Model.LockoutEnd.FormatToDisplayWithTime()" asp-is-readonly="true" />
+                                        <div class="input-group-text"><i class="fa fa-lock fa-fixed-width text-danger"></i><span class="pl-1">Locked out</span></div>
+                                    </div>
+                                </div>
+                            </div> 
+                        }
+                        <div class="col-12">
+                            <div class="form-group float-label">
+                                <label asp-for="LastLoginDate"></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control form-control-sm" asp-for="LastLoginDate" value="@Model.LastLoginDate.FormatToDisplayWithTime()" asp-is-readonly="true" />
+                                    @if (Model.Inactive)
+                                    {
+                                        <div class="input-group-append">
+                                            <div class="input-group-text"><i class="fa fa-minus-circle fa-fixed-width text-danger"></i><span class="pl-1">Inactive</span></div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="form-group float-label">
+                                <label asp-for="LastPasswordChangeDate"></label>
+                                <input type="text" class="form-control form-control-sm" asp-for="LastPasswordChangeDate" value="@Model.LastPasswordChangeDate.FormatToDisplayWithTime()" asp-is-readonly="true" />
+                            </div>
+                        </div>
+                    }
+                    @if (showPasswordNeverExpires)
+                    {
+                        <div class="col-12">
+                            <div class="form-group">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="PasswordNeverExpires" class="custom-control-input pwd-option" />
+                                    <label asp-for="PasswordNeverExpires" class="custom-control-label">
+                                    </label>
+                                </div>
+                                <span asp-validation-for="PasswordNeverExpires"></span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <input asp-for="PasswordNeverExpires" hidden/>
+                    }
+                    <div class="col-12">
+                        <div class="form-group">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="CannotChangePassword" class="custom-control-input pwd-option" />
+                                <label asp-for="CannotChangePassword" class="custom-control-label">
+                                </label>
+                            </div>
+                            <span asp-validation-for="CannotChangePassword"></span>
+                        </div>
+                    </div>
+
+                    @if (showUserUseOutlookAddIn)
+                    {
+                        <div class="col-12">
+                            <div class="form-group">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="UseOutlookAddIn" class="custom-control-input" />
+                                    <label asp-for="UseOutlookAddIn" class="custom-control-label">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (hasSSO)
+                    {
+                        <div class="col-12">
+                            <div class="form-group">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="ExternalLoginOnly" class="custom-control-input" />
+                                    <label asp-for="ExternalLoginOnly" class="custom-control-label">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <div class=" custom-control custom-checkbox">
+                                <input asp-for="WebApiAccessOnly" class="custom-control-input" />
+                                <label asp-for="WebApiAccessOnly" class="custom-control-label">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="userGroupsTab" href="#userGroupsTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="userGroupsTabContent" title="@Localizer["Groups"]">@Localizer["Groups"]</a>
+            </li>
+            @if (isTimeTrackerOn)
+            {
+                <li class="nav-item">
+                    <a class="nav-link" id="timeTrackersTab" data-toggle="tab" role="tab" aria-controls="timeTrackersTabContent" aria-selected="false" href="#timeTrackersTabContent" title="@Localizer["Time Tracker"]">@Localizer["Time Tracker"]</a>
+                </li>
+            }
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="userGroupsTabContent" role="tabpanel" aria-labelledby="userGroupsTab">
+                @await Html.PartialAsync("_GridGroups", Model.Id)
+            </div>
+            @if (isTimeTrackerOn)
+            {
+                <div class="tab-pane" id="timeTrackersTabContent" role="tabpanel" aria-labelledby="timeTrackersTab">
+                    <div class="row">@await Html.PartialAsync("_TimeTrackers", Model.Id)</div>
+                </div>
+            }
+        </div>
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div> 
+    }
+</form>
+
+<script>
+    @(ViewBag.ActivePage).editableGrids = [
+        {
+            name: 'userGroups', isDirty: false, filter: { id: "@Model.Id"},
+            afterSubmit: @(ViewBag.ActivePage).updateRecordStamps
+        },
+        {
+            name: 'timeTrackersGrid', isDirty: false, filter: { id: "@Model.Id" },
+            afterSubmit: @(ViewBag.ActivePage).updateRecordStamps
+        }
+    ];
+</script>
+

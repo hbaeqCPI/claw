@@ -1,0 +1,17 @@
+﻿@model LetterCategory
+@(Html.Kendo().DropDownListFor(m => m)
+        .DataValueField("LetCatId")
+        .DataTextField("LetCatDesc")
+        .Events(e=> e.DataBound("page.dropDownDefaultToFirstItem"))
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action("GetCategoryList", "LetterCategory", new { area = "Shared" });
+            });
+        }))
+
+
+  
+
+  

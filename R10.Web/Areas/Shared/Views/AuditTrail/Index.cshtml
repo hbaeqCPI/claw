@@ -1,0 +1,11 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    //ViewBag.Title = SharedLocalizer["Audit Trail"];
+    //var searchCriteriaViewModel = new AuditTrailSearchCriteriaViewModel { DefaultSystem = ViewBag.DefaultSystem, SystemTypes = ViewBag.SystemTypes };
+    ViewData["Title"] = SharedLocalizer["Audit Trail"];
+    ViewData["ActivePage"] = "auditTrail"; 
+}
+
+@await Html.PartialPageAsync(Model.Page, Model)

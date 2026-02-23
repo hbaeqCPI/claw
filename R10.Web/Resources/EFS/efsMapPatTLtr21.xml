@@ -1,0 +1,88 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+    <PDFFieldMapping>
+    <PdfField>applnum2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>filingdate3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FilDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>firstinv4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FirstNamedInventor</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>artunit5</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>GroupArtUnit</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>exmname6</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Examiner</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>attnydocket7</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyDocketNo</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>COMname41</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>date42</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>CurrentDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>name37</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>date38</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>CurrentDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>regno39</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>RegistrationNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>firmname36</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FirmName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	
+</NewDataSet>

@@ -1,0 +1,92 @@
+﻿@model TradeSecretRequestDetailViewModel
+@inject IStringLocalizer<AdminResource> Localizer
+@{
+    var detailPagePermission = (DetailPagePermission)(ViewData["PagePermission"] ?? new DetailPagePermission());
+    var screen = ViewData["PageId"];
+    var statusList = TradeSecretRequestStatus.ApprovalList.Select(s => new SelectListItem(s, s)).ToList();
+    var isReadOnly = Model.IsExpired || string.IsNullOrEmpty(Model.Status) || !TradeSecretRequestStatus.ApprovalList.Contains(Model.Status);
+}
+
+<form cpi-detail-form action="Save">
+    <input asp-for="RequestId" class="form-control" hidden />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="false"></vc:detail-page-nav-links>
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-12 col-sm-6 col-xl-3">
+                @if(Model.IsExpired)
+                {
+                    <span class="dymo-alert">Expired</span>
+                }
+                <div class="form-group float-label">
+                    <label asp-for="RequestDate"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="RequestDate" disabled value="@(Model.RequestDate == null ? "" : ((DateTime)Model.RequestDate).ToString("dd-MMM-yyyy hh:mm:ss tt"))" />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-12 col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Email"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Email" disabled />
+                </div>
+            </div>
+            <div class="col col-12 col-sm-6 col-md-3">
+                <div class="form-group float-label">
+                    <label asp-for="ScreenId"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ScreenId" disabled />
+                </div>
+            </div>
+            <div class="col col-12 col-sm-6 col-md-3">
+                <div class="form-group float-label">
+                    <label asp-for="RecId"></label>
+                    <div class="d-flex">
+                        <input type="text" class="form-control form-control-sm" asp-for="RecId" disabled />
+                        <i class="btn btn-link fal fa-search-plus cpiButtonLink" data-url="@Model.DetailUrl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-12 col-sm-6 col-xl-3">
+                @if (isReadOnly)
+                {
+                    <div class="form-group float-label">
+                        <label asp-for="Status"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Status" disabled />
+                    </div>
+                }
+                else
+                {
+                    <div class="form-group float-label">
+                        <label for="@(screen)_Status">@Localizer["Status"]</label>
+                        @(Html.Kendo().DropDownList()
+                            .Name("Status")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(statusList.OrderBy(u => u.Text))
+                            .Value((Model.Status ?? "").ToString())
+                            .HtmlAttributes(new { id = $"{screen}_Status" }))
+                    </div>
+                }
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="StatusDate"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="StatusDate" disabled value="@(Model.StatusDate == null ? "" : ((DateTime)Model.StatusDate).ToString("dd-MMM-yyyy hh:mm:ss tt"))" />
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="Approver"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Approver" disabled />
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="ValidationFailedCount"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ValidationFailedCount" disabled />
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

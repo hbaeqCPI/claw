@@ -1,0 +1,96 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Information Disclosure Statement Size Fee - Written Assertion Under 37 CFR 1.98 -->
+  <PDFFieldMapping>
+    <PdfField>Application or Patent No</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNoPatNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+		<PdfField>First Named Inventor</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FirstNamedInventor</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+  </PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Art Unit</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>GroupArtUnit</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Filing Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FilDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Attorney Docket Number</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyDocketNo</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Examiner</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Examiner</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	
+    <PDFFieldMapping>
+		<PdfField>Check Box1</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>50AndBelow</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>		
+	<PDFFieldMapping>
+		<PdfField>Check Box2</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>51And100</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>		
+			<PDFFieldMapping>
+		<PdfField>Check Box3</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>101And200</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>		
+			<PDFFieldMapping>
+		<PdfField>Check Box4</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>201AndAbove</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>		
+	<PDFFieldMapping>
+		<PdfField>Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>CurrentDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Name PrintTyped</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Practitioner Registration Number if applicable</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>RegistrationNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+</NewDataSet>

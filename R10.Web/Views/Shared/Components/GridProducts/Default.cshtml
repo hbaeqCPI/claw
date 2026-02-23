@@ -1,0 +1,135 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject ISystemSettings<PatSetting> PatSettings
+@inject IAuthorizationService AuthService
+@{
+    var settings = await Settings.GetSetting();
+    var patSettings = await PatSettings.GetSetting();
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+    var gridName = $"productsGrid_{ViewData["PageId"]}";
+    var id = Model.ParentId;
+    bool addMode = id == 0;
+    var productLinkUrl = Url.Action("DetailLink", "Product", new
+    {
+        Area = "Shared",
+        id = "actualValue"
+    });
+    var productLink = $"<span class='pr-3'>#: ProductName#</span>";
+
+
+    if ((await AuthService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessSystem)).Succeeded)
+    {
+        productLink = $"<span class='pr-3'>#: ProductName#</span><i style='cursor:pointer' class='fal fa-search-plus btn-link productLink' data-url='{productLinkUrl}' title='{Localizer["Open Product Screen"]}'></i>";
+    }
+
+    var dataRouteValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary(new { parentId = Model.ParentId });
+    if (!string.IsNullOrEmpty(Model.Area))
+    {
+        dataRouteValues.Add("area", Model.Area);
+    }
+
+    var isInvention = Model.Controller == "PatProductInv";
+    var isInventorRemunerationOn = patSettings.IsInventorRemunerationOn && isInvention;
+}
+
+@(Html.Kendo().Grid<ProductViewModel>()
+                .Name(gridName)
+                .Columns(columns =>
+                {
+                    columns.Bound(a => a.ProductName)
+                        .ClientTemplate(productLink)
+                        .EditorTemplateName("ProductName")
+                        .EditorViewData(new { id = "ProductsGrid_ProductName_" + pageName, pageName= pageName })
+                        .Width(200)
+                        .Editable($"{pageName}.isGridColumnEditable")
+                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                    if (isInventorRemunerationOn)
+                    {
+                        columns.Bound(p => p.LicenseFactor)
+                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null)
+                        .Editable($"{pageName}.isGridColumnEditable")
+                        .Width(200)
+                        .ClientTemplate("#=LicenseFactor? kendo.htmlEncode(LicenseFactor) : ''##=LicenseFactor? '%' : ''#");
+                        columns.Bound(p => p.InventionValue)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null)
+                            .Editable($"{pageName}.isGridColumnEditable")
+                        .Width(200)
+                            .ClientTemplate("#=InventionValue? kendo.htmlEncode(InventionValue) : ''##=InventionValue? '%' : ''#");
+                        columns.Bound(a => a.Remarks)
+                              .EditorTemplateName("TextArea")
+                              .Editable($"{pageName}.isGridColumnEditable")
+                              .ClientTemplate("<span>#= Remarks == null ? '' : kendo.htmlEncode(Remarks)#</span>")
+                        .Width(300)
+                              .HtmlAttributes(fullModify || detailPagePermission.CanEditRemarksOnly ? new { @class = "editable-cell hide-overflow" } : new { @class = "hide-overflow" });
+                        columns.Bound(a => a.StartDate)
+                            .EditorTemplateName("Date")
+                            .Editable($"{pageName}.isGridColumnEditable")
+                            .ClientTemplate("#= (StartDate == null) ? '' : kendo.toString(StartDate,'dd-MMM-yyyy')#")
+                        .Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                        columns.Bound(a => a.EndDate)
+                            .EditorTemplateName("Date")
+                            .Editable($"{pageName}.isGridColumnEditable")
+                            .ClientTemplate("#= (EndDate == null) ? '' : kendo.toString(EndDate,'dd-MMM-yyyy')#")
+                        .Width(200)
+                            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                    }
+                    columns.Command(command =>
+                    {
+                        if (detailPagePermission.CanDeleteRecord)
+                            command.Custom("Delete")
+                                    .Click("function(e) {" + pageName + ".deleteGridRow(e,this)}")
+                                    .IconClass("k-icon fal fa-trash-alt")
+                                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                                    .HtmlAttributes(new { @class = "grid-action" });
+
+                    }).Width(10);
+                })
+                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                .ToolBar(toolbar =>
+                {
+                    //HIDE ADD BUTTON IF PARENT IS READONLY
+                    if (detailPagePermission.CanEditRecord && detailPagePermission.CanAddRecord & !addMode)
+                    {
+                        toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+                    }
+                    if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                    {
+                        toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                        toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                    }
+                    toolbar.Custom().Name("Excel").IconClass("k-icon fal fa-file-excel k-button-icon").Text(Localizer["Export to Excel"]).HtmlAttributes(new { @class = "k-grid-excel" });
+
+                })
+                .Excel(excel => excel.FileName($"ExportList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", Model.Controller)))
+                .Editable(editable => editable.Enabled(detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                                .Mode(GridEditMode.InCell).
+                                ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Pageable(page => page.Responsive(false))
+                .AutoBind(false)
+                .Events(e => e.DataBound($"{pageName}.productRefreshIndicator"))
+                .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Batch(true)
+                    .PageSize(settings.SubFormPageSize)
+                    .ServerOperation(false) //allow pending changes to persist when paging or sorting
+                    .Model(model =>
+                    {
+                        model.Id(k => k.Id);
+                        model.Field(p => p.ProductName).Editable(fullModify);
+                    })
+                    .Read(read => read.Action("ProductsRead", Model.Controller, dataRouteValues))
+                    .Sort(sort => sort.Add("Product").Ascending())
+                    .Update(update => update.Action("ProductsUpdate", Model.Controller, dataRouteValues))
+                    .Destroy(destroy => destroy.Action("ProductDelete", Model.Controller, dataRouteValues))
+                    .Events(events =>
+                    {
+                        events.Error("pageHelper.onGridError");
+                    })
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

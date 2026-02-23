@@ -1,0 +1,270 @@
+﻿@model ChildImageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var parentIdParam = Model.ParentId;
+
+    var permission = Model.Permission;
+    var viewUrl = @Url.Content("~/FileViewer/ViewImage?system=" + Model.Area);
+    var thumbnailUrl = @Url.Content("~/FileViewer/GetThumbnail?system=" + Model.Area);
+    var logoThumbnailUrl = @Url.Content("~/images/");
+    var pageId = ViewData["PageId"];
+    var activePage = Model.ActivePage;
+
+    var systemType = "";
+    var screenCode = "";
+    var dataKey = "";
+    var dataKeyValue = 0;
+    if (!string.IsNullOrEmpty(Model.DocumentLink))
+    {
+        var docLink = Model.DocumentLink.Split("|");
+        systemType = docLink[0];
+        screenCode = docLink[1];
+        dataKey = docLink[2];
+        dataKeyValue = docLink[3] != null ? Convert.ToInt32(docLink[3]) : 0;
+    }
+    var documentsUrl = Url.Action("DetailLink", "Documents", new { Area = "Shared", data = systemType + "|" + screenCode + "|" + dataKey + "|" + dataKeyValue });
+    var docViewerUrl = Url.Action("ZoomImageLink", "DocViewer", new { Area = "Shared", system = Model.Area});
+}
+
+<script type="text/x-kendo-tmpl" id="template_@pageId">
+    <div class="image" >
+        #if(data.LockedBy){#
+            <p class="fal fa-lock-alt" style="padding-left:80%"></p>
+        #}#
+
+        # if (data.ThumbFileName == 'logo_url.png'){#
+             <a target="_blank" href="#=DocUrl#"> 
+        #} else { #
+            <a target="_blank" href="@viewUrl&thumbnailFile=#=encodeURIComponent(DocFileName)#&screenCode=#=ScreenCode#&key=#=ParentId#&fileType=#=FolderId > 0 ? 7 : 0#"> 
+        #}#
+
+           #if(data.ThumbFileName.startsWith("logo")) {#
+              <img src="@(logoThumbnailUrl)#=ThumbFileName#" alt="#=DocName#" asp-append-version="true" />
+           #}
+           else
+           {#
+            <img src="@thumbnailUrl&thumbnailFile=#=ThumbFileName#&inline=1&screenCode=#=ScreenCode#&key=#=ParentId#&fileType=#=FolderId > 0 ? 8 : 1#" alt="#=DocName#" asp-append-version="true" />
+           #}#
+        </a>
+       @* <input type="hidden" id="FileID" value="#=FileID#" />*@
+        <input type="hidden" id="FilePath" value="#=DocFileName#" />
+        <p>#:DocName#</p>
+    </div>
+</script>
+
+<div id="imageListButtonsContainer" class="k-grid">
+    <div class="k-header k-grid-toolbar">
+        <nav class="nav grid-action">
+            <a id="view" class="k-button" href="#" title="@Localizer["View Image"]" role="button" data-url="@viewUrl" data-viewer-url="@docViewerUrl">
+                <i class="fal fa-search-plus pr-2"></i>
+                <span>
+                    @Localizer["View"]
+                </span>
+            </a>
+
+            @if (permission.CanUploadDocuments)
+            {
+                <a id="add" class="k-button" href="#" title="@Localizer["Add Image"]" role="button">
+                    <i class="fal fa-plus pr-2"></i>
+                    <span>
+                        @Localizer["Add"]
+                    </span>
+                </a>
+                <a id="edit" class="k-button" href="#" title="@Localizer["Edit Image"]" role="button">
+                    <i class="fal fa-pencil pr-2"></i>
+                    <span>
+                        @Localizer["Edit"]
+                    </span>
+                </a>
+            }
+            @if (permission.CanDeleteRecord)
+            {
+                <a id="delete" class="k-button" href="#" title="@Localizer["Delete Image"]" role="button">
+                    <i class="fal fa-trash-alt pr-2"></i>
+                    <span>
+                        @Localizer["Delete"]
+                    </span>
+                </a>
+            }
+          @*  @if (!string.IsNullOrEmpty(Model.DocumentLink))
+            {
+                <a id="documentsLink" class="k-button" href="#" onclick="pageHelper.openLink('@documentsUrl', false)" title="@Localizer["Folders"]" role="button">
+                    <i class="fal fa-folder pr-2"></i>
+                    <span>
+                        @Localizer["Folders"]
+                    </span>
+                </a>
+            }*@
+            <a id="search" class="k-button" href="#" title="@Localizer["Search"]" role="button">
+                <i class="fal fa-search pr-2"></i>
+                <span>
+                    @Localizer["Search"]
+                </span>
+            </a>
+
+        </nav>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col">
+        @(Html.Kendo().ListView<DocDocumentListViewModel>()
+                      .Name($"imageListView_{pageId}")
+                      .TagName("div")
+                      .ClientTemplateId($"template_{pageId}")
+                      .Selectable(ListViewSelectionMode.Single)
+                      .Events(events => events.DataBound($"{activePage}.image.onDataBound"))
+                      .AutoBind(false)
+                      .DataSource(dataSource => dataSource
+                          .Ajax()
+                          .Read(read => read.Action("ImageRead", Model.Controller, new { Area = Model.Area, parentId = parentIdParam }).Data($"{activePage}.image.getSearchCriteria"))
+                         // .Destroy(destroy => destroy.Action("ImageDelete", Model.Controller, new { Area = Model.Area }))
+                            .Destroy(destroy => destroy.Action("GridDelete", "DocDocuments", new { Area = "Shared", documentLink=@Model.DocumentLink}))
+                          .PageSize(10)
+                      )
+                      .Pageable(pageable => pageable.Responsive(false)
+                          .Refresh(true)
+                          .ButtonCount(5)
+                          .PageSizes(new[] { 10, 20, 30 })
+                      )
+                      .HtmlAttributes(new { @class= "imageListView", style = "height:auto; background-color: #f5f5f5;" })
+
+        )
+        @(Html.Kendo().ContextMenu()
+                      .Name("menu")
+                      .Target($"#imageListView_{pageId}")
+                      .Filter(".image")
+                      .Orientation(ContextMenuOrientation.Horizontal)
+                      .Animation(animation =>
+                      {
+                          animation.Open(open =>
+                          {
+                              open.Fade(FadeDirection.In);
+                              open.Duration(500);
+                          });
+                      })
+                      .Events(e => e.Open($"{activePage}.image.contextMenuOnOpen").Select($"{activePage}.image.contextMenuOnSelect"))
+                      .Items(items =>
+                      {
+                          items.Add().Text("");
+                      })
+                      .HtmlAttributes(new { style = "width:130px;" })
+        )
+    </div>
+</div>
+<style>
+
+    .k-ghost-splitbar-horizontal,
+    .k-ghost-splitbar-vertical,
+    .k-marquee-color, .k-panel>.k-state-selected, .k-scheduler .k-today.k-state-selected, .k-state-selected, .k-state-selected:link, .k-state-selected:visited
+    {
+        background-color:#fff !important;
+    }
+    #imagelistView {
+        margin-bottom: -1px;
+        min-height: 160px;
+    }
+
+    .image {
+        float: left;
+        position: relative;
+        margin-top: 12px;
+        margin-left: 10px;
+        cursor: pointer;
+        border: 1px solid #e7e7e7;
+        border-radius: 3px;
+        height: 140px;
+        width: 140px;
+        background-color: white;
+    }
+
+        .image img {
+            width: 80px;
+            height: 80px;
+            display: block;
+            margin-top: 5px;
+            margin-left: auto;
+            margin-right: auto;
+            /*max-width: 100%;
+            margin: 5px 5px 5px 5px;*/
+        }
+
+        .image p {
+            display: block !important;
+            margin: 5px 5px 5px 5px;
+            max-width: 130px;
+            overflow: hidden;
+            line-height: 1.1em;
+            font-size: .7em;
+            font-weight: normal;
+            text-align: center;
+            /*text-transform: uppercase;*/
+        }
+
+    .edit-buttons {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: right;
+        padding: 5px;
+    }
+
+    .k-state-selected {
+        color: #333;
+        background-color: none;
+        border-color: darkgrey;
+    }
+
+    .drop-zone {
+        border-top: 1px solid var(--separator);
+        padding: 10px 6px 2px 6px;
+    }
+
+    .dropZoneEl {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        height: 70px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 24px;
+        line-height: 1.2em;
+        font-family: Arial,Helvetica,sans-serif;
+        color: #000;
+    }
+
+    .dropImageHereText {
+        /*color: #c7c7c7;*/
+        color: black;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .wrapper:after {
+        content: ".";
+        display: block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
+    }
+
+    .file {
+        float: left;
+        margin: 20px 30px;
+        text-align: center;
+    }
+
+        .file img {
+            display: block;
+            margin-bottom: 10px;
+        }
+</style>

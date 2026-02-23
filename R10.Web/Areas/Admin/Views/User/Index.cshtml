@@ -1,0 +1,15 @@
+﻿@model SidebarPageViewModel
+@{
+    ViewData["Title"] = Model.PageTitle;
+    ViewData["ActivePage"] = "userSetupPage";
+}
+
+@await Html.PartialAsync("_SidebarPage", Model)
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            userSetupPage.init("#@Model.PageId");
+        });
+    </script>
+}

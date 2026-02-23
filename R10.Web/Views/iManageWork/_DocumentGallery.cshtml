@@ -1,0 +1,64 @@
+﻿@model DocumentViewerViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var permission = Model.Permission;
+    var viewerName = $"iManageDocumentGallery_{Model.PageId}";
+    var templateName = $"iManageDocumentGalleryTemplate_{Model.PageId}";
+    var showDocumentLink = permission?.CanDownload ?? false;
+}
+<script type="text/x-kendo-tmpl" id="@templateName">
+    <div class="gallery-doc text-center">
+        <div class="gallery-thumbnail">
+        <div class="grab">
+        <span><input type='checkbox' data-document-id='#:Id#' draggable='true' ondragstart='iManage.documentOnDragStart(event)'/><i class='far fa-grip-dots-vertical'></i></span>
+        </div>
+            # if (data.IsImage) {#
+                <img src="#:data.ImageUrl#" />
+            # } else { #
+                <i class="icon #:data.IconClass# fa-3x"></i>
+            # } #
+        </div>
+        <div class="gallery-label">
+        @if (showDocumentLink) 
+        {
+            <a href="##" class="view-details-icon" data-document-id="#:Id#" draggable="false" ondragstart="iManage.documentOnDragStart(event)" onclick="iManage.documentOnClick(event)" rel="noopener">#:data.Title#</a>
+        }
+        else 
+        {
+            <span>#:data.Title#</span>
+        }
+        </div>
+    </div>
+</script>
+<div class="results gallery" data-name="@viewerName">
+    @(
+        Html.Kendo().ListView<DocumentViewModel>()
+            .Name(viewerName)
+            .TagName("div")
+            .ClientTemplateId(templateName)
+            .Selectable(ListViewSelectionMode.Multiple)
+            .Pageable(pageable => pageable.Refresh(true).PageSizes(true).Responsive(false))
+            .DataSource(dataSource => dataSource
+                .Ajax()
+                .ServerOperation(false)
+                .PageSize(settings.SubFormPageSize)
+                .Model(model =>
+                {
+                    model.Id(d => d.Id);
+                })
+                .Sort(sort => sort.Add(d => d.Title))
+                .Read(read => read.Action("ViewerRead", "iManageWork", new { Area = "" }).Data("iManage.viewerReadData"))
+                .Events(events =>
+                {
+                    events.Error("iManage.viewerOnError");
+                    events.RequestEnd("iManage.viewerOnRequestEnd");
+                })
+            )
+            .Events(events => {
+                events.Change("iManage.viewerOnChange");
+                events.DataBound("iManage.viewerOnDataBound");
+            })
+    )
+</div>

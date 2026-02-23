@@ -1,0 +1,172 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var theme = User.GetTheme();
+    if (theme == null)
+    {
+        var userPreferences = new UserPreferences();
+        theme = userPreferences.Theme;
+    }
+
+    var locale = Context.User.GetLocale();
+    if (string.IsNullOrEmpty(locale))
+    {
+        locale = Context.Request.GetBrowserLocale();
+    }
+    var pathBase = Context.Request.PathBase;
+    var baseUrl = Url.ApplicationBaseUrl(Context.Request.Scheme);
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+
+    <link rel="stylesheet" href="~/lib/kendo-ui/styles/kendo.common-office365.min.css" />
+    <link rel="stylesheet" href="~/lib/kendo-ui/styles/kendo.office365.min.css" />
+    <link href="~/css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    @*<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">*@
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-star-rating/css/star-rating.min.css" />
+    <link rel="stylesheet" href="~/lib/add-to-calendar-button/css/atcb.min.css" />
+
+    <script src="~/dist/js/vendor.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/signalr.min.js" asp-append-version="true"></script>
+    <script src="~/lib/kendo-ui/js/jszip.min.js" asp-append-version="true"></script>            @* needed by Kendo export to Excel *@
+    <script src="~/dist/js/globals.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/shared.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/patent.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/trademark.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/gm.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/dms.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/ams.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/clearance.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/rms.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/ff.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/pac.min.js" asp-append-version="true"></script>
+    <script src="~/dist/js/admin.min.js" asp-append-version="true"></script>
+    <script src="~/lib/kendo-ui/js/kendo.stepper.min.js" asp-append-version="true"></script>     @* needed by Kendo Stepper widget *@
+    <script src="~/lib/kendo-ui/js/kendo.textbox.min.js" asp-append-version="true"></script>     @* needed by Kendo textbox *@
+    <script src="~/lib/kendo-ui/js/kendo.spreadsheet.min.js"></script>                           @* needed by Kendo Spreadsheet *@
+    <script src="~/lib/add-to-calendar-button/js/atcb.min.js"></script>
+
+    @await Component.InvokeAsync("KendoCultureScripts")
+
+    <!-- cldr scripts (needed for globalize) -->
+    <script src="~/lib/cldrjs/dist/cldr.js"></script>
+    <script src="~/lib/cldrjs/dist/cldr/event.js"></script>
+    <script src="~/lib/cldrjs/dist/cldr/supplemental.js"></script>
+
+    <!-- Family Tree -->
+    <script src="~/lib/d3/d3.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+    <!-- globalize scripts -->
+    <script src="~/lib/globalize/dist/globalize.js"></script>
+    <script src="~/lib/globalize/dist/globalize/number.js"></script>
+    <script src="~/lib/globalize/dist/globalize/date.js"></script>
+
+    <script src="~/lib/jquery-validation-globalize/jquery.validate.globalize.js"></script>
+    <script type="text/javascript">
+        var locale = "@locale";
+        $.when(
+            $.get("@pathBase/lib/cldr-data/supplemental/likelySubtags.json"),
+            $.get("@pathBase/lib/cldr-data/main/" + locale + "/numbers.json"),
+            $.get("@pathBase/lib/cldr-data/supplemental/numberingSystems.json"),
+            $.get("@pathBase/lib/cldr-data/main/" + locale + "/ca-gregorian.json"),
+            $.get("@pathBase/lib/cldr-data/main/" + locale +"/timeZoneNames.json"),
+            $.get("@pathBase/lib/cldr-data/supplemental/timeData.json"),
+            $.get("@pathBase/lib/cldr-data/supplemental/weekData.json")
+        ).then(function () {
+            // Normalize $.get results, we only need the JSON, not the request statuses.
+            return [].slice.apply(arguments, [0]).map(function (result) {
+                return result[0];
+            });
+        }).then(Globalize.load).then(function () {
+            Globalize.locale(locale);
+        });
+        pageHelper.initializePage();
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {    
+
+            $.get("@Url.Action("GetNotifications", "Bulletin", new { Area = "" })")
+                .done((result) => {
+                    const notifications = result;                    
+                    if (notifications.length > 0) {
+                        const siteStatus = $(".site-status").last();
+                        siteStatus.find(".message").text(notifications[0]);
+
+                        for (var i = 1; i < notifications.length; i++) {
+                            const status = siteStatus.clone();
+                            status.find(".message").text(notifications[i]);
+                            $(".site-status").last().after(status);
+                        }
+                        $(".site-status").show();
+                    }
+                });
+
+
+            const globalSearch = $("form.global-search");
+            globalSearch.find(".gen-search-submit").on("click, mousedown", function () {
+                globalSearch[0].submit();
+            });
+
+            globalSearch.floatLabels();
+
+            $("li.global-search-icon").on("click", function () {
+                $(this).hide().promise().done(function () {
+                    $("li.global-search-form").show();
+                    $("li.global-search-form").find("input")[0].focus();
+                });
+            });
+            $("li.global-search-form input").on("blur", function () {
+                $("li.global-search-form").hide().promise().done(function () {
+                    $("li.global-search-icon").show();
+                });
+            })
+
+            $("a.get-help").on("click", function () {
+                const helpUrl = "@Url.Action("Help", "Home", new { Area = "" })";
+                const path = window.location.pathname.split('/');
+                
+                let page = "";
+                for (i = 1; i < path.length; i++) {
+                    page += "/";
+                    page += path[i];
+
+                    if (i === 3) { break; }
+                }
+
+                window.open(`${helpUrl}?page=${encodeURIComponent(page)}`);
+                return false;
+            });
+            
+            mailPage.runMailDownloader();
+            mailPage.refreshMailCount();
+            setInterval(mailPage.refreshMailCount, 60 * 1000);
+
+            documentVerificationPage.refreshToDoCount();
+            setInterval(documentVerificationPage.refreshToDoCount, 60 * 1000);
+
+            const messageCount = $(".global-message-count");
+            if (messageCount.length > 0) {
+                pageHelper.refreshMessageCount();
+                setInterval(pageHelper.refreshMessageCount, 60 * 1000);
+            }
+        });
+    </script>
+    @RenderSection("Scripts", required: false)
+</head>
+<body class="colorway-@theme.ToLower()" data-base-url="@baseUrl" data-no-results="@SharedLocalizer["Your search did not match any records."]" data-invalid-date-range="@SharedLocalizer["To Date must be later than or equal to From Date."]">
+        @RenderBody()
+</body>
+</html>

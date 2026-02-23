@@ -1,0 +1,56 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+@(Html.Kendo().Grid<LetterContactViewModel>()
+        .Name("contactGrid")
+        .Columns(column =>
+        {
+            column.Bound(c => c.EntityId).Hidden();
+            column.Bound(c => c.ContactId).Hidden();
+            column.Bound(c => c.IsGenerate)
+                .ClientTemplate("<input type='checkbox' class='let-generate' #=IsGenerate ? 'checked=checked' : '' # ></input>")
+                .HtmlAttributes(new { style="text-align: center;" })
+                .Width(100);
+
+
+            column.Bound(c => c.EntityCode).Editable("false").Width(100);
+            column.Bound(c => c.EntityName).Editable("false")
+                .HtmlAttributes(new { @class = "cut-off" })
+                .Width(100);
+            column.Bound(c => c.ContactName).Editable("false")
+                .HtmlAttributes(new { @class = "cut-off" })
+                .Width(100);
+            column.Bound(c => c.ContactAddress).Editable("false")
+                .HtmlAttributes(new { @class = "cut-off" })
+                .Width(100);
+
+            column.Bound(c => c.IsPrevGen)
+                .ClientTemplate("<input type='checkbox' class='form-check-input' #=IsPrevGen ? 'checked=checked' : '' # disabled ></input>")
+                .Editable("false")
+                .HtmlAttributes(new { style= "text-align: center;" })
+                .Width(100);
+
+        })
+        .AutoBind(false)
+        //.Pageable(page => page.PageSizes(true).Refresh(true))     // don't make pageable; since data is not persisted, check marks will be lost
+        .Sortable(sortable => sortable.SortMode(GridSortMode.SingleColumn).ShowIndexes(true))
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+        .Scrollable()
+        .DataSource(dataSource => dataSource
+            .Ajax()
+            .Read(read => read.Action("GridContactRead", "Letter").Data("letter.getSelectedLetId"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+        //.PageSize(5)  // don't make pageable; since data is not persisted, check marks will be lost
+        )
+        .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+
+<style>
+    #contactGrid .k-grid-content {
+        min-height: 100px;
+        max-height: 150px;
+    }
+
+    
+</style>

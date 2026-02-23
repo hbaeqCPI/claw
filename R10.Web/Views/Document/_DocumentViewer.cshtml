@@ -1,0 +1,22 @@
+﻿@model ChildImageViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var viewName = "~/Views/Document/_ImageViewer.cshtml";
+
+    switch (settings.DocumentStorage)
+    {
+        case DocumentStorageOptions.SharePoint:
+            viewName = "~/Views/Document/_ImageViewer.cshtml";
+            break;
+
+        case DocumentStorageOptions.iManage:
+            viewName = "~/Views/iManageWork/_DocumentViewer.cshtml";
+            break;
+
+        case DocumentStorageOptions.NetDocuments:
+            viewName = "~/Views/NetDocs/_DocumentViewer.cshtml";
+            break;
+    }
+}
+@await Html.PartialAsync(viewName, Model)

@@ -1,0 +1,52 @@
+﻿@using R10.Infrastructure.Identity
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{ 
+    var theme = User.GetTheme();
+    if (theme == null)
+    {
+        var userPreferences = new UserPreferences();
+        theme = userPreferences.Theme;
+    }
+
+    var baseUrl = Url.ApplicationBaseUrl(Context.Request.Scheme);
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+
+    <link href="~/css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/lib/fontawesome/css/fontawesome-all.min.css" />
+
+</head>
+<body class="colorway-@theme.ToLower()" >
+    <div>
+        <div class="site-header">
+            <nav class="navbar navbar-top navbar-light d-none d-lg-block pb-0">
+                <div class="banner">
+                    <a class="navbar-brand font-italic">Computer Packages Inc.</a>
+                </div>
+            </nav>
+     
+        </div>
+        <div class="page-content">
+            @RenderBody()
+
+        </div>
+
+    </div>
+</body>
+</html>
+
+<style>
+    .site-header {
+        border-bottom: 2px solid var(--bg-menu-bar);
+    }
+</style>

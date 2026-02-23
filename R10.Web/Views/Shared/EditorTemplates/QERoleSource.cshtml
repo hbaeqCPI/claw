@@ -1,0 +1,35 @@
+﻿@model QERoleSource
+@{
+    var id = ViewData["id"].ToString();
+    var systemType = ViewData["SystemType"] != null ? ViewData["SystemType"].ToString() : "P";
+    var action = ViewData["Action"] != null ? ViewData["Action"].ToString() : "GetRoleSourceList";
+    var area = ViewData["Area"] != null ? ViewData["Area"].ToString() : "Shared";
+    var controller = ViewData["Controller"] != null ? ViewData["Controller"].ToString() : "QERoleSource";
+
+    var linkUrl = Url.Action("DetailLink", controller, new
+    {
+        Area = area,
+        roleSourceId = "actualValue"
+    });
+    var screenName = ViewData["screenName"].ToString();
+}
+@(Html.Kendo().ComboBoxFor(m => m)
+    .DataTextField("RoleName")
+    .DataValueField("RoleSourceID")
+    .AutoBind(false)
+    .DataSource(source =>
+    {
+        source.Read(read =>
+        {
+            read.Action(action, controller, new { area = area, textProperty = "RoleName", systemType = systemType, screenName = screenName });
+        })
+        .ServerFiltering(true);
+    })
+    .Filter(FilterType.Contains)
+    .Template("<span class='k-state-default'>#: data.RoleName #</span>")
+    .HtmlAttributes(new { style = "width: 90%", id = @id })
+
+)
+@*<button type="button" class="btn btn-link">
+    <i class="fas fa-search cpiButtonLink" data-source="@id" data-url="@linkUrl"></i>
+</button>*@

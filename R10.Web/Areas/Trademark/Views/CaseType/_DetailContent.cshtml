@@ -1,0 +1,44 @@
+﻿@model TmkCaseType
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.CaseTypeId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
+
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="CaseTypeId" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="CaseType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="CaseType"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>

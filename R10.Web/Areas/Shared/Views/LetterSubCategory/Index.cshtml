@@ -1,0 +1,14 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Letter Sub Category"];
+    ViewData["ActivePage"] = "letterSubCategoryPage";
+}
+
+@section Scripts {
+    <script>
+        var @ViewBag.ActivePage = new ActivePage();
+    </script>
+}
+
+@await Html.PartialPageAsync(Model.Page, Model)

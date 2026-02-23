@@ -1,0 +1,60 @@
+﻿@using R10.Core.Entities.ReportScheduler
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Trademark);
+}
+
+@(Html.Kendo().Grid<RSMatterListPreview>()
+                        .Name("scheduleRecordsAffectedGrid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(p => p.CaseNumber)
+                            .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.SubCase)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Countries)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Attorneys)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.EffectiveOpenDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.TerminationEndDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Status)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            if (isRespOfficeOn)
+                            {
+                                columns.Bound(p => p.RespOffice)
+                                      .HtmlAttributes(new { @class = "name-field" });
+                            }
+                            columns.Bound(p => p.MatterType)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                        })
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .Pageable()
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Batch(true)
+                            .PageSize(5)
+                            .Model(model =>
+                            {
+                                model.Field(s => s.CaseNumber).Editable(false);
+                                model.Field(s => s.SubCase).Editable(false);
+                                model.Field(s => s.Countries).Editable(false);
+                                model.Field(s => s.Attorneys).Editable(false);
+                                model.Field(s => s.EffectiveOpenDate).Editable(false);
+                                model.Field(s => s.TerminationEndDate).Editable(false);
+                                model.Field(s => s.Status).Editable(false);
+                                model.Field(s => s.RespOffice).Editable(false);
+                                model.Field(s => s.MatterType).Editable(false);
+                            })
+                            .Read(read => read.Action("GetMatterListPreviewList", Model.Controller, new { parentId = Model.ParentId }))
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                        )
+                        .HtmlAttributes(new { @class = "k-grid-border" })
+)

@@ -1,0 +1,6 @@
+﻿@model DateTime?
+
+@(Html.Kendo().DateTimePickerFor(m => m)
+     .Format("{0:dd-MMM-yyyy}")
+     .HtmlAttributes(new { style = "width: 100%", title = "datepicker" })
+)

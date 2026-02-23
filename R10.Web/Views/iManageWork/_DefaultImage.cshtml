@@ -1,0 +1,16 @@
+﻿@model Document
+
+@if (Model.IsImage()) 
+{
+    <img class="type-image lightbox" title="@Model.Name" alt="@Model.Name" src="@Url.Action("Download", "iManageWork", new { Area = "", Id = Model.Id })" />
+}
+else 
+{
+    <span class="no-image"><i class="@Model.GetIcon() fa-3x"></i></span>
+}
+
+<script>
+    $(document).ready(function () {
+        $(".type-image.lightbox").lightBox();
+    });
+</script>

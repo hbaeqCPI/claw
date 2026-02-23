@@ -1,0 +1,4 @@
+﻿@model  string
+@inject IStringLocalizer<SharedResource> Localizer
+
+<input type="hidden" id="RequiredEntities" name="RequiredEntities" data-label="@Model" data-form-url="@Url.Action("Index", "EntityFilter", new { Area = "" })" data-val-required="@Localizer[$"The {Model} field is required."]" />

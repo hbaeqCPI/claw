@@ -1,0 +1,373 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var countryLabel = SharedLocalizer["Country"];
+    var countryNameLabel = SharedLocalizer["Country Name"];
+    var settings = await Settings.GetSetting();
+    var sysCustomFieldSettings = (List<SysCustomFieldSetting>)ViewData["SysCustomFieldSettings"];
+}
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="contactPersonSearchMainInfoTabContent" role="tabpanel" aria-labelledby="contactPersonSearchMainInfoTab">
+        <div class="form-row">
+            <div class="col-md-8 col-lg-8 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="Contact">@SharedLocalizer["Contact Code"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Contact" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-8 col-lg-8 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="LastName">@SharedLocalizer["Last Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LastName" })
+                </div>
+            </div>
+            <div class="col-md-8 col-lg-8 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="FirstName">@SharedLocalizer["First Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "FirstName" })
+                </div>
+            </div>
+            <div class="col-md-8 col-lg-8 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="MiddleInitial">@SharedLocalizer["MI"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "MiddleInitial" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-sm-6 col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="ContactTitle">@SharedLocalizer["Title"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ContactTitle" })
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="Greeting">@SharedLocalizer["Greeting"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Greeting" })
+                </div>
+            </div>
+        </div>
+
+        @*<div class="form-row">
+                <div class="col-md-4 col-lg-4 col-xl-3">
+                    <div class="form-group float-label">
+                        <label for="Language">@SharedLocalizer["Language"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "Language" })
+                    </div>
+                </div>
+            </div>*@
+        <div class="form-row">
+            <div class="col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="PhoneNumber">@SharedLocalizer["Telephone No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "PhoneNumber" })
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="FaxNumber">@SharedLocalizer["Fax No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "FaxNumber" })
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="MobileNumber">@SharedLocalizer["Mobile Phone No."]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "MobileNumber" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="EMail">@SharedLocalizer["Email Address"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "EMail" })
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>@SharedLocalizer["Display"]</label>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="IsActive" class="form-control" value="true" data-role="option"> @SharedLocalizer["Active"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="IsActive" class="form-control" value="false" data-role="option"> @SharedLocalizer["Inactive"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="IsActive" class="form-control" value="" data-role="option"> @SharedLocalizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane" id="contactPersonSearchAddressTabContent" role="tabpanel" aria-labelledby="contactPersonSearchAddressTab">
+        <div class="form-row">
+            <div class="col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label for="Address1">@SharedLocalizer["Address"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Address1" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-7 col-lg-6 col-xl-5">
+                @await Component.InvokeAsync("ComboBox", new { name = "Address2" })
+            </div>
+        </div>
+        <div class="form-row mt-1">
+            <div class="col-md-7 col-lg-6 col-xl-5">
+                @await Component.InvokeAsync("ComboBox", new { name = "Address3" })
+            </div>
+        </div>
+        <div class="form-row mt-1">
+            <div class="col-md-7 col-lg-6 col-xl-5">
+                @await Component.InvokeAsync("ComboBox", new { name = "Address4" })
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label for="City">@SharedLocalizer["City"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "City" })
+                </div>
+            </div>
+            <div class="col-md-5 col-lg-6 col-xl-4">
+                <div class="form-group float-label">
+                    <label for="State">@SharedLocalizer["State"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "State" })
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-6 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="ZipCode">@SharedLocalizer["ZipCode"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ZipCode" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-6 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="Country">@SharedLocalizer["Country"]</label>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.Country("Country", countryLabel, countryNameLabel))
+                </div>
+            </div>
+            <div class="col-md-8 col-lg-6 col-xl-6">
+                <div class="form-group float-label">
+                    <label for="AddressCountry.CountryName">@SharedLocalizer["Country Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AddressCountry.CountryName", textProperty = "CountryName", action = "GetCountryList" })
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (User.IsAdmin())
+    {
+        <div class="tab-pane" id="contactPersonSearchPermissionsTabContent" role="tabpanel" aria-labelledby="contactPersonSearchPermissionsTab">
+            <div class="form-row">
+                <div class="col-md-4">
+                    <div class="form-group d-flex justify-content-between">
+                        <label class="label" for="HasUserAccount">@SharedLocalizer["Has User Account"]</label>
+                        <label class="toggle-switch">
+                            <input id="HasUserAccount" name="HasUserAccount" type="checkbox" class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            @if (User.IsSystemEnabled(SystemType.DMS))
+            {
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group d-flex justify-content-between">
+                            <label class="label" for="IsDMSReviewer">@SharedLocalizer["DMS Reviewer"]</label>
+                            <label class="toggle-switch">
+                                <input id="IsDMSReviewer" name="IsDMSReviewer" type="checkbox" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.AMS))
+            {
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group d-flex justify-content-between">
+                            <label class="label" for="IsAMSDecisionMaker">@SharedLocalizer["AMS Decision Maker"]</label>
+                            <label class="toggle-switch">
+                                <input id="IsAMSDecisionMaker" name="IsAMSDecisionMaker" type="checkbox" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.SearchRequest))
+            {
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group d-flex justify-content-between">
+                            <label class="label" for="IsTmkSearchReviewer">@SharedLocalizer["Trademark Clearance Reviewer"]</label>
+                            <label class="toggle-switch">
+                                <input id="IsTmkSearchReviewer" name="IsTmkSearchReviewer" type="checkbox" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.PatClearance))
+            {
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group d-flex justify-content-between">
+                            <label class="label" for="IsPatClearanceReviewer">@SharedLocalizer["Patent Clearance Reviewer"]</label>
+                            <label class="toggle-switch">
+                                <input id="IsPatClearanceReviewer" name="IsPatClearanceReviewer" type="checkbox" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.RMS))
+            {
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group d-flex justify-content-between">
+                            <label class="label" for="IsRMSDecisionMaker">@SharedLocalizer["RMS Decision Maker"]</label>
+                            <label class="toggle-switch">
+                                <input id="IsRMSDecisionMaker" name="IsRMSDecisionMaker" type="checkbox" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (User.IsSystemEnabled(SystemType.ForeignFiling))
+            {
+                        <div class="form-row">
+                            <div class="col-md-4">
+                                <div class="form-group d-flex justify-content-between">
+                                    <label class="label" for="IsFFDecisionMaker">@SharedLocalizer["Foreign Filing Decision Maker"]</label>
+                                    <label class="toggle-switch">
+                                        <input id="IsFFDecisionMaker" name="IsFFDecisionMaker" type="checkbox" class="toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+            }
+        </div>
+    }
+    <div class="tab-pane" id="contactPersonSearchOtherInfoTabContent" role="tabpanel" aria-labelledby="contactPersonSearchOtherInfoTab">
+        <div class="form-row">
+            <div class="col-md-8">
+                <div class="form-group float-label">
+                    <label for="Remarks">@SharedLocalizer["Remarks"]</label>
+                    <input type="text" class="form-control" id="Remarks" name="Remarks" />
+                </div>
+            </div>
+        </div>
+        <div class="form-row mt-4">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="CreatedBy">@SharedLocalizer["Created By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DateCreatedFrom">@SharedLocalizer["Date Created From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DateCreatedTo">@SharedLocalizer["Date Created To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="UpdatedBy">@SharedLocalizer["Updated By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastUpdateFrom">@SharedLocalizer["Last Update From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LastUpdateTo">@SharedLocalizer["Last Update To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (settings.IsShowCustomFieldOn)
+    {
+        <div class="tab-pane" id="contactPersonSearchCustomFieldsTabContent" role="tabpanel" aria-labelledby="contactPersonCustomFieldsTab">
+            <div class="form-row">
+
+                @foreach (var item in sysCustomFieldSettings)
+                {
+                    <div class="col">
+                        @if (item.EditorType.ToLower() != "checkbox")
+                        {
+                            <div class="form-group float-label">
+                                @if (item.EditorType.ToLower().StartsWith("text") || item.EditorType.ToLower() == "combobox")
+                                {
+                                    <label>@SharedLocalizer[item.ColumnLabel]</label>
+                                    @await Component.InvokeAsync("ComboBox", new { name = item.ColumnName, controller = "ContactPerson" })
+                                }
+                                else if (item.EditorType.ToLower() == "datepicker")
+                                {
+                                    <label>@SharedLocalizer[item.ColumnLabel + " From"]</label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions(item.ColumnName + "From"))
+                                }
+
+                            </div>
+                        }
+                        else
+                        {
+                            <label for="@($"{item.ColumnName}")">@SharedLocalizer[item.ColumnLabel]</label>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="@item.ColumnName" class="form-control" value="true" data-role="option"> @SharedLocalizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="@item.ColumnName" class="form-control" value="false" data-role="option"> @SharedLocalizer["No"]
+                                </label>
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="@item.ColumnName" class="form-control" value="" data-role="option"> @SharedLocalizer["All"]
+                                </label>
+                            </div>
+                        }
+                    </div>
+
+                    if (item.EditorType.ToLower() == "datepicker")
+                    {
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label>@SharedLocalizer[item.ColumnLabel + " To"]</label>
+                                @await Component.InvokeAsync("DatePicker", new DatePickerOptions(item.ColumnName + "To"))
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+    }
+</div>

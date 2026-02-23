@@ -1,0 +1,10 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Quick Docket"];
+    ViewData["ActivePage"] = "quickDocket";
+  
+}
+
+
+@await Html.PartialPageAsync(Model.Page, Model)

@@ -1,0 +1,6 @@
+﻿@model List<LookupDTO>
+@(Html.Kendo().DropDownListFor(m => m)
+            .DataValueField("Value")
+            .DataTextField("Value")
+            .BindTo((System.Collections.IEnumerable)ViewData["patSearchSearchMode"])
+)

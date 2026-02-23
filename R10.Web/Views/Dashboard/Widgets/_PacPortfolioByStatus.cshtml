@@ -1,0 +1,57 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;    
+
+    var settings = widget.UserSettings;
+    
+    var widgetTitle = widget.Title.ToString();
+}
+
+@(Html.Kendo().Chart(Model)
+                        .Name(userWidgetId)
+                        .ChartArea(chartArea => chartArea
+                            .Background("transparent"))
+                        .Title(title => title
+                            .Text("")
+                            .Position(ChartTitlePosition.Top)
+                        )
+                        .Legend(legend => legend
+                            .Visible(true)
+                            .Position(ChartLegendPosition.Top)
+                        )
+                        .Series(series => series
+                            .Donut(m => m.Value, m => m.Category)
+                            .StartAngle(-45)
+                            .ColorField("Color")
+                            .ExplodeField("Explode")
+                            .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+                            .Labels(labels => labels
+                                .Visible(true)
+                                .Template("#= category#\n#= value#%")
+                                .Background("transparent")
+                                .Position(ChartPieLabelsPosition.OutsideEnd)
+                                .Align(ChartPieLabelsAlign.Column)
+                            )
+                        )
+                        .SeriesColors(widget.SeriesColors)
+                        .Tooltip(tooltip => tooltip
+                            .Visible(true)
+                            .Template("#= category #: #= value #%")
+                        )
+                        //Settings for PDF export using kendo built-in function
+                        .Pdf(pdf => pdf
+                            .FileName(@widget.Title.ToString())
+                            //.PaperSize("A4")
+                            .Landscape(false)
+                            .Margin(m => m
+                                .Left(10)
+                                .Right(10)
+                                .Top(10)
+                                .Bottom(10))
+                        )
+)

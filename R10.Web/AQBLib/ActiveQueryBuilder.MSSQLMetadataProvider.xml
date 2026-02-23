@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ActiveQueryBuilder.MSSQLMetadataProvider</name>
+    </assembly>
+    <members>
+        <member name="T:ActiveQueryBuilder.Core.MSSQLMetadataProvider">
+            <summary> Metadata Provider for Microsoft SQL Server. </summary>
+        </member>
+    </members>
+</doc>

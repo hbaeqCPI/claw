@@ -1,0 +1,48 @@
+﻿@model LoginWith2faViewModel
+@{
+    ViewData["Title"] = "Two-factor authentication";
+}
+
+<div class="row mt-3">
+    <div class="col">
+        <div class="card card-account border-secondary mx-auto">
+            <h3 class="card-header bg-transparent border-0 mt-0 text-center">@ViewData["Title"]</h3>
+            <div class="card-body">
+                <div class="card-title pb-3">Your login is protected with an authenticator app. Enter your authenticator code below.</div>
+                <form method="post" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+                    <input asp-for="RememberMe" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="list-unstyled alert alert-danger alert-dismissible mb-4" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="form-group">
+                        <input asp-for="TwoFactorCode" class="form-control" autocomplete="off" placeholder="Authenticator code" />
+                        <span asp-validation-for="TwoFactorCode" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label asp-for="RememberMachine">
+                                <input asp-for="RememberMachine" />
+                                @Html.DisplayNameFor(m => m.RememberMachine)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block-xs">Log in</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-footer bg-transparent">
+                <p>
+                    Don't have access to your authenticator device? You can
+                    <a asp-action="LoginWithRecoveryCode" asp-route-returnUrl="@ViewData["ReturnUrl"]">log in with a recovery code</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}*@

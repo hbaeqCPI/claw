@@ -1,0 +1,723 @@
+﻿@model PageViewModel
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    QuickDocketSearchCriteriaViewModel defaultSettings = (QuickDocketSearchCriteriaViewModel)ViewData["SearchCriteriaViewModel"];
+
+    if (string.IsNullOrEmpty(defaultSettings.SystemTypes))
+    {
+        defaultSettings.SystemTypes = Model.SystemType; //from route
+    }
+
+    var settings = await Settings.GetSetting();
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter] : Localizer[settings.LabelCaseNumber];
+    var clientRefLabel = Localizer[settings.LabelClientRef];
+    var clientLabel = Localizer[settings.LabelClient + "(s)"];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+    var ownerLabel = Localizer[settings.LabelOwner];
+    var ownerNameLabel = Localizer[settings.LabelOwnerName];
+    var agentLabel = Localizer[settings.LabelAgent];
+    var agentNameLabel = Localizer[settings.LabelAgentName];
+    var attorneyLabel = Localizer["Attorney(s)"];
+    var attorneyNameLabel = Localizer["Attorney Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseTypeLabel = Localizer["Case Type"];
+    var descriptionLabel = Localizer["Description"];
+
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+    var indicatorUrl = Url.Action("GetIndicatorList", "QuickDocketLookUp", new { area = "Shared", property = "Indicator" });
+    //var attorneyUrl = Url.Action("GetAttorneyList", "Attorney", new { area = "Shared", property = "AttorneyCode" });
+    var attorneyUrl = Url.Action("GetAttorneyList", "QuickDocketLookup", new { area = "Shared", property = "AttorneyCode" });
+    var clientUrl = Url.Action("GetClientList", "QuickDocketLookup", new { area = "Shared", property = "ClientCode" });
+    var actionTypeUrl = Url.Action("GetActionTypeList", "QuickDocketLookup", new { area = "Shared", property = "ActionType" });
+
+    var screen = "qdCriteria";
+    var additionalData = "function() {return quickDocket.getSystems(quickDocket.refineSearchContainer);}";
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent) || User.IsRespOfficeOn(SystemType.Trademark) || User.IsRespOfficeOn(SystemType.GeneralMatter);
+    var deDocketOn = settings.IsDeDocketOn;
+    var deDocketInstructionOnly = defaultSettings.DeDocketInstructionOnly ?? false;
+    var deDocketUninstructedOnly = defaultSettings.DeDocketUninstructedOnly ?? false;
+    var isDelegationOn = settings.IsDelegationOn;
+}
+
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="quickDocketSearchCaseInfoTabContent" role="tabpanel"
+         aria-labelledby="quickDocketSearchCaseInfoTab"
+         data-title-mapper-url="@Url.Action("TitleValueMapper","QuickDocketLookup")"
+         data-casenumber-mapper-url="@Url.Action("CaseNumberValueMapper","QuickDocketLookup")"
+         data-actiontype-mapper-url="@Url.Action("ActionTypeValueMapper","QuickDocketLookup")"
+         data-actiondue-mapper-url="@Url.Action("ActionDueValueMapper","QuickDocketLookup")"
+         data-agent-mapper-url="@Url.Action("AgentValueMapper","QuickDocketLookup")"
+         data-client-mapper-url="@Url.Action("ClientValueMapper","QuickDocketLookup")"
+         data-owner-mapper-url="@Url.Action("OwnerValueMapper","QuickDocketLookup")">
+
+        <div class="form-row">
+            <div class="col">
+                <input type="hidden" name="FromSystem" value="@Model.SystemType" />
+                <input id="SortCol" type="text" hidden name="SortCol" value="DueDate" />
+                <input id="SortOrder" type="text" hidden name="SortOrder" value="ASC" />
+                <div class="system-types">
+                    <div class="pb-1"><label>@Localizer["System"]</label></div>
+
+                    @if (defaultSettings.Systems.Any(s => s.TypeId == "P"))
+                    {
+                        <div class="border rounded px-2 py-2 d-flex">
+                            <div class="form-check form-check-inline" style="width:40%">
+                                <input class="form-check-input" type="checkbox" name="Patent" @(defaultSettings.SystemTypes.Contains("P") ? "checked" : "") value="P">
+                                <label class="form-check-label" for="Patent">@Localizer["Patent"]</label>
+                            </div>
+                            @if (defaultSettings.Systems.Any(s => s.TypeId == "L"))
+                            {
+                                <div class="form-check form-check-inline" style="width:60%">
+                                    <input class="form-check-input" type="checkbox" name="PTOActions" @(defaultSettings.SystemTypes.Contains("L") ? "checked" : "") value="L">
+                                    <label class="form-check-label" for="PTOActions">@Localizer["PTO Actions"]</label>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (defaultSettings.Systems.Any(s => s.TypeId == "T"))
+                    {
+                        <div class="border rounded px-2 py-2 mt-1 d-flex">
+                            <div class="form-check form-check-inline" style="width:40%">
+                                <input class="form-check-input" type="checkbox" name="Trademark" @(defaultSettings.SystemTypes.Contains("T") ? "checked" : "") value="T">
+                                <label class="form-check-label" for="Trademark">@Localizer["Trademark"]</label>
+                            </div>
+                            @if (defaultSettings.Systems.Any(s => s.TypeId == "M"))
+                            {
+                                <div class="form-check form-check-inline" style="width:60%">
+                                    <input class="form-check-input" type="checkbox" name="TrademarkLinks" @(defaultSettings.SystemTypes.Contains("M") ? "checked" : "") value="M">
+                                    <label class="form-check-label" for="TrademarkLinks">@Localizer["Trademark Links"]</label>
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (defaultSettings.Systems.Any(s => s.TypeId == "G" || s.TypeId == "D" || s.TypeId == "A"))
+                    {
+                        <div class="border rounded px-2 py-2 mt-1">
+                            @foreach (var item in defaultSettings.Systems.Where(s => "GDA".Contains(s.TypeId)))
+                            {
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="@item.SystemId" @(defaultSettings.SystemTypes.Contains(item.TypeId) ? "checked" : "") value="@item.TypeId">
+                                    <label class="form-check-label" for="@item.SystemId">@Localizer[item.SystemName]</label>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Title"]</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                        {
+                            name = "Title",
+                            controller = "QuickDocketLookUp",
+                            area = "Shared",
+                            textProperty = "Title",
+                            action = "GetTitleList",
+                            defaultValue = defaultSettings.Title,
+                            listWidth = 500,
+                            enablePaging = enableComboPaging,
+                            pagingSize = comboPagingSize,
+                            valueMapper = "quickDocket.titleValueMapper",
+                            data = additionalData
+                        })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@caseNumberLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                        {
+                            name = "CaseNumber",
+                            controller = "QuickDocketLookUp",
+                            area = "Shared",
+                            textProperty = "CaseNumber",
+                            action = "GetCaseNumberList",
+                            defaultValue = defaultSettings.CaseNumber,
+                            enablePaging = enableComboPaging,
+                            pagingSize = comboPagingSize,
+                            valueMapper = "quickDocket.caseNumberValueMapper",
+                            data = additionalData
+                        })
+                </div>
+            </div>
+        </div>
+        <div class="form-row group">
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label></label>
+                    @(Html.Kendo().DropDownList()
+                        .Name("countryOp")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>()
+                    {
+                    new SelectListItem()
+                    {
+                    Text = "<>",
+                    Value = "<>"
+                    },
+                    new SelectListItem()
+                    {
+                    Text = "=",
+                    Value = "="
+                    },
+                    })
+                        .Value(defaultSettings.CountryOp)
+                        .HtmlAttributes(new { style = "width: 100%" })
+                        )
+
+                </div>
+
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label>@Localizer["Country"]</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                        {
+                            name = "Country",
+                            controller = "QuickDocketLookUp",
+                            area = "Shared",
+                            textProperty = "Country",
+                            action = "GetCountryList",
+                            listWidth = 500,
+                            headerTemplate = ComboBoxHelper.GetHeaderTemplate(countryLabel, countryNameLabel),
+                            itemTemplate = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                            defaultValue = defaultSettings.Country,
+                            data = additionalData
+                        })
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row group">
+            <div class="col-4">
+                <div class="form-group float-label">
+                    <label></label>
+                    @(Html.Kendo().DropDownList()
+                        .Name("indicatorOp")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                    new SelectListItem() {
+                    Text = "<>",
+                    Value = "<>"
+                    },
+                    new SelectListItem() {
+                    Text = "=",
+                    Value = "="
+                    },                                                                                                                                                                                })
+                        .Value(defaultSettings.IndicatorOp)
+                        .HtmlAttributes(new { style = "width: 100%" })
+                        )
+                </div>
+
+            </div>
+            <div class="col-8">
+                <div class="form-group float-label">
+                    <label>@Localizer["Indicator(s)"]</label>
+                    <select id="Indicators_qdCriteria" name="Indicators" multiple="multiple">
+                        @foreach (var item in defaultSettings.Indicators)
+                        {
+                            <option value="@item" selected>@item</option>
+                        }
+                    </select>
+                    <script>
+                        kendo.syncReady(function () {
+                            jQuery("#Indicators_qdCriteria").kendoMultiSelect(
+                                {
+                                    "dataTextField": "Indicator", "dataValueField": "Indicator", "height": 400, "headerTemplate": "\u003cspan\u003e\u003c/span\u003e", "itemTemplate": "\u003cspan class=\u0027k-state-default\u0027\u003e#: data.Indicator #\u003c/span\u003e", "virtual": false, "filter": "startswith",
+                                    "dataSource": {
+                                        "transport": { "read": { "url": "@indicatorUrl", "data": { systemType: '|@defaultSettings.SystemTypes|' } }, "prefix": "" }
+                                    }
+                                });
+                        });
+                    </script>
+
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@clientRefLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ClientRef", controller = "QuickDocketLookUp", area = "Shared", textProperty = "ClientRef", action = "GetClientRefList", defaultValue = defaultSettings.ClientRef, data = additionalData })
+                </div>
+            </div>
+        </div>
+
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group">
+                    <label for="ActiveSwitch1">@Localizer["Status Codes"]</label>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline @(defaultSettings.ActiveSwitch == "1" ? "active" : "")">
+                            <input type="radio" name="ActiveSwitch" class="form-control" @(defaultSettings.ActiveSwitch == "1" ? "checked" : "") value="1" data-role="option"> @Localizer["Active"]
+                        </label>
+                        <label class="btn btn-outline @(defaultSettings.ActiveSwitch == "0" ? "active" : "")">
+                            <input type="radio" name="ActiveSwitch" class="form-control" @(defaultSettings.ActiveSwitch == "0" ? "checked" : "") value="0" data-role="option"> @Localizer["Inactive"]
+                        </label>
+                        <label class="btn btn-outline @(defaultSettings.ActiveSwitch == "2" ? "active" : "")">
+                            <input type="radio" name="ActiveSwitch" class="form-control" @(defaultSettings.ActiveSwitch == "2" ? "checked" : "") value="2" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+            @if (isRespOfficeOn)
+            {
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Resp. Office"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "RespOffice", controller = "QuickDocketLookUp", area = "Shared", textProperty = "RespOffice", action = "GetRespOfficeList", defaultValue = defaultSettings.RespOffice, data = additionalData })
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="form-row group">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label></label>
+                    @(Html.Kendo().DropDownList()
+                        .Name("statusOp")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>() {
+                    new SelectListItem() {
+                    Text = "<>",
+                    Value = "<>"
+                    },
+                    new SelectListItem() {
+                    Text = "=",
+                    Value = "="
+                    },                                                                                                                                                                                })
+                        .Value(defaultSettings.StatusOp)
+                        .HtmlAttributes(new { style = "width: 100%" })
+                        )
+                </div>
+
+            </div>
+            <div class="col-md">
+                <div class="form-group float-label">
+                    <label>@Localizer["Status"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Status", controller = "QuickDocketLookUp", area = "Shared", textProperty = "Status", action = "GetStatusList", defaultValue = defaultSettings.Status, data = additionalData, listWidth = 350 })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Action Due"]</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                    {
+                    name = "ActionDue",
+                    controller = "QuickDocketLookUp",
+                    area = "Shared",
+                    textProperty = "ActionDue",
+                    action = "GetActionDueList",
+                    defaultValue = defaultSettings.ActionDue,
+                    enablePaging = enableComboPaging,
+                    pagingSize = comboPagingSize,
+                    valueMapper = "quickDocket.actionTypeValueMapper",
+                    data = additionalData
+                    })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Action Type"]</label>
+                    <select id="ActionTypes_qdCriteria" name="ActionTypes" multiple="multiple">
+                        @foreach (var item in defaultSettings.ActionTypes)
+                        {
+                            <option value="@item" selected>@item</option>
+                        }
+                    </select>
+                    <script>
+                        kendo.syncReady(function () {
+                            jQuery("#ActionTypes_qdCriteria").kendoMultiSelect({
+                                "dataTextField": "ActionType", "dataValueField": "ActionType", "height": 400,
+                                "dataSource": { "transport": { "read": { "url": "@actionTypeUrl", "data": { systemType: '|@defaultSettings.SystemTypes|' } } }, }
+                            });
+                        });</script>
+                </div>
+            </div>
+
+             <div class="col">
+                <div class="form-group">
+                    <label for="IsOfficeAction">@Localizer["Office Action?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline @(defaultSettings.OfficeAction=="1" ? "active" : "")">
+                                <input type="radio" name="OfficeAction" class="form-control" @(defaultSettings.OfficeAction == "1" ? "checked" : "") value="1" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline @(defaultSettings.OfficeAction=="0" ? "active" : "")">
+                                <input type="radio" name="OfficeAction" class="form-control" @(defaultSettings.OfficeAction == "0" ? "checked" : "") value="0" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline @(defaultSettings.OfficeAction=="2" ? "active" : "")">
+                                <input type="radio" name="OfficeAction" class="form-control" @(defaultSettings.OfficeAction == "2" ? "checked" : "") value="2" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Due Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromDueDate") { Value = defaultSettings.FromDueDate })
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Due Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToDueDate") { Value = defaultSettings.ToDueDate })
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@caseTypeLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                    {
+                    name = "CaseType",
+                    controller = "QuickDocketLookUp",
+                    area = "Shared",
+                    textProperty = "CaseType",
+                    action = "GetCaseTypeList",
+                    defaultValue = defaultSettings.CaseType,
+                    listWidth = 500,
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(caseTypeLabel, descriptionLabel),
+                    itemTemplate = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                    screen = screen,
+                    data = additionalData
+                    })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Base Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromBaseDate") { Value = defaultSettings.FromBaseDate })
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Base Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToBaseDate") { Value = defaultSettings.ToBaseDate })
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Remarks Update From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromInstrxDate") { Value = defaultSettings.FromInstrxDate })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@Localizer["Remarks Update To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToInstrxDate") { Value = defaultSettings.ToInstrxDate })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="quickDocketSearchEntitiesTabContent" class="tab-pane">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@agentLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                    {
+                    controller = "QuickDocketLookup",
+                    action = "GetAgentList",
+                    name = "Agent",
+                    textProperty = "Agent",
+                    listWidth = 500,
+                    defaultValue = defaultSettings.Agent,
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(agentLabel, agentNameLabel),
+                    itemTemplate = ComboBoxHelper.GetItemTemplate("Agent", "AgentName"),
+                    enablePaging = enableComboPaging,
+                    pagingSize = comboPagingSize,
+                    valueMapper = "quickDocket.agentValueMapper",
+                    data = additionalData,
+
+                    })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@clientLabel</label>
+                    <select id="Clients_qdCriteria" name="Clients" multiple="multiple">
+                        @foreach (var item in defaultSettings.Clients)
+                        {
+                            <option value="@item" selected>@item</option>
+                        }
+                    </select>
+                    <script>
+                        kendo.syncReady(function () {
+                            jQuery("#Clients_qdCriteria").kendoMultiSelect({
+                                "dataTextField": "Client", "dataValueField": "Client", "height": 400, autoWidth: true,
+                                "headerTemplate": "@Html.Raw($"\u003cdiv class=\u0027dropdown-header k-widget k-header d-flex\u0027\u003e\u003cdiv style=\u0027width:150px\u0027\u003e\u003cspan\u003e{@clientLabel}\u003c/span\u003e\u003c/div\u003e\u003cdiv\u003e\u003cspan\u003e{@clientNameLabel}\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e")",
+                                "itemTemplate": "\u003cdiv class=\u0027d-flex\u0027\u003e\u003cdiv style=\u0027width:150px\u0027\u003e\u003cspan class=\u0027k-list-item-text\u0027\u003e#: data.Client !=null ? data.Client : \u0027\u0027 #\u003c/span\u003e\u003c/div\u003e\u003cdiv\u003e\u003cspan class=\u0027k-list-item-text\u0027\u003e#: data.ClientName !=null ? data.ClientName : \u0027\u0027 #\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e",
+                                "dataSource": { "transport": { "read": { "url": "@clientUrl", "data": { systemType: '|@defaultSettings.SystemTypes|' } } }, }
+                            });
+                        });</script>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@ownerLabel</label>
+                    @await Component.InvokeAsync("ComboBox", new
+                    {
+                    controller = "QuickDocketLookup",
+                    action = "GetOwnerList",
+                    name = "Owner",
+                    textProperty = "Owner",
+                    listWidth = 500,
+                    defaultText = defaultSettings.Owner,
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(ownerLabel, ownerNameLabel),
+                    itemTemplate = ComboBoxHelper.GetItemTemplate("Owner", "OwnerName"),
+                    enablePaging = enableComboPaging,
+                    pagingSize = comboPagingSize,
+                    valueMapper = "quickDocket.ownerValueMapper",
+                    data = additionalData
+                    })
+
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label>@attorneyLabel</label>
+                    <select id="Attorneys_qdCriteria" name="Attorneys" multiple="multiple">
+                        @foreach (var item in defaultSettings.Attorneys)
+                        {
+                            <option value="@item" selected>@item</option>
+                        }
+                    </select>
+                    <script>
+                        kendo.syncReady(function () {
+                            jQuery("#Attorneys_qdCriteria").kendoMultiSelect({
+                                "dataTextField": "Attorney", "dataValueField": "Attorney", "height": 400, autoWidth: true,
+                                "headerTemplate": "@Html.Raw($"\u003cdiv class=\u0027dropdown-header k-widget k-header d-flex\u0027\u003e\u003cdiv style=\u0027width:150px\u0027\u003e\u003cspan\u003e{@attorneyLabel}\u003c/span\u003e\u003c/div\u003e\u003cdiv\u003e\u003cspan\u003e{@attorneyNameLabel}\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e")",
+                                "itemTemplate": "\u003cdiv class=\u0027d-flex\u0027\u003e\u003cdiv style=\u0027width:150px\u0027\u003e\u003cspan class=\u0027k-list-item-text\u0027\u003e#: data.Attorney !=null ? data.Attorney : \u0027\u0027 #\u003c/span\u003e\u003c/div\u003e\u003cdiv\u003e\u003cspan class=\u0027k-list-item-text\u0027\u003e#: data.AttorneyName !=null ? data.AttorneyName : \u0027\u0027 #\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e",
+                                "dataSource": { "transport": { "read": { "url": "@attorneyUrl", "data": { systemType: '|@defaultSettings.SystemTypes|' } } }, }
+                            });
+                        });</script>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter1">@Localizer["[1]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter1" id="AttorneyFilter1" @(defaultSettings.FilterAtty.Contains("A1") ? "checked" : "") value="A1">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter2">@Localizer["[2]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter2" id="AttorneyFilter2" @(defaultSettings.FilterAtty.Contains("A2") ? "checked" : "") value="A2">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter3">@Localizer["[3]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter3" id="AttorneyFilter3" @(defaultSettings.FilterAtty.Contains("A3") ? "checked" : "") value="A3">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter4">@Localizer["[4]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter4" id="AttorneyFilter4" @(defaultSettings.FilterAtty.Contains("A4") ? "checked" : "") value="A4">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilter5">@Localizer["[5]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilter5" id="AttorneyFilter5" @(defaultSettings.FilterAtty.Contains("A5") ? "checked" : "") value="A5">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilterR">@Localizer["[Responsible]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilterR" id="AttorneyFilterR" @(defaultSettings.FilterAtty.Contains("AR") ? "checked" : "") value="AR">
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label mr-1" for="AttorneyFilterD">@Localizer["[Due date]"]</label>
+                    <input class="form-check-input" type="checkbox" name="AttorneyFilterD" id="AttorneyFilterD" @(defaultSettings.FilterAtty.Contains("AD") ? "checked" : "") value="AD">
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div id="quickDocketSearchOtherInfoTabContent" class="tab-pane">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group">
+                    <label for="TrackOne">@Localizer["Show Track One?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline">
+                                <input type="radio" name="TrackOne" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline">
+                                <input type="radio" name="TrackOne" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline active">
+                                <input type="radio" name="TrackOne" class="form-control" value="" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (isDelegationOn)
+            {
+                <div class="col">
+                    <div class="form-group">
+                        <label for="Delegated">@Localizer["Show Delegated?"]</label>
+                        <div>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="Delegated" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="Delegated" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                                </label>
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="Delegated" class="form-control" value="" data-role="option"> @Localizer["All"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col">
+                <div class="form-group">
+                    <label for="PODocketed">@Localizer["Show Auto-docketed actions?"]</label>
+                    <div>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline">
+                                <input type="radio" name="PODocketed" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                            </label>
+                            <label class="btn btn-outline">
+                                <input type="radio" name="PODocketed" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                            </label>
+                            <label class="btn btn-outline active">
+                                <input type="radio" name="PODocketed" class="form-control" value="" data-role="option"> @Localizer["All"]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (settings.IsSoftDocketOn)
+            {
+                <div class="col">
+                    <div class="form-group">
+                        <label for="SoftDocket">@Localizer["Show Soft Dockets?"]</label>
+                        <div>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline">
+                                    <input type="radio" name="SoftDocket" class="form-control" value="1" data-role="option"> @Localizer["Yes"]
+                                </label>
+                                <label class="btn btn-outline active">
+                                    <input type="radio" name="SoftDocket" class="form-control" value="0" data-role="option"> @Localizer["No"]
+                                </label>
+                                <label class="btn btn-outline">
+                            <input type="radio" name="SoftDocket" class="form-control" value="2" data-role="option"> @Localizer["All"]
+                            </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (defaultSettings.Systems.Any(s => s.TypeId == "A"))
+            {
+                <div class="col">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="IncludeNP" @(defaultSettings.IncludeNP ? "checked" : "") value="true">
+                        <label class="form-check-label" for="IncludeNP">@Localizer["Include NP AMS instructions?"]</label>
+                    </div>
+                </div>
+            }
+
+
+        </div>
+    </div>
+    @if (deDocketOn)
+    {
+        <div id="quickDocketSearchDeDocketTabContent" class="tab-pane">
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Instruction"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "DeDocketInstruction", controller = "QuickDocketLookUp", area = "Shared", textProperty = "Instruction", action = "GetDeDocketInstructionList", defaultValue = defaultSettings.DeDocketInstruction, data = additionalData })
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Instructed By"]</label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "DeDocketInstructedBy", controller = "QuickDocketLookUp", area = "Shared", textProperty = "InstructedBy", action = "GetDeDocketInstructedByList", defaultValue = defaultSettings.DeDocketInstructedBy, data = additionalData })
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Instruction Date From"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("FromInstructionDate") { Value = defaultSettings.FromInstructionDate })
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label>@Localizer["Instruction Date To"]</label>
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("ToInstructionDate") { Value = defaultSettings.ToInstructionDate })
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="DeDocketInstructionOnly" @(deDocketInstructionOnly ? "checked" : "") value="true">
+                        <label class="form-check-label" for="DeDocketInstructionOnly">@Localizer["De-Docket Instruction only"]</label>
+                    </div>
+                </div>
+                <div class="col d-none dedocket-completed-switch">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline @(defaultSettings.DeDocketInstrCompleted.HasValue && (bool)defaultSettings.DeDocketInstrCompleted  ? "active" : "")">
+                            <input type="radio" name="DeDocketInstrCompleted" class="form-control" value="true" data-role="option"> @Localizer["Completed"]
+                        </label>
+                        <label class="btn btn-outline @(defaultSettings.DeDocketInstrCompleted.HasValue && !(bool)defaultSettings.DeDocketInstrCompleted  ? "active" : "")">
+                            <input type="radio" name="DeDocketInstrCompleted" class="form-control" value="false" data-role="option"> @Localizer["Not Completed"]
+                        </label>
+                        <label class="btn btn-outline @(!defaultSettings.DeDocketInstrCompleted.HasValue  ? "active" : "")">
+                            <input type="radio" name="DeDocketInstrCompleted" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="DeDocketUninstructedOnly" @(deDocketUninstructedOnly ? "checked" : "") value="true">
+                        <label class="form-check-label" for="DeDocketUninstructedOnly">@Localizer["De-Docket Uninstructed only"]</label>
+                    </div>
+                </div>
+                <div class="col d-none dedocket-uninstructed-switch">
+                    <label class="form-check-label">@Localizer["Uninstructed including Completed Instructions?"]</label>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline @(defaultSettings.DeDocketUninstructedSwitch.HasValue && (bool)defaultSettings.DeDocketUninstructedSwitch  ? "active" : "")">
+                            <input type="radio" name="DeDocketUninstructedSwitch" class="form-control" value="true" data-role="option"> @Localizer["w/o Any Instructions"]
+                        </label>
+                        <label class="btn btn-outline @(!defaultSettings.DeDocketUninstructedSwitch.HasValue  ? "active" : "")">
+                            <input type="radio" name="DeDocketUninstructedSwitch" class="form-control" value="" data-role="option"> @Localizer["Both"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<style>
+    #quickDocketSearchCaseInfoTabContent .form-check-label,
+    #quickDocketSearchCaseInfoTabContent .btn-outline {
+        font-size: .9rem !important;
+    }
+</style>

@@ -1,0 +1,35 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<TmkSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<TmkActionType>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.ActionType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: ActionTypeID#", fromSearch = true }), "ActionType"));
+                    columns.Bound(m => m.Country).Width(200);
+                    columns.Bound(m => m.IsOfficeAction).ClientTemplate("<i class='align-items-center small fa fal #: IsOfficeAction ? 'fa-check' : ''#'></i>")
+                        .HtmlAttributes(new { @class = "text-center" })
+                        .HeaderHtmlAttributes(new { @class = "d-flex justify-content-center align-items-center" })
+                        .Width(200);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                //.ColumnMenu()
+                .Excel(excel => excel.FileName("ActionTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "ActionType")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("tmkActionTypePage.searchResultGridError"))
+                .Events(events => events.RequestEnd("tmkActionTypePage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "ActionType")
+                .Data("tmkActionTypePage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.ActionType))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

@@ -1,0 +1,7 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model LetterCustomFieldPeriodViewModel
+@(Html.Kendo().DropDownListFor(m => m)
+      .DataValueField("Value")
+      .DataTextField("Text")
+      .BindTo(LetterCustomFieldPeriodViewModel.BuildList(SharedLocalizer))
+      )

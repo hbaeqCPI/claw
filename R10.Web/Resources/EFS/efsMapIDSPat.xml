@@ -1,0 +1,1034 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <!-- Data Map for PTO/SB/08a (07-09) - Information Disclosure Statement By Applicant - Patent Documents -->
+  <!-- Header Section -->
+  <PDFFieldMapping>
+    <PdfField>Text1</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>PageNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>1</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text2</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>NoOfPages</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>1</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text3</PdfField>      
+    <SourceTable>0</SourceTable>
+    <SourceField>AppNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text4</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FilDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text5</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>FirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text6</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>GroupArtUnit</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text7</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>Examiner</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text8</PdfField>
+    <SourceTable>0</SourceTable>
+    <SourceField>AttorneyDocketNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- US Patent Documents Section -->
+  <!-- row 1 -->
+  <PDFFieldMapping>                 
+    <PdfField>text9</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>1</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text10</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text11</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text12</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text13</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 2 -->
+  
+  <PDFFieldMapping>
+    <PdfField>text14</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue>2</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text15</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text16</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text17</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text18</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+   
+  <!-- row 3 -->
+   
+  <PDFFieldMapping>
+    <PdfField>text19</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue>3</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text20</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text21</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text22</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text23</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+        
+  <!-- row 4 -->
+  <PDFFieldMapping>
+    <PdfField>text24</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue>4</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text25</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text26</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text27</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text28</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 5 -->
+  <PDFFieldMapping>
+    <PdfField>text29</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue>5</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text30</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text31</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text32</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text33</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 6 -->
+  <PDFFieldMapping>
+    <PdfField>text34</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue>6</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text35</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text36</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text37</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text38</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 7 -->
+  <PDFFieldMapping>
+    <PdfField>text39</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue>7</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text40</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text41</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text42</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text43</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>6</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+      
+  <!-- row 8 -->
+  <PDFFieldMapping>
+    <PdfField>text44</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue>8</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text45</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text46</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text47</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text48</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>7</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 9 -->
+  <PDFFieldMapping>
+    <PdfField>text49</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue>9</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text50</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text51</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text52</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text53</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>8</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 10 -->
+  <PDFFieldMapping>
+    <PdfField>text54</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue>10</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text55</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text56</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text57</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text58</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>9</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 11 -->
+  <PDFFieldMapping>
+    <PdfField>text59</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>10</SourceRow>
+    <SourceValue>11</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text60</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>10</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text61</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>10</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text62</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>10</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text63</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>10</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 12 -->
+  <PDFFieldMapping>
+    <PdfField>text64</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>11</SourceRow>
+    <SourceValue>12</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text65</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>11</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text66</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>11</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text67</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>11</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text68</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>11</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 13 -->
+  <PDFFieldMapping>
+    <PdfField>text69</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>12</SourceRow>
+    <SourceValue>13</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text70</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>12</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text71</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>12</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text72</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>12</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text73</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>12</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 14 -->
+  <PDFFieldMapping>
+    <PdfField>text74</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>13</SourceRow>
+    <SourceValue>14</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text75</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>13</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text76</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>13</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text77</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>13</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text78</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>13</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 15 -->
+  <PDFFieldMapping>
+    <PdfField>text79</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>14</SourceRow>
+    <SourceValue>15</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text80</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>14</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text81</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>14</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text82</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>14</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text83</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>14</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+   
+  <!-- row 16 -->
+  <PDFFieldMapping>
+    <PdfField>text84</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>15</SourceRow>
+    <SourceValue>16</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text85</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>15</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text86</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>15</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text87</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>15</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text88</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>15</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 17 -->
+  <PDFFieldMapping>
+    <PdfField>text89</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>16</SourceRow>
+    <SourceValue>17</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text90</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>16</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text91</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>16</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text92</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>16</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text93</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>16</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 18 -->
+  <PDFFieldMapping>
+    <PdfField>text94</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>17</SourceRow>
+    <SourceValue>18</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text95</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>17</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text96</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>17</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text97</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>17</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text98</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>17</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 19 -->
+  <PDFFieldMapping>
+    <PdfField>text99</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>18</SourceRow>
+    <SourceValue>19</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text100</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>18</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text101</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>18</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text102</PdfField>
+    <SourceTable>1</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>18</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text103</PdfField>
+    <SourceTable>1</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>18</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- Foreign Patents Documents Section -->
+  <!-- row 1 -->
+  <PDFFieldMapping>
+    <PdfField>text104</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue>1</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text105</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text106</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>ForeignDate</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text107</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text108</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box109</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>0</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 2 -->
+  <PDFFieldMapping>
+    <PdfField>text110</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue>2</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text111</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text112</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>ForeignDate</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text113</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text114</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box115</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>1</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    
+  <!-- row 3 -->
+  <PDFFieldMapping>
+    <PdfField>text116</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue>3</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text117</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text118</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>ForeignDate</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text119</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text120</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box21</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>2</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  <!-- row 4 -->
+  <PDFFieldMapping>
+    <PdfField>text122</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue>4</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text123</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text124</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>ForeignDate</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text125</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text126</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box127</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>3</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+ 
+  <!-- row 5 -->
+  <PDFFieldMapping>
+    <PdfField>text128</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue>5</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text129</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text130</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PubDate</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text131</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+    <PDFFieldMapping>
+    <PdfField>text132</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box133</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>4</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+
+  <!-- row 6 -->
+  <PDFFieldMapping>
+    <PdfField>text134</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>CiteNo</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue>6</SourceValue>
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text135</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>PatNumber</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text136</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>ForeignDate</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text137</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>RelatedFirstNamedInventor</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>text138</PdfField>
+    <SourceTable>2</SourceTable>
+   <SourceField>RefPages</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  <PDFFieldMapping>
+    <PdfField>box39</PdfField>
+    <SourceTable>2</SourceTable>
+    <SourceField>HasTranslation</SourceField>
+    <SourceRow>5</SourceRow>
+    <SourceValue />
+  </PDFFieldMapping>
+  
+  
+</NewDataSet>

@@ -1,0 +1,54 @@
+﻿@model int
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    int id = Model;
+    string gridContainer = "usptoHeaderKeywordGridContainer";
+    string gridName = "usptoHeaderKeywordGrid";
+    var settings = await Settings.GetSetting();
+}
+<div id="@gridContainer" data-export-excel-url="@Url.Action("ExportToExcel", "DOCXHeaderKeyword")">
+    <div class="col nav-right">
+        <a class="nav-link export-excel pr-2" href="#" title="Export to Excel" role="button"><i class="fal fa-file-excel pr-2"></i><span>@Localizer["Export to Excel"]</span></a>
+    </div>
+    <div>
+        @(Html.Kendo().Grid<DOCXUSPTOHeaderKeywordDTO>()
+                .Name(gridName)
+                .Columns(column =>
+                {
+                    column.Bound(hk => hk.HeaderKeyword)
+                    .ClientTemplate($"<div class='#: IsHeader ? 'header' : '' #'>{@Localizer["#:HeaderKeyword#"]}</div>")
+                    .Width(250);
+          
+                })
+                .AutoBind(false)
+                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                .Pageable(page => page.PageSizes(true).Refresh(true))
+                .Scrollable()
+                .Sortable(false)
+                .DataSource(dataSource => dataSource
+                .Ajax()
+                .Read(read => read.Action("GridRead", "DOCXHeaderKeyword"))
+                .Events(events =>
+                {
+                    events.Error("pageHelper.onGridError");
+                })
+                   @*.Sort(sort => sort.Add(hk => hk.HeaderKeywords))*@
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+                )
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        docxSetup.initializeDOCXHeaderKeyword({ gridContainer: "@gridContainer", gridName: "@gridName" });
+    });
+</script>
+
+<style>
+    .header {
+        background-color: lightgray;
+        font-weight: bold;
+    }
+</style>

@@ -1,0 +1,328 @@
+﻿@using R10.Web.Interfaces
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@model ChildImageViewModel
+@{
+    var settings = await Settings.GetSetting();
+    var pageId = ViewData["PageId"];
+    var activePage = ViewData["ActivePage"];
+    var defaultDisplayOption = DocumentDisplayOption.GridView;
+    var permission = Model.Permission ?? new DetailPagePermission();
+    var documentViewerPermission = new DocumentViewerPermission()
+    {
+        CanUpload = permission.CanUploadDocuments,
+        CanDelete = permission.CanDeleteRecord,
+        CanEdit = permission.CanUploadDocuments,
+        CanSetupFolder = permission.CanEditRecord || User.IsAdmin(), //allow admin to override folder setup
+        CanDownload = Model.AllowDownload
+    };
+    var permissionToken = JsonSerializer.Serialize(documentViewerPermission).Encrypt(User.GetEncryptionKey());
+}
+<div class="drop-zone"
+     @(documentViewerPermission.CanUpload ? $"data-upload-url={Url.Action("SaveDropped", "iManageWork", new { Area = "", documentLink = Model.DocumentLink, roleLink = Model.RoleLink, token = permissionToken })}" : "")
+     @(documentViewerPermission.CanUpload ? $"data-save-email-url={Url.Action("SaveDroppedEmails", "iManageWork", new { Area = "", documentLink = Model.DocumentLink, roleLink = Model.RoleLink })}" : "")
+     data-drop-confirm="@Localizer["Do you want to save the email \"{subject}\" from {sender} to documents?"]"
+     data-drop-confirm-multiple="@Localizer["Do you want to save {count} emails to documents?"]">
+    <div class="row imanage-work document-viewer" data-document-link="@Model.DocumentLink"
+        data-token="@permissionToken" 
+        data-auth-url="@Url.Action("Auth", "iManage", new { area = "" })">
+        <div class="col col-md-3 col-lg-2 side-bar" data-url="@Url.Action("GetFolderTree", "iManageWork", new { area = "" })">
+        </div>
+        <div class="col documents"
+             data-delete-url="@Url.Action("DeleteDocument", "iManageWork", new { area = "" })"
+             data-delete-confirm="@Localizer["Are you sure you want to delete \"{0}\"?"]"
+             data-delete-multi-url="@Url.Action("DeleteDocuments", "iManageWork", new { area = "" })"
+             data-delete-multi-confirm="@Localizer["Are you sure you want to delete {0} documents?"]"
+             data-download-url="@(documentViewerPermission.CanDownload ? Url.Action("Download", "iManageWork", new { area = "" }) : "")"
+             data-move-url="@Url.Action("MoveDocuments", "iManageWork", new { area = "" })"
+             data-copy-url="@Url.Action("CopyDocuments", "iManageWork", new { area = "" })"
+             data-viewer-url="@Url.Action("DocumentViewer", "iManageWork", new { area = "" })"
+             data-merge-view-url="@Url.Action("Merge", "iManageWork", new { area = "" })"
+             data-merge-url="@Url.Action("MergeDocuments", "iManageWork", new { area = "", documentLink = Model.DocumentLink })"
+             data-merge-file-count-error="@Localizer["Please select at least 2 PDF files to merge."]"
+             data-merge-file-type-error="@Localizer["Please select only PDF files."]">
+            <div class="target" @(documentViewerPermission.CanUpload ? "ondragover=iManage.documentsOnDragOver(event) ondragleave=iManage.documentsOnDragLeave(event) ondrop=iManage.documentsOnDrop(event)" : "")>
+                <div class="search" style="display: none">
+                    <div class="form">
+                        <input type="hidden" id="ContainerId" name="ContainerId" />
+                        <div class="form-row">
+                            <div class="col-md-4 col-lg-3">
+                                <div class="form-group float-label">
+                                    <label for="Name">@Localizer["Title"]</label>
+                                    @await Component.InvokeAsync("ComboBox", new { name = "Name", controller = "iManageWork", action = "GetDocumentNames", area = "", data = "iManage.nameReadData" })
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <div class="form-group float-label">
+                                    <div class="form-group float-label">
+                                        <label for="DateCreatedFrom">@Localizer["Edit Date From"]</label>
+                                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EditDateFrom") )
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <div class="form-group float-label">
+                                    <label for="DateCreatedTo">@Localizer["Edit Date To"]</label>
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EditDateTo"))
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <div class="form-group float-label">
+                                    <label for="FileType">@Localizer["Type"]</label>
+                                    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions("Type", "iManageWork", area: "", action: "GetTypes", textProperty: "Text", valueProperty: "Value"))
+                                </div>
+                            </div>
+                            <div class="col col-md-4 col-lg-3">
+                                <div class="form-group d-flex justify-content-between">
+                                    <label class="label" for="IncludeSubFolders_@(pageId)">@Localizer["Include Subfolders?"]</label>
+                                    <label class="toggle-switch">
+                                        <input id="IncludeSubFolders_@(pageId)" name="IncludeSubFolders" type="checkbox" class="toggle-option">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                        </div>
+                    </div>
+                </div>
+                <div class="toolbar d-flex justify-content-between">
+                    @* emulate grid toolbar *@
+                    <div class="k-grid">
+                        <div class="k-toolbar k-grid-toolbar">
+                            <nav class="nav nav-left">
+                                <a class="k-button toggle-filters" href="#" data-label-show="@Localizer["Show filters"].ToString()" data-label-hide="@Localizer["Hide filters"].ToString()"><i class="fal fa-filter"></i><span class="label">@Localizer["Show Filters"].ToString()</span><span class="total-filter-count badge badge-pill badge-info" style="display: none;">0</span></a>
+                                <a class="k-button clear-filters" href="#" style="display: none;"><i class="fal fa-times"></i><span class="label">@Localizer["Clear Filters"].ToString()</span></a>
+                                <a class="k-button open-document select-single" href="#" style="display: none;" rel="noopener"><i class="fal fa-arrow-up-right-from-square"></i><span class="label">@Localizer["Open in iManage"].ToString()</span></a>
+                                @if (documentViewerPermission.CanUpload)
+                                {
+                                    <a class="k-button upload save-document select-active" href="#" data-url="@Url.Action("UploadDocument", "iManageWork", new { area = "", documentLink = Model.DocumentLink, roleLink = Model.RoleLink })"><i class="fal fa-upload"></i><span class="label">@Localizer["Upload"].ToString()</span></a>
+                                }
+                                @if (documentViewerPermission.CanDownload)
+                                {
+                                    <a class="k-button download-document select-single" href="#" style="display: none;"><i class="fal fa-download"></i><span class="label">@Localizer["Download"].ToString()</span></a>
+                                    <a class="k-button merge-documents select-multi" href="#" style="display: none;"><i class="fal fa-merge"></i><span class="label">@Localizer["Merge Selected Files"].ToString()</span></a>
+                                }
+                                @if (documentViewerPermission.CanEdit)
+                                {
+                                    <a class="k-button edit save-document select-single" href="#" style="display: none;" data-url="@Url.Action("EditDocument", "iManageWork", new { area = "", documentLink = Model.DocumentLink, roleLink = Model.RoleLink })"><i class="fal fa-pencil"></i><span class="label">@Localizer["Edit"].ToString()</span></a>
+                                }
+                                @if (documentViewerPermission.CanDelete)
+                                {
+                                    <a class="k-button delete-documents select-multi" href="#" style="display: none;"><i class="fal fa-trash-alt"></i><span class="label">@Localizer["Delete"].ToString()</span></a>
+                                }
+                            </nav>
+                        </div>
+                    </div>
+                    <div class="display-option">
+                        @await Component.InvokeAsync("DocumentDisplayOptions", new { defaultOption = defaultDisplayOption })
+                    </div>
+                </div>
+                <div class="viewer" data-url="@Url.Action("GetViewer", "iManageWork", new { area = "" })">
+                </div>
+            </div>
+        </div>
+        <div class="drag-image rounded"></div>
+    </div>
+</div>
+<style>
+    .imanage-work .folder-tree {
+        border-right: 1px solid var(--separator);
+        border-bottom: 0;
+        height: 100%;
+    }
+
+        .imanage-work .folder-tree .folders {
+            padding: 3px;
+        }
+
+            .imanage-work .folder-tree .folders .child-folders {
+                padding-left: 16px;
+            }
+
+            .imanage-work .folder-tree .folders .toggle,
+            .imanage-work .folder-tree .folders .toggle-spacer {
+                display: inline-block;
+                width: 12px;
+            }
+
+            .imanage-work .folder-tree .folders .folder.drag-over {
+                border: 3px dashed var(--btn-primary);
+                border-radius: 0px;
+            }
+
+            .imanage-work .folder-tree .folders .save-button {
+                border: 0;
+                background-color: transparent;
+                /* padding: 0; */
+            }
+
+            .imanage-work .folder-tree .folders .new-name {
+                padding: 2px !important;
+                margin: unset !important;
+                display: inline;
+                height: unset !important;
+                width: 75% !important;
+                font-size: unset !important;
+                font-weight: unset !important;
+            }
+
+    .imanage-work .documents .target.drag-over {
+        border: 3px dashed var(--btn-primary) !important;
+        border-radius: 0px;
+    }
+
+    .imanage-work .documents .results.gallery .k-listview-content {
+        padding: 7.5px;
+    }
+
+    .imanage-work .documents .gallery-doc {
+        display: inline-block;
+        vertical-align: top;
+        padding: 2.5px;
+    }
+
+        .imanage-work .documents .gallery-doc .gallery-label {
+            font-size: .8rem;
+            width: 140px;
+            padding-top: 5px;
+        }
+
+        .imanage-work .documents .gallery-doc .gallery-thumbnail {
+            width: 140px;
+            height: 140px;
+            border: 1px solid var(--separator);
+            border-radius: 5px;
+            padding: 2px;
+        }
+
+            .imanage-work .documents .gallery-doc .gallery-thumbnail img {
+                width: 130px;
+                height: 130px;
+                object-fit: contain;
+                overflow: hidden;
+            }
+
+            .imanage-work .documents .gallery-doc .gallery-thumbnail i.icon {
+                margin-top: 45px;
+                color: var(--text-dim);
+            }
+
+    .imanage-work .documents .display-option .k-picker {
+        width: unset;
+    }
+
+    .imanage-work .folder-tree .setup {
+        padding: 0 10px;
+    }
+
+        .imanage-work .folder-tree .setup .error {
+            font-size: .8rem;
+            padding-top: 5px;
+            height: 50px;
+        }
+
+    .imanage-work .folder-tree .folders-toolbar {
+        padding-top: 5px;
+    }
+
+    .imanage-work .drag-image {
+        background-color: var(--grid-hover);
+        color: var(--text-hover);
+        font-size: .9rem;
+        padding: 5px 10px;
+        position: absolute;
+        top: -5000px;
+    }
+
+    .imanage-work .documents .results .k-grid .grab {
+        padding: 6px 0 0 3px;
+    }
+
+    .imanage-work .documents .results .k-listview .grab {
+        position: absolute;
+    }
+
+        .imanage-work .documents .results .grab span {
+            display: inline-block;
+            position: relative;
+            cursor: grab;
+            margin-top: -2px;
+        }
+
+            .imanage-work .documents .results .grab span input {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 99;
+                opacity: 0;
+                cursor: grab;
+            }
+
+    .imanage-work .documents .k-grid .select {
+        padding-left: 5px;
+    }
+
+    .document-editor {
+        padding-top: 10px;
+    }
+
+    .document-viewer .dropzone {
+        border-top: 1px solid var(--separator);
+    }
+
+        .document-viewer .dropzone .target {
+            background-color: var(--image-drop-zone-background); 
+            color: var(--text-body);
+            width: 100%;
+            height: 75px;
+            font-size: .75rem;
+            text-transform: uppercase;
+        }
+
+            .document-viewer .dropzone .target.k-dropzone-hovered {
+                background-color: var(--btn-secondary-hover);
+                color: var(--btn-secondary);
+            }
+
+    .document-viewer .documents {
+        padding-left: 0;
+    }
+
+    .document-viewer .folder-tree,
+    .document-viewer .side-bar {
+        padding-right: 0;
+    }
+
+    .document-viewer .documents .search,
+    .document-viewer .documents .display-option {
+        padding: 5px;
+    }
+
+    .k-command-cell.text-end {
+        text-align: right;
+        padding: 0;
+    }
+
+    @@media screen and (max-width: 700px) {
+        .document-viewer.row .folder-tree.col {
+            border-right: 0;
+            border-bottom: 1px solid var(--separator);
+            margin-left: 15px;
+            margin-right: 15px;
+        }
+
+        .document-viewer.row .documents.col {
+            margin-left: 15px;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        iManage.initializeViewer(@(activePage));
+    });
+</script>

@@ -1,0 +1,331 @@
+﻿@model IEnumerable<AMSTotalAnnuitiesDueCostViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject ISystemSettings<AMSSetting> Settings
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IEntityService<CurrencyType> currencyTypeService;
+@{
+    var amsSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[amsSettings.LabelClient ?? ""];
+    var clientNameLabel = Localizer[amsSettings.LabelClientName ?? ""];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseNumberLabel = Localizer[amsSettings.LabelCaseNumber ?? ""];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = Localizer[widget.Title + " - {0}"];
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    int Ymax = Model.Max(x => x.TotalAnnuities) + 10;
+
+    var annuityCodeSetting = amsSettings.CPIClientCodeInvCurrency;
+
+    var annuityCodeCurrencyList = new List<SelectListItem>();
+    if (!String.IsNullOrEmpty(annuityCodeSetting))
+    {
+        var codeCurrency = annuityCodeSetting.Split('|').ToList();
+        foreach (string temp in codeCurrency)
+        {
+            var code = new SelectListItem()
+            {
+                Text = temp.Split(';')[0],
+                Value = temp.Split(';')[1]
+            };
+            annuityCodeCurrencyList.Add(code);
+        }
+    }
+
+    string annuityCode = userSettings.Property("AnnuityCode") != null ? (userSettings["AnnuityCode"] ?? "").Value<string>() ?? "" : "";
+
+    if (annuityCodeCurrencyList.Count == 1)
+    {
+        annuityCode = annuityCodeCurrencyList.ElementAt(0).Text;
+    }
+
+    var currencyFormat = string.Empty;
+    var currencyString = string.Empty;
+    if (!string.IsNullOrEmpty(amsSettings.WidgetCurrencyFormat))
+    {
+        currencyFormat = amsSettings.WidgetCurrencyFormat.Split("|")[0];
+        currencyString = amsSettings.WidgetCurrencyFormat.Split("|")[1];
+    }
+    var xAxisLabel = Localizer["Cost ("] + Localizer[currencyString] + ")";
+
+    if (!string.IsNullOrEmpty(annuityCode))
+    {
+        var currencyType = annuityCodeCurrencyList.Where(t => t.Text == annuityCode).Select(t => t.Value).FirstOrDefault();
+        var temp = currencyTypeService.QueryableList.Where(t => t.CurrencyTypeCode == currencyType).Select(t => t.Description).FirstOrDefault();
+
+        if (!string.IsNullOrEmpty(temp))
+            xAxisLabel = "Cost (in " + temp + ")";
+    }
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (string)a).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }    
+</style>
+<script>
+    var refresh = false;
+    var selectedCountry = "";
+
+    function saveAnnuityCode(e) {        
+        saveSetting(@widget.Id, `{ AnnuityCode: "${this.value() > "" ? this.value() : ""}" }`, function () { refresh = true; });
+    }
+    $(document).ready(function () {
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        if ('@(widget.IsDetail)' === '@true') {
+            var chart = $("#@userWidgetId").data("kendoChart");
+            chart.bind("seriesClick", onSeriesClick);
+            $("#@userWidgetId").attr("style", "position: static !important;");
+            $("#@userWidgetId-grid-header").hide();
+
+            var grid = $("#@userWidgetId-grid").data("kendoGrid");
+            grid.dataSource.read();
+        }
+    });
+
+    function onSeriesClick(e) {
+        var grid = $("#@userWidgetId-grid").data("kendoGrid");
+
+        if (e.dataItem) {
+            var tempCountry = e.dataItem.Country;
+            grid.dataSource.read({ userWidgetId: @widget.Id, country: tempCountry });
+
+            var gridTitle = "@gridDetailTitle";
+            $("#@userWidgetId-grid-title").text(gridTitle.replace("{0}", tempCountry));
+            $("#@userWidgetId-grid-header").show();
+
+            selectedCountry = tempCountry;            
+        }        
+    };
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("AMSTotalAnnuityCostDueThisYearDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id, country: selectedCountry });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+
+    function gridDetailSearchFilters() {
+        return { userWidgetId: @widget.Id, country: selectedCountry };
+    };
+</script>
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">        
+        <ul id="annuityCodeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Annuity Code"]</span>
+                <span>
+                    @(Html.Kendo().DropDownList()
+                        .Name(userWidgetId + "-annuitycode")
+                        .DataTextField("CPIClientCode")
+                        .DataValueField("CPIClientCode")
+                        .Value(annuityCode)
+                        .Text(annuityCode)
+                        .OptionLabel(new { CPIClientCode = ""})
+                        .DataSource(source =>
+                        {
+                            source.Read(read =>
+                        {
+                            read.Action("GetAMSCPIClientCodeList", "Dashboard");
+                        });
+                        })
+                        .Events(e =>
+                        {
+                            e.Change("saveAnnuityCode");
+                            e.DataBound($"function(e) {{ var data = e.sender.dataSource.data(); if (data && data.length == 1) {{ e.sender.select(0); $('#annuityCodeFilter_{@userWidgetId}').addClass('d-none');}} }}");
+                        })
+                        .HtmlAttributes(new { style = "width: 100px;"})
+                    )
+                </span>
+            </li>
+        </ul>        
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+
+@(Html.Kendo().Chart(Model)
+    .Name(userWidgetId)
+    .Title("")
+    .DataSource(ds => ds
+        .ServerOperation(false)
+        .Group(group => group.Add(model => model.Country))
+    )
+    .Legend(legend => legend
+        .Visible(true)
+        .Position(ChartLegendPosition.Right)
+    )
+    .Series(series => { series.Bubble(model => model.TotalCost, model => model.TotalAnnuities, model => model.TotalAnnuities); }
+    )
+    .SeriesColors(widget.SeriesColors)
+    .XAxis(axis => axis
+        .Title(xAxisLabel)
+    )
+    .YAxis(axis => axis
+        .Title(Localizer["Number of Annuities"])
+        .Max(Ymax)
+    )
+    .Tooltip(tooltip => tooltip
+        .Visible(true)
+        .Template(string.IsNullOrEmpty(widget.LabelTemplate) ? Localizer["Country: #= dataItem.Country # Annuities: #= dataItem.TotalAnnuities # Cost: #= kendo.toString(dataItem.TotalCost,'n0') #"] : widget.LabelTemplate)
+    )
+    //Settings for PDF export using kendo built-in function
+    .Pdf(pdf => pdf
+        .FileName(@widget.Title.ToString())
+        //.PaperSize("A4")
+        .Landscape(false)
+        .Margin(m => m
+            .Left(10)
+            .Right(10)
+            .Top(10)
+            .Bottom(10))
+    )
+)
+
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title"></span></h4>
+    </div>
+
+    @(Html.Kendo().Grid<AmsCaseListDrillDownViewModel>()
+                    .Name(userWidgetId+"-grid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                        columns.Bound(a => a.Country);
+                        columns.Bound(a => a.SubCase);
+                        columns.Bound(a => a.CPIClient);
+                        columns.Bound(a => a.CPICaseType);
+                        columns.Bound(a => a.CPITitle);
+                        columns.Bound(a => a.CPIAppNo);
+                        columns.Bound(a => a.CPIPatNo);
+                        columns.Bound(a => a.CPIExpireDate).Format("{0:dd-MMM-yyyy}");
+                        columns.Bound(a => a.AnnuityNoDue);
+                        columns.Bound(a => a.AnnuityDueDate).Format("{0:dd-MMM-yyyy}");
+                        columns.Bound(a => a.AnnuityCost).Format("{0:n}");
+                    })
+                    .ToolBar(tools => tools.Excel())
+                    .AutoBind(false)                    
+                    .Pageable(page => page.PageSizes(amsSettings.SearchResultsPageSizeOptions))
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .PageSize(amsSettings.SearchResultsPageSize)
+                        .Read(read => read.Action("AMSTotalAnnuityCostDueThisYearDetailRead", "Dashboard", new { userWidgetId = widget.Id })
+                        .Data("gridDetailSearchFilters"))
+                    )
+                    .Events(e => e.ExcelExport("gridExcelExport"))
+                    .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" })
+)
+    <style>
+        .k-chart {
+            margin: auto;
+        }
+    </style>
+}

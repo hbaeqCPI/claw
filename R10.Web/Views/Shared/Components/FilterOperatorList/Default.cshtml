@@ -1,0 +1,80 @@
+﻿@model string
+@{
+    var filterOperators = new List<FilterOperatorListViewModel>()
+    {
+        new FilterOperatorListViewModel()
+        {
+            Text = "=",
+            Value = "eq",
+            Description =  "Equals",
+            Icon = "fa-equals"
+        },
+        new FilterOperatorListViewModel()
+        {
+            Text = "<>",
+            Value = "neq",
+            Description = "Not Equal",
+            Icon = "fa-not-equal"
+        }
+    };
+
+    if (ViewBag.PropertyType != typeof(string))
+    {
+        filterOperators.Add(new FilterOperatorListViewModel()
+        {
+            Text = "<=",
+            Value = "lt",
+            Description = "Less Than",
+            Icon = "fa-less-than"
+        });
+        filterOperators.Add(new FilterOperatorListViewModel()
+        {
+            Text = "<=",
+            Value = "lte",
+            Description = "Less Than or Equal",
+            Icon = "fa-less-than-equal"
+        });
+        filterOperators.Add(new FilterOperatorListViewModel()
+        {
+            Text = ">=",
+            Value = "gt",
+            Description =  "Greater Than",
+            Icon = "fa-greater-than"
+        });
+        filterOperators.Add(new FilterOperatorListViewModel()
+        {
+            Text = ">=",
+            Value = "gte",
+            Description =  "Greater Than or Equal",
+            Icon = "fa-greater-than-equal"
+        });
+    }
+}
+@(Html.Kendo().DropDownList()
+        .Name(Model)
+        .DataTextField("Text")
+        .DataValueField("Value")
+        .BindTo(filterOperators)
+        .Value("=")
+        .HtmlAttributes(new { style = "width: 100%", id = $"{Model}_{ViewBag.PageId.ToString()}" })
+        .Template("<span class='k-state-default fal fo-icon #: data.Icon #'></span><span class='k-state-default fo-description'>#: data.Description #</span>")
+        .ValueTemplate("<span class='fal #: data.Icon #'></span>")
+    )
+<style>
+    #@Model-list {
+        width: unset !important;
+        height: unset !important;
+    }
+    #@Model-list .k-list-scroller {
+        height: unset !important;
+    }
+    #@Model-list .fo-icon {
+        display: inline-block;
+        padding-right: 10px;
+    }
+    #@Model-list .fo-description {
+        display: inline-block;
+        min-width: 100px;
+        font-size: .9rem;
+    }
+</style>

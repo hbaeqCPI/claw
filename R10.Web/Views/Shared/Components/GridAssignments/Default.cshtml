@@ -1,0 +1,175 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailPagePermission = Model.Permission ?? (DetailPagePermission)ViewData["PagePermission"] ;
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+    var gridName = $"assignmentsGrid_{ViewData["PageId"]}";
+
+    var assignmentStatusLinkUrl = Url.Action("DetailLink", "AssignmentStatus", new
+    {
+        //  Area = "Patent",
+        id = "actualValue"
+    });
+    var assignmentStatusTemplate = $"<span class='pr-3'>#=AssignmentStatus ? kendo.htmlEncode(AssignmentStatus) : ''#</span><i style='#=AssignmentStatus ? '' : 'display:none'#' class='fal fa-search-plus btn-link assignmentStatusLink' data-url='{assignmentStatusLinkUrl}' title='{Localizer["Open Assignment Status Screen"]}'></i>";
+
+    var system = Model.ParentScreen == "CountryApp" ? SystemType.Patent : SystemType.Trademark;
+    var screenCode = "asgmt";
+    var downloadUrl = Url.Action("ViewImage", "FileViewer", new {Area="", system = system, screenCode = screenCode, key = Model.ParentId, fileType = ImageHelper.CPiSavedFileType.Assignment });
+    var downloadLink = $"<a href='{downloadUrl}&thumbnailFile=#=DocFilePath#' title='{Localizer["Download?"]}' target='_blank'>#=CurrentDocFile#</a>";
+
+    if (Model.Permission.CanEditRecord)
+    {
+        downloadLink = $"{downloadLink}<a href='##' class='pl-3 delete-file-link' data-id='#:HistoryId#' title='{Localizer["Delete file"].ToString()}'><i class='fal fa-times-circle'></i></a>";
+    }
+
+    var downloadTemplate = "#if(CurrentDocFile){#" + downloadLink + " #}else{##}#";
+    var uploadTemplate = "#if(HistoryId > 0){# <a href='##' class='upload-link' data-id='#:HistoryId#' data-file='#:FileId#'><i class='fal fa-file-upload' style='font-size:1.5rem;'></i></a> #}else{# #}#";
+
+    if (!Model.Permission.CanEditRecord)
+    {
+        uploadTemplate = "<span></span>";
+    }
+
+}
+<div  data-upload-msg="@Localizer["Uploading a new file will overwrite the previous one. \n Do you want to continue?"]"
+     data-upload-title="@Localizer["Please Confirm"]"
+     data-delete-file-msg="@Localizer["Are you sure you want to delete this uploaded file?"]"
+     data-upload-success="@Localizer["File uploaded successfully."]"
+     data-viewer-url="@Url.Action("ZoomAssignmentLink", "DocViewer", new { Area = "Shared",system=system})" class="grid-container">
+
+@(Html.Kendo().Grid<AssignmentViewModel>()
+                                .Name(gridName)
+                                .Columns(columns =>
+                                {
+                                    columns.Bound(a => a.AssignmentFrom).Width(400)
+                                        .EditorTemplateName("ComboBox")
+                                        .EditorViewData(new { action = "GetPicklistData", controller = Model.Controller, dataValueField = "AssignmentFrom", property = "AssignmentFrom", limitToList = false })
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.AssignmentTo).Width(400)
+                                        .EditorTemplateName("ComboBox")
+                                        .EditorViewData(new { action = "GetPicklistData", controller = Model.Controller, dataValueField = "AssignmentTo", property = "AssignmentTo", limitToList = false })
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.AssignmentStatus)
+                                        .ClientTemplate(assignmentStatusTemplate)
+                                        //.EditorTemplateName("ComboBox")
+                                        //.EditorViewData(new { action = "GetAssignmentStatusList", controller = "AssignmentStatus", dataValueField = "AssignmentStatus", property = "AssignmentStatus" })
+                                        .EditorViewData(new { id = "AssignmentsGrid_AssignmentStatus_" + pageName })
+                                        .Width(200)
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.AssignmentDate)
+                                        .EditorTemplateName("Date")
+                                        .ClientTemplate("#= (AssignmentDate == null) ? '' : kendo.toString(AssignmentDate,'dd-MMM-yyyy')#")
+                                        .Width(180)
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.Reel).Width(100)
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.Frame).Width(100)
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                                    columns.Bound(a => a.Remarks)
+                                        .Visible(!detailPagePermission.HasLimitedRead)
+                                        .EditorTemplateName("TextArea")
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .HtmlAttributes(fullModify || detailPagePermission.CanEditRemarksOnly ? new { @class = "editable-cell" } : null);
+
+                                    columns.Bound(r => r.CurrentDocFile).ClientTemplate(downloadTemplate).Width(250);
+                                    //columns.Select().Width(50).HtmlAttributes(new { @class = "selector-only" });
+                                    columns.Command(command =>
+                                    {
+                command.Custom("View").Click("function(e) {" + pageName+".handleGridDocViewer(e,this)}").IconClass("k-icon fal fa-search-plus")
+                                        .Visible("function(dataItem) { return dataItem.DocFilePath !== null && dataItem.DocFilePath !== ''; }")
+                                    .HtmlAttributes(new { style = "width:80px;" });
+                                    }).Width(10);
+                                    columns.Bound(r => r.DocFilePath).Title(Localizer["Upload Doc"]).ClientTemplate(uploadTemplate);
+
+                                    columns.Command(command =>
+                                    {
+                                        if (detailPagePermission.CanDeleteRecord)
+                                            command.Custom("Delete")
+                                                    .Click("function(e) {" + pageName + ".deleteGridRow(e,this)}")
+                                                    .IconClass("k-icon fal fa-trash-alt")
+                                                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                                                    .HtmlAttributes(new { @class = "grid-action" });
+                                    }).Width(10);
+                                })
+                                .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                                .ToolBar(toolbar =>
+                                {
+                                    if (detailPagePermission.CanAddRecord)
+                                    {
+                                        toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+
+                                        if (Model.ParentScreen=="CountryApp")
+                                            toolbar.Custom().Name("InventorTransfer").IconClass("k-icon far fa-arrow-to-right").Text(Localizer["Transfer Application Inventor Ownership"]).HtmlAttributes(new { @class = "pr-2" });
+
+                                        toolbar.Custom().Name("Copy").IconClass("k-icon fal fa-copy").Text(Localizer["Copy"]).HtmlAttributes(new { @class = "pr-2" });
+                                    }
+                                    if (detailPagePermission.CanEditRecord || detailPagePermission.CanEditRemarksOnly)
+                                    {
+                                        toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                                        toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                                    }
+
+                                })
+                                .Editable(editable => editable.Enabled(detailPagePermission.CanEditRecord || detailPagePermission.CanEditRemarksOnly)
+                                            .Mode(GridEditMode.InCell).
+                                            ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                                .Sortable(sort => sort.AllowUnsort(false))
+        .Pageable(page => page.Responsive(false))
+        //  .Scrollable(s=>s.Height(200))
+                                .AutoBind(false)
+                                .DataSource(dataSource => dataSource
+                                .Ajax()
+                                .Batch(true)
+                                .PageSize(settings.SubFormPageSize)
+                                .ServerOperation(false)
+                                .Model(model =>
+                                {
+                                    model.Id(a => a.HistoryId);
+                                    model.Field(a => a.AssignmentFrom).Editable(fullModify);
+                                    model.Field(a => a.AssignmentTo).Editable(fullModify);
+                                    model.Field(a => a.AssignmentStatus).Editable(fullModify);
+                                    model.Field(a => a.AssignmentDate).Editable(fullModify);
+                                    model.Field(a => a.Reel).Editable(fullModify);
+                                    model.Field(a => a.Frame).Editable(fullModify);
+                                    model.Field(a => a.DocFilePath).Editable(false);
+                                    model.Field(a => a.CurrentDocFile).Editable(false);
+                                    model.Field(a => a.Remarks).Editable(detailPagePermission.CanEditRecord || detailPagePermission.CanEditRemarksOnly); ;
+                                })
+                                .Read(create => create.Action("AssignmentsRead", Model.Controller, new { parentId = Model.ParentId }))
+                                .Sort(sort => sort.Add("AssignmentDate").Descending())
+                                .Update(create => create.Action(detailPagePermission.CanEditRemarksOnly ? "AssignmentsUpdateRemarksOnly" : "AssignmentsUpdate", Model.Controller))
+                                .Destroy(create => create.Action("AssignmentDelete", Model.Controller))
+                                .Events(events =>
+                                {
+                                    events.Error("pageHelper.onGridError");
+                                })
+                                )
+                                .Events(events =>
+                                {
+                                    events.Edit(pageName + ".assignmentsEdit");
+                                })
+                                .HtmlAttributes(new { @class = "kendo-Grid" })
+)
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+

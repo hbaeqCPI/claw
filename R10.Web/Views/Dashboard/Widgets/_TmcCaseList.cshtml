@@ -1,0 +1,108 @@
+﻿@model IEnumerable<CaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IStringLocalizer<TrademarkResource> Localizer
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+
+    var userWidgetId = widget.Id.ToString() + "-tmc-caseList";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var template = string.IsNullOrEmpty(widget.Template) ? $"<div class='name d-flex  justify-content-between'><span><a href='./#=System#/#=IdType#/detail/#=Id#'>#=kendo.htmlEncode(CaseNumber)# </a></span></div><div class='title small ellipsis'>#= Title == null ? '&nbsp;' : kendo.htmlEncode(Title)#</div><div class='title small ellipsis'>{Localizer["Due Date"]}: #= DueDate == null ? '' : kendo.format('{{0:dd-MMM-yyyy}}', DueDate)#</div>" : widget.Template;
+    template = template.Replace("./#=System#/", $"{Url.ApplicationBaseUrl(Context.Request.Scheme)}/#=System#/");
+
+    bool allowPaging = userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? userSettings.Property("PageSize") != null ? (userSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    bool showSearchedSwitch = widgetSettings.Property("ShowSearchedSwitch") != null ? (widgetSettings["ShowSearchedSwitch"] ?? false).Value<bool>() : false;
+
+    bool showSettings = (showSearchedSwitch);
+
+    int searchedSwitch = userSettings.Property("SearchedSwitch") != null ? (userSettings["SearchedSwitch"] ?? 1).Value<int>() : 1;
+}
+
+<script>
+
+    $(document).ready(function () {
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#@userWidgetId-searched-switch");
+        $(document).on("click", "#@userWidgetId-searched-switch", function (e) {
+            saveSetting(@widget.Id, `{ SearchedSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+    });
+</script>
+
+@if (showSettings)
+{
+    <div class="widget-settings" style="max-height: 425px;">
+        <div class="settings-body">
+            @if (showSearchedSwitch)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@Localizer["Include searched requests"]</span>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@userWidgetId-searched-switch" type="checkbox" checked="@(searchedSwitch == -1)">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            }
+        </div>
+        <div class="settings-footer mt-4">
+            <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+        </div>
+    </div>
+}
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .ServerOperation(false)
+        )
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

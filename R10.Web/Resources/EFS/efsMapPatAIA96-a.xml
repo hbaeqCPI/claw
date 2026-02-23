@@ -1,0 +1,80 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+	<PDFFieldMapping>
+		<PdfField>FirstNamedInventortPatent Owner</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FirstNamedInventor</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Application NoPatent No</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AppNoPatNo</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>	
+	<PDFFieldMapping>
+		<PdfField>FiledIssue Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>FilIssDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Titled 1</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Title</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Assignee</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>OwnerName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Check Box9</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>OptionA</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>the United States Patent and Trademark Office at Reel</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Reel</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Frame</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>Frame</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Printed or Typed Name</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>AttorneyName</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Date</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>CurrentDate</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+	<PDFFieldMapping>
+		<PdfField>Title or Registration Number</PdfField>
+		<SourceTable>0</SourceTable>
+		<SourceField>RegistrationNumber</SourceField>
+		<SourceRow>0</SourceRow>
+		<SourceValue />
+	</PDFFieldMapping>
+</NewDataSet>

@@ -1,0 +1,86 @@
+﻿@model CountryLawChildViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+
+    var permission = Model.Permission;
+    var childLinkParam = $"{{country: '{Model.Country}', caseType: '{Model.CaseType}'}}";
+}
+
+@(Html.Kendo().Grid<TmkDesCaseTypeViewModel>()
+                     .Name("tmkDesCaseTypeGrid")
+                     .Columns(columns =>
+                     {
+                         columns.Bound(d => d.DesCountry).EditorTemplateName("ComboBox")
+                             .EditorViewData(new
+                             {
+                                 dataValueField = "Country",
+                                 action = "GetCountryList",
+                                 controller = "Country",
+                                 template = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                                 headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]),
+                                 onSelect = "function(e) { pageHelper.refreshGridNameField(e, 'DesCountryName'); }"
+                             }).Width(200);
+                         columns.Bound(d => d.DesCountryName);
+                         columns.Bound(d => d.DesCaseType).EditorTemplateName("ComboBox")
+                             .EditorViewData(new
+                             {
+                                 dataValueField = "CaseType",
+                                 action = "GetCaseTypesList",
+                                 controller = "CaseType",
+                                 template = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
+                                 headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["CaseType"], Localizer["Description"])
+                             }).Width(200);
+
+                         columns.Bound(d => d.DefaultCaseType).ClientTemplate("<i class='fa fal #: DefaultCaseType ? 'fa-check' : ''#'></i>")
+                                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
+                         columns.Bound(d => d.GenApp).ClientTemplate("<i class='fa fal #: GenApp ? 'fa-check' : ''#'></i>")
+                                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
+
+                         columns.Command(command =>
+                         {
+                             if (Model.CanDeleteChild)
+                                 command.Custom("Delete").Click("function(e) {tmkCountryLawPage.deleteGridRow(e,this)}").IconClass("k-icon fal fa-trash-alt")
+                                    .Text(Localizer["Delete"]);
+                         }).Width(10);
+                     })
+                     .Pageable(page => page.Responsive(false))
+                     .Sortable(sort => sort.AllowUnsort(false))
+                     .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
+                     .ToolBar(toolbar =>
+                     {
+                         if (permission.CanAddRecord)
+                         {
+                             toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]);
+                         }
+
+                         if (permission.CanEditRecord)
+                         {
+                             toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                             toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                         }
+
+                     })
+                     .Editable(editable => editable.Enabled(permission.CanEditRecord)
+                         .Mode(GridEditMode.InCell).
+                         ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+                     .AutoBind(false)
+                     .DataSource(dataSource => dataSource
+                         .Ajax()
+                         .Batch(true)
+                         .ServerOperation(false)
+                         .Model(model =>
+                         {
+                             model.Id(d => d.DesCaseTypeID);
+                             model.Field(d => d.DesCountryName).Editable(false);
+                             model.Field(d => d.GenApp).DefaultValue(false);
+                         })
+                         .Read(create => create.Action("DesCaseTypeRead", "CountryLaw").Data(childLinkParam))
+                         .Update(create => create.Action("DesCaseTypeUpdate", "CountryLaw").Data(childLinkParam))
+                         .Destroy(create => create.Action("DesCaseTypeDelete", "CountryLaw"))
+                         .Events(events =>
+                         {
+                             events.Error("pageHelper.onGridError");
+                         })
+                     )
+                     .HtmlAttributes(new { @class = "kendo-Grid" })
+)

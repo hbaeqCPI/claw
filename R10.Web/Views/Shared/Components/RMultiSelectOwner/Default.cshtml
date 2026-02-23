@@ -1,0 +1,49 @@
+﻿@using  R10.Web.Areas
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@model ReportPartialLookUpViewModel
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var ownerLabel = settings.LabelOwner;
+    var ownerNameLabel = settings.LabelOwnerName;
+}
+<div class="form-group float-label col-xl-4 col-5 OwnerMultiSelectClass" hidden>
+    <label>@Localizer[ownerLabel + "s"]</label>
+    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+        {
+            Controller = Model.Controller,
+            Area = Model.Area,
+            Action = "GetOwnerList",
+            Name = "Owners_Options",
+            DataTextProperty = "OwnerCode",
+            DataValueProperty = "OwnerCode",
+            ListWidth = 500,
+            HeaderTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer[ownerLabel], @Localizer[ownerNameLabel]),
+            ItemTemplate = ComboBoxHelper.GetItemTemplate("OwnerCode", "OwnerName"),
+        })
+
+</div>
+<div class="form-group float-label col-xl-4 col-5 OwnerComboBoxClass">
+    <label>@Localizer[ownerLabel]</label>
+    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.OwnerCode("Owner", @Localizer[ownerLabel], @Localizer[ownerNameLabel], Model.Controller, "", Model.Area))
+</div>
+@await Component.InvokeAsync("SingleMultiSwitcher", new { MultiClass = "OwnerMultiSelectClass", SingleClass = "OwnerComboBoxClass" })
+<div class="form-group float-label col-xl-6 col-7 OwnerNameMultiSelectClass" hidden>
+    <label>@Localizer[ownerNameLabel + "s"]</label>
+    @await Component.InvokeAsync("MultiSelect", new MultiSelectOptions
+{
+   Controller = Model.Controller,
+   Area = Model.Area,
+   Action = "GetOwnerList",
+   Name = "OwnerNames_Options",
+   DataTextProperty = "OwnerName",
+})
+
+</div>
+<div class="form-group float-label col-xl-6 col-7 OwnerNameComboBoxClass">
+    <label>@Localizer[ownerNameLabel]</label>
+    @await Component.InvokeAsync("ComboBox", new { name = "OwnerName", controller = Model.Controller, action = "GetOwnerList", area = Model.Area })
+</div>
+@await Component.InvokeAsync("SingleMultiSwitcher", new { MultiClass = "OwnerNameMultiSelectClass", SingleClass = "OwnerNameComboBoxClass" })

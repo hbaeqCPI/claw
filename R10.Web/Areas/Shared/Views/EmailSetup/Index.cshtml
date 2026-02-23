@@ -1,0 +1,8 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Notification Setup"];
+    ViewData["ActivePage"] = "emailSetupPage";
+}
+
+@await Html.PartialPageAsync(Model.Page, Model)

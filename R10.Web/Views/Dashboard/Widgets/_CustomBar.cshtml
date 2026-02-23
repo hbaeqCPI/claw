@@ -1,0 +1,336 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IChildEntityService<Invention, PatKeyword> patKeywordService;
+@inject IEntityService<PatCaseType> _patCaseTypeService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var clientLabel = Localizer[settings.LabelClient];
+    var clientNameLabel = Localizer[settings.LabelClientName];
+    var keywordLabel = Localizer[settings.LabelKeyword ?? "Keywords"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    bool showClientOption = widgetSettings.Property("ShowClient") != null ? (widgetSettings["ShowClient"] ?? false).Value<bool>() : false;
+    bool showPatKeywordOption = widgetSettings.Property("ShowPatKeyword") != null ? widgetSettings["ShowPatKeyword"].Value<bool>() : false;
+    bool showPatCaseTypeOption = widgetSettings.Property("ShowPatCaseTypeOption") != null ? widgetSettings["ShowPatCaseTypeOption"].Value<bool>() : false;
+    bool showSettings = (showClientOption || showPatKeywordOption || showPatCaseTypeOption);
+    var rotationDegree = Model.Count() > 5 ? 90 : 0;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<KeywordViewModel> patKeywords = new List<KeywordViewModel>();
+
+    if (userSettings.Property("PatKeywords") != null)
+    {
+        try
+        {
+            int[] keywordsFilter = ((JArray)userSettings.Property("PatKeywords").Value).Select(a => (int)a).ToArray();
+
+            if (keywordsFilter.Count() > 0)
+            {
+                patKeywords = await patKeywordService.QueryableList
+                                .Where(c => keywordsFilter.Contains(c.KwdId))
+                                .Select(c => new KeywordViewModel
+                                {
+                                    KwdId = c.KwdId,
+                                    Keyword = c.Keyword
+                                })
+                                .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<PatCaseType> patCaseTypes = new List<PatCaseType>();
+
+    if (userSettings.Property("PatCaseTypes") != null)
+    {
+        try
+        {
+            int[] patCaseTypeFilter = ((JArray)userSettings.Property("PatCaseTypes").Value).Select(a => (int)a).ToArray();
+
+            if (patCaseTypeFilter.Count() > 0)
+            {
+                patCaseTypes = await _patCaseTypeService.QueryableList
+                        .Where(c => patCaseTypeFilter.Contains(c.CaseTypeId))
+                        .Select(c => new PatCaseType
+                        {
+                            CaseTypeId = c.CaseTypeId,
+                            CaseType = c.CaseType
+                        })
+                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+        }
+    }
+}
+
+<script>
+
+    $(document).ready(function () {
+        var patCaseTypeList = [@String.Join(",", patCaseTypes.Select(c => c.CaseTypeId).ToList())];
+        var patKwList = [@String.Join(",", patKeywords.Select(a => a.KwdId).ToList())];
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+        var refresh = false;
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#patKeywordFilter_@userWidgetId .delete-patKw");
+        $(document).off("change", "#PatKeyword_@userWidgetId");
+        $(document).on("click", "#patKeywordFilter_@userWidgetId .delete-patKw", function (e) {
+            var item = $.inArray($(this).data("id"), patKwList);
+
+            if (item !== -1) {
+                patKwList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ PatKeywords: [${patKwList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#PatKeyword_@userWidgetId", function (e) {
+            var kw = $(this).data("kendoComboBox");
+
+            if (kw.selectedIndex >= 0) {
+                var dataItem = kw.dataItem(kw.selectedIndex);
+
+                var KwId = dataItem.KwId;
+                var Keyword = dataItem.Keyword;
+
+                if ($.inArray(KwId, patKwList) == -1) {
+                    patKwList.push(KwId);
+                    $("#patKeywordFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="patKw-code">${Keyword}</span></div><div class="delete-filter delete-patKw" data-id="${KwId}" title="Remove ${Keyword}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ PatKeywords: [${patKwList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            kw.value("");
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#patCaseTypeFilter_@userWidgetId .delete-patcaseType");
+        $(document).off("change", "#PatCaseType_@userWidgetId");
+        $(document).on("click", "#patCaseTypeFilter_@userWidgetId .delete-patcaseType", function (e) {
+            var item = $.inArray($(this).data("id"), patCaseTypeList);
+
+            if (item !== -1) {
+                patCaseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#PatCaseType_@userWidgetId", function (e) {
+            var patCaseType = $(this).data("kendoComboBox");
+
+            if (patCaseType.selectedIndex >= 0) {
+                var dataItem = patCaseType.dataItem(patCaseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, patCaseTypeList) == -1) {
+                    patCaseTypeList.push(caseTypeId);
+                    $("#patCaseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="patCaseType-code">${caseTypCode}</span></div><div class="delete-filter delete-patcaseType" data-id="${caseTypeId}" title="Remove ${caseTypCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+            patCaseType.value("");
+        });
+
+    });
+</script>
+
+@if (showSettings)
+{
+    <div class="widget-settings" style="max-height: 425px;">
+        <div class="settings-body">
+            @if (showClientOption)
+            {
+                <ul id="clientFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@clientLabel</span>
+                        <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", @clientLabel, @clientNameLabel, "Client", "Shared", userWidgetId))</span>
+                    </li>
+                    @foreach (ClientListViewModel client in clients)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="client-code">@client.ClientCode</span>
+                                <span class="client-name">@client.ClientName</span>
+                            </div>
+                            <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showPatKeywordOption)
+            {
+                <ul id="patKeywordFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@keywordLabel</span>
+                        <span>
+                            @await Component.InvokeAsync("ComboBox", new { name = "PatKeyword", action = "GetPatKeywordList", screen = userWidgetId, textProperty = "Keyword", valueProperty = "KwId" })
+                        </span>
+                    </li>
+                    @foreach (KeywordViewModel keyword in patKeywords)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="patKw-code">@keyword.Keyword</span>
+                            </div>
+                            <div class="delete-filter delete-patKw" data-id="@keyword.KwdId" title="Remove @keyword.Keyword"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showPatCaseTypeOption)
+            {
+                <ul id="patCaseTypeFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@Localizer["Case Type(s)"]</span>
+                        <span>@await Component.InvokeAsync("ComboBox", new { name = "PatCaseType", action = "GetCaseTypeList", controller = "CaseType", area = "Patent", screen = userWidgetId, textProperty = "CaseType", valueProperty = "CaseTypeId", itemTemplate = "<div class='row'><div class='col-md-3'><span>#: data.CaseType  #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>", listWidth = 450 })</span>
+                    </li>
+                    @foreach (PatCaseType caseType in patCaseTypes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="patCaseType-code">@caseType.CaseType</span>
+                            </div>
+                            <div class="delete-filter delete-patcaseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+        <div class="settings-footer mt-4">
+            <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+        </div>
+    </div>
+}
+
+@(Html.Kendo().Chart(Model)
+    .Name(userWidgetId)
+    .Title("")
+    .Legend(legend => legend
+        .Visible(true)
+        .Position(ChartLegendPosition.Top)
+    )
+    .ChartArea(chartArea => chartArea
+        .Background("transparent")
+    )
+    .Series(series => series
+        .Column(model => model.Value, model => model.Category)
+        //.ColorField("Color")
+        .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+        .Labels(labels => labels
+            .Visible(true)
+            .Template("#= value == null ? '' : value #")
+            .Background("transparent")
+            .Position(ChartBarLabelsPosition.OutsideEnd)
+        )
+    )
+    .CategoryAxis(axis => axis.Categories(model => model.Category).Labels(label => label.Rotation(rotationDegree)))
+    .DataSource(dataSource => dataSource
+        .Group(group => group.Add(model => model.Group))
+    )
+    .SeriesColors((string[])widget.SeriesColors)
+    //.SeriesColors(widget.SeriesColors)
+    .Tooltip(tooltip => tooltip
+        .Visible(true)
+        //.Format("{0}")
+                .Template(string.IsNullOrEmpty(widget.TooltipTemplate) ? "#= series.name # (#= category #): #= kendo.format('{0:n0}', value) #" : widget.TooltipTemplate)
+    )
+    //Settings for PDF export using kendo built-in function
+    .Pdf(pdf => pdf
+        .FileName(@widget.Title.ToString())
+        //.PaperSize("A4")
+        .Landscape(false)
+        .Margin(m => m
+            .Left(10)
+            .Right(10)
+            .Top(10)
+            .Bottom(10))
+    )
+)

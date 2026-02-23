@@ -1,0 +1,147 @@
+﻿@model DocImageDetailDTO
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+
+
+    var docLink = Model.DocumentLink.Split("|");
+    var screenCode = docLink[1];
+    var key = docLink[3] != null ? Convert.ToInt32(docLink[3]) : 0;
+
+    var zoomUrl = @Url.Action("ZoomDocument", "DocViewer", new { fileName = Model.DocFileName, system = Model.SystemType, screenCode, key, fileType= ImageHelper.CPiSavedFileType.Image });
+    var thumbnailUrl = @Url.Action("GetThumbnail", "FileViewer", new { Area = "", system = Model.SystemType, thumbnailFile = Model.ThumbnailFile, screenCode,key });
+}
+
+<div class="page-content">
+    <div class="form-row">
+        <div class="col">
+            <span id="imageLinkHeader" style="font-weight:600">@Model.ImageTitle</span>
+        </div>
+        <div class="col d-flex justify-content-end">
+            <span style="font-style: italic">@Localizer["Document"]</span>
+        </div>
+    </div>
+</div>
+
+<div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="userFolderTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="fixedImageDetailTab" data-toggle="tab" role="tab" aria-controls="fixedImageDetailTabContent" aria-selected="true" href="#fixedImageDetailTabContent">@Localizer["Image/Link Details"]</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane show active" id="fixedImageDetailTabContent" role="tabpanel" aria-labelledby="fixedImageDetailTab" data-refresh-url="@Url.Action("UserFolderDetailEdit", "Documents")">
+            <div class="form-row">
+                <div class="col-10">
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label asp-for="ImageTitle"></label>
+                                <input type="text" class="form-control form-control-sm" asp-for="ImageTitle" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label asp-for="DocUrl"></label>
+                                <input type="text" class="form-control form-control-sm" asp-for="DocUrl" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label asp-for="UserFileName"></label>
+                                <input type="text" class="form-control form-control-sm" asp-for="UserFileName" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row pt-2">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="IsDefault" class="custom-control-input" disabled />
+                                    <label asp-for="IsDefault" class="custom-control-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="IsPrintOnReport" class="custom-control-input" disabled />
+                                    <label asp-for="IsPrintOnReport" class="custom-control-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <div class=" custom-control custom-checkbox">
+                                    <input asp-for="IsPublic" class="custom-control-input" disabled />
+                                    <label asp-for="IsPublic" class="custom-control-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label asp-for="IsDefault"></label>
+                                <input type="text" class="form-control form-control-sm" asp-for="IsDefault" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label asp-for="IsPrintOnReport"></label>
+                                <textarea class="form-control form-control-sm" rows="4" asp-for="IsPublic" readonly></textarea>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="col-2">
+                    @if (Model.IsDocViewable && !string.IsNullOrEmpty(Model.DocFileName))
+                    {
+                        <div class="text-wrap text-center pt-5" style="max-width: 100%;">
+                            @if (Model.IsImage)
+                            {
+                                <img class="detail-image" title="@Model.ImageTitle" src="@thumbnailUrl" asp-append-version="true" />
+                            }
+                            <div>
+                                <a href='@zoomUrl' id="docOpenViewer" class='details-link'>@Localizer["Click here to view document."]</a>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.IsDocLinkable)
+                    {
+                        <div class="text-wrap text-center pt-5" style="max-width: 100%;">
+                            <a role="button" href="@Model.DocUrl" target="_blank"><span class="details-link"></span>@Localizer["Click here to open link."]</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .detail-image {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+
+
+<script>
+    $(document).ready(function () {
+        $("#docOpenViewer").on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var url = $(this).attr("href");
+            documentPage.zoomDocument(url);
+        });
+    });
+</script>

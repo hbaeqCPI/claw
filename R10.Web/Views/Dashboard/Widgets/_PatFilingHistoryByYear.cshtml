@@ -1,0 +1,374 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@inject IClientService ClientService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IEntityService<PatCaseType> _caseTypeService
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var patSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[patSettings.LabelClient];
+    var clientNameLabel = Localizer[patSettings.LabelClientName];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+    var settings = widget.UserSettings;
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    if (settings.Property("Countries") != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)settings.Property("Countries").Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<PatCaseType> caseTypes = new List<PatCaseType>();
+    if (settings.Property("CaseTypes") != null)
+    {
+        try
+        {
+            int[] caseTypeFilter = ((JArray)settings.Property("CaseTypes").Value).Select(a => (int)a).ToArray();
+
+            if (caseTypeFilter.Count() > 0)
+            {
+                caseTypes = await _caseTypeService.QueryableList
+                                .Where(c => caseTypeFilter.Contains(c.CaseTypeId))
+                                .Select(c => new PatCaseType
+                                {
+                                    CaseTypeId = c.CaseTypeId,
+                                    CaseType = c.CaseType
+                                })
+                                .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (settings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)settings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    string caseTypeOpValue = settings.Property("CaseTypeOp") != null ? ((settings["CaseTypeOp"] ?? "eq").Value<string>() ?? "eq") : "eq";    
+}
+
+<style>
+    #countryFilter_@userWidgetId .country-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var refresh = false;
+
+    function saveCaseTypeOp(e) {
+        saveSetting(@widget.Id, `{ CaseTypeOp: "${this.selectedIndex >= 0 ? this.dataItem(this.selectedIndex).Value : ""}" }`, function () { refresh = true; });
+    }
+
+    $(document).ready(function () {
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var caseTypeList = [@String.Join(",", caseTypes.Select(c => c.CaseTypeId).ToList())];
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+        
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+         $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+
+        $(document).off("click", "#caseTypeFilter_@userWidgetId .delete-caseType");
+        $(document).off("change", "#CaseType_@userWidgetId");
+        $(document).on("click", "#caseTypeFilter_@userWidgetId .delete-caseType", function (e) {
+            var item = $.inArray($(this).data("id"), caseTypeList);
+
+            if (item !== -1) {
+                caseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ CaseTypes: [${caseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#CaseType_@userWidgetId", function (e) {
+            var caseType = $(this).data("kendoComboBox");
+
+            if (caseType.selectedIndex >= 0) {
+                var dataItem = caseType.dataItem(caseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, caseTypeList) == -1) {
+                    caseTypeList.push(caseTypeId);
+                    $("#caseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="caseType-code">${caseTypCode}</span></div><div class="delete-filter delete-caseType" data-id="${caseTypeId}" title="Remove ${caseTypCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ CaseTypes: [${caseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            caseType.value("");
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+    });
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "CountryApplicationLookup", "Patent", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+
+            }
+        </ul>
+        <ul id="caseTypeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Case Type(s)"]</span>
+                <span style="display:flex !important;">
+                    @(Html.Kendo().DropDownList()
+                        .Name("CaseTypeOp_" + userWidgetId)
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<FilterOperatorListViewModel>()
+                        {
+                            new FilterOperatorListViewModel()
+                            {
+                                Text = "=",
+                                Value = "eq",
+                                Description =  "Equals",
+                                Icon = "fa-equals"
+                            },
+                            new FilterOperatorListViewModel()
+                            {
+                                Text = "<>",
+                                Value = "neq",
+                                Description = "Not Equal",
+                                Icon = "fa-not-equal"
+                            }
+                        })                        
+                        .Value(caseTypeOpValue)                                                
+                        .Template("<span class='k-state-default fal fo-icon #: data.Icon #'></span><span class='k-state-default fo-description'>#: data.Description #</span>")
+                        .ValueTemplate("<span class='fal #: data.Icon #'></span>")
+                        .Events(e =>
+                            {
+                                e.Change("saveCaseTypeOp");
+                            })
+                        .HtmlAttributes(new { style = "width: 50%" })
+                    )                
+                    @await Component.InvokeAsync("ComboBox", new { 
+                        name = "CaseType", 
+                        action = "GetCaseTypeList", 
+                        controller = "CaseType", 
+                        area = "Patent", 
+                        screen = userWidgetId, 
+                        textProperty = "CaseType", 
+                        valueProperty = "CaseTypeId", 
+                        headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Case Type"], Localizer["Description"]),
+                        itemTemplate = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),                        
+                        listWidth = 450 })
+                </span>
+            </li>
+            @foreach (PatCaseType caseType in caseTypes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="caseType-code">@caseType.CaseType</span>
+                    </div>
+                    <div class="delete-filter delete-caseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", clientLabel, clientNameLabel, "Invention", "Patent", userWidgetId))</span>
+            </li>
+            @foreach (ClientListViewModel client in clients)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Chart(Model)
+    .Name(userWidgetId)
+    .Legend(legend => legend
+        .Visible(true)
+        .Position(ChartLegendPosition.Top)
+    )
+    .Title("")
+    .ChartArea(chartArea => chartArea
+        .Background("transparent")
+    )
+    .Series(series => series
+        .Line(model => model.Value, model => model.Category)
+        .Style(ChartSeriesStyle.Smooth)
+        .ColorField("Color")
+        .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+        .Labels(labels => labels
+            .Visible(true)
+            .Format("{0}")
+            .Template(string.IsNullOrEmpty(widget.LabelTemplate) ? "#= kendo.format('{0:n0}', value) #" : widget.LabelTemplate)
+            .Position(ChartBarLabelsPosition.OutsideEnd)
+        )
+    )
+    .DataSource(dataSource => dataSource
+        .Group(group => group.Add(model => model.Group))
+    )
+
+    .SeriesColors(widget.SeriesColors)
+    .Tooltip(tooltip => tooltip
+        .Visible(true)
+        .Template(string.IsNullOrEmpty(widget.TooltipTemplate) ? "#= series.name # (#= category #): #= kendo.format('{0:n0}', value) #" : widget.TooltipTemplate)
+    )            
+    //Settings for PDF export using kendo built-in function
+    .Pdf(pdf => pdf
+        .FileName(@widget.Title.ToString())
+        //.PaperSize("A4")
+        .Landscape(false)
+        .Margin(m => m
+            .Left(10)
+            .Right(10)
+            .Top(10)
+            .Bottom(10))
+    )
+)

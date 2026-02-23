@@ -1,0 +1,542 @@
+﻿@model AttorneyDetailViewModel
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@inject ICountryLookupViewModelService CountryLookupService
+@inject ISystemSettings<AMSSetting> AMSSettings
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthorizationService
+@{
+    var id = Model.AttorneyID;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
+
+    var countryLabel = SharedLocalizer["Country"];
+    var countryNameLabel = SharedLocalizer["Country Name"];
+
+    var amsSettings = await AMSSettings.GetSetting();
+    var showReminderSettings = User.IsInSystem(SystemType.AMS) && amsSettings.IsSendRemindersToAttorney;
+    var showPrepay = false; //prepay reminders are always sent to clients
+    bool isTimeTrackerOn = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessTimeTrackerAuxiliary)).Succeeded;
+    var childViewModel = new ChildViewModel { Id = id, Permission = detailPagePermission };
+    var pageId = ViewData["PageId"];
+    var settings = await Settings.GetSetting();
+    var isShowCustomFieldOn = settings.IsShowCustomFieldOn;
+}
+
+<form cpi-detail-form action="@(detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" :"Save")">
+    <input type="hidden" asp-for="AttorneyID" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    <div class="page-content  detail cpiMainEntry">
+        <div class="form-row">
+            @if (User.IsAdmin())
+            {
+            <div class="order-md-last order-md-3 col-md-2 text-right">
+                @if (Model.IsPatentUser) 
+                {
+                    <span class="badge badge-info badge-dm-pat badge-pill ml-1" title="@SharedLocalizer["Patent User"]">PAT</span>
+                }
+                @if (Model.IsTrademarkUser) 
+                {
+                    <span class="badge badge-info badge-dm-tmk badge-pill ml-1" title="@SharedLocalizer["Trademark User"]">TMK</span>
+                }
+                @if (Model.IsGeneralMatterUser) 
+                {
+                    <span class="badge badge-info badge-dm-gm badge-pill ml-1" title="@SharedLocalizer["General Matter User"]">GM</span>
+                }
+            </div>
+            }
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label asp-for="AttorneyCode"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AttorneyCode" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="AttorneyCode"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="AttorneyName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AttorneyName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="AttorneyName"></span>
+                </div>
+            </div>
+             <div class="col-md-2 pt-md-3">
+                    @if (isReadOnly)
+                    {
+                        @(Html.Kendo().CheckBoxFor(m => m.IsActive).HtmlAttributes(new { id="Atty_IsActive", disabled = "true" }))
+                    }
+                    else
+                    {
+                        @(Html.Kendo().CheckBoxFor(m => m.IsActive).HtmlAttributes(new { id="Atty_IsActive"}))
+                    }
+            </div>
+        </div>
+    </div>
+    <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+        @if (!addMode && isTimeTrackerOn)
+        {
+            <li class="nav-item">
+                <a class="nav-link active" id="timeTrackersTab" data-toggle="tab" role="tab" aria-controls="timeTrackersTabContent" aria-selected="false" href="#timeTrackersTabContent">@SharedLocalizer["Time Tracker"]</a>
+            </li>
+        }
+        <li class="nav-item">
+            <a class="nav-link @((addMode || !isTimeTrackerOn)? "active" : "")" id="attorneyDetailMainTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailMainTabContent" aria-selected="true" href="#attorneyDetailMainTabContent">@SharedLocalizer["Attorney Info"] </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="attorneyDetailAddressTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailAddressTabContent" aria-selected="false" href="#attorneyDetailAddressTabContent">@SharedLocalizer["Address"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="attorneyDetailPOBoxAddressTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailPOBoxAddressTabContent" aria-selected="false" href="#attorneyDetailPOBoxAddressTabContent">@SharedLocalizer["PO Box"]</a>
+        </li>
+        @if (showReminderSettings)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="attorneyDetailAMSSettingsTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailAMSSettingsTabContent" aria-selected="false" href="#attorneyDetailAMSSettingsTabContent">@SharedLocalizer["AMS Settings"]</a>
+            </li>
+        }
+        @if (!detailPagePermission.HasLimitedRead)
+        {
+            <li class="nav-item">
+                <a class="nav-link @(string.IsNullOrEmpty(Model.Remarks) ? null : "has-remarks")" id="attorneyDetailRemarksTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailRemarksTabContent" aria-selected="false" href="#attorneyDetailRemarksTabContent">@SharedLocalizer["Remarks"]</a>
+            </li>
+        }
+        @if (isShowCustomFieldOn && Model.SysCustomFieldSettings != null && Model.SysCustomFieldSettings.Any())
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="attorneyCustomFieldTab" data-toggle="tab" role="tab" aria-controls="attorneyCustomFieldTabContent" aria-selected="false" href="#attorneyCustomFieldTabContent">@SharedLocalizer[settings.AuxCustomFieldsTabLabel]</a>
+            </li>
+        }
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane page-content cpiMainEntry show @((addMode || !isTimeTrackerOn)? "active" : "")" id="attorneyDetailMainTabContent" role="tabpanel" aria-labelledby="attorneyDetailMainTab">
+            <div class="form-row">
+                <div class="col-sm-6 col-md-6 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="Language"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="Language" readonly />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.LanguageWithLink("Language", Model.Language))
+                        }
+                    </div>
+                </div>
+                @if (isTimeTrackerOn)
+                {
+                    <div class="col-sm-6 col-md-6 col-lg-3 col-xl-2">
+                        <div class="form-group float-label">
+                            <label asp-for="HourlyRate"></label>
+                                <input type="number" class="form-control form-control-sm" asp-for="HourlyRate" asp-is-readonly="@isReadOnly" />
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="form-row mt-4">
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="PhoneNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="PhoneNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="PhoneNumber"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="FaxNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="FaxNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="FaxNumber"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="MobileNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="MobileNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="MobileNumber"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="EMail"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="EMail" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="EMail"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="WebSite"></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-sm" asp-for="WebSite" asp-is-readonly="@isReadOnly" />
+                            @if (!string.IsNullOrEmpty(Model.WebSite))
+                            {
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary p-0 pl-2 pr-2" type="button" onClick="window.open('@Model.WebSite')" title="@SharedLocalizer["Open website in new window."]"><i class="fal fa-external-link"></i></button>
+                                </div>
+                            }
+                        </div>
+                        <span asp-validation-for="WebSite"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="RegistrationNumber"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="RegistrationNumber" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="RegistrationNumber"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailAddressTabContent" role="tabpanel" aria-labelledby="attorneyDetailAddressTab">
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="Address1"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Address1" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="Address1"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="Address2" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Address2"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="Address3" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Address3"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1 pb-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="Address4" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Address4"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="City"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="City" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="City"></span>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 col-xl-3">
+                    <div class="form-group float-label">
+                        <label asp-for="State"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="State" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="State"></span>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-2 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="ZipCode"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="ZipCode" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="ZipCode"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="Country"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="Country" disabled />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country, showLinkButton: User.IsInSystem(CountryLookupService.CountrySource)))
+                            <span asp-validation-for="Country"></span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-8 col-lg-9 col-xl-7">
+                    <div class="form-group float-label">
+                        <label for="Country_@(ViewData["PageId"])_Name">@SharedLocalizer["Country Name"]</label>
+                        <input type="text" class="form-control form-control-sm" id="Country_@(ViewData["PageId"])_Name" readonly="readonly" asp-for="CountryName" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailPOBoxAddressTabContent" role="tabpanel" aria-labelledby="attorneyDetailPOBoxAddressTab">
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="POAddress1"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POAddress1" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POAddress1"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress2" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress2"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress3" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress3"></span>
+                </div>
+            </div>
+            <div class="form-row pt-1 pb-1">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <input type="text" class="form-control form-control-sm" asp-for="POAddress4" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="POAddress4"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-7 col-lg-6 col-xl-4">
+                    <div class="form-group float-label">
+                        <label asp-for="POCity"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POCity" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POCity"></span>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 col-xl-3">
+                    <div class="form-group float-label">
+                        <label asp-for="POState"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POState" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POState"></span>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-2 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="POZipCode"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="POZipCode" asp-is-readonly="@isReadOnly" />
+                        <span asp-validation-for="POZipCode"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="POCountry"></label>
+                        @if (isReadOnly)
+                        {
+                            <input type="text" class="form-control form-control-sm" asp-for="POCountry" disabled />
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("POCountry", countryLabel, countryNameLabel, Model.POCountry, showLinkButton: User.IsInSystem(CountryLookupService.CountrySource)))
+                            <span asp-validation-for="POCountry"></span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-8 col-lg-9 col-xl-7">
+                    <div class="form-group float-label">
+                        <label for="POCountry_@(ViewData["PageId"])_Name">@SharedLocalizer["Country Name"]</label>
+                        <input type="text" class="form-control form-control-sm" id="POCountry_@(ViewData["PageId"])_Name" readonly="readonly" asp-for="POCountryName" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (showReminderSettings)
+        {
+            <input type="hidden" asp-for="ReceiveReminderOnline" />
+            <input type="hidden" asp-for="ReceiveReminderReport" />
+            <input type="hidden" asp-for="ReceivePrepayReminder" />
+            <input type="hidden" asp-for="LastReminderSentDate" />
+            <input type="hidden" asp-for="LastConfirmationLetterSentDate" />
+            <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailAMSSettingsTabContent" role="tabpanel" aria-labelledby="attorneyDetailAMSSettingsTab">
+                <div class="form-row">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl3">
+                        @if (amsSettings.HasConfirmation)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <label for="ReceiveConfirmationLetter">@SharedLocalizer[$"Receive Confirmation"]</label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="ReceiveConfirmationLetter" name="ReceiveConfirmationLetter" checked="@(Model.ReceiveConfirmationLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        }
+                        @if (showPrepay)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <label asp-for="PayBeforeSending"></label>
+                                <span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="PayBeforeSending" name="PayBeforeSending" checked="@(Model.PayBeforeSending ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
+                        @if (amsSettings.HasConfirmation)
+                        {
+                            <div class="form-group float-label confirmation-cover-letter">
+                                <label asp-for="ConfirmationCoverLetter"></label>
+                                @if (isReadOnly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" asp-for="ConfirmationCoverLetter" disabled />
+                                }
+                                else
+                                {
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("ConfirmationCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSConfirmationCoverLetter).Name, Model.ConfirmationCoverLetter))
+                                    <span asp-validation-for="ConfirmationCoverLetter"></span>
+                                }
+                            </div>
+                        }
+                        @if (showPrepay)
+                        {
+                            <div class="form-group float-label">
+                                <label asp-for="PrePayCoverLetter"></label>
+                                @if (isReadOnly)
+                                {
+                                    <input type="text" class="form-control form-control-sm" asp-for="PrePayCoverLetter" disabled />
+                                }
+                                else
+                                {
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("PrePayCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSReminderCoverLetter).Name, Model.PrePayCoverLetter))
+                                    <span asp-validation-for="PrePayCoverLetter"></span>
+                                }
+                            </div>
+                        }
+                        <div class="form-group float-label">
+                            <label asp-for="ReminderCoverLetter"></label>
+                            @if (isReadOnly)
+                            {
+                                <input type="text" class="form-control form-control-sm" asp-for="ReminderCoverLetter" disabled />
+                            }
+                            else
+                            {
+                                @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("ReminderCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSReminderCoverLetter).Name, Model.ReminderCoverLetter))
+                                <span asp-validation-for="ReminderCoverLetter"></span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 offset-sm-6 offset-lg-0">
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!detailPagePermission.HasLimitedRead)
+        {
+            <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailRemarksTabContent" role="tabpanel" aria-labelledby="attorneyDetailRemarksTab">
+                <div class="form-row">
+                    <div class="col">
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks">Remarks</textarea>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!addMode && isTimeTrackerOn)
+        {
+            <div class="tab-pane active" id="timeTrackersTabContent" role="tabpanel" aria-labelledby="timeTrackersTab">
+                <div class="row">@await Html.PartialAsync("_TimeTrackers", childViewModel)</div>
+            </div>
+            
+        }
+        @if (isShowCustomFieldOn && Model.SysCustomFieldSettings != null && Model.SysCustomFieldSettings.Any())
+        {
+            <div class="tab-pane" id="attorneyCustomFieldTabContent" role="tabpanel" aria-labelledby="attorneyCustomFieldTab">
+                <div class="page-content cpiMainEntry">
+                    <div class="form-row">
+                        @foreach (var item in Model.SysCustomFieldSettings)
+                        {
+                            var customFieldValue = Model.GetType().GetProperty(item.ColumnName).GetValue(Model, null);
+
+                            object htmlAttributes;
+                            if (@isReadOnly)
+                            {
+                                htmlAttributes = new
+                                {@@class = "form-control form-control-sm",
+                                    @readonly = "true"
+                                };
+                            }
+                            else
+                            {
+                                htmlAttributes = new
+                                {@@class = "form-control form-control-sm"
+                                };
+                            }
+
+                            <div class="col-md-4">
+
+                                @if (item.EditorType.ToLower() != "checkbox")
+                                {
+                                    <div class="form-group float-label">
+                                        <label>@SharedLocalizer[item.ColumnLabel]</label>
+                                        @if (item.EditorType.ToLower() == "textbox")
+                                        {
+                                    @Html.TextBox(item.ColumnName + (isReadOnly ? "_" : ""), customFieldValue, "", htmlAttributes)
+                                        }
+                                        else if (item.EditorType.ToLower() == "textarea")
+                                        {
+                                    @Html.TextArea(item.ColumnName + (isReadOnly ? "_" : ""), (string)customFieldValue, 10, 0, htmlAttributes)
+                                        }
+                                        else if (item.EditorType.ToLower() == "combobox")
+                                        {
+                                            if (isReadOnly)
+                                            {
+                                        @Html.TextBox(item.ColumnName + "_", customFieldValue, "", htmlAttributes)
+                                            }
+                                            else
+                                            {
+                                                @await Component.InvokeAsync("ComboBox", new { name = item.ColumnName, controller = "Attorney", defaultValue = (string)customFieldValue })
+                                            }
+
+                                        }
+                                        else if (item.EditorType.ToLower() == "datepicker")
+                                        {
+                                            if (isReadOnly)
+                                            {
+                                                customFieldValue = customFieldValue != null ? ((DateTime?)Convert.ToDateTime(customFieldValue)).FormatToDisplay() : "";
+                                        @Html.TextBox(item.ColumnName + "_", customFieldValue, "", htmlAttributes)
+                                            }
+                                            else
+                                            {
+                                                @await Component.InvokeAsync("DatePicker", new DatePickerOptions(item.ColumnName) { Screen = pageId.ToString(), Value = customFieldValue == null ? (DateTime?)null : Convert.ToDateTime(customFieldValue) })
+                                            }
+                                        }
+
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="form-check form-check-inline">
+                                        @if (isReadOnly)
+                                        {
+                                    @Html.CheckBox(item.ColumnName + "_", customFieldValue == null ? false : Convert.ToBoolean(customFieldValue), new { id = $"{item.ColumnName}_{pageId}", @class = "form-check-input", @disabled = "disabled" })
+                                        }
+                                        else
+                                        {
+                                            @Html.CheckBox(item.ColumnName, customFieldValue == null ? false : Convert.ToBoolean(customFieldValue), new { id = $"{item.ColumnName}_{pageId}", @class = "form-check-input"})
+                                        }
+                                        <label class="form-check-label" for="@($"{item.ColumnName}_{pageId}")">@SharedLocalizer[item.ColumnLabel]</label>
+                                    </div>
+                                }
+                            </div>
+
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    attorneyPage.initialize(@id);
+</script>
+
+

@@ -1,0 +1,37 @@
+﻿@model String
+@{
+    var width = ViewData["width"] == null ? "100" : ViewData["width"];
+    var data = (IEnumerable<string>)ViewData["data"];
+}
+
+@if (data != null)
+{
+    @(Html.Kendo().DropDownListFor(m => m)
+        .BindTo(data)
+        .HtmlAttributes(new { style = "width: " + width + "%" })
+
+    )
+}
+else
+{
+    @(Html.Kendo().DropDownListFor(m => m)
+        .AutoBind(false)
+        .DataSource(source =>
+        {
+            source.Read(read =>
+            {
+                read.Action(ViewData["action"].ToString(), ViewData["controller"].ToString(), new { area = ViewData["area"].ToString(), property = ViewData["property"].ToString() });
+            })
+            .ServerFiltering(true);
+        })
+        .Events(e => e
+                .Change(ViewData["onChange"] == null ? "function (){}" : ViewData["onChange"].ToString())
+                .Select(ViewData["onSelect"] == null ? "function (){}" : ViewData["onSelect"].ToString())
+                )
+        .Filter(FilterType.Contains)
+        .Template("<span class='k-state-default'>#: data #</span>")
+        .HtmlAttributes(new { style = "width: " + width + "%" })
+
+    )
+}
+

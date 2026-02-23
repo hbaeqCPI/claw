@@ -1,0 +1,388 @@
+﻿@model CPiUserType
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var dqURL = Url.Action("Index", "DataQuery", new { area = "Shared" });
+
+    var categoryList = new List<SelectListItem>();
+    foreach (var category in R10.Web.Models.DashboardViewModels.WidgetCategory.Categories.Where(d => d.Name != "CustomWidgets").OrderBy(o => o.SortOrder))
+    {
+        categoryList.Add(new SelectListItem() { Text = Localizer[category.DisplayName], Value = category.Id.ToString() });
+    }
+}
+<script>        
+    //Show Preview Widget on checkbox click
+    function onRowClick(e) {
+        var grid = $("#WidgetMenuGrid").data("kendoGrid");
+        var row = $(e.target).closest("tr");
+        var dataItem = grid.dataItem(row);
+
+        if (!row.hasClass("k-state-selected")) {           
+            var $widget = $("<div>", { id: dataItem.Id, "class": "widgetPreview" });
+            $widget.html("<div class='widget-spinner text-center'><h4><span>@Localizer["Loading preview"]</span><i class='ml-2 fa fa-circle-notch fa-spin'></i></h4></div><div class='widget-container'></div>");
+
+            $("#previewWidget").html($widget);
+
+            var settings = "{}";
+            var title = "";
+            if (widgetList.filter(d => d.Id == dataItem.Id).length > 0) {
+                settings = widgetList.filter(d => d.Id == dataItem.Id)[0].Setting;
+                title = widgetList.filter(d => d.Id == dataItem.Id)[0].Title;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("GetPreviewWidgetDetail", "DefaultWidgets")",
+                data: { widgetId: dataItem.Id, widgetSettings: settings, title: title },
+                dataType: "html",
+                success: function (data) {
+                    var $container = $widget.find(".widget-container");
+                    $widget.find(".widget-spinner").hide();
+                    if (dataItem.Id == null) {
+                        $container.hide();
+                    }
+                    if (data.trim()) {
+                        $container.append(data);
+                    }
+                    else {
+                        $widget.remove();
+                    }
+                    if (dataItem.Id == null) {
+                        $widget.attr("id", $widget.find(".widget-content").data("id"));
+                        $container.empty();
+                        $container.show();
+                        $container.append(data);
+                    }
+                    checkSettings($widget);
+                },
+                error: function (data) {
+                    $widget.remove();
+                    if (data != null) {
+                        kendo.alert("@Localizer["Unable to load widget. Please try again."]");
+                    }
+                }
+            });
+        }
+    };
+    
+    $(document).ready(function () {        
+        var catList = [@String.Join(",", categoryList.Select(a => a.Value).ToList())];        
+        for (var x = 0; x < catList.length; x++) { catWidgetList.push({ CatId: catList[x], WidgetIds: [] })};                         
+
+        $(".widgetCBHeader").bind("click", function (e) {
+            var catId = $("#CategoryDropDown").val();
+            var grid = $("#WidgetMenuGrid").data("kendoGrid");
+            var currentPageIds = [];
+            var items = grid.items();
+            items.each(function (idx, row) {
+                let rowDataItem = grid.dataItem(row);
+                currentPageIds.push(rowDataItem.Id);
+            });
+
+            let widgetCB = e.target;
+            if (widgetCB) {
+                if (catWidgetList.length > 0) {
+                    let catWidgetIds = catWidgetList[catId - 1].WidgetIds;
+                    if (catWidgetIds) {
+                        if (widgetCB.checked === false) {
+                            catWidgetList[catId - 1].WidgetIds = catWidgetIds.filter(d => !currentPageIds.includes(d));
+                        }
+                        else if (widgetCB.checked === true) {
+                            currentPageIds.forEach(function (item) {
+                                let indx = catWidgetIds.indexOf(item);
+                                if (indx === -1) {
+                                    catWidgetList[catId - 1].WidgetIds.push(item);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+
+        //Save selected widgets
+        $("#saveDefaultWidgetSettings").bind("click", function (e) {   
+            $.ajax({
+                url: "@Url.Action("SaveDefaultWidgetSetting", "DefaultWidgets")",
+                type: 'POST',                                
+                data: { userType: '@((int)Model)', dashboardSettings: catWidgetList, widgetSettings: widgetList },
+                success: function (result) {
+                    if (result) {
+                        pageHelper.showSuccess(result.success.Value);
+                        widgetMenuGridRead(true);
+                        $("#previewWidget").html("");
+                    }
+                    // const dialog = $("#defaultWidgetSettingDialog");
+                    // dialog.modal("hide");     
+                    // location.reload();
+                },
+                error: function (error) {                    
+                    pageHelper.showErrors(error.responseText);
+                }
+            });
+        });
+
+        var selectedCategory = $(':radio[name=widgetCat]:checked').val();
+        if (selectedCategory) {
+            var catDropDownList = $("#CategoryDropDown").data("kendoDropDownList");
+            catDropDownList.value(selectedCategory);
+            catDropDownList.trigger("change");
+        }        
+
+        var grid = $("#WidgetMenuGrid").data("kendoGrid");
+
+        grid.tbody.on("click", ".k-checkbox", onRowClick);   
+    });
+
+    function categoryDropDownOnChange(e) {        
+        let selectedCat = e.sender.dataItem().Value;
+        
+        var widgetSystem = $('#WidgetSystem').data('kendoDropDownList'); 
+        widgetSystem.dataSource.read({ widgetCategory: selectedCat });
+        widgetSystem.trigger('change'); 
+        
+        // var widgetTitle = $('#WidgetTitle_').data('kendoComboBox'); 
+        // widgetTitle.dataSource.read({ widgetCategory: selectedCat });
+        // widgetTitle.trigger('change');
+        widgetTitleRefresh(selectedCat, "");
+
+        widgetMenuGridRead(true);
+    }
+
+    function widgetSystemOnChange(e) {
+        var selectedSystem = '';
+        if (e.sender.dataItem()) { 
+            selectedSystem = e.sender.dataItem().Value;
+        } 
+        // var widgetTitle = $('#WidgetTitle_').data('kendoComboBox'); 
+        // widgetTitle.dataSource.read({ widgetSystem: selectedValue }); 
+        // widgetTitle.trigger('change');
+        widgetTitleRefresh("", selectedSystem);
+
+        widgetMenuGridRead();
+    }
+
+    function widgetTitleParams(e) {
+        return {
+            widgetSystem: $('#WidgetSystem').val(), widgetCategory: $('#CategoryDropDown').val(), userType: '@((int)Model)'
+        }
+    }
+
+    function widgetTitleRefresh(selectedCat, selectedSystem) {
+        var widgetTitle = $('#WidgetTitle_defaultWidget').data('kendoComboBox');
+        widgetTitle.value("");
+        widgetTitle.trigger('change');
+        widgetTitle.dataSource.read({ widgetCategory: selectedCat, widgetSystem: selectedSystem });
+    }
+
+    function onWidgetTitleChange(e) {
+        let selectedTitle = this.value();
+        var grid = $("#WidgetMenuGrid").data("kendoGrid");
+        if (selectedTitle && selectedTitle > "") {
+            grid.dataSource.filter({
+                field: "Title",
+                operator: "contains",
+                value: selectedTitle
+            });
+        }
+        else {
+            grid.dataSource.filter({});
+        }
+    }
+   
+    function widgetMenuGridRead(clearSelected = false) {
+        var widgetMenuGrid = $("#WidgetMenuGrid").data("kendoGrid");        
+        if (clearSelected) { widgetMenuGrid.clearSelection(); }
+        widgetMenuGrid.dataSource.read();
+        widgetMenuGrid.dataSource.page(1);
+    }
+
+    function widgetMenuGridParams(e) {
+        var grid = $("#WidgetMenuGrid").data("kendoGrid");
+        var selectedIds = [];        
+
+        //remove saved selected WidgetIds for current category from the list of excluded widgetIds
+        var catId = $("#CategoryDropDown").val();        
+        if (catWidgetList.length > 0) {
+            var catWidgetIds = catWidgetList[catId - 1].WidgetIds;
+            catWidgetList.forEach(function(item) {
+                //get all selected WidgetIds except for the current category
+                if (item.CatId != catId && item.WidgetIds.length > 0) {
+                    selectedIds = $.merge(selectedIds, item.WidgetIds);
+                }
+            })            
+        }        
+
+        return {
+            widgetSystem: $('#WidgetSystem').val(),
+            widgetCategory: $('#CategoryDropDown').val(),
+            selectedIds: selectedIds,
+            widgetTitle: $("#WidgetTitle_defaultWidget").data("kendoComboBox").value(),
+            userType: '@((int)Model)'
+        };
+    }
+    
+    function widgetMenuGridDataBound(e) {
+        var catId = $("#CategoryDropDown").val();
+        var grid = e.sender;
+        
+        $(".widgetItemCB").bind("click", function (e) {
+            var grid = $("#WidgetMenuGrid").data("kendoGrid");
+            let dataItem = grid.dataItem($(this).closest("tr"));
+            let widgetCB = e.target;
+            let widgetId = dataItem.Id;
+            if (widgetCB) {
+                if (catWidgetList.length > 0) {
+                    let catWidgetIds = catWidgetList[catId - 1].WidgetIds;
+                    if (catWidgetIds) {
+                        if (widgetCB.checked === false) {
+                            catWidgetList[catId - 1].WidgetIds = catWidgetIds.filter(d => d !== widgetId);
+                        }
+                        else if (widgetCB.checked === true) {
+                            let indx = catWidgetIds.indexOf(widgetId);
+                            if (indx === -1) {
+                                catWidgetList[catId - 1].WidgetIds.push(widgetId);
+                            }
+                        }
+                    }
+                }
+            }            
+        });
+                
+        //set selected widgets on grid
+        if (catWidgetList.length > 0) {
+            let catWidgetIds = catWidgetList[catId - 1].WidgetIds;            
+            if (catWidgetIds) {                
+                let items = grid.items();
+                let itemsToSelect = [];
+                items.each(function (idx, row) {
+                    let dataItem = grid.dataItem(row);
+                    if ($.inArray(dataItem["Id"], catWidgetIds) !== -1) {
+                        itemsToSelect.push(row);
+                    }
+                });                
+                e.sender.select(itemsToSelect);
+            }
+        } 
+    }
+</script>
+
+<div class="modal fade" id="defaultWidgetSettingDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">            
+            <div class="modal-header py-1">
+                <h4 class="modal-title">@Localizer["Default Widgets Settings"]</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body pt-0">
+                <div class="container-fluid">  
+                    <div class="row">
+                        <div class="col-7">
+                            <div class="row">
+                                <div class="col-12 col-md-12 col-lg-4 col-xl-4">
+                                    <div class="form-group float-label">
+                                        <label for="UserType">@Localizer["Section"]</label>
+                                        @(Html.Kendo().DropDownList()
+                                            .Name("CategoryDropDown")
+                                            .DataTextField("Text")
+                                            .DataValueField("Value")
+                                            .Events(e => e.Change("categoryDropDownOnChange"))
+                                            .BindTo(categoryList)
+                                            )
+                                    </div>
+                                </div>                                
+                            </div>
+
+                            <div class="defaultWidgetContainer">
+                                <div id="defaultWidgetSearchContainer" class="default-widget-search">
+                                    <hr />
+                                    <div class="form-row">
+                                        <div class="col-12 col-md-12 col-lg-4 col-xl-4">
+                                            <div class="form-group float-label">
+                                                <label for="WidgetSystem">@Localizer["System"]</label>
+                                                @(Html.Kendo().DropDownList()
+                                                    .Name("WidgetSystem")
+                                                    .DataTextField("Text")
+                                                    .DataValueField("Value")
+                                                    .Value("all")
+                                                    .AutoBind(true)
+                                                    .DataSource(source =>
+                                                    {
+                                                        source.Read(read =>
+                                                        {
+                                                            read.Action("GetWidgetSystem", "DefaultWidgets").Data($"function() {{return {{ userType: '{(int)Model}', widgetCategory: $('#CategoryDropDown').val()}} }}");
+                                                        })
+                                                        .ServerFiltering(true);
+                                                    })
+                                                    .Events(events => events.Change("widgetSystemOnChange"))
+                                                    )
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-12 col-lg-8 col-xl-8">
+                                            <div class="form-group float-label">
+                                                <label for="WidgetTitle">@Localizer["Widget Name"]</label>
+                                                @await Component.InvokeAsync("ComboBox", new {
+                                                name = "WidgetTitle",
+                                                action = "GetWidgetTitles",
+                                                controller = "DefaultWidgets",
+                                                data = "widgetTitleParams",
+                                                onChange = "onWidgetTitleChange",
+                                                screen = "defaultWidget"
+                                                })
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="col-12">
+                                            @(Html.Kendo().Grid<R10.Web.Models.DashboardViewModels.AddWidgetMenuViewModel>()
+                                                .Name("WidgetMenuGrid")
+                                                .Columns(columns =>
+                                                {
+                                                //columns.Bound(r => r.Id).Width("5%");
+                                                    columns.Bound(r => r.Title).Title(Localizer["Title"]).ClientTemplate("<span class='#=Icon# fa-fixed-width'></span>#=Title#").Width("90%");
+                                                    columns.Select().Width(50).HtmlAttributes(new { @class = "widgetItemCB" }).HeaderHtmlAttributes(new { @class = "widgetCBHeader" });
+                                                })
+                                                .Pageable()
+                                                .Sortable(sort => sort.AllowUnsort(false))
+                                                .Events(ev =>
+                                                {                                                
+                                                    ev.DataBound("widgetMenuGridDataBound");
+                                                })
+                                                .PersistSelection()
+                                                .Editable(editable => editable.Enabled(true).Mode(GridEditMode.InCell))
+                                                .DataSource(dataSource => dataSource
+                                                .Ajax()
+                                                .Model(model =>
+                                                {
+                                                    model.Id(r => r.Id);
+                                                    model.Field(r => r.Title).Editable(false);
+                                                    model.Field(r => r.System).Editable(false);
+                                                })
+                                                .ServerOperation(false)
+                                                .PageSize(10)
+                                                .Read(read => read.Action("WidgetMenuRead", "DefaultWidgets")
+                                                .Data("widgetMenuGridParams"))
+                                                )
+                                                .HtmlAttributes(new { @class = "kendo-Grid" })
+                                                )
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top:none">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                                <button type="button" class="btn btn-primary" id="saveDefaultWidgetSettings"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                            </div>
+                        </div>
+                        <div class="col-5 border-left">
+                            <div id="previewWidget"></div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>            
+        </div>
+    </div>
+</div>
+

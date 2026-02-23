@@ -1,0 +1,88 @@
+﻿@model List<MailDownloadRule>
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@using R10.Core.Entities.MailDownload
+@{
+    var runIcon = "fa-play"; //"fa-spin fa-sync"
+    var settings = await Settings.GetSetting();
+    var mailDownloaderController = "DocDocuments"; //maildownloader actions are in base controller (DocumentUploadController)
+}
+<form method="post" class="details rules" 
+    data-editor-url="@Url.Action("EditRule")"
+    data-status-url="@Url.Action("UpdateRuleStatus")"
+    data-run-url="@Url.Action("DownloadEmails", mailDownloaderController, new { area = "Shared" })"
+    data-run-title="@Localizer["Run Rule"]"
+    data-run-message="@Localizer["Are you sure you want to run this rule?"]"
+    data-delete-url="@Url.Action("DeleteRule")"
+    data-delete-title="@Localizer["Delete Rule"]"
+    data-delete-message="@Localizer["Are you sure you want to delete this rule?"]"
+    data-move-up-url="@Url.Action("MoveRuleUp")"
+    data-move-down-url="@Url.Action("MoveRuleDown")"
+    data-download-status-url="@Url.Action("MailDownloadStatus", mailDownloaderController, new { area = "Shared" })"
+    data-download-status-message="@Localizer["Mail Downloader is running. Please try again later."]"
+    >
+    <div class="modal-header">
+        <h4 class="modal-title" id="cpiConfirmLabel">@Localizer["Download Rules"]</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body" style="min-height: 350px;">
+        <div class="modal-message">
+            <div class="d-flex justify-content-end pb-2">
+                <a href="#" class="add" style="font-size: 1rem; margin-left: 5px;" data-id="0"><i class="fal fa-plus pr-2"></i><span>@Localizer["Add new rule"]</span></a>
+            </div>
+            @for(var i = 0; i < Model.Count; i++) 
+            {
+                var rule = Model[i];
+                var action = rule.Action.Name;
+                var conditions = rule.RuleConditions;
+                var condition = "";
+                var description = "";
+
+                for(var ii = 0; ii < conditions.Count; ii++) 
+                {
+                    if (conditions[ii].Condition != MailDownloadCondition.None)
+                    {
+                        condition = $"{condition} {conditions[ii].Condition.GetDisplayDescription()} '{{{ii}}}',";
+                    }
+                }
+
+                if (string.IsNullOrEmpty(condition))
+                {
+                    description = $"{Char.ToUpperInvariant(action[0])}{action.Substring(1)}";
+                }
+                else
+                {
+                    description = $"If {condition} {Char.ToLowerInvariant(action[0])}{action.Substring(1)}";
+                }
+
+                <div class="row rule pb-4" data-id="@rule.Id" data-tstamp="@Convert.ToBase64String(rule.tStamp)" data-order="@rule.OrderOfEntry">
+                    <div class="col-2 col-lg-1 status">
+                        <label class="toggle-switch mt-1" title="@(rule.Enabled ? Localizer["Disable rule"] : Localizer["Enable rule"])">
+                            <input name="Enabled" type="checkbox" checked="@rule.Enabled" class="update-status">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="col-10 col-lg-9 description">
+                        <div class="name font-weight-bold">@rule.Name</div>
+                        <div class="action-condition pr-2">
+                            @($"{string.Format(Localizer[description], conditions.Select(c => c.Value).ToArray())}")
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-2 action d-flex justify-content-end pt-2 pt-lg-4">
+                        <a href="#" class="run" title="@Localizer["Run rule"]"><i class="fal @runIcon"></i></a>
+                        <a href="#" class="@(i > 0 ? "move-up" : "disabled")" title="@Localizer["Move rule up"]"><i class="fal fa-arrow-up pl-3"></i></a>
+                        <a href="#" class="@(i < Model.Count - 1 ? "move-down" : "disabled")" title="@Localizer["Move rule down"]"><i class="fal fa-arrow-down pl-3"></i></a>
+                        <a href="#" class="edit" title="@Localizer["Edit rule"]"><i class="fal fa-pencil pl-3"></i></a>
+                        <a href="#" class="delete" title="@Localizer["Delete rule"]"><i class="fal fa-trash pl-3"></i></a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn modal-close btn-primary" data-dismiss="modal"><i class="fa fa-times pr-2"></i><span>@Localizer["Close"]</span></button>
+    </div>
+</form>
+

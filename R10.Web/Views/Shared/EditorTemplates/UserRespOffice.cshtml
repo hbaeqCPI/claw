@@ -1,0 +1,11 @@
+﻿@model string
+@(Html.Kendo().DropDownListFor(m => m)
+    .HtmlAttributes(new { style = "width: 75px;" })
+    .DataValueField("RespOffice")
+    .DataTextField("RespOffice")
+    .AutoBind(false)
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Read(read => read.Action("UserRespOffices", "Roles").Data("getUserRespOfficeFilter"))
+    )
+)

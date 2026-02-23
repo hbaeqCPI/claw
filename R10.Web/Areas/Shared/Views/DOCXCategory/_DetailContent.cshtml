@@ -1,0 +1,98 @@
+﻿@model DOCXCategory
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    var id = Model.DOCXCatId;
+    string title = SharedLocalizer["DOCX Category Detail"];
+    var addMode = id == 0;
+    var addFromSearch = ViewBag.FromSearch != null & (bool)ViewBag.FromSearch;
+
+    var detailUrl = Url.Action("Detail", "DOCXCategory", new { id = "recId", singleRecord = addFromSearch }).ToLower();
+    var recordStampsUrl = Url.Action("GetRecordStamps", "DOCXCategory", new { id = id });
+
+    var detailPagePermission = (DetailPagePermission)ViewBag.PermissionViewModel;
+    var fullModify = detailPagePermission.CanEditRecord;
+    bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
+
+    bool addFromOtherScreen = false;
+    if (addMode)
+    {
+        string referer = ViewContext.HttpContext.Request.Headers["Referer"].ToString().ToLower();
+        addFromOtherScreen = (!referer.Contains("docxCategory"));
+    }
+}
+
+@if (!addMode)
+{
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="@title"></vc:detail-page-nav-links>
+}
+
+<div class="container-fluid">
+    <form id="docxCategoryDetailForm" asp-action="Save" method="post">
+        <input type="hidden" asp-for="DOCXCatId" />
+
+        <div class="mb-md-2 text-right">
+            <div class="row @(addMode ? "":"d-none")" id="editActionButtons">
+                <div class="col-md-4 text-left">
+                    <h3 class="page-title">@title</h3>
+                </div>
+                <div class="col-md mb-md-2 ml-md-3 pt-3 text-right">
+                    <button class="btn btn-link cpiSaveButton" type="submit" id="save"><span class="fal fa-save"></span> @SharedLocalizer["Save"]</button>
+                    <button class="btn btn-link cpiButtonClear" type="button" id="cancel"><span class="fal fa-times"></span> @SharedLocalizer["Cancel"]</button>
+                </div>
+            </div>
+        </div>
+        <fieldset class="cpiMainEntry">
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label asp-for="DOCXCatDesc"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="DOCXCatDesc" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="DOCXCatDesc"></span>
+                </div>
+
+            </div>
+            <div class="row form-group">
+                <div class="col-md-7">
+                    <label asp-for="Remarks"></label>
+                    <textarea class="form-control form-control-sm" rows="10" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks">Remarks</textarea>
+                </div>
+            </div>
+        </fieldset>
+
+        @if (!addMode)
+        {
+            <div id="docxCategoryDetailRecordStamps">
+                <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            </div>
+        }
+
+    </form>
+</div>
+
+<form id="deleteDOCXCategory" asp-action="Delete" method="post">
+    <input type="hidden" name="DOCXCatId" asp-for="DOCXCatId" />
+    <input type="hidden" name="DOCXCatDesc" asp-for="DOCXCatDesc" />
+    <input type="hidden" name="RowVersion" asp-for="tStamp" />
+</form>
+
+<script>
+    $(document).ready(function () {
+        var params = {
+            activePage: docxCategoryPage,
+            requestedUrl: '@ViewBag.Url',
+            detailUrl: '@detailUrl',
+            searchUrl: '@detailPagePermission.SearchScreenUrl',
+            recordStampsUrl: '@recordStampsUrl',
+            recordStampsContainer: 'docxCategoryDetailRecordStamps',
+            deleteForm: 'deleteDOCXCategory',
+            id: @id,
+            addMode: @(addMode ? "true" : "false"),
+            addFromSearch: @(addFromSearch ? "true" : "false"),
+            addFromOtherScreen: @(addFromOtherScreen ? "true" : "false")
+        };
+        page.manageDetailPage(params);
+    });
+
+</script>
+

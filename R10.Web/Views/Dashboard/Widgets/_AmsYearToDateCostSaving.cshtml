@@ -1,0 +1,206 @@
+﻿@model ChartDTO
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@using R10.Core.Entities.GeneralMatter
+@inject IStringLocalizer<SharedResource> sharedLocalizer
+@inject ISystemSettings<AMSSetting> AMSSettings
+@inject IClientService ClientService
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@{
+    var amsSettings = await AMSSettings.GetSetting();
+    var clientLabel = sharedLocalizer[amsSettings.LabelClient ?? "Client"];
+    var clientNameLabel = sharedLocalizer[amsSettings.LabelClientName ?? "Client Name"];
+    var countryLabel = sharedLocalizer["Country"];
+    var countryNameLabel = sharedLocalizer["Country Name"];
+    var caseNumberLabel = sharedLocalizer[amsSettings.LabelCaseNumber ?? "Case Number"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = sharedLocalizer[widget.Title];
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var widgetCurrencyFormat = amsSettings.WidgetCurrencyFormat ?? "$|in US Dollars";
+    var currencyFormat = widgetCurrencyFormat.Split("|")[0];
+    var currencyString = widgetCurrencyFormat.Split("|")[1];
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    var clientsSettingsProperty = userSettings.Property("Clients");
+    if (clientsSettingsProperty != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)clientsSettingsProperty.Value).Select(a => (a ?? "").ToString()).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    $(document).ready(function () {
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });        
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+        
+        if ('@(widget.IsDetail)' === '@true') {
+            var grid = $("#@userWidgetId-grid").data("kendoGrid");
+            grid.dataSource.read();
+        }
+    });
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("AMSYearToDateAnnuityCostSavingDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">           
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                </span>
+            </li>
+            @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                </li>
+            }
+        </ul>            
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+<div class="text-center" style="font-size: 65px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
+        @if (Model?.Category == "in US Dollars")
+        {<span>@currencyFormat</span>}
+        @String.Format("{0:n0}", Model == null ? 0 : Model.Value)
+    </span>
+</div>
+<div class="text-center">
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? currencyString : sharedLocalizer[Model?.Category])</span>
+</div>
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title">@gridDetailTitle</span></h4>
+    </div>
+    @(Html.Kendo().Grid<AmsCostSavingDrillDownViewModel>()
+                        .Name(userWidgetId + "-grid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+                            columns.Bound(a => a.Country);
+                            columns.Bound(a => a.SubCase);
+                            columns.Bound(a => a.CPICaseType);
+                            columns.Bound(a => a.CPITitle);
+                            columns.Bound(a => a.CPIAppNo);
+                            columns.Bound(a => a.CPIPatNo);
+                            columns.Bound(a => a.CPIExpireDate).Format("{0:dd-MMM-yyyy}");
+                            columns.Bound(a => a.AnnuityNoDue);
+                            columns.Bound(a => a.AnnuityDueDate).Format("{0:dd-MMM-yyyy}");
+                            columns.Bound(a => a.AnnuityCost).Format("{0:n}");
+                            columns.Bound(a => a.ClientInstruction);
+                            columns.Bound(a => a.CPIInstruction);
+                        })
+                        .ToolBar(tools => tools.Excel())
+                        .AutoBind(false)                                         
+                        .Pageable(page => page.PageSizes(amsSettings.SearchResultsPageSizeOptions))
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .PageSize(amsSettings.SearchResultsPageSize)
+                            .Read(read => read.Action("AMSYearToDateAnnuityCostSavingDetailRead", "Dashboard", new { userWidgetId = widget.Id }))
+                        )
+                        .Events(e => e.ExcelExport("gridExcelExport"))
+                        .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" })
+        )
+<style>
+    .k-chart {
+        margin: auto;
+    }
+</style>
+}

@@ -1,0 +1,14 @@
+﻿@model ChartDTO
+@inject IStringLocalizer<PatentResource> Localizer
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+}
+
+<div class="text-center" style="font-size: 30px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
+        @Model?.Group
+    </span>
+</div>
+<div class="text-center">
+    <span><a href="@Model?.Category" target="_blank"><i class="fal fa-file-pdf pr-2"></i>@Localizer["Law Document"]</a></span>
+</div>

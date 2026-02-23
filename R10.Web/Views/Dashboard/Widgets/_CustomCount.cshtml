@@ -1,0 +1,453 @@
+﻿@model ChartDTO
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@using R10.Core.Entities.GeneralMatter
+@inject IEntityService<PatCaseType> _patCaseTypeService;
+@inject IEntityService<TmkCaseType> _tmkCaseTypeService;
+@inject IEntityService<GMMatterType> _gmMatterTypeService;
+@inject IStringLocalizer<PatentResource> patLocalizer
+@inject IStringLocalizer<TrademarkResource> tmkLocalizer
+@inject IStringLocalizer<MatterResource> gmLocalizer
+@inject IStringLocalizer<SharedResource> sharedLocalizer
+@inject ISystemSettings<AMSSetting> amsSettings
+@inject IClientService ClientService
+@{
+    var AMSSettings = await amsSettings.GetSetting();
+    var clientLabel = patLocalizer[AMSSettings.LabelClient];
+    var clientNameLabel = patLocalizer[AMSSettings.LabelClientName];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-count";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    bool showPatCaseType = widgetSettings.Property("ShowPatCaseType") != null ? widgetSettings["ShowPatCaseType"].Value<bool>() : false;
+    bool showTmkCaseType = widgetSettings.Property("ShowTmkCaseType") != null ? widgetSettings["ShowTmkCaseType"].Value<bool>() : false;
+    bool showGMMatterType = widgetSettings.Property("ShowGMMatterType") != null ? widgetSettings["ShowGMMatterType"].Value<bool>() : false;
+    bool showAMSServiceFee = widgetSettings.Property("ShowAMSServiceFee") != null ? widgetSettings["ShowAMSServiceFee"].Value<bool>() : false;
+    if (!AMSSettings.HasServiceFee) showAMSServiceFee = false;
+
+    bool showAMSProjectionYears = widgetSettings.Property("ShowAMSProjectionYears") != null ? widgetSettings["ShowAMSProjectionYears"].Value<bool>() : false;
+    bool showClientOption = widgetSettings.Property("ShowClient") != null ? (widgetSettings["ShowClient"] ?? false).Value<bool>() : false;
+    bool showSettings = (showPatCaseType || showTmkCaseType || showGMMatterType || showAMSServiceFee || showAMSProjectionYears || showClientOption);
+
+    int serviceFeeSwitch = userSettings.Property("ServiceFeeSwitch") != null ? userSettings["ServiceFeeSwitch"].Value<int>() : -1;
+
+    int amsProjectionYears = AMSSettings.ProjectionYears;
+    string projectionYears = userSettings.Property("ProjectionYears") != null ? userSettings["ProjectionYears"].Value<string>() : "2";
+
+    List<SelectListItem> projectionYearsList = new List<SelectListItem>();
+    for (int i = 1; i < amsProjectionYears; i++)
+    {
+        var item = new SelectListItem();
+        var value = i + 1;
+        item.Text = value.ToString();
+        item.Value = value.ToString();
+        projectionYearsList.Add(item);
+    }
+
+    List<PatCaseType> patCaseTypes = new List<PatCaseType>();
+
+    if (userSettings.Property("PatCaseTypes") != null)
+    {
+        try
+        {
+            int[] caseTypeFilter = ((JArray)userSettings.Property("PatCaseTypes").Value).Select(a => (int)a).ToArray();
+
+            if (caseTypeFilter.Count() > 0)
+            {
+                patCaseTypes = await _patCaseTypeService.QueryableList
+                        .Where(a => caseTypeFilter.Contains(a.CaseTypeId))
+                        .Select(a => new PatCaseType
+                        {
+                            CaseTypeId = a.CaseTypeId,
+                            CaseType = a.CaseType
+                        })
+                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<TmkCaseType> tmkCaseTypes = new List<TmkCaseType>();
+
+    if (userSettings.Property("TmkCaseTypes") != null)
+    {
+        try
+        {
+            int[] caseTypeFilter = ((JArray)userSettings.Property("TmkCaseTypes").Value).Select(a => (int)a).ToArray();
+
+            if (caseTypeFilter.Count() > 0)
+            {
+                tmkCaseTypes = await _tmkCaseTypeService.QueryableList
+                .Where(a => caseTypeFilter.Contains(a.CaseTypeId))
+                .Select(a => new TmkCaseType
+                {
+                    CaseTypeId = a.CaseTypeId,
+                    CaseType = a.CaseType
+                })
+                .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<GMMatterType> gMMatterTypes = new List<GMMatterType>();
+
+    if (userSettings.Property("GMMatterTypes") != null)
+    {
+        try
+        {
+            int[] matterTypeFilter = ((JArray)userSettings.Property("GMMatterTypes").Value).Select(a => (int)a).ToArray();
+
+            if (matterTypeFilter.Count() > 0)
+            {
+                gMMatterTypes = await _gmMatterTypeService.QueryableList
+                    .Where(a => matterTypeFilter.Contains(a.MatterTypeID))
+                    .Select(a => new GMMatterType
+                    {
+                        MatterTypeID = a.MatterTypeID,
+                        MatterType = a.MatterType
+                    })
+                    .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    var currencyFormat = AMSSettings.WidgetCurrencyFormat.Split("|")[0];
+    var currencyString = AMSSettings.WidgetCurrencyFormat.Split("|")[1];
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+
+<script>
+    var refresh = false;
+
+    function saveProjectionYears(e) {
+        saveSetting(@widget.Id, `{ ProjectionYears: "${this.selectedIndex >= 0 ? this.dataItem(this.selectedIndex).Value : ""}" }`, function () { refresh = true; });
+    }
+
+    $(document).ready(function () {
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).on("click", "#@userWidgetId-servicefee-switch", function (e) {
+            saveSetting(@widget.Id, `{ ServiceFeeSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+
+        var patCaseTypeList = [@String.Join(",", patCaseTypes.Select(a => a.CaseTypeId).ToList())];
+        $(document).off("click", "#patCaseTypeFilter_@userWidgetId .delete-patCaseType");
+        $(document).off("change", "#PatCaseTypeCode_@userWidgetId");
+        $(document).on("click", "#patCaseTypeFilter_@userWidgetId .delete-patCaseType", function (e) {
+            var item = $.inArray($(this).data("id"), patCaseTypeList);
+
+            if (item !== -1) {
+                patCaseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#PatCaseTypeCode_@userWidgetId", function (e) {
+            var caseType = $(this).data("kendoComboBox");
+
+            if (caseType.selectedIndex >= 0) {
+                var dataItem = caseType.dataItem(caseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypeCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, patCaseTypeList) == -1) {
+                    patCaseTypeList.push(caseTypeId);
+                    $("#patCaseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="patCaseType-Code">${caseTypeCode}</span></div><div class="delete-filter delete-patCaseType" data-id="${caseTypeId}" title="Remove ${caseTypeCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            caseType.value("");
+        });
+
+        var tmkCaseTypeList = [@String.Join(",", tmkCaseTypes.Select(a => a.CaseTypeId).ToList())];
+        $(document).off("click", "#tmkCaseTypeFilter_@userWidgetId .delete-tmkCaseType");
+        $(document).off("change", "#TmkCaseTypeCode_@userWidgetId");
+        $(document).on("click", "#tmkCaseTypeFilter_@userWidgetId .delete-tmkCaseType", function (e) {
+            var item = $.inArray($(this).data("id"), tmkCaseTypeList);
+
+            if (item !== -1) {
+                tmkCaseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ TmkCaseTypes: [${tmkCaseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#TmkCaseTypeCode_@userWidgetId", function (e) {
+            var caseType = $(this).data("kendoComboBox");
+
+            if (caseType.selectedIndex >= 0) {
+                var dataItem = caseType.dataItem(caseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypeCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, tmkCaseTypeList) == -1) {
+                    tmkCaseTypeList.push(caseTypeId);
+                    $("#tmkCaseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="tmkCaseType-Code">${caseTypeCode}</span></div><div class="delete-filter delete-tmkCaseType" data-id="${caseTypeId}" title="Remove ${caseTypeCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ TmkCaseTypes: [${tmkCaseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            caseType.value("");
+        });
+
+        var gmMatterTypeList = [@String.Join(",", gMMatterTypes.Select(a => a.MatterTypeID).ToList())];
+        $(document).off("click", "#gmMatterTypeFilter_@userWidgetId .delete-gmMatterType");
+        $(document).off("change", "#GMMatterTypeCode_@userWidgetId");
+        $(document).on("click", "#gmMatterTypeFilter_@userWidgetId .delete-gmMatterType", function (e) {
+            var item = $.inArray($(this).data("id"), gmMatterTypeList);
+
+            if (item !== -1) {
+                gmMatterTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ GMMatterTypes: [${gmMatterTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#GMMatterTypeCode_@userWidgetId", function (e) {
+            var caseType = $(this).data("kendoComboBox");
+
+            if (caseType.selectedIndex >= 0) {
+                var dataItem = caseType.dataItem(caseType.selectedIndex);
+
+                var caseTypeId = dataItem.MatterTypeID;
+                var caseTypeCode = dataItem.MatterType;
+
+                if ($.inArray(caseTypeId, gmMatterTypeList) == -1) {
+                    gmMatterTypeList.push(caseTypeId);
+                    $("#gmMatterTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="gmMatterType-Code">${caseTypeCode}</span></div><div class="delete-filter delete-gmMatterType" data-id="${caseTypeId}" title="Remove ${caseTypeCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ GMMatterTypes: [${gmMatterTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            caseType.value("");
+        });
+
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+    });
+</script>
+
+@if (showSettings)
+{
+    <div class="widget-settings" style="max-height: 425px;">
+        <div class="settings-body">
+            @if (showPatCaseType)
+            {
+                <ul id="patCaseTypeFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@patLocalizer["Exclude Case Type(s)"]</span>
+                        <span>
+                            @await Component.InvokeAsync("ComboBox", new { name = "PatCaseTypeCode", action = "GetActiveCaseTypeList", controller = "CaseType", area = "Patent", screen = userWidgetId, textProperty = "CaseType", valueProperty = "CaseTypeId", itemTemplate = "<div class='row'><div class='col-md-3'><span>#: data.CaseType  #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>", listWidth = 450 })
+                        </span>
+                    </li>
+                    @foreach (PatCaseType caseType in patCaseTypes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="patCaseType-Code">@caseType.CaseType</span>
+                            </div>
+                            <div class="delete-filter delete-patCaseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showTmkCaseType)
+            {
+                <ul id="tmkCaseTypeFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@tmkLocalizer["Exclude Case Type(s)"]</span>
+                        <span>
+                            @await Component.InvokeAsync("ComboBox", new { name = "TmkCaseTypeCode", action = "GetActiveCaseTypeList", controller = "CaseType", area = "Trademark", screen = userWidgetId, textProperty = "CaseType", valueProperty = "CaseTypeId", itemTemplate = "<div class='row'><div class='col-md-3'><span>#: data.CaseType  #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>", listWidth = 450 })
+                        </span>
+                    </li>
+                    @foreach (TmkCaseType caseType in tmkCaseTypes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="tmkCaseType-Code">@caseType.CaseType</span>
+                            </div>
+                            <div class="delete-filter delete-tmkCaseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showGMMatterType)
+            {
+                <ul id="gmMatterTypeFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@gmLocalizer["Exclude Matter Type(s)"]</span>
+                        <span>
+                            @await Component.InvokeAsync("ComboBox", new { name = "GMMatterTypeCode", action = "GetActiveMatterTypeList", controller = "MatterType", area = "GeneralMatter", screen = userWidgetId, textProperty = "MatterType", valueProperty = "MatterTypeID", itemTemplate = "<div class='row'><div class='col-md-3'><span>#: data.MatterType  #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>", listWidth = 450 })
+                        </span>
+                    </li>
+                    @foreach (GMMatterType caseType in gMMatterTypes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="gmMatterType-Code">@caseType.MatterType</span>
+                            </div>
+                            <div class="delete-filter delete-gmMatterType" data-id="@caseType.MatterTypeID" title="Remove @caseType.MatterType"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showAMSServiceFee)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Include service fee"]</span>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@userWidgetId-servicefee-switch" type="checkbox" checked="@(serviceFeeSwitch==-1)">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showAMSProjectionYears)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Number of years"]</span>
+                        <span>
+                            @(Html.Kendo().DropDownList()
+                                .Name(userWidgetId + "-projectionyears")
+                                .AutoBind(false)
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .Value(projectionYears)
+                                .Text(projectionYears)
+                                .BindTo(projectionYearsList)
+                                .Events(e =>
+                                {
+                                    e.Change("saveProjectionYears");
+                                })
+                            )
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showClientOption)
+            {
+                <ul id="clientFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@clientLabel</span>
+                        <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", @clientLabel, @clientNameLabel, "Client", "Shared", userWidgetId))</span>
+                    </li>
+                    @foreach (ClientListViewModel client in clients)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="client-code">@client.ClientCode</span>
+                                <span class="client-name">@client.ClientName</span>
+                            </div>
+                            <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+        <div class="settings-footer mt-4">
+            <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+        </div>
+    </div>
+}
+
+<div class="text-center" style="font-size: 65px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
+        @if (Model?.Category == "in US Dollars")
+        {<span>@currencyFormat</span>}
+        @String.Format("{0:n0}", Model == null ? 0 : Model.Value)
+    </span>
+</div>
+<div class="text-center">
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? currencyString : sharedLocalizer[(Model?.Category==null?"":Model?.Category)])</span>
+</div>

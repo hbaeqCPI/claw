@@ -1,0 +1,80 @@
+﻿@model string
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAuthorizationService AuthorizationService
+@{
+    var canAccessCostEstimator = (await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessCostEstimator)).Succeeded;
+    var canAccessTmkCostEstimator = (await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessCostEstimator)).Succeeded;
+}
+<div class="ipdc-nav sidebar-nav p-3">
+    <ul class="nav nav-pills cpi-nav-vertical flex-column">
+        @*<li class="nav-item">
+            <a asp-action="Index" class="nav-link @(Model == IpdcNavPages.Home ? "active" : "")">
+                <span class="fad fa-home fa-fixed-width"></span>@Localizer["Home"]
+            </a>
+        </li>*@
+        @if(User.IsInSystem(SystemType.ForeignFiling))
+        {
+        <li class="nav-item">
+            <a asp-action="ForeignFiling" class="nav-link @(Model == IpdcNavPages.ForeignFilingPortfolioReview ? "active" : "")">
+                <span class="fad fa-globe fa-fixed-width"></span>@Localizer["Foreign Filing Review"]
+            </a>
+        </li>
+        }
+        @if(User.IsInSystem(SystemType.PatClearance))
+        {
+        <li class="nav-item">
+            <a asp-action="PatClearance" class="nav-link @(Model == IpdcNavPages.PatentClearanceReview ? "active" : "")">
+                <span class="fad fa-check-double fa-fixed-width"></span>@Localizer["Patent Clearance Review"]
+            </a>
+        </li>
+        }
+        @if(User.IsInSystem(SystemType.AMS))
+        {
+        <li class="nav-item">
+            <a asp-action="AMS" class="nav-link @(Model == IpdcNavPages.AnnuityPortfolioReview ? "active" : "")">
+                <span class="fad fa-ballot fa-fixed-width"></span>@Localizer["Annuity Portfolio Review"]
+            </a>
+        </li>
+        }
+        @if(User.IsInSystem(SystemType.DMS))
+        {
+        <li class="nav-item">
+            <a asp-action="DMS" class="nav-link @(Model == IpdcNavPages.DisclosureReview ? "active" : "")">
+                <span class="fad fa-lightbulb-on fa-fixed-width"></span>@Localizer["Invention Disclosure Review"]
+            </a>
+        </li>
+        }
+        @if(User.IsInSystem(SystemType.RMS))
+        {
+        <li class="nav-item">
+            <a asp-action="RMS" class="nav-link @(Model == IpdcNavPages.TrademarkRenewalPortfolioReview ? "active" : "")">
+                <span class="fad fa-registered fa-fixed-width"></span>@Localizer["Trademark Renewal Review"]
+            </a>
+        </li>
+        }
+        @if(User.IsInSystem(SystemType.SearchRequest))
+        {
+        <li class="nav-item">
+            <a asp-action="SearchRequest" class="nav-link @(Model == IpdcNavPages.TrademarkSearchRequestReview ? "active" : "")">
+                <span class="fad fa-search fa-fixed-width"></span>@Localizer["Search Request Review"]
+            </a>
+        </li>
+        }
+        @if(canAccessCostEstimator)
+       {
+        <li class="nav-item">
+            <a asp-action="CostEstimator" class="nav-link @(Model == IpdcNavPages.CostEstimator ? "active" : "")">
+                <span class="fad fa-money-bill fa-fixed-width"></span>@Localizer["Cost Estimator"]
+            </a>
+        </li>           
+       }
+       @if(canAccessTmkCostEstimator)
+       {
+        <li class="nav-item">
+            <a asp-action="TmkCostEstimator" class="nav-link @(Model == IpdcNavPages.TrademarkCostEstimator ? "active" : "")">
+                <span class="fad fa-money-bill fa-fixed-width"></span>@Localizer["Trademark Cost Estimator"]
+            </a>
+        </li>           
+       }
+    </ul>
+</div>

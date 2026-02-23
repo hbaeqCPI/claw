@@ -1,0 +1,34 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var systemType = ViewData["SystemType"]?.ToString();
+}
+
+@(Html.Kendo().Grid<EmailTypeSearchResultViewModel>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Name).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: EmailTypeId#", fromSearch = true }), "Name"));
+                    columns.Bound(m => m.Description);
+                    columns.Bound(m => m.ContentTypeDescription);
+                    columns.Bound(m => m.Template);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true, systemType = systemType }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                //.ColumnMenu()
+                .Excel(excel => excel.FileName("EmailTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "EmailSetup")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error($"{ViewBag.ActivePage}.searchResultGridError"))
+                .Events(events => events.RequestEnd($"{ViewBag.ActivePage}.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "EmailSetup")
+                .Data($"{ViewBag.ActivePage}.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Name))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

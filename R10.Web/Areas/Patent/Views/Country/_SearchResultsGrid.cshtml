@@ -1,0 +1,32 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<PatCountry>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CountryID#", fromSearch = true }), "Country")).Width(200);
+                    columns.Bound(m => m.CountryName);
+                    columns.Bound(m => m.CPICode);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                //.ColumnMenu()
+                .Excel(excel => excel.FileName("PatCountryList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Country")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("patCountryPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("patCountryPage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "Country")
+                .Data("patCountryPage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Country))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

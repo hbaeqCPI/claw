@@ -1,0 +1,51 @@
+﻿@model DocPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var pageId = Model.PageId;
+    var formId = $"{pageId}-RefineSearch";
+    var gridId = $"{pageId}-SearchGrid";
+}
+
+
+<div class="page-sidebar refine-search" data-show-filters="@Localizer["Show filters"]" style="height:100%">
+    <div class="header">
+        <div class="title">@Localizer["Search"]</div>
+        <nav class="nav-right">
+            <a href="#" class="nav-link show-results" title="@Localizer["Show results"]" role="button">@Localizer["Show results"]<span class="total-results-count"></span><i class="fal fa-long-arrow-right pl-1"></i></a>
+        </nav>
+        <nav class="nav">
+            <a class="nav-link search-submit" href="#" title="@Localizer["Search"]" role="button"><i class="fal fa-search pr-1"></i><span>@Localizer["Search"]</span></a>
+            <a class="nav-link search-clear" href="#" title="@Localizer["Clear"]" role="button"><i class="fal fa-times pr-1"></i><span>@Localizer["Clear"]</span></a>
+        </nav>
+    </div>
+    @await Html.PartialAsync("_SearchTabHeader", Model)
+
+    <form id="@formId" data-no-results="@Localizer["Your search did not match any records."]" asp-action="Search">
+        <div id="documentSubSearchContainer" data-subsearch-url="@Url.Action("GetSubSearchView", "Documents")">
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        documentPage.initializeSearchTabMain({
+            containerId: "#@pageId",
+            searchFormId: "#@formId",
+            subSearchContainerId: "#documentSubSearchContainer",
+            searchResultContainerId: "#documentResultsContainer",
+            screenComboId: "#ScreenCode_documentSearch",
+            searchGridId: "#@gridId",
+            url: "@Context.Request.PathBase@Context.Request.Path"
+        });
+    });
+</script>
+
+<style>
+
+  #@gridId tr:hover {
+        cursor:pointer;
+    }
+    #@(gridId) tr.k-state-selected {
+        background-color: var(--grid-hover) !important;
+    }
+</style>

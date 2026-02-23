@@ -1,0 +1,81 @@
+﻿@model EmailTemplate
+@using System.Net
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.EmailTemplateId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var screen = ViewData["PageId"];
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="EmailTemplateId" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content  detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-sm-6 col-md-6 col-lg-4 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="Name"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Name" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Name"></span>
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-12 col-lg-8 col-xl-8">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+            <div class="col-12 mt-2">
+                <div class="html-editor @(isReadOnly ? "disabled" : "")">
+                    @(Html.Kendo().Editor()
+                            .Name("Template")
+                            .Value(WebUtility.HtmlDecode(Model.Template))
+                            .HtmlAttributes(new {style = "height:580px", aria_label = "editor" })
+                            .Resizable(resizable => resizable.Content(true).Toolbar(true))
+                            .Events(events => events
+                        .Change($"{ViewBag.ActivePage}.editorModified")
+                                .Execute($"{ViewBag.ActivePage}.markDirty")
+                                .Paste($"{ViewBag.ActivePage}.markDirty")
+                                )
+                            .Tools(tools => tools.Clear()
+                                .CustomTemplate(x => x.Template(
+                                    Html.Kendo().ComboBox()
+                                    .Name("TemplateDataFields")
+                                    .Placeholder("Data Fields")
+                                    .DataTextField("Text")
+                                    .DataValueField("Value")
+                                    .AutoBind(false)
+                                    .DataSource(source =>
+                                    {
+                                        source.Read(read =>
+                                        {
+                                            read.Action("GetDataFieldsList", "EmailTemplate");
+                                        });
+                                    })
+                                    .Events(events => events.Change($"{ViewBag.ActivePage}.templateDataFieldsChange"))
+                                    .ToClientTemplate()
+                                        .ToString()
+                                    ))
+                                .Bold().Italic().Underline().Strikethrough()
+                                .JustifyLeft().JustifyCenter().JustifyRight().JustifyFull().InsertUnorderedList().InsertOrderedList()
+                                .Outdent().Indent().CreateLink().Unlink().InsertImage().InsertFile()
+                                .TableEditing().ViewHtml().Formatting()
+                                .CleanFormatting().FontName().FontSize().ForeColor().BackColor().Print()
+                            ))
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+

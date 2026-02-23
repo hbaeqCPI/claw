@@ -1,0 +1,96 @@
+﻿@model FamilyTreeDialogModel
+
+<div class="modal fade show" id="RemarksDialog" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+        @if (Model.CanModify)
+        {
+            <form id="RemarksForm" method="post" asp-action="SaveFamilyModal" asp-controller="@ViewBag.Module">
+                <input type="hidden" id="Id" name="Id" value="@Model.Id">
+                <input type="hidden" id="ModalType" name="ModalType" value="@Model.ModalType">
+                <input type="hidden" id="Type" name="Type" value="@Model.Type">
+                <input type="hidden" id="CanModify" name="CanModify" value="@Model.CanModify.ToString()">
+
+
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">Edit Remarks for @Model.RecordTitle</h4>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <div class="row mt-4 bg-primary text-white">
+                            <textarea rows="12" class="form-control form-control-sm font-weight-bold"
+                            id="Remarks" name="Remarks"
+                            placeholder="" @(Model.CanModify ? "" : "disabled")>@Model.Remarks</textarea>
+                        </div>
+                        <span class="message"></span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-undo-alt pr-2"></i> Close
+                    </button>
+                    <button id="submitRemarks" type="submit" class="btn btn-primary" @(Model.CanModify ? "" : "disabled")>Save changes</button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">Edit Remarks for @Model.RecordTitle</h4>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <div class="row mt-4 bg-primary text-white">
+                            <textarea rows="12" class="form-control form-control-sm font-weight-bold"
+                                        id="Remarks" name="Remarks"
+                                        placeholder="" disabled>@Model.Remarks</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-undo-alt pr-2"></i> Close
+                    </button>
+                    <button class="btn btn-primary" data-dismiss="modal" disabled>Save changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    $(document).off('submit', '#RemarksForm').on("submit", '#RemarksForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        $.ajax({
+            url: form.attr("action"),
+            type: form.attr("method"),
+            data: form.serialize(),
+            success: function (response) {
+                pageHelper.showSuccess("Change has been saved successfully.");
+                $("#RemarksDialog").modal("hide");
+            },
+            error: function (xhr) {
+                let errorMessage = "An error occurred.";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    // console.log(response);
+                    if (response.errors && Array.isArray(response.errors)) {
+                        errorMessage = response.errors.map(err => err.Value.join(" ")).join(" ");
+                        errorMessage = errorMessage.replace(/\\u([\dA-F]{4})/gi, function(match, grp) {
+                            return String.fromCharCode(parseInt(grp, 16));
+                        });
+                    } else {
+                        errorMessage = xhr.responseText;
+                    }
+                } catch (e) {
+                    errorMessage = xhr.responseText;
+                }
+                $(".message").html(`<div class="alert alert-danger">Error: ${errorMessage}</div>`);
+            }
+        });
+    });
+</script>

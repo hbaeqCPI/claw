@@ -1,0 +1,99 @@
+﻿@model DefaultImageViewModel?
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IDocumentStorage DocumentStorage
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var pageName = ViewBag.ActivePage;
+    var saveAction = "SaveDroppedDefaultImage";
+    var saveController = "DocDocuments";
+    var saveArea = "Shared";
+    var saveFolderId = Model?.FolderId.ToString();
+    var settings = await Settings.GetSetting();
+    var isDefaultStorage = settings.DocumentStorage == DocumentStorageOptions.BlobOrFileSystem || settings.DocumentStorage == DocumentStorageOptions.SharePoint;
+
+    switch (settings.DocumentStorage)
+    {
+        case DocumentStorageOptions.iManage:
+            saveController = "iManageWork";
+            saveArea = "";
+            saveFolderId = "0";
+            break;
+        case DocumentStorageOptions.NetDocuments:
+            saveController = "NetDocs";
+            saveArea = "";
+            saveFolderId = "0";
+            break;
+    }
+}
+
+<div class="default-image" id="dropZoneElement_@pageName">
+    <div class="content">
+        @if (string.IsNullOrEmpty(Model?.ImageFile))
+        {
+            <span class="no-image" title="@Localizer["No image"]"><i class="fas fa-camera-alt fa-3x"></i></span>
+            @if ((bool)ViewBag.CanUploadImage && !string.IsNullOrEmpty(saveFolderId))
+            {
+                <p class="pt-5" style="font-size: 12px">@Localizer["DRAG AND DROP DEFAULT IMAGE"]</p>
+                <div id="UploadDefaultImageZone" class="d-none">
+                    @(
+                        Html.Kendo().Upload()
+                        .Name($"droppedFile")
+                        .Async(a => a
+                        .Save(saveAction, saveController, new { Area = saveArea, documentLink = ViewBag.DocumentLink, roleLink = ViewBag.RoleLink, folderId = saveFolderId })
+                        .AutoUpload(true)
+                        .Batch(true)
+                        )
+                        .DropZone($"#dropZoneElement_{pageName}")
+                        .ShowFileList(false)
+                        .Multiple(false)
+                        .Events(e => e.Error($"{pageName}.image.onUploadAsyncFail").Success($"function(e) {{{pageName}.image.onUploadDefaultImageSuccess(e,{pageName});}}"))
+                        )
+                </div>
+            }
+        }
+        else if (!isDefaultStorage)
+        {
+            <div class="imanage-default-image doc-viewer-default-image" data-url="@Url.Action("DefaultImage", saveController, new { Area = "", Id = Model?.DriveItemId })">
+                <div>&nbsp;</div>
+            </div>
+        }
+        else if (ImageHelper.IsImageFile(Model?.ImageFile ?? ""))
+        {
+            if (DocumentStorage.IsImageOnFile(Model?.System ?? "", Model?.ImageFile ?? ""))
+            {
+                <img class="type-image" title="@Model?.ImageTitle" src="@Url.Content($"~/FileViewer/GetImage?system={Model?.System}&filename={Model?.ImageFile}&screenCode={Model?.ScreenCode}&key={Model?.Key}")" />
+            }
+            else
+            {
+                <span class="no-image" title="@Localizer["Image not found"]"><i class="fas fa-image fa-3x"></i></span>
+            }
+        }
+        <div class="title">@Model?.ImageTitle</div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var defaultImage = $(`#${@(pageName).detailContentContainer}`).find(".default-image");
+        if (defaultImage.length > 0) {
+            var image = defaultImage.find("img.type-image");
+            if (image.length > 0)
+                image.lightBox();
+    @*prompt before opening url*@
+    @*todo: add "Do not ask me again" option ??*@
+                else {
+                var link = defaultImage.find(".type-url");
+                if (link.length > 0) {
+                    link.on("click", function (e) {
+                        e.preventDefault();
+                        var url = link.data("image-file");
+                        cpiConfirm.confirm(link.attr("title").toUpperCase(), link.data("link-message"), function () {
+                            window.open(url);
+                        });
+                    });
+                }
+            }
+        }
+    });
+</script>
+

@@ -1,0 +1,68 @@
+﻿@using R10.Core.Entities.Documents
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();    
+}
+<div id="documentMergeDialog" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="documentMergeDialogTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentMergeDialogTitle">@Localizer["Merge Document"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="@Localizer["Close"]">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body container-fluid">               
+                <div id="errorSummary" class="alert alert-danger d-none alert-dismissible fade show" role="alert">
+                    <div class="content"></div>
+                    <button type="button" class="close alert-close" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="form-row cpiMainEntry">
+                    <div class="col-10">
+                        <div class="form-group float-label">
+                            <label for="MergedDocName" class="required">@Localizer["Merged Document Name"]</label>
+                            <input type="text" class="form-control form-control-sm" required id="MergedDocName" />
+                            <span class="field-validation-error" style="display:none;" data-valmsg-for="MergedDocName">
+                                <span id="MergedDocName-error">@Localizer["Merged Document Name is required"]</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>                 
+                   
+                <div class="form-row">
+                    <div class="col">
+                        @(Html.Kendo().Grid<DocDocumentListViewModel>()
+                            .Name("imageMergeGrid")                            
+                            .Columns(columns =>
+                            {
+                                columns.Bound(p => p.DocId).ClientTemplate($"<i class='fal fa-grip-lines sort-handler image-item-handler' title='{Localizer["Sort"]}'></i>")
+                                .ClientHeaderTemplate("&nbsp;").Width(20);
+                                columns.Bound(p => p.DocName).ClientHeaderTemplate(Localizer["Title"]).Width(280);
+                            })
+                            .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Responsive(false))
+                            .HtmlAttributes(new { @class = "k-grid" })
+                        )
+                        @(Html.Kendo().Sortable()
+                            .For($"#imageMergeGrid")
+                            .Filter("table > tbody > tr:not(.k-grid-edit-row)")
+                            .Cursor("grabbing")
+                            .Handler(".image-item-handler")
+                            .HintHandler("pageHelper.hint")
+                            .PlaceholderHandler("pageHelper.placeholder")
+                            .ContainerSelector($"#imageMergeGrid tbody")
+                            .Events(events => events.Change($"function (e) {{ var mergeGrid = $('#imageMergeGrid').data('kendoGrid'), oldIndex = e.oldIndex, newIndex = e.newIndex, data = mergeGrid.dataSource.data(), dataItem = mergeGrid.dataSource.getByUid(e.item.data('uid')); mergeGrid.dataSource.remove(dataItem); mergeGrid.dataSource.insert(newIndex, dataItem); }}"))
+                        )
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="mergeDocument" type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                    <button id="cancel" type="button" class="btn btn-secondary  float-right" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

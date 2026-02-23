@@ -1,0 +1,394 @@
+﻿@model ChartDTO
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@using R10.Core.Entities.GeneralMatter
+@inject IStringLocalizer<SharedResource> sharedLocalizer
+@inject ISystemSettings<AMSSetting> amsSettings
+@inject IClientService ClientService
+@inject IParentEntityService<PatCountry, PatAreaCountry> CountryService
+@{
+    var AMSSettings = await amsSettings.GetSetting();
+    var clientLabel = sharedLocalizer[AMSSettings.LabelClient ?? "Client"];
+    var clientNameLabel = sharedLocalizer[AMSSettings.LabelClientName ?? "Client Name"];
+    var countryLabel = sharedLocalizer["Country"];
+    var countryNameLabel = sharedLocalizer["Country Name"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-count";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+        
+    bool showAMSServiceFee = widgetSettings.Property("ShowAMSServiceFee") != null ? (widgetSettings["ShowAMSServiceFee"] ?? false).Value<bool>() : false;
+    if (!AMSSettings.HasServiceFee) showAMSServiceFee = false;
+        
+    bool showExcludeOrphan = widgetSettings.Property("ShowExcludeOrphan") != null ? (widgetSettings["ShowExcludeOrphan"] ?? false).Value<bool>() : false;
+    if (User.IsSystemEnabled(SystemType.AMS) && !User.IsSystemEnabled(SystemType.Patent))
+    {
+        showExcludeOrphan = false;
+    }
+
+    bool showInstructed = widgetSettings.Property("ShowInstructed") != null ? (widgetSettings["ShowInstructed"] ?? false).Value<bool>() : false;
+    bool showAMSProjectionYears = widgetSettings.Property("ShowAMSProjectionYears") != null ? (widgetSettings["ShowAMSProjectionYears"] ?? false).Value<bool>() : false;
+    bool showClientOption = widgetSettings.Property("ShowClient") != null ? (widgetSettings["ShowClient"] ?? false).Value<bool>() : false;
+    bool showCountryOption = widgetSettings.Property("ShowCountry") != null ? (widgetSettings["ShowCountry"] ?? false).Value<bool>() : false;
+    bool showStatusCode = widgetSettings.Property("ShowStatusCode") != null ? (widgetSettings["ShowStatusCode"] ?? false).Value<bool>() : false;    
+    bool showSettings = (showInstructed || showAMSServiceFee || showAMSProjectionYears || showClientOption || showCountryOption || showStatusCode || showExcludeOrphan);
+
+    int serviceFeeSwitch = userSettings.Property("ServiceFeeSwitch") != null ? (userSettings["ServiceFeeSwitch"] ?? -1).Value<int>() : -1;
+    int includeInstructedSwitch = userSettings.Property("IncludeInstructedSwitch") != null ? (userSettings["IncludeInstructedSwitch"] ?? -1).Value<int>() : -1;
+    bool excludeOrphanSwitch = userSettings.Property("ExcludeOrphan") != null ? (userSettings["ExcludeOrphan"] ?? false).Value<bool>() : false;
+    
+    int amsProjectionYears = AMSSettings.ProjectionYears;
+    string projectionYears = userSettings.Property("ProjectionYears") != null ? (userSettings["ProjectionYears"] ?? "2").Value<string>() ?? "2" : "2";
+
+    List<SelectListItem> projectionYearsList = new List<SelectListItem>();
+    for (int i = 1; i < amsProjectionYears; i++)
+    {
+        var item = new SelectListItem();
+        var value = i + 1;
+        item.Text = value.ToString();
+        item.Value = value.ToString();
+        projectionYearsList.Add(item);
+    }
+
+    var widgetCurrencyFormat = AMSSettings.WidgetCurrencyFormat ?? "$|in US Dollars";
+    var currencyFormat = widgetCurrencyFormat.Split("|")[0];
+    var currencyString = widgetCurrencyFormat.Split("|")[1];
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    var clientsSettingsProperty = userSettings.Property("Clients");
+    if (clientsSettingsProperty != null)
+    {
+        try
+        {
+            var clientFilter = ((JArray)clientsSettingsProperty.Value).Select(a => (a ?? "").ToString()).ToList();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientCode))
+                                        .Select(c => new ClientListViewModel()
+                                        {
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+
+                clients.AddRange(clientFilter.Where(f => !clients.Any(c => c.ClientCode == f)).Select(f => new ClientListViewModel()
+                {
+                    ClientCode = f
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    var countriesSettingsProperty = userSettings.Property("Countries");
+    if (countriesSettingsProperty != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)countriesSettingsProperty.Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    string widgetTitleString = sharedLocalizer["Projected Annuity Cost in X Years"];
+    widgetTitleString = widgetTitleString.Replace("X", projectionYears);
+
+    List<SelectListItem> statusCodeList = new List<SelectListItem>()
+    {
+        new SelectListItem() { Text = "Active Status", Value = "1" },
+        new SelectListItem() { Text = "Inactive Status", Value = "3" },
+        new SelectListItem() { Text = "All Status", Value = "2" }
+    };    
+    string statusCodeVal = userSettings.Property("StatusCode") != null ? (userSettings["StatusCode"] ?? "2").Value<string>() ?? "2" : "2";
+    string statusCodeTxt = statusCodeList.Where(d => d.Value.ToLower() == statusCodeVal.ToLower()).Select(d => d.Text).FirstOrDefault() ?? "All Status";
+}
+<style>
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+    #countryFilter_@userWidgetId .country-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var refresh = false;
+
+    function saveProjectionYears(e) {
+        saveSetting(@widget.Id, `{ ProjectionYears: "${this.selectedIndex >= 0 ? this.dataItem(this.selectedIndex).Value : ""}" }`, function () { refresh = true; });
+    }
+
+    function saveStatusCode(e) {
+        saveSetting(@widget.Id, `{ StatusCode: ${this.selectedIndex >= 0 ? this.dataItem(this.selectedIndex).Value : ""} }`, function () { refresh = true; });
+    }
+
+    $(document).ready(function () {
+        var clientList = [@Html.Raw(String.Join(",", clients.Select(c => $"'{c.ClientCode}'").ToList()))];
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+        
+        if (@showAMSProjectionYears.ToString().ToLower())
+        {
+            var widgetTitle = $("#@widget.Id .widget-header .widget-title");
+            widgetTitle.text(`@Html.Raw(sharedLocalizer[widgetTitleString])`);
+        }
+        
+        $(document).on("click", "#@userWidgetId-servicefee-switch", function (e) {
+            saveSetting(@widget.Id, `{ ServiceFeeSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+
+        $(document).on("click", "#@userWidgetId-includeinstructed-switch", function (e) {
+            saveSetting(@widget.Id, `{ IncludeInstructedSwitch: ${$(this).is(':checked') ? -1 : 1} }`, function () { refresh = true; });
+        });
+
+        $(document).on("click", "#@userWidgetId-exclude-orphan", function (e) {
+            saveSetting(@widget.Id, `{ ExcludeOrphan: ${$(this).is(':checked')} }`, function () { refresh = true; });
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).attr("data-id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientCode, clientList) == -1) {
+                    clientList.push(clientCode);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientCode}" title="Remove ${clientCode}"><i class="fal fa-trash-alt" style="cursor:pointer;"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: ${JSON.stringify(clientList)} }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+    });
+</script>
+@if (showSettings)
+{
+    <div class="widget-settings" style="max-height: 425px;">
+        <div class="settings-body">
+            @if (showExcludeOrphan)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Exclude orphans"]</span>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@userWidgetId-exclude-orphan" type="checkbox" checked="@excludeOrphanSwitch" data-state="@excludeOrphanSwitch.ToString().ToLower()" data-setting="ExcludeOrphan" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showAMSServiceFee)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Include service fee"]</span>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@userWidgetId-servicefee-switch" type="checkbox" checked="@(serviceFeeSwitch==-1)">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showInstructed)
+            {
+                <ul class="list-group">                    
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Include instructed"]</span>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="@userWidgetId-includeinstructed-switch" type="checkbox" checked="@(includeInstructedSwitch==-1)">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showAMSProjectionYears)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Number of years"]</span>
+                        <span>
+                            @(Html.Kendo().DropDownList()
+                                .Name(userWidgetId + "-projectionyears")
+                                .AutoBind(false)
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .Value(projectionYears)
+                                .Text(projectionYears)
+                                .BindTo(projectionYearsList)
+                                .Events(e =>
+                                {
+                                    e.Change("saveProjectionYears");
+                                })
+                            )
+                        </span>
+                    </li>
+                </ul>
+            }
+            @if (showClientOption)
+            {
+                <ul id="clientFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@clientLabel</span>
+                        <span>
+                            @await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientCode("ClientCode", clientLabel, clientNameLabel, "AnnuitiesDue", "", "AMS", userWidgetId))
+                        </span>
+                    </li>
+                    @foreach (ClientListViewModel client in clients.OrderBy(c => c.ClientCode))
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="client-code">@client.ClientCode</span>
+                                <span class="client-name">@client.ClientName</span>
+                            </div>
+                            <div class="delete-filter delete-client" data-id="@client.ClientCode" title="Remove @client.ClientCode"><i class="fal fa-trash-alt" style="@(widget.IsDetail ? "cursor:pointer;" : "")"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showCountryOption)
+            {
+                <ul id="countryFilter_@userWidgetId" class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@countryLabel</span>
+                        <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "AnnuitiesDue", "AMS", userWidgetId))</span>
+                    </li>
+                    @foreach (CountryLookupViewModel country in countries)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <span class="country-code">@country.Country</span>
+                                <span class="country-name">@country.CountryName</span>
+                            </div>
+                            <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (showStatusCode)
+            {
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@sharedLocalizer["Status Code"]</span>
+                        <span>
+                            @(Html.Kendo().DropDownList()
+                                .Name(userWidgetId + "-statuscode")
+                                .AutoBind(false)
+                                .DataTextField("Text")
+                                .DataValueField("Value")
+                                .Value(statusCodeVal)
+                                .Text(statusCodeTxt)
+                                .BindTo(statusCodeList)
+                                .Events(e =>
+                                {
+                                    e.Change("saveStatusCode");
+                                })
+                            )
+                        </span>
+                    </li>
+                </ul>
+            }
+        </div>
+        <div class="settings-footer mt-4">
+            <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+        </div>
+    </div>
+}
+
+<div class="text-center" style="font-size: 65px;">
+    <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
+        @if (Model?.Category == "in US Dollars")
+        {<span>@currencyFormat</span>}
+        @String.Format("{0:n0}", Model == null ? 0 : Model.Value)
+    </span>
+</div>
+<div class="text-center">
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? currencyString : sharedLocalizer[Model?.Category])</span>
+</div>

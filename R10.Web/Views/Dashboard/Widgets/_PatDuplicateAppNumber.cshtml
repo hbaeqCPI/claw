@@ -1,0 +1,162 @@
+﻿@model IEnumerable<CaseListDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IStringLocalizer<PatentResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@inject IEntityService<PatCaseType> _patCaseTypeService;
+
+@{
+    var patSettings = await Settings.GetSetting();
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+
+    var userWidgetId = widget.Id.ToString() + "-duplicate-appnumber";
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var template = string.IsNullOrEmpty(widget.Template) ? $"<div class='name d-flex  justify-content-between'><span><a href='./Patent/CountryApplication/detail/#=Id#'>#=kendo.htmlEncode(CaseNumber)# #= Country == null ? '' : kendo.htmlEncode(Country)# #= SubCase == null ? '' : kendo.htmlEncode(SubCase)# #= Status == null ? '' : kendo.htmlEncode(Status)#</a></span></div><div class='title small ellipsis'>#= Title == null ? '&nbsp;' : kendo.htmlEncode(Title)#</div><div class='title small ellipsis'>{Localizer["Application No"]}:#= Action == null ? '' : kendo.htmlEncode(Action)# {Localizer["Filing Date"]}: #= DueDate == null ? '' : kendo.format('{{0:dd-MMM-yyyy}}', DueDate)#</div>" : widget.Template;
+
+
+    bool showAllowPaging = userSettings.Property("ShowAllowPaging") != null ? (userSettings["ShowAllowPaging"] ?? false).Value<bool>() : false;
+    bool allowPaging = !showAllowPaging || userSettings.Property("AllowPaging") == null ? true : (userSettings["AllowPaging"] ?? false).Value<bool>();
+    int pageSize = allowPaging ? userSettings.Property("PageSize") != null ? (userSettings["PageSize"] ?? 0).Value<int>() : 6 : 0;
+
+    List<PatCaseType> patCaseTypes = new List<PatCaseType>();
+
+    if (userSettings.Property("PatCaseTypes") != null)
+    {
+        try
+        {
+            int[] caseTypeFilter = ((JArray)userSettings.Property("PatCaseTypes").Value).Select(a => (int)a).ToArray();
+
+            if (caseTypeFilter.Count() > 0)
+            {
+                patCaseTypes = await _patCaseTypeService.QueryableList
+                        .Where(a => caseTypeFilter.Contains(a.CaseTypeId))
+                        .Select(a => new PatCaseType
+                        {
+                            CaseTypeId = a.CaseTypeId,
+                            CaseType = a.CaseType
+                        })
+                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+
+<script>
+    $(document).ready(function () {
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        var patCaseTypeList = [@String.Join(",", patCaseTypes.Select(a => a.CaseTypeId).ToList())];
+        $(document).off("click", "#patCaseTypeFilter_@userWidgetId .delete-patCaseType");
+        $(document).off("change", "#PatCaseTypeCode_@userWidgetId");
+        $(document).on("click", "#patCaseTypeFilter_@userWidgetId .delete-patCaseType", function (e) {
+            var item = $.inArray($(this).data("id"), patCaseTypeList);
+
+            if (item !== -1) {
+                patCaseTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#PatCaseTypeCode_@userWidgetId", function (e) {
+            var caseType = $(this).data("kendoComboBox");
+
+            if (caseType.selectedIndex >= 0) {
+                var dataItem = caseType.dataItem(caseType.selectedIndex);
+
+                var caseTypeId = dataItem.CaseTypeId;
+                var caseTypeCode = dataItem.CaseType;
+
+                if ($.inArray(caseTypeId, patCaseTypeList) == -1) {
+                    patCaseTypeList.push(caseTypeId);
+                    $("#patCaseTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="patCaseType-Code">${caseTypeCode}</span></div><div class="delete-filter delete-patCaseType" data-id="${caseTypeId}" title="Remove ${caseTypeCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ PatCaseTypes: [${patCaseTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            caseType.value("");
+        });
+    });
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="patCaseTypeFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Exclude Case Type(s)"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "PatCaseTypeCode", action = "GetActiveCaseTypeList", controller = "CaseType", area = "Patent", screen = userWidgetId, textProperty = "CaseType", valueProperty = "CaseTypeId", itemTemplate = "<div class='row'><div class='col-md-3'><span>#= data.CaseType  #</span></div><div class='col-md-5'><span>#= data.Description #</span></div></div>", listWidth = 450 })
+                </span>
+            </li>
+            @foreach (PatCaseType caseType in patCaseTypes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="patCaseType-Code">@caseType.CaseType</span>
+                    </div>
+                    <div class="delete-filter delete-patCaseType" data-id="@caseType.CaseTypeId" title="Remove @caseType.CaseType"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(pageSize > 0).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(pageSize)
+        .ServerOperation(false)
+        )
+)
+
+@if (Model?.Count() <= pageSize)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

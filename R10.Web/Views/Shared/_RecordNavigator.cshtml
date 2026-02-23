@@ -1,0 +1,16 @@
+﻿@inject IStringLocalizer<SharedResource> Localizer
+<div class="k-pager-wrap k-grid-pager k-widget k-floatwrap">
+    <a class="k-link k-pager-nav navigate" data-dir="top" tabindex="-1">
+        <span class="k-icon k-i-seek-w"></span>
+    </a>
+    <a class="k-link k-pager-nav navigate" data-dir="prev" tabindex="-1">
+        <span class="k-icon k-i-arrow-w"></span>
+    </a>
+    <a class="k-link k-pager-nav navigate" data-dir="next" tabindex="-1">
+        <span class="k-icon k-i-arrow-e"></span>
+    </a>
+    <a class="k-link k-pager-nav navigate" data-dir="last" tabindex="-1">
+        <span class="k-icon k-i-seek-e"></span>
+    </a>
+    <input type="text" style="border: 1px solid var(--control-border); width:80px;height: 80%; text-align:center;" class="currentRecPosition" />&nbsp;@Localizer["of"]&nbsp;<span class="navTotalRecs"></span>&nbsp;@Localizer["records"]
+</div>

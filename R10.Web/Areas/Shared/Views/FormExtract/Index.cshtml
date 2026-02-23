@@ -1,0 +1,12 @@
+﻿@model FormExtractPageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Form Data Extract"];
+}
+
+<div id="formExtract" class="page-main-flex">
+    @await Html.PartialAsync("_SearchTab", Model)
+
+    @await Html.PartialAsync("_MainPane")
+
+</div>

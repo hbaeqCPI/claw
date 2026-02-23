@@ -1,0 +1,76 @@
+﻿@model WidgetViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+@if (Model.Id != 0)
+{
+    <script>
+        widgetCopyTempSetting = JSON.stringify(@Html.Raw(Model.UserSettings));
+    </script>
+    <div class="widget-header">        
+        <div class="row">           
+            <div class="col">     
+                <span class="widget-actions" style="float:right;">
+                    <i class="remove fal fa-times" title="@Localizer["Remove"]"></i>
+                    @if (Model.CreatorId != null && Model.CreatorId == User.GetUserIdentifier())
+                    {
+                        <i class="copyPreviewDelete fal fa-trash-alt" title="@Localizer["Delete"]"></i>
+                    }
+                    <i class="refresh fal fa-sync" title="@Localizer["Refresh"]"></i>
+                    <i class="settings fal fa-cog" title="@Localizer["Settings"]"></i>
+                    @if (Model.CanCopy)
+                    {
+                        <i class="copyPreviewCopy fal fa-copy" title="@Localizer["Copy"]"></i>
+                    }
+                    @if (Model.CanExpand)
+                    {
+                        <i class="copyPreviewView fal fa-expand-alt" title="@Localizer["Expand view"]"></i>
+                    }
+                    @if (Model.CanEmail)
+                    {
+                        <i class="fal fa-envelope pr-1 copyPreviewEmailBtn" data-widgetid="@Model.Id" data-viewname="@Model.ViewName" data-title="@Model.Title" title="@Localizer["Email"]"></i>
+                    }
+                    @if (Model.CanExportExcel)
+                    {
+                        <i class="fal fa-file-excel pr-1 copyPreviewExportExcel" data-widgetid="@Model.Id" title="@Localizer["Export to Excel"]"></i>
+                    }
+                    @if (Model.CanExportPDF)
+                    {
+                        <i class="fal fa-file-pdf pr-1 copyPreviewExportPDF" data-widgetid="@Model.Id" data-viewname="@Model.ViewName" title="@Localizer["Export to PDF"]"></i>
+                    }
+                    @if (Model.CanExportPpt)
+                    {
+                        <i class="fal fa-file-powerpoint pr-1 copyPreviewExportPPT" data-widgetid="@Model.Id" data-viewname="@Model.ViewName" data-title="@Model.Title" title="@Localizer["Export to PowerPoint"]"></i>
+                }
+                    @if (Model.CanDrillDown)
+                    {
+                        <i class="fal fa-sort-amount-down-alt pr-1 copyPreviewWidgetDrillDown-@Model.Id" data-widgetid="@Model.Id" title="@Localizer["Detail"]"></i>
+                    }
+                    @if (Model.CanExportPpt)
+                    {
+                        <i class="fal fa-square pr-1 copyPreviewPptChkBox" data-widgetid="@Model.Id" data-viewname="@Model.ViewName" data-title="@Model.Title" title="@Localizer["Add to list for export to PowerPoint"]"></i>
+                    }
+                </span>
+            </div>            
+        </div>        
+        <div class="row">
+            <div class="col">
+                @if (Model.CanEditTitle)
+                {
+                    <div class="form-group float-label">
+                        <i class="fal fa-pencil fa-sm titleInput" id="titleEditIcon-@Model.Id"></i>
+                        <input style="border-top:none; border-left:none; border-right:none;" class="form-control widgetTitleInput" maxlength="256" type="text" id="copyPreviewTitle-@Model.Id" data-id="@Model.Id" data-default-value="@Model.Title" value="@Model.Title" />
+                    </div>
+                    <span class="k-clear-value widgetTitleIcon" id="saveTitleIcon-@Model.Id" title="@Localizer["Save"]"><i data-widgetid="@Model.Id" class="k-icon fal fa-check widgetTitleSaveIcon"></i></span>
+                    <span class="k-clear-value widgetTitleIcon" id="clearTitleIcon-@Model.Id" title="@Localizer["Clear"]"><i data-widgetid="@Model.Id" class="k-icon fal fa-times widgetTitleClearIcon"></i></span>
+                }
+                else
+                {
+                    <span class="widget-title">@Model.Title</span>                    
+                }                
+            </div>
+        </div>
+    </div>
+    <div class="widget-content" data-id="@Model.Id" data-widget-id="@Model.WidgetId" @(Model.NextId == 0 ? "" : $"data-next-id={Model.NextId}")>
+        @await Html.PartialAsync(Model.ViewName, Model.Data, new ViewDataDictionary(this.ViewData) { { "WidgetViewModel", Model } })
+    </div>
+}

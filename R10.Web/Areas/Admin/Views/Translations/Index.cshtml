@@ -1,0 +1,164 @@
+﻿@model SidebarPageViewModel
+@{    
+    ViewData["Title"] = Model.PageTitle;
+    ViewData["PageId"] = Model.PageId;
+}
+
+@await Html.PartialAsync("_SidebarPage", Model)
+
+@section Scripts {
+    <script>
+        function getTranslationsGridFilter() {
+            return {
+                system: $("#System").val(),
+                menu: $("#Menu").val(),
+                searchTxt: $("#searchTxt").val(),
+                EmptyOnly: $("#EmptyOnly").is(":checked") ? true : false,
+                Locale: $("#Locale").val()
+            };
+        }
+
+        function searchTranslations() {
+            var grid = $("#gridTranslations").data("kendoGrid");
+
+            //todo: checkboxes not on current page are not cleared
+            grid.clearSelection();
+
+            grid.dataSource.query({
+                sort: { field: "Key", dir: "asc" },
+                page: 1,
+                pageSize: grid.dataSource.pageSize(),
+            });
+        }
+
+        function isTranslationEditable(e) {
+            var editEN = $("#AllowEN").is(":checked") ? true : false;
+            if (e.LocalizationCulture == "en") {
+                if (editEN) {
+                    return true;
+                }
+                else {
+                    //grid.tbody.find("tr[data-uid='" + e.uid + "']").find("td.translationValue").removeClass("editable-cell");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function onTranslationsDataBound(e) {
+            var editEN = $("#AllowEN").is(":checked") ? true : false;
+            var grid = $("#gridTranslations").data("kendoGrid");
+            var gridRows = grid.tbody.find("tr");
+
+            gridRows.each(function (e) {
+                var dataItem = grid.dataItem($(this));
+                if (dataItem.LocalizationCulture == "en") {
+                    if (!editEN) {
+                        $(this).find("td.translationValue").removeClass("editable-cell");
+                    }
+                }
+            })
+        }
+
+        function onTranslationsRequestEnd(e) {
+            if (e.type == "update" && !e.response.Errors) {
+                showStatus(e.response.success, e.response.errors);
+            }
+        }
+
+        //function error_handler(e) {
+        //    if (e.errors) {
+        //        var message = "Errors:\n";
+        //        $.each(e.errors, function (key, value) {
+        //            if ('errors' in value) {
+        //                $.each(value.errors, function () {
+        //                    message += this + "\n";
+        //                });
+        //            }
+        //        });
+        //        alert(message);
+        //    }
+        //}
+
+        function showStatus(message, errors, alertId) {
+            alertId = alertId == null ? "statusMessage" : alertId;
+
+            $(`#${alertId} ul`).remove();
+            $(`#${alertId} .message`).text(message);
+
+            if (errors == null || errors.length == 0) {
+                $(`#${alertId}`).addClass("alert-success");
+                $(`#${alertId}`).removeClass("alert-danger");
+                //$(`#${alertId} i`).addClass("fa-check-circle");
+                //$(`#${alertId} i`).removeClass("fa-exclamation-triangle");
+            }
+            else {
+                $(`#${alertId}`).addClass("alert-danger");
+                $(`#${alertId}`).removeClass("alert-success");
+                //$(`#${alertId} i`).addClass("fa-exclamation-triangle");
+                //$(`#${alertId} i`).removeClass("fa-check-circle");
+
+                if (errors.length != undefined && errors[0] != "") {
+                    var list = $(`#${alertId}`).append("<ul class='pt-4 errors'></ul>").find("ul");
+                    for (var i = 0; i < errors.length; i++) {
+                        if (errors[i] != "") {
+                            list.append(`<li>${errors[i]}</li>`);
+                        }
+                    }
+                }
+            }
+
+            $(`#${alertId}`).show();
+        }
+
+        $(document).ready(function () {
+            let delayTimer;
+
+            const container = "#@Model.PageId";
+            const sidebar = pageHelper.initializeSidebarPage(`${container} .page-sidebar`, `${container} .page-main`);
+            pageHelper.moveBreadcrumbs(container);
+            window.cpiBreadCrumbs.addNode({
+                name: container,
+                label: "@Model.PageTitle",
+                url: "",
+                updateHistory: true
+            });
+
+            $("#searchTxt").on("input", function (e) {
+                clearTimeout(delayTimer);
+                delayTimer = setTimeout(function () {
+                    searchTranslations();
+                }, 500);
+            });
+
+            $("#EmptyOnly").change(function (e) {
+                searchTranslations();
+            });
+
+            $("#AllowEN").change(function (e) {
+                var grid = $("#gridTranslations").data("kendoGrid");
+                grid.refresh();
+            });
+
+            $("#refreshCache").on("click", () => {
+                const baseUrl = $("body").data("base-url");
+                let url = `${baseUrl}/Admin/Translations/ResetCache`;
+
+                showStatus("Processing...");
+                cpiLoadingSpinner.show("", 2000);
+
+                $.get(url)
+                    .done((result) => {
+                        showStatus(result);
+                        cpiLoadingSpinner.hide();
+                    })
+                    .fail(function (error) {
+                        pageHelper.showErrors(error.responseText);
+                        cpiLoadingSpinner.hide();
+                    });
+            });
+
+        });
+
+    </script>
+}

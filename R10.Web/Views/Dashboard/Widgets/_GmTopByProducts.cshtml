@@ -1,0 +1,90 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json;
+@{
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-tree-map";
+
+    var jsonData = JsonConvert.SerializeObject(Model);    
+}
+@(Html.Kendo().Chart(Model)
+            .Name(userWidgetId)
+            .Title("")
+            .ChartArea(chartArea => chartArea
+                .Background("transparent")
+            )
+            .Series(series => series
+                .Column(model => model.Value, model => model.Group)
+                .ColorField("Color")
+                .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+                .Labels(labels => labels
+                    .Visible(true)
+                    .Format("{0}")
+                    .Template("#= value #")
+                    .Position(ChartBarLabelsPosition.OutsideEnd)
+                )
+                .Gap(1)
+                .Spacing(1)
+                .SegmentSpacing(2)
+            )
+            .SeriesColors(widget.SeriesColors)
+            .Tooltip(tooltip => tooltip
+                .Visible(true)
+                .Format("{0}")
+                .Template("#= category #: #= value #")
+            )
+            //Settings for PDF export using kendo built-in function
+            .Pdf(pdf => pdf
+                .FileName(@widget.Title.ToString())
+                //.PaperSize("A4")
+                .Landscape(false)
+                .Margin(m => m
+                    .Left(10)
+                    .Right(10)
+                    .Top(10)
+                    .Bottom(10))
+            )
+)
+@*@(Html.Kendo().TreeMap()
+        .Name(userWidgetId)
+        .ValueField("Value")
+        .TextField("Group")
+        .ColorField("Color")
+)
+<script>
+    $(document).ready(function () {
+        var dataSource = new kendo.data.HierarchicalDataSource({
+            data: [{
+                items: @Html.Raw(jsonData)
+            }],
+            schema: {
+                model: {
+                    children: "items"
+                }
+            }
+        });
+
+        var treeMap = $("#@userWidgetId").getKendoTreeMap();
+        treeMap.setDataSource(dataSource);
+
+        $("#@userWidgetId").kendoTooltip({
+            filter: ".k-leaf,.k-treemap-title",
+            position: "center",
+            content: function (e) {
+                var treemap = $("#@userWidgetId").data("kendoTreeMap");
+                var item = treemap.dataItem(e.target.closest(".k-treemap-tile"));
+                //return item.Group + ": " + item.Value;
+                return '<div style="font:12px Arial, Helvetica, sans-serif;white-space:pre; background-color:' + item.Color + ';">' + item.Group + ': ' + item.Value + '</div>';
+            }
+        });
+    });
+</script>
+<style>
+   .k-widget.k-tooltip {
+        border: none;
+        box-sizing: content-box;
+        padding: 5px 5px 5px 5px;
+        background-color: transparent;
+        font: 12px Arial, Helvetica, sans-serif !important;
+        color: white;
+    }
+</style>*@

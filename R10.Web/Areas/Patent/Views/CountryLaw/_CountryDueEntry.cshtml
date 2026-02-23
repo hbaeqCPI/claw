@@ -1,0 +1,339 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@model PatCountryDue
+@inject ISystemSettings<PatSetting> Settings
+@inject IPatCountryLawService CountryLawService
+@inject IStringLocalizer<CountryLawResource> Localizer
+
+@{
+    var settings = await Settings.GetSetting();
+
+    var screen = "patCountryLaw";
+    var caseNumberLabel = settings.LabelCaseNumber;
+
+    var enableComboPaging = settings.EnableComboBoxPaging;
+    var comboPagingSize = settings.ComboBoxPagingSize;
+
+    var requiredValidationMessages = typeof(PatCountryDue)
+        .GetProperties()
+        .Select(f => new { f.Name, RequiredValidation = f.GetCustomAttribute<RequiredAttribute>() })
+        .Where(v => v.RequiredValidation != null)
+        .Select(v => new { v.Name, v.RequiredValidation.ErrorMessage })
+        .ToList();
+
+    var labelCanGenerate = Localizer["Generate this Action?"].ToString();
+    var labelMultipleBasedOn = Localizer["If the action is conditional on two legal dates, check this box. This means there is a corresponding action in the law file with a different based on date. When this happens, the system will prompt you to select which action to keep in the application."].ToString();
+
+    var basedOnOptions = typeof(BasedOnOption).GetPublicConstantValues<string>().OrderBy(o => o);
+    bool copyLawAction = ViewBag.CopyLawAction ?? false;
+}
+
+<div class="modal fade" id="patCountryDueEntryDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="CountryDueSave"
+                  data-save-message="@Localizer["Record has been saved successfully."]">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer[copyLawAction ? "Copy Law Action" : Model.CDueId == 0 ? "Add Law Action" : "Edit Law Action"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body py-1">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="CountryLawID" />
+                        <input type="hidden" asp-for="CDueId" value="@Model.CDueId" /> @* because of weird behavior (copy, non zero value)*@
+                        @*<input type="hidden" asp-for="CPIAction" />*@
+                        <input type="hidden" asp-for="Country" />
+                        <input type="hidden" asp-for="CaseType" />
+                        <input type="hidden" asp-for="OldFollowupAction" />
+                        <input type="hidden" asp-for="ParentTStamp" />
+                        <input type="checkbox" asp-for="CPIAction" class="d-none" />
+
+                        @if (Model.CDueId > 0)
+                        {
+                            <input type="hidden" name="tStamp" value="@Convert.ToBase64String(Model.tStamp)" />
+                        }
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                            @if (Model.CPIAction)
+                            {
+                                <div class="dymo-alert">@Localizer["CPI Action: Limited Edit"]</div>
+                            }
+                            </div>
+                            <div class="col-12 col-md-6">
+                                @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 pt-2 pb-2">
+                                <span class="k-checkbox-label">@(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn))@labelMultipleBasedOn</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label class="required" asp-for="ActionDue"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="ActionDue" readonly />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("ComboBox",
+                                            new
+                                                 {
+                                                     name = "ActionDue",
+                                                     action = "GetActionDues",
+                                                     controller = "CountryLaw",
+                                                     defaultValue = Model.ActionDue,
+                                                     textProperty = "Text",
+                                                validationMessage = requiredValidationMessages.Where(v => v.Name == "ActionDue").Select(v => v.ErrorMessage).FirstOrDefault()
+                                            })
+                                    }
+                                    <span asp-validation-for="ActionDue"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label class="required" asp-for="ActionType"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="ActionType" readonly />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("ComboBox",
+                                            new { name = "ActionType", action = "GetActionTypes", controller = "CountryLaw", defaultValue = Model.ActionType, textProperty = "Text" })
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label class="required" asp-for="BasedOn"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="BasedOn" readonly />
+                                    }
+                                    else
+                                    {
+                                        @*@await Component.InvokeAsync("ComboBox",
+                                new {name = "BasedOn", action = "GetBasedOnList", controller = "CountryLaw", defaultValue = Model.BasedOn, textProperty = "Text",
+                                    validationMessage = requiredValidationMessages.Where(v=>v.Name== "BasedOn").Select(v=>v.ErrorMessage).FirstOrDefault()
+                                })*@
+
+                                        @(Html.Kendo().ComboBox()
+                                                        .Name("BasedOn")
+                                                        .Value(Model.BasedOn)
+                                                        .BindTo(basedOnOptions)
+                                                        .Filter(FilterType.StartsWith)
+                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                        .HtmlAttributes(new { style = "width: 100%", id = $"BasedOn_{screen}" })
+                                        )
+
+                                    }
+                                    <span asp-validation-for="BasedOn"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="Recurring"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        @*<input type="text" class="form-control form-control-sm" asp-for="RecurringDesc" readonly />*@
+                                        <input type="text" class="form-control form-control-sm" value="@(((RecurringOption)Model.Recurring).GetDisplayName())" disabled />
+                                    }
+                                    else
+                                    {
+                                        @*@await Component.InvokeAsync("ComboBox",
+                                new {name = "Recurring", action = "GetRecurringOptions", controller = "CountryLaw", defaultValue= Model.Recurring.ToString(), defaultText = CountryLawService.GetRecurringDesc(Model.Recurring), valueProperty = "Value", textProperty = "Text"})*@
+
+                                        @(Html.Kendo().ComboBox()
+                                                        .Name("Recurring")
+                                                        .Text(((RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())
+                                                        .Value((Model.Recurring ?? 0).ToString())
+                                                        .DataTextField("Text")
+                                                        .DataValueField("Value")
+                                                        .BindTo(Html.GetEnumSelectList<RecurringOption>())
+                                                        .Filter(FilterType.StartsWith)
+                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                        .HtmlAttributes(new { style = "width: 100%", id = $"Recurring_{screen}" })
+                                        )
+
+                                    }
+                                    <span asp-validation-for="Recurring"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <h6 class="ml-4">@Localizer["Terms"]</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 d-flex">
+                                <div class="pr-1">
+                                    <div class="form-group float-label">
+                                        <label asp-for="Yr"></label>
+                                        @if (Model.CPIAction)
+                                        {
+                                            <input type="text" class="form-control form-control-sm" asp-for="Yr" readonly />
+                                        }
+                                        else
+                                        {
+                                            @(Html.Kendo().NumericTextBox<int>().Name("Yr").Value((int?)Model.Yr).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                        }
+
+                                    </div>
+                                </div>
+                                <div class="pr-1">
+                                    <div class="form-group float-label">
+                                        <label asp-for="Mo"></label>
+                                        @if (Model.CPIAction)
+                                        {
+                                            <input type="text" class="form-control form-control-sm" asp-for="Mo" readonly />
+                                        }
+                                        else
+                                        {
+                                            @(Html.Kendo().NumericTextBox<int>().Name("Mo").Value((int?)Model.Mo).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                        }
+
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-group float-label">
+                                        <label asp-for="Dy"></label>
+                                        @if (Model.CPIAction)
+                                        {
+                                            <input type="text" class="form-control form-control-sm" asp-for="Dy" readonly />
+                                        }
+                                        else
+                                        {
+                                            @(Html.Kendo().NumericTextBox<int>().Name("Dy").Value((int?)Model.Dy).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                        }
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+
+                                <div class="form-group float-label">
+                                    <label asp-for="Indicator"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="Indicator" readonly />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("ComboBox",
+                                            new
+                                            {
+                                                name = "Indicator",
+                                                     action = "GetPicklistData",
+                                                     controller = "Indicator",
+                                                     defaultValue = Model.Indicator,
+                                                     textProperty = "Indicator",
+                                                validationMessage = requiredValidationMessages.Where(v => v.Name == "Indicator").Select(v => v.ErrorMessage).FirstOrDefault()
+                                            })
+
+                                    }
+                                    <span asp-validation-for="Indicator"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffBasedOn"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="EffBasedOn" readonly />
+                                    }
+                                    else
+                                    {
+                                        @*@await Component.InvokeAsync("ComboBox",
+                                new {name = "EffBasedOn", action = "GetBasedOnList", controller = "CountryLaw", defaultValue = Model.EffBasedOn, textProperty = "Text"})*@
+
+                                        @(Html.Kendo().ComboBox()
+                                                        .Name("EffBasedOn")
+                                                        .Value(Model.EffBasedOn)
+                                                        .BindTo(basedOnOptions)
+                                                        .Filter(FilterType.StartsWith)
+                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                        .HtmlAttributes(new { style = "width: 100%", id = $"EffBasedOn_{screen}" })
+                                        )
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffStartDate"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" value="@Model.EffStartDate.FormatToDisplay()" readonly />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
+                                    }
+
+
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffEndDate"></label>
+                                    @if (Model.CPIAction)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" value="@Model.EffEndDate.FormatToDisplay()" readonly />
+                                    }
+                                    else
+                                    {
+                                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group float-label">
+                                    <label asp-for="FollowupAction"></label>
+                                    @await Component.InvokeAsync("ComboBox",
+                                            new
+                                            {
+                                                name = "FollowupAction",
+                                                     action = "GetCountryLawFollowUpList",
+                                                     controller = "ActionType",
+                                                     defaultValue = Model.FollowupAction,
+                                                textProperty = "ActionType",
+                                                     data = "patCountryLawPage.getCountry"
+                                            })
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                @if (Model.CDueId > 0)
+                {
+                    <div class="content-stamp">
+                        <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+                    </div>
+                }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Save"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+

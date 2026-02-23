@@ -1,0 +1,53 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IStringLocalizer<MatterResource> Localizer
+@inject ISystemSettings<GMSetting> Settings
+@{
+    var gmSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[gmSettings.LabelClient];
+    var clientNameLabel = Localizer[gmSettings.LabelClientName];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var settings = widget.UserSettings;
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    
+}
+
+@(Html.Kendo().Chart(Model)
+        .Name(userWidgetId)
+        .ChartArea(chartArea => chartArea
+            .Background("transparent"))
+        .Title(title => title
+            .Text("")
+            .Position(ChartTitlePosition.Top)
+        )
+        .Legend(legend => legend
+            .Visible(true)
+            .Position(ChartLegendPosition.Bottom)
+        )
+        .Series(series => series
+            .Pie(m => m.Value, m => m.Category)
+            .StartAngle(-45)            
+            .ExplodeField("Explode")
+            .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+            .Labels(labels => labels
+                .Visible(true)
+                .Template("#= category # - #= kendo.toString(percentage, '%') #%")                
+                .Background("transparent")                
+                .Position(ChartPieLabelsPosition.OutsideEnd)
+            )
+        )
+        .SeriesColors(widget.SeriesColors)
+        .Tooltip(tooltip => tooltip
+            .Visible(true)
+            .Template("#= category # (#= value #) - #= kendo.toString(percentage, '%') #%")
+        )                            
+)

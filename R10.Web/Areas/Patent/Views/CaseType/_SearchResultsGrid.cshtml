@@ -1,0 +1,31 @@
+﻿@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<PatCaseType>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.CaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CaseTypeId#", fromSearch = true }), "CaseType")).Width(200);
+                    columns.Bound(m => m.Description);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                //.ColumnMenu()
+                .Excel(excel => excel.FileName("CaseTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "CaseType")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("patCaseTypePage.searchResultGridError"))
+                .Events(events => events.RequestEnd("patCaseTypePage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "CaseType")
+                .Data("patCaseTypePage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.CaseType))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

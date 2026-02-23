@@ -1,0 +1,63 @@
+﻿@model PageViewModel
+@*@inject ISystemSettings<PatSetting> Settings*@
+@inject IStringLocalizer<SharedResource> Localizer
+
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="scheduleSearchInfoTabContent" role="tabpanel" aria-labelledby="scheduleSearchInfoTab"
+         data-case-number-mapper-url="@Url.Action("ScheduleNameSearchValueMapper", "ReportScheduler")">
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="ScheduleName">@Localizer["Schedule Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Name" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Description">@Localizer["Schedule Description"]</label>
+                    @*todo: create value mapper*@
+                    @await Component.InvokeAsync("ComboBox", new { name = "Description" })
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="CreateBy">@Localizer["Created By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy" })
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="DateCreatedFrom">@Localizer["Date Created From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="DateCreatedTo">@Localizer["Date Created To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="UpdatedBy">@Localizer["Updated By"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy" })
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="LastUpdateFrom">@Localizer["Last Updated From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label for="LastUpdateTo">@Localizer["Last Updated To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,417 @@
+﻿@model IEnumerable<CaseListViewModel>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IAuthorizationService AuthorizationService
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var clientLabel = Localizer[settings.LabelClient ?? ""];
+    var clientNameLabel = Localizer[settings.LabelClientName ?? ""];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var userWidgetId = widget.Id.ToString() + "-case-list";
+
+    var template = "<div class='cal-date-md'><div class='month #=System#'>#:kendo.toString(DueDate,'MMM')#</div><div class='day'>#:kendo.toString(DueDate,'dd')#</div></div><div class='name ellipsis'><a target='_blank' href='./#:System#/#:IdType#/detail/#:Id#'>#:CaseNumber# #=Country == null ? '' : Country# #=SubCase == null ? '' : SubCase#</a></div><div class='title small ellipsis'>#= Title == null ? '' : kendo.htmlEncode(Title)#</div>";
+    template = template.Replace("./#:System#/", $"{Url.ApplicationBaseUrl(Context.Request.Scheme)}/#:System#/");
+
+    var userSettings = widget.UserSettings;
+    var widgetSettings = widget.WidgetSettings;
+
+    var systems = new string[] { SystemType.Patent, SystemType.Trademark, SystemType.GeneralMatter };
+    var policies = widget.Policy.Split(',').ToList().Select(p => p.Trim());
+    var authorizedSystems = new List<string>();
+
+    foreach (var system in systems)
+    {
+        var authorized = true;
+
+        if (policies.Any())
+        {
+            authorized = false;
+            var tempPolicies = policies.Where(p => p == "*" || p.ToUpper().Contains(system.ToUpper())).ToList();
+
+            if (tempPolicies == null || tempPolicies.Count == 0)
+            {
+                authorized = true;
+            }            
+            else
+            {
+                foreach (var pol in tempPolicies)
+                {
+                    if (string.IsNullOrEmpty(pol) || pol == "*" ||
+                        (await AuthorizationService.AuthorizeAsync(User, pol)).Succeeded)
+                    {
+                        authorized = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (User.IsInSystem(system) && authorized)
+        {
+            authorizedSystems.Add(system);
+        }
+    }    
+
+    bool showPatent = userSettings.Property("ShowPatent") != null ? (userSettings["ShowPatent"] ?? false).Value<bool>() : true;
+    bool showTrademark = userSettings.Property("ShowTrademark") != null ? (userSettings["ShowTrademark"] ?? false).Value<bool>() : true;
+    bool showGenmatter = userSettings.Property("ShowGenMatter") != null ? (userSettings["ShowGenMatter"] ?? false).Value<bool>() : true;  
+    string dateRange = (userSettings.Property("DateRange") != null ? (userSettings["DateRange"] ?? "").Value<string>() : "Today") ?? "Today";
+
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+
+    if (userSettings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)userSettings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<string> viewedBy = new List<string>();
+
+    if (userSettings.Property("ViewedBy") != null)
+    {
+        try
+        {
+            string[] viewedByFilter = ((JArray)userSettings.Property("ViewedBy").Value).Select(a => (string)a).Where(a => !string.IsNullOrEmpty(a)).ToArray();
+
+            if (viewedByFilter.Count() > 0)
+            {
+                viewedBy = new List<string>(viewedByFilter);
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    var colorScheme = settings.ColorScheme ?? "";
+    var patColor = colorScheme.Split("|")[0];
+    var tmkColor = colorScheme.Split("|")[1];
+    var gnmColor = colorScheme.Split("|")[2];
+}
+
+<script>
+    var refresh = false;
+
+    function saveDateRange(e) {
+        var widgetId = parseInt(this.element.attr("widgetId"));
+        saveSetting(widgetId, `{ DateRange: "${this.dataItem(this.selectedIndex).Text}" }`, function () { refresh = true; });
+    }
+    
+    $(document).ready(function () {       
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];        
+        var viewedByList = "@String.Join(",", viewedBy.Select(a => (string)a).ToList())".split(",").filter(item => item);        
+
+        $(document).off("click", "#@widget.Id .widget-settings .toggle-option");        
+        $(document).on("click", "#@widget.Id .widget-settings .toggle-option", function (e) {
+            saveSetting(@widget.Id, `{ ${$(this).data("setting")}: ${$(this).is(':checked')} }`, function () { refresh = true; });
+        });
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        var widgetTitle = $("#@widget.Id .widget-header .widget-title");
+        if (!widgetTitle.text().endsWith("@dateRange")) {
+            widgetTitle.text(`${widgetTitle.text()}: @Html.Raw(Localizer[dateRange])`);
+        }
+        
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });        
+
+        $(document).off("click", "#viewedByFilter_@userWidgetId .delete-viewedBy");
+        $(document).off("change", "#ViewedBy_@userWidgetId");
+        $(document).on("click", "#viewedByFilter_@userWidgetId .delete-viewedBy", function (e) {
+            var item = $.inArray($(this).data("id"), viewedByList);
+
+            if (item !== -1) {
+                viewedByList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ ViewedBy: ['${viewedByList.join("','")}'] }`, function () { refresh = true; });
+                }
+            });
+        $(document).on("change", "#ViewedBy_@userWidgetId", function (e) {
+            var updated = $(this).data("kendoComboBox");
+
+            if (updated.selectedIndex >= 0) {
+                var dataItem = updated.dataItem(updated.selectedIndex);
+                var updatedBy = dataItem.UserId;
+
+                if ($.inArray(updatedBy, viewedByList) == -1) {
+                    viewedByList.push(updatedBy);
+                    $("#viewedByFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="viewedBy">${updatedBy}</span></div><div class="delete-filter delete-viewedBy" data-id="${updatedBy}" title="Remove ${updatedBy}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ ViewedBy: ['${viewedByList.join("','")}'] }`, function () { refresh = true; });
+                    }
+                }
+
+            updated.value("");
+        });
+        
+    });
+</script>
+
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul class="list-group">           
+            @if (authorizedSystems.Contains(SystemType.Patent) && authorizedSystems.Count() > 1)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@Localizer["Patent"]</span>
+                    <span>
+                        <label class="toggle-switch">
+                            <input id="@userWidgetId-show-patent" type="checkbox" checked="@showPatent" data-setting="ShowPatent" class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </li>
+            }
+            @if (authorizedSystems.Contains(SystemType.Trademark) && authorizedSystems.Count() > 1)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@Localizer["Trademark"]</span>
+                    <span>
+                        <label class="toggle-switch">
+                            <input id="@userWidgetId-show-patent" type="checkbox" checked="@showTrademark" data-setting="ShowTrademark" class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </li>
+            }
+            @if (authorizedSystems.Contains(SystemType.GeneralMatter) && authorizedSystems.Count() > 1)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@Localizer["General Matter"]</span>
+                    <span>
+                        <label class="toggle-switch">
+                            <input id="@userWidgetId-show-patent" type="checkbox" checked="@showGenmatter" data-setting="ShowGenMatter" class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </li>
+            } 
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Date range"]</span>
+                <span>
+                    @(Html.Kendo().DropDownList()
+                                        .Name(userWidgetId + "-period")
+                                        .DataTextField("Text")
+                                        .DataValueField("Value")
+                                        .Events(e => e.Change("saveDateRange"))
+                                        .BindTo(new List<SelectListItem>() {
+                                                new SelectListItem() {
+                                                    Text = "Today",
+                                                    Value = "Today"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = "This week",
+                                                    Value = "This week"
+                                                },
+                                                new SelectListItem() {
+                                                    Text = "This month",
+                                                    Value = "This month"
+                                                }
+                                        })
+                                        .Value(dateRange)
+                                        .HtmlAttributes(new { style = "width: 110px;", widgetId = $"{widget.Id}", data_widgetId = $"{widget.Id}", @class = "date-range-option" })
+                )
+                </span>
+            </li>            
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", @clientLabel, @clientNameLabel, "Client", "Shared", userWidgetId))</span>
+            </li>
+            @foreach (ClientListViewModel client in clients)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="viewedByFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["User"]</span>
+                <span>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ViewedBy", controller = "Dashboard", action = "GetActivityLogUserList", screen = userWidgetId, valueProperty = "UserId", textProperty = "UserId", listWidth = 350 })
+                </span>
+            </li>
+            @foreach (string updBy in viewedBy)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="viewedBy">@updBy</span>
+                    </div>
+                    <div class="delete-filter delete-viewedBy" data-id="@updBy" title="Remove @updBy"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>     
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Grid(Model)
+    .Name(userWidgetId)
+    .HtmlAttributes(new { @class = "widget-grid" })
+    .Columns(columns =>
+    {
+        columns
+            .Bound(u => u.CaseNumber)
+            .ClientTemplate(template)
+                .Title("")
+                .HeaderHtmlAttributes(new { @class = "d-none" });
+    })
+    .Pageable(pageable => pageable
+        .ButtonCount(4)
+        .Enabled(true).Responsive(false))
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(6)
+        .ServerOperation(false)
+        )
+)
+
+@if (Model?.Count() <= 6)
+{
+    <style>
+    #@userWidgetId .k-pager-info {
+        float: left;
+        padding: 0;
+    }
+    #@userWidgetId .k-pager-nav {
+        display: none;
+    }
+    #@userWidgetId .k-pager-numbers {
+        display: none;
+    }
+    </style>
+}
+<style>
+    #dashboard .widget-grid .due-date {
+        font-size: .75rem;
+        /*font-weight: 600;*/
+    }
+
+        #dashboard .widget-grid .due-date.past-due {
+            /*color: #D00000;*/
+            color: #dc3545;
+        }
+
+    #dashboard .widget-grid tr:hover .due-date.past-due {
+        color: white;
+    }
+
+    .option-disabled {
+        color: #ccc;
+    }
+
+    .cal-date-md {
+        width: 50px;
+        height: 50px;
+        overflow: hidden;
+        border: 1px solid silver;
+        float: left;
+        margin: 4px 10px 2px 0;
+        border-radius: 5px;
+        background-color: #fff;
+    }
+
+    .cal-date-md .month {
+        text-align: center;
+        background-color: @patColor;
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        padding: 0;
+        border-bottom: 1px solid silver;
+    }
+
+    .cal-date-md .month.Patent {            
+        background-color: @patColor !important;
+    }
+    .cal-date-md .month.Trademark {            
+        background-color: @tmkColor !important;            
+    }
+    .cal-date-md .month.GeneralMatter {            
+        background-color: @gnmColor !important;
+    }
+
+    .cal-date-md .day {
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        padding-top: 2px;
+        color: #000;
+    }
+</style>
+<script>
+    $("#@widget.Id.ToString()").addClass("fixed-width");
+</script>

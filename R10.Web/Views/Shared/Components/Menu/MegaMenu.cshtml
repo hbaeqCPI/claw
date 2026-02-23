@@ -1,0 +1,85 @@
+﻿@inject IStringLocalizer<MenuResource> Localizer
+@model IEnumerable<R10.Web.Models.MenuViewModels.MenuItemViewModel>
+@{
+    string area = ViewContext.ActionDescriptor.RouteValues["area"]?.ToString().ToLower();
+}
+
+@if (Model.Count() == 0)
+{
+    <div style="height: 1px;"></div>
+}
+<ul class="navbar-nav mr-auto">
+
+    @foreach (var menuItem in Model)
+    {
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle @(area == menuItem.Id.ToLower() ? "active" : "")" href="#" id="menu-@menuItem.Id" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                @Localizer[menuItem.Title]
+            </a>
+            <div class="dropdown-menu" style="display: none;" aria-labelledby="menu-@menuItem.Id">
+                <div class="card-columns">
+                    @foreach (var subMenu in menuItem.SubMenuItems)
+                    {
+                        <div class="card border-0 bg-transparent">
+                            <div class="nav-header">@Localizer[@subMenu.Title]</div>
+                            <ul class="nav-sub-menu">
+                                @foreach (var subMenuItem in subMenu.SubMenuItems)
+                                {
+                                    @if (subMenuItem.Page != null)
+                                    {
+                                        <li class="nav-item"><a asp-all-route-data="@subMenuItem.Page.RouteData" asp-controller="@subMenuItem.Page.Controller" asp-action="@subMenuItem.Page.Action" title="@Localizer[subMenuItem.Title]" class="nav-link" target="@(subMenuItem.OpenInNewWindow ?? false ? "_blank" : "_self")">@Localizer[subMenuItem.Title]</a></li>
+                                    }
+                                    else if (!string.IsNullOrEmpty(subMenuItem.AbsoulteUri))
+                                    {
+                                        <li class="nav-item"><a href="@subMenuItem.AbsoulteUri" title="@Localizer[subMenuItem.Title]" class="nav-link" target="_blank">@Localizer[subMenuItem.Title]</a></li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+        </li>
+    }
+</ul>
+
+<script>
+    $(document).ready(function () {
+        /* hover */
+        //$(".navbar-nav .dropdown").hover(
+        //    function () {
+        //        if (!$(".navbar-toggler").is(":visible")) {
+        //            $(".navbar-nav").find(".dropdown").each(function () {
+        //                var li = $(this);
+        //                $(this).find('.dropdown-menu').hide();
+        //                li.removeClass('open');
+        //                li.removeClass('pointer');
+        //            });
+        //            $(this).find(".dropdown-toggle").click();
+        //        }
+        //    }
+        //);
+
+        /*mega menu animation */
+        $(".navbar-nav .dropdown").on('show.bs.dropdown', function (e) {
+            slideDown($(this));
+        });
+        $(".navbar-nav .dropdown").on('hide.bs.dropdown', function () {
+            var li = $(this);
+            $(this).children('.dropdown-menu').slideUp('fast', function () {
+                li.removeClass('open');
+                li.removeClass('pointer');
+            });
+        });
+        function slideDown(dropdown) {
+            //wait for slideUp to finish before calling slideDown
+            if ($(":animated").length) {
+                setTimeout(slideDown, 50, dropdown);
+            } else {
+                dropdown.addClass('open').children('.dropdown-menu').slideDown('fast', function () {
+                    dropdown.addClass('pointer');
+                });
+            }
+        }
+    });
+</script>

@@ -1,0 +1,40 @@
+﻿@model List<String>
+@{    
+    var width = ViewData["width"] == null ? "100" : ViewData["width"];    
+    var height = ViewData["height"] == null ? Convert.ToDouble("400") : Convert.ToDouble(ViewData["height"]);
+    var filterType = ViewData["filterType"] == null ? FilterType.StartsWith : (FilterType)ViewData["filterType"];
+    var serverFiltering = ViewData["serverFiltering"] == null ? true : (bool)ViewData["serverFiltering"];
+    var valuePrimitive = ViewData["valuePrimitive"] == null ? false : (bool)ViewData["valuePrimitive"];
+    var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+    if (ViewData["routeValues"] == null)
+    {
+        if (ViewData["area"] != null)
+        {
+            routeValues.Add("area", ViewData["area"].ToString());
+        }
+        routeValues.Add("property", ViewData["property"]?.ToString() ?? ViewData["dataValueField"].ToString());
+    }
+}
+
+@(Html.Kendo().MultiSelectFor(m => m)
+    .DataTextField(ViewData["dataTextField"]?.ToString() ?? ViewData["dataValueField"].ToString())
+    .DataValueField(ViewData["dataValueField"].ToString())    
+    .ValuePrimitive(valuePrimitive) //set to true if having [object Object] return value issue
+    .Filter(filterType)    
+    .AutoBind(false)
+    .Height(height)    
+    .Events(e => e
+        .Change(ViewData["onChange"] == null ? "function (){}" : ViewData["onChange"].ToString())
+        .Select(ViewData["onSelect"] == null ? "function (){}" : ViewData["onSelect"].ToString())
+        )
+    .DataSource(source =>
+    {       
+        source.Read(read =>
+        {
+            read.Action(ViewData["action"].ToString(), ViewData["controller"].ToString(), ViewData["routeValues"] ?? routeValues)
+                .Data(ViewData["readData"] == null ? "" : ViewData["readData"].ToString());
+        })
+        .ServerFiltering(serverFiltering);
+    })    
+    .HtmlAttributes(ViewData["htmlAttributes"] == null ? new { style = $"width: {width}%" } : ViewData["htmlAttributes"])
+)

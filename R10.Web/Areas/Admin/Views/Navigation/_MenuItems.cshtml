@@ -1,0 +1,6 @@
+﻿@model IEnumerable<R10.Web.Models.MenuViewModels.MenuItemViewModel>
+
+@foreach (var item in Model)
+{
+    @await Html.PartialAsync("_MenuItem", item)
+}

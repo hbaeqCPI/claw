@@ -1,0 +1,72 @@
+﻿@using R10.Core.Entities.ReportScheduler
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var isRespOfficeOn = User.IsRespOfficeOn(SystemType.Trademark);
+}
+
+@(Html.Kendo().Grid<RSTrademarkListPreview>()
+                        .Name("scheduleRecordsAffectedGrid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(p => p.CaseNumber)
+                            .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Country)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.CountryName)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.SubCase)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.AppNumber)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.FilDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.PubNumber)
+                                              .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.PubDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.RegNumber)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.RegDate)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            columns.Bound(p => p.Status)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                            if (isRespOfficeOn)
+                            {
+                                columns.Bound(p => p.RespOffice)
+                                      .HtmlAttributes(new { @class = "name-field" });
+                            }
+                            columns.Bound(p => p.CaseType)
+                                  .HtmlAttributes(new { @class = "name-field" });
+                        })
+                        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+                        .Pageable()
+                        .Sortable(sort => sort.AllowUnsort(false))
+                        .DataSource(dataSource => dataSource
+                            .Ajax()
+                            .Batch(true)
+                            .PageSize(5)
+                            .Model(model =>
+                            {
+                                model.Field(s => s.CaseNumber).Editable(false);
+                                model.Field(s => s.Country).Editable(false);
+                                model.Field(s => s.CountryName).Editable(false);
+                                model.Field(s => s.SubCase).Editable(false);
+                                model.Field(s => s.AppNumber).Editable(false);
+                                model.Field(s => s.FilDate).Editable(false);
+                                model.Field(s => s.PubNumber).Editable(false);
+                                model.Field(s => s.PubDate).Editable(false);
+                                model.Field(s => s.RegNumber).Editable(false);
+                                model.Field(s => s.RegDate).Editable(false);
+                                model.Field(s => s.Status).Editable(false);
+                                model.Field(s => s.RespOffice).Editable(false);
+                                model.Field(s => s.CaseType).Editable(false);
+                            })
+                            .Read(read => read.Action("GetTrademarkListPreviewList", Model.Controller, new { parentId = Model.ParentId }))
+                            .Events(events =>
+                            {
+                                events.Error("pageHelper.onGridError");
+                            })
+                        )
+                        .HtmlAttributes(new { @class = "k-grid-border" })
+)

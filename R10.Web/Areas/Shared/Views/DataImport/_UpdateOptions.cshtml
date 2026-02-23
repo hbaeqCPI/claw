@@ -1,0 +1,23 @@
+﻿@inject IStringLocalizer<DataImportResource> Localizer
+@{
+    var options = (DataUpdateOptionsViewModel)ViewBag.UpdateOptions;
+    var hasRemarksUpdate = (bool)(ViewBag.HasRemarksUpdate ?? false);
+}
+<div>
+    <h5>@Localizer["Option:"]</h5>
+    <form method="post" id="updateOptionsForm">
+        @Html.Kendo().CheckBox().Name("IgnoreOrphans_Update").Checked(options.IgnoreOrphans).Label(Localizer["Ignore records that don't exist (based on key)"])
+        @if (hasRemarksUpdate)
+        {
+            <label>@Localizer["Insert Remarks At:"]</label>
+            <div class="pl-4">
+                <div>
+                    @(Html.Kendo().RadioButton().Name("RemarksPosition1").Checked(options.RemarksPosition == 1).HtmlAttributes(new { @name = "RemarksPosition" }).Label(Localizer["Beginning"]).Value(1))
+                </div>
+                <div>
+                    @(Html.Kendo().RadioButton().Name("RemarksPosition2").Checked(options.RemarksPosition == 2).HtmlAttributes(new { @name = "RemarksPosition" }).Label(Localizer["End"]).Value(2))
+                </div>
+            </div>
+        }
+    </form>
+</div>

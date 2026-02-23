@@ -1,0 +1,116 @@
+﻿@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailPagePermission = Model.Permission;
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+    var gridName = $"reviewerSettingsGrid_{ViewData["PageId"]}";    
+}
+
+@(Html.Kendo().Grid<DMSReviewerViewModel>()
+    .Name(gridName)
+    .Columns(columns =>
+    {
+        columns.Bound(cr => cr.DMSReviewerId).Hidden();        
+        columns.Bound(cr => cr.ReviewerType)
+            .EditorTemplateName("ReviewerType")
+            .EditorViewData(new
+            {
+                onChange = "function (e) { " +
+                    "const grid = $('#" + gridName + "').data('kendoGrid');" +
+                    "const selected = grid.dataItem(grid.select());" +
+                    "selected.Reviewer.ReviewerId = 0;" +
+                    "selected.Reviewer.ReviewerName = '';" +
+                "}"
+            })
+            .ClientTemplate("#=kendo.htmlEncode(ReviewerType.EntityName)#")
+            .Editable($"{pageName}.isGridColumnEditable")
+            .Width(150)
+            .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", style = "white-space: nowrap;" });
+        columns.Bound(cr => cr.Reviewer)
+            //TODO: FIX KENDO COMBO LIMIT TO LIST BUG
+            //CAN'T SELECT NEW VALUE WHEN PREVIOUS SELECTION WAS NOT IN LIST
+            //.ClientTemplate("#=Reviewer.ReviewerName == undefined ? '' : Reviewer.ReviewerName#")
+            .ClientTemplate("#=kendo.htmlEncode(Reviewer.ReviewerName)#")
+            .EditorTemplateName("ComboBox")
+            .EditorViewData(new
+            {
+                dataTextField = "ReviewerName",
+                dataValueField = "ReviewerId",
+                action = "GetReviewerList",
+                controller = Model.Controller,
+                area = Model.Area,
+                routeValues = new { property = "ReviewerName" },
+                limitToList = true,
+                readData = "function (e) { " +
+                    "const grid = $('#" + gridName + "').data('kendoGrid');" +
+                    "const selected = grid.dataItem(grid.select());" +
+                    "var filterText = '';" +
+                    "if (e.filter.filters[0]) {filterText = e.filter.filters[0].value;} " +
+                    "return { reviewerType: selected.ReviewerType.EntityType, text: filterText };" +
+                "}",
+            })
+            .Editable($"{pageName}.isGridColumnEditable")
+            .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "" });
+        //columns.Bound(r => r.IsDefaultReviewer)
+        //    .ClientTemplate("<i class='fa fal #: IsDefaultReviewer ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
+        //    .HeaderHtmlAttributes(new { @class = "-text-center" })
+        //    .Width(100)
+        //    .EditorTemplateName("CheckBox")
+        //    .Editable($"{pageName}.isGridColumnEditable")
+        //    .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "" });
+        columns.Command(command =>
+        {
+            if (Model.Permission.CanDeleteRecord)
+                command.Custom("Delete")
+                        .Click($"function(e) {{{pageName}.deleteGridRow(e,this)}}")
+                        .IconClass("k-icon fal fa-trash-alt")
+                        .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                        .HtmlAttributes(new { @class = "grid-action" });
+
+        }).Width(10);
+    })
+    .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Pageable()
+    .ToolBar(toolbar =>
+    {
+        if (fullModify)
+        {
+            toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"])
+                .HtmlAttributes(new { @class = "grid-action" });
+        }
+        if (fullModify)
+        {
+            toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+            toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+        }
+
+    })
+    .Editable(editable => editable
+        .Enabled(fullModify)
+        .Mode(GridEditMode.InCell)
+        .ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false)
+    )
+    .DataSource(dataSource => dataSource
+    .Ajax()
+    .Batch(true)
+    .PageSize(settings.SubFormPageSize)
+    .Model(model =>
+    {
+        model.Id(r => r.DMSReviewerId);
+        model.Field(r => r.ReviewerType).DefaultValue(DMSReviewerTypeViewModel.GetDefault(Localizer));
+        model.Field(r => r.Reviewer).DefaultValue(new DMSReviewerLookupViewModel() { ReviewerId = 0, ReviewerName = "" });
+    })
+    .Read(read => read.Action("ReviewerRead", Model.Controller, new { area = Model.Area }).Data($"{{parentId: {Model.ParentId}}}"))
+    .Update(create => create.Action("ReviewersUpdate", Model.Controller, new { area = Model.Area }))
+    .Destroy(create => create.Action("ReviewerDelete", Model.Controller, new { area = Model.Area }))
+    .Events(events =>
+    {
+        events.Error("pageHelper.onGridError");
+    })
+)
+.HtmlAttributes(new { @class = "mb-2 kendo-Grid" })
+)

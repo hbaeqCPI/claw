@@ -1,0 +1,80 @@
+﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
+@model DetailPagePermission
+
+@{
+    var pagePermission = Model;
+}
+
+<div class="row">
+    @(Html.Kendo().Grid<LetterMainDetailViewModel>()
+          .Name("letterGrid")
+          .Columns(columns =>
+          {
+              columns.Bound(l => l.LetId).Hidden();
+              columns.Bound(l => l.CreatedBy).Hidden();
+              columns.Bound(l => l.DateCreated).Hidden();
+              columns.Bound(l => l.LetName).Width(400);
+              columns.Bound(l => l.ScreenName).Width(250);
+              columns.Bound(l => l.LetCatDesc).Width(250);
+              columns.Bound(l => l.TemplateFile).Width(400);
+              columns.Bound(l => l.HasImage).ClientTemplate("<input type='checkbox' #= HasImage ? 'checked=checked' : '' # disabled='disabled' ></input>")
+                  .HtmlAttributes(new { style="text-align:center;"}).Width(120);
+                  
+              //columns.Command(command => command.Destroy()).Width(110).Hidden(!pagePermission.CanDeleteRecord);
+              columns.Command(command =>
+              {
+                  if (pagePermission.CanEditRecord)
+                      command.Edit().IconClass("k-icon fas fa-edit").HtmlAttributes(new { style = "width:80px;" });
+                  if (pagePermission.CanDeleteRecord)
+                      command.Custom("Delete").Click("function(e) {letterGen.deleteGridRow(e,this)}").IconClass("k-icon fas fa-trash");
+
+              });
+
+          })
+          .AutoBind(true)
+          .ToolBar(toolbar => toolbar.Create().IconClass("k-icon fas fa-plus").Text(SharedLocalizer["Add"]))
+          .Editable(editable => editable.Enabled(pagePermission.CanEditRecord && !pagePermission.CanEditRemarksOnly)
+              .Mode(GridEditMode.PopUp).TemplateName("LetterDetailEditor")
+              .ConfirmDelete(@SharedLocalizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+          .Scrollable(scrollable => scrollable.Height(100))
+          .Pageable(page => page.PageSizes(true).Refresh(true))
+          .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+          .DataSource(dataSource => dataSource
+              .Ajax()
+              .PageSize(20)
+              .Model(model =>
+              {
+                  model.Id(l => l.LetId);
+              })
+
+              .Read(read => read.Action("ReadLetterGrid", "Letter")
+                  .Data("pageHelper.gridMainSearchFilters('#searchCriteriaForm')"))
+              .Create(update => update.Action("Save", "Letter"))
+              .Update(update => update.Action("Save", "Letter"))
+              .Destroy(update => update.Action("Delete", "Letter"))
+              .Events(events => events.Sync("function (e) { this.read(); }"))
+          )
+          .HtmlAttributes(new { @class = "kendo-Grid" })
+          .HtmlAttributes(new { style = "height: 300px;" })
+          .Events(events => events.Change("function(e) { letterGen.letterSelected(letterGrid); }"))
+    )
+</div>
+
+<style>
+    /*.k-grid-content {
+        min-height: 100px;
+        max-height: 200px !important;
+    }*/
+    .k-grid .k-state-selected {
+        background-color: silver !important;
+        /*color: #ff0000;*/
+        font-weight: bold;
+    }
+
+    .k-grid .k-alt.k-state-selected {
+        background-color: silver !important;
+        /*color: #ff0000;*/
+        font-weight: bold;
+    }
+</style>
+

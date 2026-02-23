@@ -1,0 +1,287 @@
+﻿@model ChildImageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var isSharePointIntegrationOn = settings.IsSharePointIntegrationOn;
+
+    var parentIdParam = Model.ParentId;
+    var permission = Model.Permission;
+    
+    
+    var pageId = ViewData["PageId"];
+    var listName = "imageListView_" + pageId;
+    var docTree = $"documentTree_{pageId}";
+    var activePage = Model.ActivePage;
+
+    var screenCode = "";
+    if (!string.IsNullOrEmpty(Model.DocumentLink))
+    {
+        screenCode = Model.DocumentLink.Split("|")[1];
+    }
+    
+}
+
+<script type="text/x-kendo-tmpl" id="template_@pageId">
+    <div class="image text-center #=data.IsImage ? '': 'pt-4'#">
+        #if(data.CheckOutUser > ''){#
+                   <span class="fal fa-lock-alt"></span>
+        #}#
+        <a target="_blank" href="#=PreviewUrl#">
+            # if (data.IsImage){#
+                <img src="#=ThumbnailUrl#" alt="#=Name#" asp-append-version="true"/>
+                <p>#:Name#</p>
+            #} else { #
+                <span class="#=IconClass# fa-3x"></span>
+                <p class="pt-3">#:Name#</p>
+            #}#
+        </a>
+
+    </div>
+</script>
+
+<div id="imageListButtonsContainer" class="k-grid">
+    <div class="k-header k-grid-toolbar">
+        <nav class="nav grid-action">
+            <a class="k-button" href="#" title="@Localizer["View Image"]" role="button" onclick="sharePointGraphHelper.viewFileGallery('@listName')">
+                <i class="fal fa-search-plus pr-2"></i>
+                <span>
+                    @Localizer["View"]
+                </span>
+            </a>
+            <a class="k-button" href="#" title="@Localizer["Search"]" role="button" onclick="sharePointGraphHelper.showSearchScreen('GalleryView')">
+                <i class="fal fa-search pr-2"></i>
+                <span>
+                    @Localizer["Search"]
+                </span>
+            </a>
+            @if (isSharePointIntegrationOn)
+            {
+                @if (permission.CanUploadDocuments)
+                {
+                    <a class="k-button" href="#" title="@Localizer["Upload"]" role="button" onclick="sharePointGraphHelper.addFileGallery('@listName')">
+                        <i class="fal fa-plus pr-2"></i>
+                        <span>
+                            @Localizer["Upload"]
+                        </span>
+                    </a>
+                  @*  <a class="k-button" href="#" title="@Localizer["Edit Image"]" role="button" onclick="sharePointGraphHelper.editFileGallery('@listName')">
+                        <i class="fal fa-pencil pr-2"></i>
+                        <span>
+                            @Localizer["Edit"]
+                        </span>
+                    </a>*@
+                    <a class="k-button" href="#" title="@Localizer["Modify Image"]" role="button" onclick="sharePointGraphHelper.modifyFileGallery('@listName')">
+                        <i class="fal fa-file pr-2"></i>
+                        <span>
+                            @Localizer["Modify"]
+                        </span>
+                    </a>
+                    <a class="k-button" href="#" title="@Localizer["Version History"]" role="button" onclick="sharePointGraphHelper.fileVersionGallery('@listName')">
+                        <i class="fal fa-copy pr-2"></i>
+                        <span>
+                            @Localizer["Versions"]
+                        </span>
+                    </a>
+                    <a class="k-button" href="#" title="@Localizer["Check Out"]" role="button" onclick="sharePointGraphHelper.checkoutFileGallery('@listName')">
+                        <i class="fal fa-lock-alt pr-2"></i>
+                        <span>
+                            @Localizer["Check Out"]
+                        </span>
+                    </a>
+                    <a class="k-button" href="#" title="@Localizer["Check In"]" role="button" onclick="sharePointGraphHelper.checkinFileGallery('@listName')">
+                        <i class="fal fa-lock-open-alt pr-2"></i>
+                        <span>
+                            @Localizer["Check In"]
+                        </span>
+                    </a>
+                }
+                <a class="k-button" href="#" title="@Localizer["Download Image"]" role="button" onclick="sharePointGraphHelper.downloadFileGallery('@listName')">
+                    <i class="fal fa-file-download pr-2"></i>
+                    <span>
+                        @Localizer["Download"]
+                    </span>
+                </a>
+                
+                @if (permission.CanDeleteRecord)
+                {
+                    <a class="k-button" href="#" title="@Localizer["Delete Image"]" role="button" onclick="sharePointGraphHelper.deleteFileGallery('@listName')">
+                        <i class="fal fa-trash-alt pr-2"></i>
+                        <span>
+                            @Localizer["Delete"]
+                        </span>
+                    </a>
+                }
+            }
+        </nav>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="image-container col" id="SPImageContainer"
+         data-folder-id="@Model.FolderId" data-parent-folder-id="0">
+        @(
+            Html.Kendo().ListView<SharePointDocumentViewModel>()
+            .Name($"{listName}")
+            .TagName("div")
+            .ClientTemplateId($"template_{pageId}")
+            .Selectable(ListViewSelectionMode.Single)
+            .AutoBind(false)
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .Create(create => create.Action("AddFile", "SharePointGraph", new { Area = "Shared", docLibrary = Model.SharePointDocLibrary, docLibraryFolder = Model.SharePointDocLibraryFolder, recKey = Model.SharePointRecKey, parentId = Model.ParentId,roleLink=Model.RoleLink }))
+            .Read(read => read.Action("ImageRead", "SharePointGraph", new { Area = "Shared", docLibrary = Model.SharePointDocLibrary, docLibraryFolder = Model.SharePointDocLibraryFolder, recKey = Model.SharePointRecKey, parentId = Model.ParentId, screenCode = screenCode, isGallery = true }).Data($"sharePointGraphHelper.getSearchCriteria"))
+            .Destroy(destroy => destroy.Action("DeleteFile", "SharePointGraph", new { Area = "Shared" }))
+            .Update(update => update.Action("ModifyFile", "SharePointGraph", new { Area = "Shared" }))
+            .Events(events =>
+            {
+                //events.Error("sharePointGraphHelper.imageReadErrorHandler");
+                events.Error($"function(e) {{sharePointGraphHelper.imageReadErrorHandler(e,'{docTree}');}}");
+            })
+            .PageSize(10)
+            .ServerOperation(false)
+            )
+            .Pageable(pageable => pageable
+            .Refresh(true)
+            .ButtonCount(5)
+            .PageSizes(new[] { 10, 20, 30 })
+            )
+            .HtmlAttributes(new { @class = "imageListView", style = "height:160px; background-color: #f5f5f5;" })
+
+            )
+        @*@(Html.Kendo().ContextMenu()
+        .Name("menu")
+        .Target($"#{listName}")
+        .Filter(".image")
+        .Orientation(ContextMenuOrientation.Horizontal)
+        .Animation(animation =>
+        {
+        animation.Open(open =>
+        {
+        open.Fade(FadeDirection.In);
+        open.Duration(500);
+        });
+        })
+        .Events(e => e.Open($"{activePage}.image.contextMenuOnOpen").Select($"{activePage}.image.contextMenuOnSelect"))
+        .Items(items =>
+        {
+        items.Add().Text("");
+        })
+        .HtmlAttributes(new { style = "width:130px;" })
+        )*@
+    </div>
+</div>
+<style>
+
+/*    .k-ghost-splitbar-horizontal,
+    .k-ghost-splitbar-vertical,
+    .k-marquee-color, .k-panel > .k-state-selected, .k-scheduler .k-today.k-state-selected, .k-state-selected, .k-state-selected:link, .k-state-selected:visited {
+        background-color: #fff !important;
+    }
+*/
+    #imagelistView {
+        margin-bottom: -1px;
+        min-height: 160px;
+    }
+
+    .image {
+        float: left;
+        position: relative;
+        margin-top: 12px;
+        margin-left: 10px;
+        cursor: pointer;
+        border: 1px solid #e7e7e7;
+        border-radius: 3px;
+        height: 140px;
+        width: 140px;
+        background-color: white;
+    }
+
+        .image img {
+            width: 80px;
+            height: 80px;
+            display: block;
+            margin-top: 5px;
+            margin-left: auto;
+            margin-right: auto;
+            /*max-width: 100%;
+                    margin: 5px 5px 5px 5px;*/
+        }
+
+        .image p {
+            display: block !important;
+            margin: 5px 5px 5px 5px;
+            max-width: 130px;
+            overflow: hidden;
+            line-height: 1.1em;
+            font-size: .7em;
+            font-weight: normal;
+            text-align: center;
+            /*text-transform: uppercase;*/
+        }
+
+    .edit-buttons {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: right;
+        padding: 5px;
+    }
+
+    .k-state-selected {
+        color: #333;
+        background-color: none;
+        border-color: darkgrey;
+    }
+
+    .drop-zone {
+        border-top: 1px solid var(--separator);
+        padding: 10px 6px 2px 6px;
+    }
+
+    .dropZoneEl {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        height: 70px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 24px;
+        line-height: 1.2em;
+        font-family: Arial,Helvetica,sans-serif;
+        color: #000;
+    }
+
+    .dropImageHereText {
+        /*color: #c7c7c7;*/
+        color: black;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .wrapper:after {
+        content: ".";
+        display: block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
+    }
+
+    .file {
+        float: left;
+        margin: 20px 30px;
+        text-align: center;
+    }
+
+        .file img {
+            display: block;
+            margin-bottom: 10px;
+        }
+</style>

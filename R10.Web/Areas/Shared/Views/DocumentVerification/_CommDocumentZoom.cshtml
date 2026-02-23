@@ -1,0 +1,164 @@
+﻿@model DocVerificationCommDocZoomViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    
+    var viewerAction = ViewBag.FromTemp != null && (bool)ViewBag.FromTemp ? "GetTempFileDocumentViewer" : "GetDocumentViewer";
+    var docUrl = Url.Action(viewerAction, "DocViewer", new { Area = "Shared", docFileName = Model.DocFileName, system = Model.System, screenCode = Model.ScreenCode, key = Model.ParentId, fileType = Model.FileType });
+ 
+    var caseNumberLabel = settings.IsClientMatterOn ? Localizer[settings.LabelClientMatter ?? "Client Matter"] : Localizer[settings.LabelCaseNumber ?? "Case Number"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+
+    var caseNumberUrl = string.Empty;
+    var countryUrl = string.Empty;
+    var systemLabel = string.Empty;
+
+    if (Model.SystemTypeCode == SystemTypeCode.Patent)
+    {
+        systemLabel = Localizer["Patent"].ToString();
+        caseNumberUrl = Url.Action("Detail", "Invention", new { area = "Patent", id = Model.InvId, fromSearch = true });
+        countryUrl = Url.Action("Detail", "CountryApplication", new { area = "Patent", id = Model.ParentId, fromSearch = true });
+    }
+    else if (Model.SystemTypeCode == SystemTypeCode.Trademark)
+    {
+        systemLabel = Localizer["Trademark"].ToString();
+        countryUrl = Url.Action("Detail", "TmkTrademark", new { area = "Trademark", id = Model.ParentId, fromSearch = true });
+    }
+    else if (Model.SystemTypeCode == SystemTypeCode.GeneralMatter)
+    {
+        systemLabel = Localizer["Gen Matter"].ToString();
+        caseNumberUrl = Url.Action("Detail", "Matter", new { area = "GeneralMatter", id = Model.ParentId, fromSearch = true });
+    }
+}
+<div id="docVerificationCommDocZoomDialog" class="modal" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="docVerificationCommDocZoomDialogTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width:80%; max-height:92vh;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="docVerificationCommDocZoomDialogTitle">@Model.DocName</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="@Localizer["Close"]">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="min-height:80vh !important;">
+                <div class="form-row">
+                    <div class="col-6">
+                        <div id="docVerificationCommDocViewerContainer" data-viewer-url="@docUrl"></div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-row" style="padding: 0px 15px 0px 15px !important;">
+                            <div class="col-4">
+                                <div class="form-group float-label">
+                                    <label for="CaseNumber">@caseNumberLabel</label>
+                                    @if (Model.SystemTypeCode != SystemTypeCode.Trademark)
+                                    {
+                                        <div class="d-flex">
+                                            <input type="text" class="form-control form-control-sm" asp-for="CaseNumber" asp-can-be-posted="true" asp-is-readonly="true" />
+                                            <a href="@caseNumberUrl" target="_blank"><i cpi-button-link></i></a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control form-control-sm" asp-for="CaseNumber" asp-can-be-posted="true" asp-is-readonly="true" />
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                @if (Model.SystemTypeCode != SystemTypeCode.GeneralMatter)
+                                {
+                                    <div class="form-group float-label">
+                                        <label asp-for="Country">@countryLabel</label>
+                                        <div class="d-flex">
+                                            <input type="text" class="form-control form-control-sm" asp-for="Country" asp-can-be-posted="true" asp-is-readonly="true" />
+                                            <a href="@countryUrl" target="_blank"><i cpi-button-link></i></a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="SubCase">@Localizer["Sub Case"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="SubCase" asp-can-be-posted="true" asp-is-readonly="true" />
+                                </div>
+                            </div>                            
+                        </div>
+                        <div class="form-row" style="padding: 0px 15px 0px 15px !important;">
+                            <div class="col-8">
+                                <div class="form-group float-label">
+                                    <label asp-for="Title">@Localizer["Title"]</label>
+                                    <input type="text" class="form-control form-control-sm" asp-for="Title" asp-is-readonly="true" />
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="SystemTypeCode">@Localizer["System"]</label>
+                                    <input type="text" class="form-control form-control-sm" readonly value="@systemLabel" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div id="docVerificationCommDocQEContainer" data-qe-params="@Model.jsonQEParam"></div>
+                        </div>                        
+                    </div>
+                </div>                
+            </div>
+            <div class="modal-footer" style="display:block !important;">
+                <div class="row">
+                    <div class="col-8" id="docVerificationCommDocZoomDialogPager">
+                        <div class="k-pager-wrap k-grid-pager k-widget k-floatwrap">
+                            <a class="k-link k-pager-nav navigate" data-dir="top" tabindex="-1">
+                                <span class="k-icon k-i-seek-w"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="prev" tabindex="-1">
+                                <span class="k-icon k-i-arrow-w"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="next" tabindex="-1">
+                                <span class="k-icon k-i-arrow-e"></span>
+                            </a>
+                            <a class="k-link k-pager-nav navigate" data-dir="last" tabindex="-1">
+                                <span class="k-icon k-i-seek-e"></span>
+                            </a>
+                            <input type="text" style="border: 1px solid var(--control-border); width:80px;height: 80%; text-align:center;" class="currentRecPosition" />&nbsp;@Localizer["of"]&nbsp;<span class="navTotalRecs"></span>&nbsp;@Localizer["records"]
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <button id="cancel" type="button" class="btn btn-secondary  float-right" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Close"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #docVerificationCommDocViewerContainer .ui-resizable {
+        width: 100% !important;
+        height: 75vh !important;
+    }
+
+    #docVerificationCommDocQEContainer #qeRecipientGrid {
+        max-height: 16vh !important;
+        position: relative;     
+        overflow-y: scroll;
+    }
+
+    #docVerificationCommDocQEContainer #qeBodyTabContent {
+        max-height: 34vh !important;
+        position: relative;
+        overflow-y: scroll;
+    }
+
+    #docVerificationCommDocQEContainer #qeImagesLinksTabContent {
+        max-height: 34vh !important;
+        min-width: 38vw !important;
+        position: relative;
+        overflow-y: scroll;
+    }
+
+    #docVerificationCommDocQEContainer #qeUploadFilesTabContent {
+        max-height: 34vh !important;
+        min-width: 38vw !important;
+        position: relative;
+        overflow-y: scroll;
+    }
+</style>

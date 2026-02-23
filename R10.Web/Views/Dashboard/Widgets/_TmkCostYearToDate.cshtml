@@ -1,0 +1,435 @@
+﻿@model IEnumerable<ChartDTO>
+@using Newtonsoft.Json.Linq;
+@using Microsoft.EntityFrameworkCore;
+@inject IClientService ClientService
+@inject IParentEntityService<TmkCountry, TmkAreaCountry> CountryService
+@inject IEntityService<TmkCostType> _costTypeService
+@inject IStringLocalizer<TrademarkResource> Localizer
+@inject ISystemSettings<TmkSetting> Settings
+@{
+    var tmkSettings = await Settings.GetSetting();
+    var clientLabel = Localizer[tmkSettings.LabelClient ?? "Client"];
+    var clientNameLabel = Localizer[tmkSettings.LabelClientName ?? "Client Name"];
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+    var caseNumberLabel = Localizer[tmkSettings.LabelCaseNumber ?? "Case Number"];
+
+    WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
+    var gridDetailTitle = Localizer[widget.Title + " - {0}"];
+    var viewNameSplit = widget.ViewName.ToString().Split("/");
+    var viewName = viewNameSplit[viewNameSplit.Length - 1];
+    var userWidgetId = widget.Id.ToString() + viewName;
+
+    var settings = widget.UserSettings;
+    List<ClientListViewModel> clients = new List<ClientListViewModel>();
+    if (settings.Property("Clients") != null)
+    {
+        try
+        {
+            int[] clientFilter = ((JArray)settings.Property("Clients").Value).Select(a => (int)a).ToArray();
+
+            if (clientFilter.Count() > 0)
+            {
+                clients = await ClientService.QueryableList
+                                        .Where(c => clientFilter.Contains(c.ClientID))
+                                        .Select(c => new ClientListViewModel
+                                        {
+                                            ClientID = c.ClientID,
+                                            ClientCode = c.ClientCode,
+                                            ClientName = c.ClientName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<CountryLookupViewModel> countries = new List<CountryLookupViewModel>();
+    if (settings.Property("Countries") != null)
+    {
+        try
+        {
+            int[] countryFilter = ((JArray)settings.Property("Countries").Value).Select(a => (int)a).ToArray();
+
+            if (countryFilter.Count() > 0)
+            {
+                countries = await CountryService.QueryableList
+                                        .Where(c => countryFilter.Contains(c.CountryID))
+                                        .Select(c => new CountryLookupViewModel
+                                        {
+                                            CountryID = c.CountryID,
+                                            Country = c.Country,
+                                            CountryName = c.CountryName
+                                        })
+                                        .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+
+    List<TmkCostType> costTypes = new List<TmkCostType>();
+    if (settings.Property("CostTypes") != null)
+    {
+        try
+        {
+            int[] costTypeFilter = ((JArray)settings.Property("CostTypes").Value).Select(a => (int)a).ToArray();
+
+            if (costTypeFilter.Count() > 0)
+            {
+                costTypes = await _costTypeService.QueryableList
+                                .Where(c => costTypeFilter.Contains(c.CostTypeId))
+                                .Select(c => new TmkCostType
+                                {
+                                    CostTypeId = c.CostTypeId,
+                                    CostType = c.CostType
+                                })
+                                .ToListAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            var err = e.Message;
+
+        }
+    }
+}
+<style>
+    #costTypeFilter_@userWidgetId .costType-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+
+    #countryFilter_@userWidgetId .country-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+
+    #clientFilter_@userWidgetId .client-code {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var selectedCostType = "";
+
+    $(document).ready(function () {
+        var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
+        var countryList = [@String.Join(",", countries.Select(c => c.CountryID).ToList())];
+        var costTypeList = [@String.Join(",", costTypes.Select(c => c.CostTypeId).ToList())];
+        var refresh = false;
+
+        $(document).off("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close");
+        $(document).on("click", "#@widget.Id .settings, #@widget.Id .widget-settings .settings-close", function (e) {
+            if (refresh) {
+                $("#@widget.Id .refresh").click();
+            }
+        });
+
+        $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
+        $(document).off("change", "#ClientCode_@userWidgetId");
+        $(document).on("click", "#clientFilter_@userWidgetId .delete-client", function (e) {
+            var item = $.inArray($(this).data("id"), clientList);
+
+            if (item !== -1) {
+                clientList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#ClientCode_@userWidgetId", function (e) {
+            var client = $(this).data("kendoMultiColumnComboBox");
+
+            if (client.selectedIndex >= 0) {
+                var dataItem = client.dataItem(client.selectedIndex);
+
+                var clientId = dataItem.ClientID;
+                var clientCode = dataItem.ClientCode;
+                var clientName = dataItem.ClientName;
+
+                if ($.inArray(clientId, clientList) == -1) {
+                    clientList.push(clientId);
+                    $("#clientFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="client-code">${clientCode}</span><span class="client-name">${clientName}</span></div><div class="delete-filter delete-client" data-id="${clientId}" title="Remove ${clientCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Clients: [${clientList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            client.value("");
+        });
+
+        $(document).off("click", "#countryFilter_@userWidgetId .delete-country");
+        $(document).off("change", "#Country_@userWidgetId");
+        $(document).on("click", "#countryFilter_@userWidgetId .delete-country", function (e) {
+            var item = $.inArray($(this).data("id"), countryList);
+
+            if (item !== -1) {
+                countryList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#Country_@userWidgetId", function (e) {
+            var country = $(this).data("kendoMultiColumnComboBox");
+
+            if (country.selectedIndex >= 0) {
+                var dataItem = country.dataItem(country.selectedIndex);
+
+                var countryId = dataItem.CountryID;
+                var countryCode = dataItem.Country;
+                var countryName = dataItem.CountryName;
+
+                if ($.inArray(countryId, countryList) == -1) {
+                    countryList.push(countryId);
+                    $("#countryFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="country-code">${countryCode}</span><span class="country-name">${countryName}</span></div><div class="delete-filter delete-country" data-id="${countryId}" title="Remove ${countryCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ Countries: [${countryList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            country.value("");
+        });
+
+        $(document).off("click", "#costTypeFilter_@userWidgetId .delete-costType");
+        $(document).off("change", "#CostType_@userWidgetId");
+        $(document).on("click", "#costTypeFilter_@userWidgetId .delete-costType", function (e) {
+            var item = $.inArray($(this).data("id"), costTypeList);
+
+            if (item !== -1) {
+                costTypeList.splice(item, 1);
+                $(this).closest("li").remove();
+
+                saveSetting(@widget.Id, `{ CostTypes: [${costTypeList.toString()}] }`, function () { refresh = true; });
+            }
+        });
+        $(document).on("change", "#CostType_@userWidgetId", function (e) {
+            var costType = $(this).data("kendoComboBox");
+
+            if (costType.selectedIndex >= 0) {
+                var dataItem = costType.dataItem(costType.selectedIndex);
+
+                var costTypeId = dataItem.CostTypeId;
+                var costTypCode = dataItem.CostType;
+
+                if ($.inArray(costTypeId, costTypeList) == -1) {
+                    costTypeList.push(costTypeId);
+                    $("#costTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="costType-code">${costTypCode}</span></div><div class="delete-filter delete-costType" data-id="${costTypeId}" title="Remove ${costTypCode}"><i class="fal fa-trash-alt"></i></div></li>`);
+
+                    saveSetting(@widget.Id, `{ CostTypes: [${costTypeList.toString()}] }`, function () { refresh = true; });
+                }
+            }
+
+            costType.value("");
+        });
+
+        setLabelColor();
+
+        $(document).on("click", ".widget .view", function (e) {
+            setLabelColor();
+        });
+
+        if ('@(widget.IsDetail)' === '@true') {
+            var chart = $("#@userWidgetId").data("kendoChart");
+            chart.bind("seriesClick", onSeriesClick);
+            $("#@userWidgetId").attr("style", "position: static !important;");
+            $("#@userWidgetId-grid-header").hide();
+
+            var grid = $("#@userWidgetId-grid").data("kendoGrid");
+            grid.dataSource.read();
+        }
+    });
+
+    function setLabelColor() {
+        var chart = $("#@userWidgetId");
+        var svg = chart.find("svg");
+        $.each(svg.find("g"), function () {
+            $.each(svg.find("text"), function () {
+                if (this.getAttribute("fill").includes("white")) {
+                    this.style.fill = 'white';
+                }
+            });
+        });
+    }
+
+    function onSeriesClick(e) {
+        selectedCostType = e.category;
+        if (selectedCostType == 'Other') {
+            let tempArr = e.series.data.map(a => a.Category);
+            let tempIndx = tempArr.indexOf(selectedCostType);
+            tempArr.splice(tempIndx, 1);
+            selectedCostType = tempArr.join("|");
+        }
+
+        var grid = $("#@userWidgetId-grid").data("kendoGrid");
+        grid.dataSource.read({ userWidgetId: @widget.Id, costType: selectedCostType });
+
+        var gridTitle = "@gridDetailTitle";
+        $("#@userWidgetId-grid-title").text(gridTitle.replace("{0}", e.category));
+        $("#@userWidgetId-grid-header").show();
+
+    };
+
+    function gridExcelExport(e) {
+        e.preventDefault();
+        var excelExportUrl = "@Url.Action("TmkCostYearToDateDetailExportExcel", "Dashboard")";
+        const dataJSON = JSON.stringify({ userWidgetId: @widget.Id, costType: selectedCostType });
+        const html = '<form method="POST" action="' + excelExportUrl + '">' +
+            '<input type="hidden" name="__RequestVerificationToken" value="' + $("[name='__RequestVerificationToken']").val() + '">';
+        let form = $(html);
+        form.append($('<input type="hidden" name="filtersJSON"/>').val(dataJSON));
+        $('body').append(form);
+        form.submit();
+    };
+
+    function gridDetailSearchFilters() {
+        return { userWidgetId: @widget.Id, costType: selectedCostType };
+    };
+</script>
+
+<div class="widget-settings" style="max-height: 425px;">
+    <div class="settings-body">
+        <ul id="costTypeFilter_@userWidgetId" class="list-group">           
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@Localizer["Cost Type"]</span>                
+                <span>@await Component.InvokeAsync("ComboBox", new { 
+                    name = "CostType", 
+                    action = "GetCostTypeList", 
+                    controller = "CostType", 
+                    area = "Trademark", 
+                    screen = userWidgetId, 
+                    textProperty = "CostType", 
+                    valueProperty = "CostTypeID", 
+                    headerTemplate = ComboBoxHelper.GetHeaderTemplate(@Localizer["Cost Type"], @Localizer["Description"]),
+                    itemTemplate = ComboBoxHelper.GetItemTemplate("CostType", "Description"),
+                    listWidth = 500
+                })                    
+                </span>
+            </li>
+            @foreach (TmkCostType costType in costTypes)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="costType-code">@costType.CostType</span>
+                    </div>
+                    <div class="delete-filter delete-costType" data-id="@costType.CostTypeId" title="Remove @costType.CostType"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="clientFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@clientLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.ClientID("ClientCode", clientLabel, clientNameLabel, "TmkTrademarkLookup", "Trademark", userWidgetId))</span>
+            </li>
+            @foreach (ClientListViewModel client in clients)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="client-code">@client.ClientCode</span>
+                        <span class="client-name">@client.ClientName</span>
+                    </div>
+                    <div class="delete-filter delete-client" data-id="@client.ClientID" title="Remove @client.ClientCode"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+        <ul id="countryFilter_@userWidgetId" class="list-group">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@countryLabel</span>
+                <span>@await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryID("Country", countryLabel, countryNameLabel, "TmkTrademarkLookup", "Trademark", userWidgetId))</span>
+            </li>
+            @foreach (CountryLookupViewModel country in countries)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <div>
+                        <span class="country-code">@country.Country</span>
+                        <span class="country-name">@country.CountryName</span>
+                    </div>
+                    <div class="delete-filter delete-country" data-id="@country.CountryID" title="Remove @country.Country"><i class="fal fa-trash-alt"></i></div>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="settings-footer mt-4">
+        <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>Close</button>
+    </div>
+</div>
+
+@(Html.Kendo().Chart(Model)
+        .Name(userWidgetId)
+        .ChartArea(chartArea => chartArea
+            .Background("transparent"))
+        .Title(title => title
+            .Text("")
+            .Position(ChartTitlePosition.Top)
+        )
+        .Legend(legend => legend
+            .Visible(true)
+            .Position(ChartLegendPosition.Bottom)
+        )
+        .Series(series => series
+            .Pie(m => m.Value, m => m.Category)
+            .StartAngle(-45)
+            .Padding(10)
+            .ColorField("Color")
+            .ExplodeField("Explode")
+            .Overlay(o => o.Gradient(ChartSeriesGradient.None))
+            .Labels(labels => labels
+                .Visible(true)
+                .Template("#= category # - #= kendo.toString(percentage, '%') #%")
+                .Color("white")
+                .Background("transparent")
+                .Position(ChartPieLabelsPosition.Center)
+            )
+        )
+        .SeriesColors(widget.SeriesColors)
+        .Tooltip(tooltip => tooltip
+            .Visible(true)
+            .Template("#= category # - #= kendo.toString(percentage, '%') #% #=dataItem.Group > '' ? ('(' + dataItem.Group + ')') : '' #")
+        )
+)
+@if (widget.IsDetail)
+{
+    <div id="@userWidgetId-grid-header">
+        <h4><span id="@userWidgetId-grid-title"></span></h4>
+    </div>
+    @(Html.Kendo().Grid<CostTrackingDrillDownViewModel>()
+        .Name(userWidgetId + "-grid")
+        .Columns(columns =>
+        {
+            columns.Bound(a => a.CaseNumber).Title(caseNumberLabel).HtmlAttributes(new { @class = "text-nowrap" });
+            columns.Bound(a => a.Country);
+            columns.Bound(a => a.SubCase);
+            columns.Bound(a => a.CaseType);
+            columns.Bound(a => a.Status);
+            columns.Bound(a => a.CostType);
+            columns.Bound(a => a.InvoiceDate).Format("{0:dd-MMM-yyyy}");
+            columns.Bound(a => a.PayDate).Format("{0:dd-MMM-yyyy}");
+            columns.Bound(a => a.InvoiceAmount).Format("{0:n}");
+        })
+        .ToolBar(tools => tools.Excel())
+        .AutoBind(false)
+        .Pageable(page => page.PageSizes(tmkSettings.SearchResultsPageSizeOptions))
+        .Sortable(sort => sort.AllowUnsort(false))
+        .DataSource(dataSource => dataSource
+            .Ajax()
+            .PageSize(tmkSettings.SearchResultsPageSize)
+            .Read(read => read.Action("TmkCostYearToDateDetailRead", "Dashboard", new { userWidgetId = widget.Id })
+            .Data("gridDetailSearchFilters"))
+        )
+        .Events(e => e.ExcelExport("gridExcelExport"))
+        .HtmlAttributes(new { @class = "kendo-Grid", style = "width:100%" }))
+
+<style>
+    .k-chart {
+        margin: auto;
+    }
+</style>
+}
