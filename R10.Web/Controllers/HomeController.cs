@@ -69,27 +69,7 @@ namespace R10.Web.Controllers
             if (User.TwoFactorRequired())
                 return RedirectToAction("TwoFactorAuthentication", "Account");
 
-            if (!(await _authorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.DashboardUser)).Succeeded)
-                return View();
-
-            try
-            {
-                var defaultPage = User.GetDefaultPage();
-                if (defaultPage != null)
-                {
-                    if ((defaultPage.SettingPolicy == "*" || (await _authorizationService.AuthorizeAsync(User, defaultPage.SettingPolicy)).Succeeded) &&
-                        (defaultPage.PagePolicy == "*" || (await _authorizationService.AuthorizeAsync(User, defaultPage.PagePolicy)).Succeeded))
-                    {
-                        return RedirectToAction(defaultPage.Action, defaultPage.Controller, defaultPage.Route);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.Message);
-            }
-
-            return await RedirectToSystemMenuPage();
+            return View();
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.CanAccessMainMenu)]

@@ -17,7 +17,7 @@
     var isDeDocketOn = (await AuthService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessDeDocket)).Succeeded;
     var graphSettings = GraphSettings.Value;
     var showTradeSecret = (await AuthService.AuthorizeAsync(User, SharedAuthorizationPolicy.TradeSecretAdmin)).Succeeded;    
-    var isDMSOn = User.IsSystemEnabled(SystemType.DMS);
+    var isDMSOn = false; // DMS module removed
 }
 <div class="manage-nav sidebar-nav p-3">
     <ul class="nav nav-pills cpi-nav-vertical flex-column">

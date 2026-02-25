@@ -38,7 +38,8 @@
     var showItem = !User.SSORequired() && !User.TwoFactorRequired() && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.SystemUser)).Succeeded;
     var showDashboard = !User.SSORequired() && !User.TwoFactorRequired() && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.DashboardUser)).Succeeded;
 
-    var showIPDecisionCentral = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.DecisionMaker)).Succeeded;
+    // IP Decision Central and Document Verification disabled - modules removed
+    var showIPDecisionCentral = false;
 
     var mailDownloaderController = settings.DocumentStorage == DocumentStorageOptions.SharePoint ? "SharePointGraph" :
                                settings.DocumentStorage == DocumentStorageOptions.iManage ? "iManageWork" :
@@ -46,9 +47,7 @@
     var mailDownloaderArea = settings.DocumentStorage == DocumentStorageOptions.iManage ||
                              settings.DocumentStorage == DocumentStorageOptions.NetDocuments ? "" : "Shared";
 
-    var showDocVerification = ((await AuthorizationService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded)
-                            || ((await AuthorizationService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded)
-                            || ((await AuthorizationService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded);
+    var showDocVerification = false;
 
     var myAccountLabel = $"{User.FindFirst(CPiClaimTypes.FirstName)?.Value?.FirstOrDefault()}{User.FindFirst(CPiClaimTypes.LastName)?.Value?.FirstOrDefault()}";
 

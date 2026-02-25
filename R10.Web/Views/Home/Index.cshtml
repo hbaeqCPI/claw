@@ -1,5 +1,47 @@
-﻿@{
-    // ViewData["Title"] = "Home Page";
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = "Home";
 }
 
-
+<div class="page-content">
+    <div class="row">
+        <div class="col-lg-3">
+            <h3 class="pb-3">@Localizer["Patent"]</h3>
+            <div class="manage-nav sidebar-nav p-3">
+                <ul class="nav nav-pills cpi-nav-vertical flex-column">
+                    <li class="nav-item">
+                        <a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="nav-link">@Localizer["Country Law"]</a>
+                    </li>
+                    <li class="nav-separator mt-2">
+                        <h5>@Localizer["Auxiliary"]</h5>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="Patent" asp-controller="Country" asp-action="Index" class="nav-link">@Localizer["Country"]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="nav-link">@Localizer["Case Type"]</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <h3 class="pb-3">@Localizer["Trademark"]</h3>
+            <div class="manage-nav sidebar-nav p-3">
+                <ul class="nav nav-pills cpi-nav-vertical flex-column">
+                    <li class="nav-item">
+                        <a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="nav-link">@Localizer["Country Law"]</a>
+                    </li>
+                    <li class="nav-separator mt-2">
+                        <h5>@Localizer["Auxiliary"]</h5>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="nav-link">@Localizer["Country"]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="nav-link">@Localizer["Case Type"]</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
