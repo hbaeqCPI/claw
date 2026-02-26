@@ -1,9 +1,6 @@
 ﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
 @model UserNotificationSettings
-@inject ISystemSettings<R10.Core.Entities.DMS.DMSSetting> DMSSettings
 @{
-    var dmsSettings = await DMSSettings.GetSetting();
-
     var dmsActReminderRecurrence = new List<SelectListItem>()
     {
         new SelectListItem()
@@ -300,51 +297,6 @@
                                 </span>
                             </li>
                         }
-                        @if (dmsSettings.CanEditDMSReminderSettings)
-                        {
-                            <li class="d-flex justify-content-between">
-                                <label for="ReceiveDMSActionReminder">@SharedLocalizer["Receive action reminder"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input id="ReceiveDMSActionReminder" type="checkbox" checked="@Model.ReceiveDMSActionReminder" data-setting="ReceiveDMSActionReminder" onclick="dmsActionReminderOnClick(this);" class="notification-setting toggle-option">
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </li>
-                            @if (User.IsInRoles(SystemType.DMS, CPiPermissions.Inventor) || User.IsInRoles(SystemType.DMS, CPiPermissions.Reviewer))
-                            {
-                                <li class="d-flex justify-content-between">
-                                    <div class="float-label col-4" style="padding-left:0px !important;">
-                                        <label for="DMSActionReminderRepeatInterval">@SharedLocalizer["Repeat every"]</label>
-                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatInterval)
-                                            .Enable(Model.ReceiveDMSActionReminder)
-                                            .Events(events => events.Change("dmsActReminderRepeatIntervalOnChange"))
-                                            .HtmlAttributes(new { style = "width: 100%" })
-                                            )
-                                    </div>
-                                    <div class="float-label col-4" style="padding-left:0px !important;">
-                                        <label for="DMSActionReminderRepeatRecurrence">@SharedLocalizer["Recurrence"]</label>
-                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatRecurrence)
-                                            .DataValueField("Value").DataTextField("Text")
-                                            .BindTo(dmsActReminderRecurrence)
-                                            .Events(events => events.Change("dmsActReminderRecurrenceOnChange"))
-                                            .Enable(Model.ReceiveDMSActionReminder)
-                                            .HtmlAttributes(new { style = "width: 100%" })
-                                            )
-                                    </div>
-                                    <div id="dmsActRepeatOnDiv" class="float-label col-4" style="padding-left:0px !important; visibility: @(Model.DMSActionReminderRepeatRecurrence == 2 ? "visible" : "hidden");">
-                                        <label for="DMSActionReminderRepeatOnDay">@SharedLocalizer["Repeat on"]</label>
-                                        @(Html.Kendo().DropDownListFor(m => m.DMSActionReminderRepeatOnDay)
-                                            .DataValueField("Value").DataTextField("Text")
-                                            .BindTo(dmsActReminderRepeatOn)
-                                            .Enable(Model.ReceiveDMSActionReminder)
-                                            .Events(events => events.Change("dmsActReminderRepeatOnDayOnChange"))
-                                            .HtmlAttributes(new { style = "width: 100%" })
-                                            )
-                                    </div>
-                                </li>
-                            }
-                        }                        
                     </ul>
                 </div>
             }

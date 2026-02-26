@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -12,9 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using R10.Core.Entities.RMS;
-using R10.Core.Entities.PatClearance;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.RMS; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System.Globalization;
 
 namespace R10.Core.Services
@@ -212,29 +212,30 @@ namespace R10.Core.Services
             if (_setting.GetType() == typeof(TmkSetting))
                 return "TMS";
 
-            if (_setting.GetType() == typeof(GMSetting))
-                return "GMS";
+            // Removed during deep clean - deleted module setting types
+            // if (_setting.GetType() == typeof(GMSetting))
+            //     return "GMS";
 
-            if (_setting.GetType() == typeof(DMSSetting))
-                return "DMS";
+            // if (_setting.GetType() == typeof(DMSSetting))
+            //     return "DMS";
 
-            if (_setting.GetType() == typeof(AMSSetting))
-                return "AMS";
-            
-            if (_setting.GetType() == typeof(TLSetting))
-                return "TL";
+            // if (_setting.GetType() == typeof(AMSSetting))
+            //     return "AMS";
 
-            if (_setting.GetType() == typeof(TmcSetting))
-                return "TMC";
+            // if (_setting.GetType() == typeof(TLSetting))
+            //     return "TL";
 
-            if (_setting.GetType() == typeof(RMSSetting))
-                return "RMS";
+            // if (_setting.GetType() == typeof(TmcSetting))
+            //     return "TMC";
 
-            if (_setting.GetType() == typeof(PacSetting))
-                return "PAC";
+            // if (_setting.GetType() == typeof(RMSSetting))
+            //     return "RMS";
 
-            if (_setting.GetType() == typeof(FFSetting))
-                return "FF";
+            // if (_setting.GetType() == typeof(PacSetting))
+            //     return "PAC";
+
+            // if (_setting.GetType() == typeof(FFSetting))
+            //     return "FF";
 
             return "General";
         }

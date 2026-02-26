@@ -59,13 +59,6 @@ namespace R10.Web.Areas.Shared.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = GeneralMatterAuthorizationPolicy.CanAccessSystem)]
-        public IActionResult GenMatter()
-        {
-            TempData["DetailData"] = "G";
-            return RedirectToAction("Index");
-        }
-
         public async Task<IActionResult> Index()
         {
             var detailData = TempData["DetailData"] == null ? "" : TempData["DetailData"].ToString();
@@ -197,13 +190,6 @@ namespace R10.Web.Areas.Shared.Controllers
             return PartialView("_DetailTrademark", model);
         }
 
-       
-        public async Task<IActionResult> MatterDetail(string id)
-        {
-            var model = await _docViewModelService.GetGeneralMatterDetail(id);
-            return PartialView("_DetailGeneralMatter", model);
-        }
-
         public async Task<IActionResult> PatActionDetail(string id)
         {
             var model = await _docViewModelService.GetPatActionDetail(id);
@@ -214,12 +200,6 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             var model = await _docViewModelService.GetTmkActionDetail(id);
             return PartialView("_DetailTmkAction", model);
-        }
-
-        public async Task<IActionResult> GMActionDetail(string id)
-        {
-            var model = await _docViewModelService.GetGMActionDetail(id);
-            return PartialView("_DetailGMAction", model);
         }
 
         public async Task<IActionResult> PatCostDetail(string id)
@@ -238,12 +218,6 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             var model = await _docViewModelService.GetTmkCostDetail(id);
             return PartialView("_DetailTmkCostTrack", model);
-        }
-
-        public async Task<IActionResult> GMCostDetail(string id)
-        {
-            var model = await _docViewModelService.GetGMCostDetail(id);
-            return PartialView("_DetailGMCostTrack", model);
         }
 
         #endregion

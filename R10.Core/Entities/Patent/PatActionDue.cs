@@ -1,5 +1,5 @@
 ﻿using R10.Core.Entities.Documents;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -25,7 +25,7 @@ namespace R10.Core.Entities.Patent
         [NotMapped]
         public List<DocFolder>? DocFolders { get; set; }
 
-        public FFInstrxTypeAction? FFInstrxTypeAction { get; set; }
+//         public FFInstrxTypeAction? FFInstrxTypeAction { get; set; } // Removed during deep clean
         public List<PatDueDateDelegation>? Delegations { get; set; }
         
         [NotMapped]

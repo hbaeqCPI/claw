@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,7 +18,7 @@ using R10.Core.Entities.Documents;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Helpers;
 using R10.Core.Interfaces;
 using R10.Web.Areas.Shared.ViewModels;
@@ -34,7 +34,7 @@ using R10.Web.Services.MailDownload;
 using Newtonsoft.Json;
 using Microsoft.Graph;
 using System.Globalization;
-using R10.Core.Interfaces.RMS;
+// using R10.Core.Interfaces.RMS; // Removed during deep clean
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using ActiveQueryBuilder.View.DatabaseSchemaView;
 using Microsoft.Extensions.Options;
@@ -46,7 +46,7 @@ using R10.Core.Identity;
 using Microsoft.AspNetCore.Identity;
 using GleamTech.IO;
 using iText.Kernel.Pdf;
-using R10.Core.Interfaces.ForeignFiling;
+// using R10.Core.Interfaces.ForeignFiling; // Removed during deep clean
 using OpenIddict.Validation.AspNetCore;
 
 namespace R10.Web.Areas.Shared.Controllers
@@ -59,24 +59,23 @@ namespace R10.Web.Areas.Shared.Controllers
         private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IDocumentStorage _documentStorageService;
-        private readonly IRMSDueDocService _rmsDueDocService;
-        private readonly IFFDueDocService _ffDueDocService;
+        // private readonly IRMSDueDocService _rmsDueDocService; // Removed during deep clean
+        // private readonly IFFDueDocService _ffDueDocService; // Removed during deep clean
         private readonly IChildEntityService<DocDocument, DocDocumentTag> _documentTagService;
         private readonly IDocumentHelper _documentHelper;
 
         private readonly IParentEntityService<PatActionType, PatActionParameter> _patActionTypeEntityService;
         private readonly IActionDueService<PatActionDue, PatDueDate> _patActionDueEntityService;
         private readonly ICountryApplicationService _countryApplicationService;
-        private readonly IRTSService _rtsService;
 
         private readonly IParentEntityService<TmkActionType, TmkActionParameter> _tmkActionTypeEntityService;
         private readonly IActionDueService<TmkActionDue, TmkDueDate> _tmkActionDueEntityService;
         private readonly ITmkTrademarkService _tmkTrademarkService;
 
-        private readonly IParentEntityService<GMActionType, GMActionParameter> _gmActionTypeEntityService;
-        private readonly IActionDueService<GMActionDue, GMDueDate> _gmActionDueEntityService;
-        private readonly IGMMatterService _gmMatterService;
-        private readonly IGMMatterCountryService _gmMatterCountryService;
+        // private readonly IParentEntityService<GMActionType, GMActionParameter> _gmActionTypeEntityService; // Removed during deep clean
+        // private readonly IActionDueService<GMActionDue, GMDueDate> _gmActionDueEntityService; // Removed during deep clean
+//         private readonly IGMMatterService _gmMatterService; // Removed during deep clean
+        // private readonly IGMMatterCountryService _gmMatterCountryService; // Removed during deep clean
 
         private readonly EPOMailboxSettings _epoMailboxSettings;
         private readonly IParentEntityService<EPOCommunication, EPOCommunicationDoc> _epoCommunicationDocService;
@@ -100,54 +99,52 @@ namespace R10.Web.Areas.Shared.Controllers
                     IAuthorizationService authService,
                     ISystemSettings<PatSetting> patSettings,
                     ISystemSettings<TmkSetting> tmkSettings,
-                    ISystemSettings<GMSetting> gmSettings,
-                    IRMSDueDocService rmsDueDocService,
-                    IFFDueDocService ffDueDocService,
+                    // ISystemSettings<GMSetting> gmSettings, // Removed during deep clean
+                    // IRMSDueDocService rmsDueDocService, // Removed during deep clean
+                    // IFFDueDocService ffDueDocService, // Removed during deep clean
                     ILogger<DocDocumentsController> logger,
                     IChildEntityService<DocDocument, DocDocumentTag> documentTagService,
                     IDocumentHelper documentHelper,
                     IParentEntityService<PatActionType, PatActionParameter> patActionTypeEntityService,
                     IActionDueService<PatActionDue, PatDueDate> patActionDueEntityService,
                     ICountryApplicationService countryApplicationService,
-                    IRTSService rtsService,
                     IParentEntityService<TmkActionType, TmkActionParameter> tmkActionTypeEntityService,
                     IActionDueService<TmkActionDue, TmkDueDate> tmkActionDueEntityService,
                     ITmkTrademarkService tmkTrademarkService,
-                    IParentEntityService<GMActionType, GMActionParameter> gmActionTypeEntityService,
-                    IActionDueService<GMActionDue, GMDueDate> gmActionDueEntityService,
-                    IGMMatterService gmMatterService,
-                    IGMMatterCountryService gmMatterCountryService,
+                    // IParentEntityService<GMActionType, GMActionParameter> gmActionTypeEntityService, // Removed during deep clean
+                    // IActionDueService<GMActionDue, GMDueDate> gmActionDueEntityService, // Removed during deep clean
+//                     IGMMatterService gmMatterService, // Removed during deep clean
+                    // IGMMatterCountryService gmMatterCountryService, // Removed during deep clean
                     IOptions<ServiceAccount> serviceAccount,
                     IOptions<EPOMailboxSettings> epoMailboxSettings,
                     IParentEntityService<EPOCommunication, EPOCommunicationDoc> epoCommunicationDocService,
                     IEPOService epoService,
                     IEntityService<EPOCommunication> epoCommunicationService,
                     IDocumentsAIViewModelService documentsAIViewModelService
-            ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, gmSettings, epoService, epoCommunicationService)
+            ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, epoService, epoCommunicationService) // Removed gmSettings during deep clean
         {
             _docService = docService;
             _localizer = localizer;
             _mapper = mapper;
             _documentStorageService = documentStorageService;
             _hostingEnvironment = hostingEnvironment;
-            _rmsDueDocService = rmsDueDocService;
-            _ffDueDocService = ffDueDocService;
+            // _rmsDueDocService = rmsDueDocService; // Removed during deep clean
+            // _ffDueDocService = ffDueDocService; // Removed during deep clean
             _documentTagService = documentTagService;
             _documentHelper = documentHelper;
 
             _patActionTypeEntityService = patActionTypeEntityService;
             _patActionDueEntityService = patActionDueEntityService;
             _countryApplicationService = countryApplicationService;
-            _rtsService = rtsService;
 
             _tmkActionTypeEntityService = tmkActionTypeEntityService;
             _tmkActionDueEntityService = tmkActionDueEntityService;
             _tmkTrademarkService = tmkTrademarkService;
 
-            _gmActionTypeEntityService = gmActionTypeEntityService;
-            _gmActionDueEntityService = gmActionDueEntityService;
-            _gmMatterService = gmMatterService;
-            _gmMatterCountryService = gmMatterCountryService;
+            // _gmActionTypeEntityService = gmActionTypeEntityService; // Removed during deep clean
+            // _gmActionDueEntityService = gmActionDueEntityService; // Removed during deep clean
+            // _gmMatterService = gmMatterService; // Removed during deep clean
+            // _gmMatterCountryService = gmMatterCountryService; // Removed during deep clean
 
             _epoMailboxSettings = epoMailboxSettings.Value;
             _epoCommunicationDocService = epoCommunicationDocService;
@@ -487,91 +484,15 @@ namespace R10.Web.Areas.Shared.Controllers
             return Json(new { newName = viewModel.DocName });
         }
 
-        [Authorize(Policy = RMSAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddRMS(string documentLink, int dueId, int docId)
-        {
-            if (string.IsNullOrEmpty(documentLink) || dueId == 0)
-                return BadRequest();
+        // Removed during deep clean - RMS ImageAddRMS and SaveDocumentRMS methods
+        // [Authorize(Policy = RMSAuthorizationPolicy.DecisionMaker)]
+        // public async Task<IActionResult> ImageAddRMS(...) { ... }
+        // public async Task<IActionResult> SaveDocumentRMS(...) { ... }
 
-            var model = await _docViewModelService.CreateDocumentEditorViewModel(documentLink, 0, 0);
-            model.Author = User.GetEmail();
-            model.SaveAction = "SaveDocumentRMS";
-
-            ViewData["DueId"] = dueId;
-            ViewData["RequiredDocId"] = docId;
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-
-            var defaultDocType = await _docService.DocTypes.Where(d => (d.DocTypeName ?? "").ToLower() == "file").FirstOrDefaultAsync();
-            if (defaultDocType != null)
-            {
-                model.DocTypeId = defaultDocType.DocTypeId;
-                model.DocTypeName = defaultDocType.DocTypeName;
-            }
-
-            return PartialView("Views/Document/_RequiredDocumentEditor.cshtml", model);
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveDocumentRMS(DocDocumentViewModel viewModel, int dueId, int requiredDocId)
-        {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-            if (dueId == 0 || requiredDocId == 0)
-                return BadRequest();
-
-            UpdateEntityStamps(viewModel, viewModel.DocId);
-
-            viewModel.DocId = 0; //add only
-            await _docViewModelService.SaveDocumentPopup(viewModel, _hostingEnvironment.ContentRootPath);
-
-            //save RMSDueDoc, add RMSDueDocUploadLog
-            await _rmsDueDocService.SaveUploaded(dueId, requiredDocId, User.GetUserName(), true, viewModel.FileId ?? 0, viewModel.UserFileName ?? "", System.Convert.FromBase64String(""));
-            return Json(new { newName = viewModel.DocName });
-        }
-
-        [Authorize(Policy = ForeignFilingAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddFF(string documentLink, int dueId, int docId)
-        {
-            if (string.IsNullOrEmpty(documentLink) || dueId == 0)
-                return BadRequest();
-
-            var model = await _docViewModelService.CreateDocumentEditorViewModel(documentLink, 0, 0);
-            model.Author = User.GetEmail();
-            model.SaveAction = "SaveDocumentFF";
-
-            ViewData["DueId"] = dueId;
-            ViewData["RequiredDocId"] = docId;
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-
-            var defaultDocType = await _docService.DocTypes.Where(d => (d.DocTypeName ?? "").ToLower() == "file").FirstOrDefaultAsync();
-            if (defaultDocType != null)
-            {
-                model.DocTypeId = defaultDocType.DocTypeId;
-                model.DocTypeName = defaultDocType.DocTypeName;
-            }
-
-            return PartialView("Views/Document/_RequiredDocumentEditor.cshtml", model);
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveDocumentFF(DocDocumentViewModel viewModel, int dueId, int requiredDocId)
-        {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-            if (dueId == 0 || requiredDocId == 0)
-                return BadRequest();
-
-            UpdateEntityStamps(viewModel, viewModel.DocId);
-
-            viewModel.DocId = 0; //add only
-            await _docViewModelService.SaveDocumentPopup(viewModel, _hostingEnvironment.ContentRootPath);
-
-            //save FFDueDoc, add FFDueDocUploadLog
-            await _ffDueDocService.SaveUploaded(dueId, requiredDocId, User.GetUserName(), true, viewModel.FileId ?? 0, viewModel.UserFileName ?? "", System.Convert.FromBase64String(""));
-            return Json(new { newName = viewModel.DocName });
-        }
+        // Removed during deep clean - FF ImageAddFF and SaveDocumentFF methods
+        // [Authorize(Policy = ForeignFilingAuthorizationPolicy.DecisionMaker)]
+        // public async Task<IActionResult> ImageAddFF(...) { ... }
+        // public async Task<IActionResult> SaveDocumentFF(...) { ... }
 
         [HttpGet()]
         public async Task<IActionResult> ImageMerge()
@@ -928,13 +849,14 @@ namespace R10.Web.Areas.Shared.Controllers
                                 documentLink += "|" + ScreenCode.Trademark + "|TmkId";
                             break;
                         }
-                    case SystemType.GeneralMatter:
-                        {
-                            documentLink = SystemTypeCode.GeneralMatter;
-                            if (screenType.ToLower() == "matter")
-                                documentLink += "|" + ScreenCode.GeneralMatter + "|MatId";
-                            break;
-                        }
+                    // Removed during deep clean - GeneralMatter
+                    // case SystemType.GeneralMatter:
+                    //     {
+                    //         documentLink = SystemTypeCode.GeneralMatter;
+                    //         if (screenType.ToLower() == "matter")
+                    //             documentLink += "|" + ScreenCode.GeneralMatter + "|MatId";
+                    //         break;
+                    //     }
                     default:
                         break;
                 }

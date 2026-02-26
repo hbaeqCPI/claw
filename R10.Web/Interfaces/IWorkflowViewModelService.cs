@@ -1,7 +1,7 @@
-﻿using R10.Core.Entities.Clearance;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.PatClearance;
+﻿// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 
@@ -19,20 +19,20 @@ namespace R10.Web.Interfaces
         Task<List<TmkWorkflowAction>> GetTmkActionDueWorkflowActions(TmkActionDue actionDue, TmkWorkflowTriggerType triggerType, bool clearBase = true);
         Task<List<TmkWorkflowAction>> GetTmkCostTrackingWorkflowActions(TmkCostTrack costTrack, TmkWorkflowTriggerType triggerType, bool clearBase = true);
 
-        Task<List<GMWorkflowAction>> GetGeneralMatterWorkflowActions(GMMatter gm, GMWorkflowTriggerType triggerType, bool clearBase = true);
-        Task<List<GMWorkflowAction>> GetGMActionDueWorkflowActions(GMActionDue actionDue, GMWorkflowTriggerType triggerType, bool clearBase = true);
-        Task<List<GMWorkflowAction>> GetGMCostTrackingWorkflowActions(GMCostTrack costTrack, GMWorkflowTriggerType triggerType, bool clearBase = true);
+//         Task<List<GMWorkflowAction>> GetGeneralMatterWorkflowActions(GMMatter gm, GMWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
+//         Task<List<GMWorkflowAction>> GetGMActionDueWorkflowActions(GMActionDue actionDue, GMWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
+//         Task<List<GMWorkflowAction>> GetGMCostTrackingWorkflowActions(GMCostTrack costTrack, GMWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
         
         List<PatWorkflowAction> ClearPatBaseWorkflowActions(List<PatWorkflowAction> workflowActions);
         List<TmkWorkflowAction> ClearTmkBaseWorkflowActions(List<TmkWorkflowAction> workflowActions);
-        List<GMWorkflowAction> ClearGMBaseWorkflowActions(List<GMWorkflowAction> workflowActions);  
+//         List<GMWorkflowAction> ClearGMBaseWorkflowActions(List<GMWorkflowAction> workflowActions);   // Removed during deep clean
         
-        Task<List<TmcWorkflowAction>> GetSearchRequestWorkflowActions(TmcClearance clearance, TmcWorkflowTriggerType triggerType, bool clearBase = true);
+//         Task<List<TmcWorkflowAction>> GetSearchRequestWorkflowActions(TmcClearance clearance, TmcWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
 
-        Task<List<PacWorkflowAction>> GetPatClearanceWorkflowActions(PacClearance pacClearance, PacWorkflowTriggerType triggerType, bool clearBase = true);
+//         Task<List<PacWorkflowAction>> GetPatClearanceWorkflowActions(PacClearance pacClearance, PacWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
 
-        Task<List<DMSWorkflowAction>> GetDisclosureWorkflowActions(Disclosure disclosure, DMSWorkflowTriggerType triggerType, bool clearBase = true);
+//         Task<List<DMSWorkflowAction>> GetDisclosureWorkflowActions(Disclosure disclosure, DMSWorkflowTriggerType triggerType, bool clearBase = true); // Removed during deep clean
 
-        List<DMSWorkflowAction> ClearDMSBaseWorkflowActions(List<DMSWorkflowAction> workflowActions);
+//         List<DMSWorkflowAction> ClearDMSBaseWorkflowActions(List<DMSWorkflowAction> workflowActions); // Removed during deep clean
     }
 }

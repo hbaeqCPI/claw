@@ -1,4 +1,4 @@
-﻿using R10.Core.Entities.DMS;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System;
@@ -21,7 +21,7 @@ namespace R10.Core.Entities.Documents
 
         public List<TmkImage>? TmkImages { get; set; }
         public List<PatAppImage>? PatAppImages { get; set; }
-        public List<DMSFaqDoc>? DMSFaqDocs { get; set; }
+//         public List<DMSFaqDoc>? DMSFaqDocs { get; set; } // Removed during deep clean
         public List<InventionImage>? InventionImages { get; set; }
     }
 }

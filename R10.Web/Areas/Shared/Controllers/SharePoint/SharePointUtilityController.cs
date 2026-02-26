@@ -179,8 +179,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                                        await graphClient.Sites[site.Id].Lists[list.Id].Items[driveItem.ListItem.Id].Fields.Request().UpdateAsync(requestBody);
                                     }
                                 }
-                                await _repository.RTSSearchUSIFWs.Where(ifw => ifw.PLAppID == file.Id && ifw.FileName == file.FileName).ExecuteUpdateAsync(p => p.SetProperty(ifw => ifw.DocName, s => file.DocName)
-                                                                     .SetProperty(ifw => ifw.Transferred, s => true));
+                                // RTS module removed: RTSSearchUSIFWs no longer available
                                 await _repository.DocFiles.Where(f => f.DocFileName == file.FileName && string.IsNullOrEmpty(f.DriveItemId))
                                              .ExecuteUpdateAsync(p => p.SetProperty(f => f.DriveItemId, s => result.DriveItemId));
                             }
@@ -224,8 +223,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                                 formFile.CopyTo(stream);
                                 stream.Position = 0;
                                 var result = await graphClient.UploadSiteFile(_graphSettings.Site.RelativePath, _graphSettings.Site.HostName, SharePointDocLibrary.Trademark, folders, stream, file.DocName);
-                                await _repository.TLSearchDocuments.Where(d => d.TLTmkId == file.Id && d.FileName == file.FileName).ExecuteUpdateAsync(p => p.SetProperty(ifw => ifw.DocName, s => file.DocName)
-                                                                     .SetProperty(ifw => ifw.Transferred, s => true));
+                                // TL module removed: TLSearchDocuments no longer available
                                 await _repository.DocFiles.Where(f => f.DocFileName == file.FileName && string.IsNullOrEmpty(f.DriveItemId))
                                              .ExecuteUpdateAsync(p => p.SetProperty(f => f.DriveItemId, s => result.DriveItemId));
                             }
@@ -336,7 +334,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                                     await graphClient.Sites[site.Id].Lists[list.Id].Items[driveItem.ListItem.Id].Fields.Request().UpdateAsync(requestBody);
                                 }
 
-                                await _repository.TLSearchImages.Where(d => d.TLTmkId == file.Id).ExecuteUpdateAsync(p => p.SetProperty(ifw => ifw.Transferred, s => true));
+                                // TL module removed: TLSearchImages no longer available
                                 await _repository.DocFiles.Where(f => f.DocFileName == file.FileName && string.IsNullOrEmpty(f.DriveItemId))
                                 .ExecuteUpdateAsync(p => p.SetProperty(f => f.DriveItemId, s => uploadedFile.DriveItemId));
 
@@ -569,10 +567,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
 
             if (systems.Any(s => s == "Patent")) docLibraries.Add(SharePointDocLibrary.Patent);
             if (systems.Any(s => s == "Trademark")) docLibraries.Add(SharePointDocLibrary.Trademark);
-            if (systems.Any(s => s == "GeneralMatter")) docLibraries.Add(SharePointDocLibrary.GeneralMatter);
-            if (systems.Any(s => s == "DMS")) docLibraries.Add(SharePointDocLibrary.DMS);
-            if (systems.Any(s => s == "PatClearance")) docLibraries.Add(SharePointDocLibrary.PatClearance);
-            if (systems.Any(s => s == "SearchRequest")) docLibraries.Add(SharePointDocLibrary.TmkRequest);
+            // GM, DMS, PatClearance, SearchRequest modules removed
 
             var graphClient = _sharePointService.GetGraphClientByClientCredentials();
 

@@ -143,15 +143,6 @@ namespace R10.Web.Services
 
                     break;
 
-                case ScreenCode.GeneralMatter:
-                    sharePointFolder = SharePointDocLibraryFolder.GeneralMatter;
-                    var gm = await _repository.GMMatters.Where(r => r.MatId == recordId).FirstOrDefaultAsync();
-                    if (gm != null)
-                    {
-                        recKey = BuildGMRecKey(gm.CaseNumber, gm.SubCase);
-                    }
-                    break;
-
                 case ScreenCode.Action:
                     sharePointFolder = SharePointDocLibraryFolder.Action;
                     switch (systemType)
@@ -195,44 +186,6 @@ namespace R10.Web.Services
                             }
                             break;
 
-                        case SystemTypeCode.GeneralMatter:
-                            if (string.IsNullOrEmpty(subScreenCode))
-                            {
-                                var gmAction = await _repository.GMActionsDue.Where(a => a.ActId == recordId).FirstOrDefaultAsync();
-                                if (gmAction != null)
-                                {
-                                    recKey = BuildGMActionRecKey(gmAction.CaseNumber, gmAction.SubCase, gmAction.ActionType, gmAction.BaseDate);
-                                }
-
-                            }
-                            else if (subScreenCode == ScreenCode.ActionDueDate)
-                            {
-                                var dueDate = await _repository.GMDueDates.Where(a => a.DDId == recordId).Include(a => a.GMActionDue).FirstOrDefaultAsync();
-                                if (dueDate != null)
-                                {
-                                    recKey = BuildGMActionDueDateRecKey(dueDate.GMActionDue.CaseNumber, dueDate.GMActionDue.SubCase, dueDate.GMActionDue.ActionType, dueDate.GMActionDue.BaseDate, dueDate.ActionDue);
-                                }
-                            }
-                            break;
-
-                        case SystemTypeCode.DMS:
-                            if (string.IsNullOrEmpty(subScreenCode))
-                            {
-                                var dmsAction = await _repository.DMSActionDues.Where(a => a.ActId == recordId).FirstOrDefaultAsync();
-                                if (dmsAction != null)
-                                {
-                                    recKey = BuildDMSActionRecKey(dmsAction.DisclosureNumber, dmsAction.ActionType, dmsAction.BaseDate);
-                                }
-                            }
-                            else if (subScreenCode == ScreenCode.ActionDueDate)
-                            {
-                                var dueDate = await _repository.DMSDueDates.Where(a => a.DDId == recordId).Include(a => a.DMSActionDue).FirstOrDefaultAsync();
-                                if (dueDate != null)
-                                {
-                                    recKey = BuildDMSActionDueDateRecKey(dueDate.DMSActionDue.DisclosureNumber, dueDate.DMSActionDue.ActionType, dueDate.DMSActionDue.BaseDate, dueDate.ActionDue);
-                                }
-                            }
-                            break;
                     }
                     break;
 
@@ -256,22 +209,6 @@ namespace R10.Web.Services
                             }
                             break;
 
-                        case SystemTypeCode.GeneralMatter:
-                            var gmCost = await _repository.GMCostTracks.Where(a => a.CostTrackId == recordId).FirstOrDefaultAsync();
-                            if (gmCost != null)
-                            {
-                                recKey = BuildGMCostTrackingRecKey(gmCost.CaseNumber, gmCost.SubCase, gmCost.CostType, gmCost.InvoiceNumber, gmCost.InvoiceDate);
-                            }
-                            break;
-                    }
-                    break;
-
-                case ScreenCode.AMS:
-                    sharePointFolder = SharePointDocLibraryFolder.AMS;
-                    var amsMain = await _repository.AMSMain.Where(r => r.AnnID == recordId).FirstOrDefaultAsync();
-                    if (amsMain != null)
-                    {
-                        recKey = BuildRecKey(amsMain.CaseNumber, amsMain.Country, amsMain.SubCase);
                     }
                     break;
 
@@ -281,24 +218,6 @@ namespace R10.Web.Services
                     if (conflict != null)
                     {
                         recKey = BuildTmkConflictRecKey(conflict.CaseNumber, conflict.Country, conflict.SubCase, conflict.ConflictOppNumber);
-                    }
-                    break;
-
-                case ScreenCode.PatClearance:
-                    sharePointFolder = SharePointDocLibraryFolder.PatClearance;
-                    var patClearance = await _repository.PacClearances.Where(c => c.PacId == recordId).FirstOrDefaultAsync();
-                    if (patClearance != null)
-                    {
-                        recKey = patClearance.CaseNumber;
-                    }
-                    break;
-
-                case ScreenCode.Clearance:
-                    sharePointFolder = SharePointDocLibraryFolder.TmkRequest;
-                    var tmkClearance = await _repository.TmcClearances.Where(r => r.TmcId == recordId).FirstOrDefaultAsync();
-                    if (tmkClearance != null)
-                    {
-                        recKey = tmkClearance.CaseNumber;
                     }
                     break;
 
@@ -404,72 +323,6 @@ namespace R10.Web.Services
                     }
                 }
             }
-            else if (system == SystemTypeCode.GeneralMatter)
-            {
-                if (module == "Act")
-                {
-                    var action = await _repository.GMActionsDue.AsNoTracking().Where(c => c.ActId == recordId).FirstOrDefaultAsync();
-                    if (action == null)
-                        return new List<string>();
-                    var gm = await _repository.GMMatters.AsNoTracking().Where(c => c.MatId == action.MatId).FirstOrDefaultAsync();
-                    if (gm != null)
-                    {
-                        return new List<string>() { gm.CaseNumber + (string.IsNullOrEmpty(gm.SubCase) ? "" : SharePointSeparator.Field + gm.SubCase) + SharePointSeparator.Field + action.ActionType + SharePointSeparator.Field + ((DateTime?)action.BaseDate).FormatToDisplay() };
-                    }
-                }
-                else if (module == "Cst")
-                {
-                    var cost = await _repository.GMCostTracks.AsNoTracking().Where(c => c.CostTrackId == recordId).FirstOrDefaultAsync();
-                    if (cost == null)
-                        return new List<string>();
-                    var gm = await _repository.GMMatters.AsNoTracking().Where(c => c.MatId == cost.MatId).FirstOrDefaultAsync();
-                    if (gm != null)
-                    {
-                        return new List<string>() { gm.CaseNumber + (string.IsNullOrEmpty(gm.SubCase) ? "" : SharePointSeparator.Field + gm.SubCase) + SharePointSeparator.Field + cost.CostType + SharePointSeparator.Field + cost.InvoiceNumber + SharePointSeparator.Field + ((DateTime?)cost.InvoiceDate).FormatToDisplay() };
-                    }
-                }
-                else if (module == "Mat")
-                {
-                    var gm = await _repository.GMMatters.AsNoTracking().Where(c => c.MatId == recordId).FirstOrDefaultAsync();
-                    if (gm != null)
-                    {
-                        return new List<string>() { gm.CaseNumber + (string.IsNullOrEmpty(gm.SubCase) ? "" : SharePointSeparator.Field + gm.SubCase) };
-                    }
-                }
-            }
-            else if (system == SystemTypeCode.DMS)
-            {
-                if (module == "Dms")
-                {
-                    var disclosure = await _repository.Disclosures.AsNoTracking().Where(c => c.DMSId == recordId).FirstOrDefaultAsync();
-                    if (disclosure != null)
-                    {
-                        return new List<string>() { disclosure.DisclosureNumber };
-                    }
-                }
-            }
-            else if (system == SystemTypeCode.PatClearance)
-            {
-                if (module == "Clr")
-                {
-                    var clearance = await _repository.PacClearances.AsNoTracking().Where(c => c.PacId == recordId).FirstOrDefaultAsync();
-                    if (clearance != null)
-                    {
-                        return new List<string>() { clearance.CaseNumber };
-                    }
-                }
-            }
-            else if (system == SystemTypeCode.Clearance)
-            {
-                if (module == "Trq")
-                {
-                    var request = await _repository.TmcClearances.AsNoTracking().Where(c => c.TmcId == recordId).FirstOrDefaultAsync();
-                    if (request != null)
-                    {
-                        return new List<string>() { request.CaseNumber };
-                    }
-                }
-            }
 
             return new List<string>();
         }
@@ -500,43 +353,6 @@ namespace R10.Web.Services
                         return new List<string>() { recKey };
                     }
                     return new List<string>() { tmk.CaseNumber, tmk.Country + (string.IsNullOrEmpty(tmk.SubCase) ? "" : SharePointSeparator.Field + tmk.SubCase) };
-                }
-            }
-            else if (system == SystemTypeCode.GeneralMatter)
-            {
-                var gm = await _repository.GMMatters.AsNoTracking().Where(c => c.MatId == recordId).FirstOrDefaultAsync();
-                if (gm != null)
-                {
-                    if (IsSharePointRecKeySingleNodeOnly)
-                    {
-                        var recKey = BuildGMRecKey(gm.CaseNumber, gm.SubCase);
-                        return new List<string>() { recKey };
-                    }
-                    return new List<string>() { gm.CaseNumber + (string.IsNullOrEmpty(gm.SubCase) ? "" : SharePointSeparator.Field + gm.SubCase) };
-                }
-            }
-            else if (system == SystemTypeCode.DMS)
-            {
-                var disclosure = await _repository.Disclosures.AsNoTracking().Where(c => c.DMSId == recordId).FirstOrDefaultAsync();
-                if (disclosure != null)
-                {
-                    return new List<string>() { disclosure.DisclosureNumber };
-                }
-            }
-            else if (system == SystemTypeCode.PatClearance)
-            {
-                var clearance = await _repository.PacClearances.AsNoTracking().Where(c => c.PacId == recordId).FirstOrDefaultAsync();
-                if (clearance != null)
-                {
-                    return new List<string>() { clearance.CaseNumber };
-                }
-            }
-            else if (system == SystemTypeCode.Clearance)
-            {
-                var request = await _repository.TmcClearances.AsNoTracking().Where(c => c.TmcId == recordId).FirstOrDefaultAsync();
-                if (request != null)
-                {
-                    return new List<string>() { request.CaseNumber };
                 }
             }
             return new List<string>();
@@ -698,113 +514,6 @@ namespace R10.Web.Services
                     return result;
                 }
             }
-            else if (foldersArray[0] == "General Matter")
-            {
-                result.Add("G");
-                if (foldersArray[1] == "Action")
-                {
-                    result.Add("Act");
-
-                    var casesArray = foldersArray[2].Split(SharePointSeparator.Field);
-                    int currentIndex = 0;
-                    var caseNumber = casesArray[currentIndex++];
-                    var subCase = casesArray.Length == 4 ? casesArray[currentIndex++] : "";
-                    var actionType = casesArray[currentIndex++];
-                    var baseDate = DateTime.Parse(casesArray[currentIndex++]);
-
-                    var action = await _repository.GMActionsDue.AsNoTracking().Where(c => c.GMMatter.CaseNumber == caseNumber
-                    && (c.GMMatter.SubCase == null || c.GMMatter.SubCase == subCase)
-                    && c.ActionType == actionType
-                    && c.BaseDate == baseDate).FirstOrDefaultAsync();
-                    if (action == null)
-                        return new List<string>();
-                    result.Add(action.ActId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-                else if (foldersArray[1] == "Cost")
-                {
-                    result.Add("Cst");
-
-                    var casesArray = foldersArray[2].Split(SharePointSeparator.Field);
-                    int currentIndex = 0;
-                    var caseNumber = casesArray[currentIndex++];
-                    var subCase = casesArray.Length == 5 ? casesArray[currentIndex++] : "";
-                    var costType = casesArray[currentIndex++];
-                    var invoiceNumber = casesArray[currentIndex++];
-                    var invoiceDate = DateTime.Parse(casesArray[currentIndex++]);
-
-                    var cost = await _repository.GMCostTracks.AsNoTracking().Where(c => c.GMMatter.CaseNumber == caseNumber
-                    && (c.GMMatter.SubCase == null || c.GMMatter.SubCase == subCase)
-                    && c.CostType == costType
-                    && c.InvoiceNumber == invoiceNumber
-                    && c.InvoiceDate == invoiceDate).FirstOrDefaultAsync();
-                    if (cost == null)
-                        return new List<string>();
-                    result.Add(cost.CostTrackId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-                else if (foldersArray[1] == "General Matter")
-                {
-                    result.Add("Mat");
-
-                    var casesArray = foldersArray[2].Split(SharePointSeparator.Field);
-                    int currentIndex = 0;
-                    var caseNumber = casesArray[currentIndex++];
-                    var subCase = casesArray.Length == 2 ? casesArray[currentIndex++] : "";
-
-                    var gm = await _repository.GMMatters.AsNoTracking().Where(c => c.CaseNumber == caseNumber
-                    && (c.SubCase == null || c.SubCase == subCase)).FirstOrDefaultAsync();
-                    if (gm == null)
-                        return new List<string>();
-                    result.Add(gm.MatId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-            }
-            else if (foldersArray[0] == "DMS")
-            {
-                result.Add("D");
-                if (foldersArray[1] == "DMS")
-                {
-                    result.Add("Dms");
-                    var disclosure = await _repository.Disclosures.AsNoTracking().Where(c => c.DisclosureNumber == foldersArray[2]).FirstOrDefaultAsync();
-                    if (disclosure == null)
-                        return new List<string>();
-                    result.Add(disclosure.DMSId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-            }
-            else if (foldersArray[0] == "Patent Clearance")
-            {
-                result.Add("E");
-                if (foldersArray[1] == "Clearance")
-                {
-                    result.Add("Clr");
-                    var clearance = await _repository.PacClearances.AsNoTracking().Where(c => c.CaseNumber == foldersArray[2]).FirstOrDefaultAsync();
-                    if (clearance == null)
-                        return new List<string>();
-                    result.Add(clearance.PacId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-            }
-            else if (foldersArray[0] == "Trademark Request")
-            {
-                result.Add("C");
-                if (foldersArray[1] == "Trademark Request")
-                {
-                    result.Add("Trq");
-                    var request = await _repository.TmcClearances.AsNoTracking().Where(c => c.CaseNumber == foldersArray[2]).FirstOrDefaultAsync();
-                    if (request == null)
-                        return new List<string>();
-                    result.Add(request.TmcId.ToString());
-                    result.Add(foldersArray[3]);
-                    return result;
-                }
-            }
 
             return new List<string>();
         }
@@ -838,13 +547,6 @@ namespace R10.Web.Services
                     }
                     break;
 
-                case SystemTypeCode.GeneralMatter:
-                    var gmActionDue = await _repository.TmkActionDues.Where(r => r.ActId == actId).FirstOrDefaultAsync();
-                    if (gmActionDue != null)
-                    {
-                        recKey = gmActionDue.CaseNumber + (string.IsNullOrEmpty(gmActionDue.SubCase) ? "" : SharePointSeparator.Field + gmActionDue.SubCase) + SharePointSeparator.Field + gmActionDue.ActionType + SharePointSeparator.Field + ((DateTime?)gmActionDue.BaseDate).FormatToDisplay();
-                    }
-                    break;
 
             }
             return recKey;
@@ -1421,17 +1123,6 @@ namespace R10.Web.Services
                     }
                 }
             }
-            else if (docLibrary == SharePointDocLibrary.GeneralMatter)
-            {
-                if (docLibraryFolder == SharePointDocLibraryFolder.GeneralMatter)
-                {
-                    var mat = await _repository.GMMatters.AsNoTracking().FirstOrDefaultAsync(d => d.MatId == id);
-                    if (mat != null)
-                    {
-                        recKey = BuildGMRecKey(mat.CaseNumber, mat.SubCase);
-                    }
-                }
-            }
 
             return recKey;
         }
@@ -1472,20 +1163,6 @@ namespace R10.Web.Services
                 }
             }
 
-            else if (docLibrary == SharePointDocLibrary.GeneralMatter)
-            {
-                var actions = await _repository.GMActionsDue.AsNoTracking().Where(d => d.MatId == parentId).ToListAsync();
-                foreach (var item in actions)
-                {
-                    result.Add(new LookupDTO { Value = SharePointDocLibraryFolder.Action, Text = BuildGMActionRecKey(item.CaseNumber, item.SubCase, item.ActionType, item.BaseDate) });
-                }
-
-                var costs = await _repository.GMCostTracks.AsNoTracking().Where(d => d.MatId == parentId).ToListAsync();
-                foreach (var item in costs)
-                {
-                    result.Add(new LookupDTO { Value = SharePointDocLibraryFolder.Cost, Text = BuildGMCostTrackingRecKey(item.CaseNumber, item.SubCase, item.CostType, item.InvoiceNumber, item.InvoiceDate) });
-                }
-            }
             return result;
         }
 

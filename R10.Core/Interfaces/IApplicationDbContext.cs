@@ -3,22 +3,22 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Documents;
 using R10.Core.Entities.FormExtract;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.GlobalSearch;
-using R10.Core.Entities.PatClearance;
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.ReportScheduler;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
 using R10.Core.Queries.Shared;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 
 namespace R10.Core.Interfaces
 {
@@ -203,136 +203,136 @@ namespace R10.Core.Interfaces
 
         #region Patent Clearance Search
 
-        DbSet<PacClearance> PacClearances { get; set; }
-        DbSet<PacClearanceStatus> PacClearanceStatuses { get; set; }
-        DbSet<PacQuestion> PacQuestions { get; set; }
+//         DbSet<PacClearance> PacClearances { get; set; } // Removed during deep clean
+//         DbSet<PacClearanceStatus> PacClearanceStatuses { get; set; } // Removed during deep clean
+//         DbSet<PacQuestion> PacQuestions { get; set; } // Removed during deep clean
         //DbSet<PacImage> PacImages { get; set; }
-        DbSet<PacClearanceStatusHistory> PacClearanceStatusesHistory { get; set; }
-        DbSet<PacInventor> PacInventors { get; set; }
-        DbSet<PacKeyword> PacKeywords { get; set; }
+//         DbSet<PacClearanceStatusHistory> PacClearanceStatusesHistory { get; set; } // Removed during deep clean
+//         DbSet<PacInventor> PacInventors { get; set; } // Removed during deep clean
+//         DbSet<PacKeyword> PacKeywords { get; set; } // Removed during deep clean
 
-        DbSet<PacQuestionGroup> PacQuestionGroups { get; set; }
-        DbSet<PacQuestionGuide> PacQuestionGuides { get; set; }
-        DbSet<PacQuestionGuideChild> PacQuestionGuideChildren { get; set; }
+//         DbSet<PacQuestionGroup> PacQuestionGroups { get; set; } // Removed during deep clean
+//         DbSet<PacQuestionGuide> PacQuestionGuides { get; set; } // Removed during deep clean
+//         DbSet<PacQuestionGuideChild> PacQuestionGuideChildren { get; set; } // Removed during deep clean
 
-        DbSet<PacWorkflow> PacWorkflows { get; set; }
-        DbSet<PacWorkflowAction> PacWorkflowActions { get; set; }
+//         DbSet<PacWorkflow> PacWorkflows { get; set; } // Removed during deep clean
+//         DbSet<PacWorkflowAction> PacWorkflowActions { get; set; } // Removed during deep clean
 
-        DbSet<PacClearanceCopySetting> PacClearanceCopySettings { get; set; }
-        DbSet<PacClearanceCopyDisclosureSetting> PacClearanceCopyDisclosureSettings { get; set; }
+//         DbSet<PacClearanceCopySetting> PacClearanceCopySettings { get; set; } // Removed during deep clean
+//         DbSet<PacClearanceCopyDisclosureSetting> PacClearanceCopyDisclosureSettings { get; set; } // Removed during deep clean
 
         #endregion
 
         #region DMS
         // dms main
-        DbSet<Disclosure> Disclosures { get; set; }
-        DbSet<DisclosureCopySetting> DisclosureCopySettings { get; set; }
-        DbSet<DisclosureCopyClearanceSetting> DisclosureCopyClearanceSettings { get; set; }
+//         DbSet<Disclosure> Disclosures { get; set; } // Removed during deep clean
+//         DbSet<DisclosureCopySetting> DisclosureCopySettings { get; set; } // Removed during deep clean
+//         DbSet<DisclosureCopyClearanceSetting> DisclosureCopyClearanceSettings { get; set; } // Removed during deep clean
 
-        DbSet<DMSActionDue> DMSActionDues { get; set; }
-        DbSet<DMSDueDate> DMSDueDates { get; set; }
-        DbSet<DMSActionReminderLog> DMSActionReminderLogs { get; set; }
-        DbSet<DMSActionReminderEmailDTO> DMSActionReminderEmailDTOs { get; set; }
+//         DbSet<DMSActionDue> DMSActionDues { get; set; } // Removed during deep clean
+//         DbSet<DMSDueDate> DMSDueDates { get; set; } // Removed during deep clean
+//         DbSet<DMSActionReminderLog> DMSActionReminderLogs { get; set; } // Removed during deep clean
+        // DbSet<DMSActionReminderEmailDTO> DMSActionReminderEmailDTOs { get; set; } // Removed during deep clean
 
-        DbSet<DMSInventor> DMSInventors { get; set; }
-        DbSet<DMSInventorHistory> DMSInventorHistory { get; set; }
+//         DbSet<DMSInventor> DMSInventors { get; set; } // Removed during deep clean
+//         DbSet<DMSInventorHistory> DMSInventorHistory { get; set; } // Removed during deep clean
 
-        DbSet<DMSAbstract> DMSAbstracts { get; set; }
-        DbSet<DMSKeyword> DMSKeywords { get; set; }
+//         DbSet<DMSAbstract> DMSAbstracts { get; set; } // Removed during deep clean
+//         DbSet<DMSKeyword> DMSKeywords { get; set; } // Removed during deep clean
         //DbSet<DMSImage> DMSImages { get; set; }
         //DbSet<DMSImageAct> DMSImageActs { get; set; }                       // should be removed               
 
-        DbSet<DMSDisclosureStatusHistory> DMSDisclosureStatusesHistory { get; set; }
-        DbSet<DMSRecommendationHistory> DMSRecommendationsHistory { get; set; }
-        DbSet<DisclosureRelatedDisclosure> DisclosureRelatedDisclosures { get; set; }
-        DbSet<DMSQuestion> DMSQuestions { get; set; }
-        DbSet<DMSCombined> DMSCombineds { get; set; }
+//         DbSet<DMSDisclosureStatusHistory> DMSDisclosureStatusesHistory { get; set; } // Removed during deep clean
+//         DbSet<DMSRecommendationHistory> DMSRecommendationsHistory { get; set; } // Removed during deep clean
+//         DbSet<DisclosureRelatedDisclosure> DisclosureRelatedDisclosures { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestion> DMSQuestions { get; set; } // Removed during deep clean
+//         DbSet<DMSCombined> DMSCombineds { get; set; } // Removed during deep clean
 
         // workflow
-        DbSet<DMSWorkflow> DMSWorkflows { get; set; }
-        DbSet<DMSWorkflowAction> DMSWorkflowActions { get; set; }
+//         DbSet<DMSWorkflow> DMSWorkflows { get; set; } // Removed during deep clean
+//         DbSet<DMSWorkflowAction> DMSWorkflowActions { get; set; } // Removed during deep clean
 
         // dms aux
-        DbSet<DMSActionType> DMSActionTypes { get; set; }
-        DbSet<DMSRating> DMSRatings { get; set; }
-        DbSet<DMSDisclosureStatus> DMSDisclosureStatuses { get; set; }
-        DbSet<DMSIndicator> DMSIndicators { get; set; }
-        DbSet<DMSRecommendation> DMSRecommendations { get; set; }
-        DbSet<DMSQuestionGroup> DMSQuestionGroups { get; set; }
-        DbSet<DMSQuestionGuide> DMSQuestionGuides { get; set; }
-        DbSet<DMSQuestionGuideChild> DMSQuestionGuideChildren { get; set; }
-        DbSet<DMSQuestionGuideSub> DMSQuestionGuideSubs { get; set; }
-        DbSet<DMSQuestionGuideSubDtl> DMSQuestionGuideSubDtls { get; set; }
+//         DbSet<DMSActionType> DMSActionTypes { get; set; } // Removed during deep clean
+//         DbSet<DMSRating> DMSRatings { get; set; } // Removed during deep clean
+//         DbSet<DMSDisclosureStatus> DMSDisclosureStatuses { get; set; } // Removed during deep clean
+//         DbSet<DMSIndicator> DMSIndicators { get; set; } // Removed during deep clean
+//         DbSet<DMSRecommendation> DMSRecommendations { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestionGroup> DMSQuestionGroups { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestionGuide> DMSQuestionGuides { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestionGuideChild> DMSQuestionGuideChildren { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestionGuideSub> DMSQuestionGuideSubs { get; set; } // Removed during deep clean
+//         DbSet<DMSQuestionGuideSubDtl> DMSQuestionGuideSubDtls { get; set; } // Removed during deep clean
 
         // valuation matrix
-        DbSet<DMSValuationMatrix> DMSValuationMatrices { get; set; }
-        DbSet<DMSValuationMatrixRate> DMSValuationMatrixRates { get; set; }
+//         DbSet<DMSValuationMatrix> DMSValuationMatrices { get; set; } // Removed during deep clean
+//         DbSet<DMSValuationMatrixRate> DMSValuationMatrixRates { get; set; } // Removed during deep clean
 
-        DbSet<DMSAverageRatingDTO> DMSAverageRatingDTO { get; set; }
+        // DbSet<DMSAverageRatingDTO> DMSAverageRatingDTO { get; set; } // Removed during deep clean
 
         // agenda meeting
-        DbSet<DMSAgenda> DMSAgendas { get; set; }
-        DbSet<DMSAgendaReviewer> DMSAgendaReviewers { get; set; }
-        DbSet<DMSAgendaRelatedDisclosure> DMSAgendaRelatedDisclosures { get; set; }
+//         DbSet<DMSAgenda> DMSAgendas { get; set; } // Removed during deep clean
+//         DbSet<DMSAgendaReviewer> DMSAgendaReviewers { get; set; } // Removed during deep clean
+//         DbSet<DMSAgendaRelatedDisclosure> DMSAgendaRelatedDisclosures { get; set; } // Removed during deep clean
 
-        DbSet<DMSFaqDoc> DMSFaqDocs { get; set; }
+//         DbSet<DMSFaqDoc> DMSFaqDocs { get; set; } // Removed during deep clean
 
         #endregion
 
         #region RTS
-        DbSet<RTSMapActionDue> RTSMapActionDues { get; set; }
-        DbSet<RTSMapActionDueSource> RTSMapActionDueSources { get; set; }
-        DbSet<RTSMapActionClose> RTSMapActionsClose { get; set; }
-        DbSet<RTSSearch> RTSSearchRecords { get; set; }
-        DbSet<RTSSearchAction> RTSSearchActions { get; set; }
-        DbSet<RTSSearchUSIFW> RTSSearchUSIFWs { get; set; }
+//         DbSet<RTSMapActionDue> RTSMapActionDues { get; set; } // Removed during deep clean
+//         DbSet<RTSMapActionDueSource> RTSMapActionDueSources { get; set; } // Removed during deep clean
+//         DbSet<RTSMapActionClose> RTSMapActionsClose { get; set; } // Removed during deep clean
+//         DbSet<RTSSearch> RTSSearchRecords { get; set; } // Removed during deep clean
+//         DbSet<RTSSearchAction> RTSSearchActions { get; set; } // Removed during deep clean
+//         DbSet<RTSSearchUSIFW> RTSSearchUSIFWs { get; set; } // Removed during deep clean
         //DbSet<RTSPatentWatch> PatentWatchList { get; set; }
-        DbSet<PDTSentLog> PDTSentLogs { get; set; }
-        DbSet<RTSPFSWorkflowBatch> RTSPFSWorkflowBatches { get; set; }
-        DbSet<RTSPFSWorkflowApp> RTSPFSWorkflowApps { get; set; }
-        DbSet<RTSBiblioUpdate> RTSBiblioUpdates { get; set; }
-        DbSet<PubNumberConverted> PubNumberConverteds { get; set; }
-        DbSet<RTSBiblioUpdateHistory> RTSBiblioUpdatesHistory { get; set; }
+//         DbSet<PDTSentLog> PDTSentLogs { get; set; } // Removed during deep clean
+//         DbSet<RTSPFSWorkflowBatch> RTSPFSWorkflowBatches { get; set; } // Removed during deep clean
+//         DbSet<RTSPFSWorkflowApp> RTSPFSWorkflowApps { get; set; } // Removed during deep clean
+//         DbSet<RTSBiblioUpdate> RTSBiblioUpdates { get; set; } // Removed during deep clean
+//         DbSet<PubNumberConverted> PubNumberConverteds { get; set; } // Removed during deep clean
+//         DbSet<RTSBiblioUpdateHistory> RTSBiblioUpdatesHistory { get; set; } // Removed during deep clean
 
-        DbSet<RTSMapActionDocument> RTSMapActionDocuments { get; set; }
-        DbSet<RTSMapActionDocumentClient> RTSMapActionDocumentClients { get; set; }
+//         DbSet<RTSMapActionDocument> RTSMapActionDocuments { get; set; } // Removed during deep clean
+//         DbSet<RTSMapActionDocumentClient> RTSMapActionDocumentClients { get; set; } // Removed during deep clean
 
-        DbSet<RTSSearchIDSCount> RTSSearchIDSCounts { get; set; }
+//         DbSet<RTSSearchIDSCount> RTSSearchIDSCounts { get; set; } // Removed during deep clean
         #endregion
 
         #region AMS
-        DbSet<AMSMain> AMSMain { get; set; }
+//         DbSet<AMSMain> AMSMain { get; set; } // Removed during deep clean
         #endregion
 
         #region RMS
-        DbSet<RMSReminderSetup> RMSReminderSetup { get; set; }
-        DbSet<RMSInstrxTypeAction> RMSInstrxTypeAction { get; set; }
+//         DbSet<RMSReminderSetup> RMSReminderSetup { get; set; } // Removed during deep clean
+//         DbSet<RMSInstrxTypeAction> RMSInstrxTypeAction { get; set; } // Removed during deep clean
         #endregion
 
         #region FF
-        DbSet<FFReminderSetup> FFReminderSetup { get; set; }
-        DbSet<FFInstrxTypeAction> FFInstrxTypeAction { get; set; }
+//         DbSet<FFReminderSetup> FFReminderSetup { get; set; } // Removed during deep clean
+//         DbSet<FFInstrxTypeAction> FFInstrxTypeAction { get; set; } // Removed during deep clean
         #endregion
 
         #region TL
-        DbSet<TLSearch> TLSearchRecords { get; set; }
-        DbSet<TLSearchAction> TLSearchActions { get; set; }
-        DbSet<TLSearchImage> TLSearchImages { get; set; }
-        DbSet<TLSearchDocument> TLSearchDocuments { get; set; }
-        DbSet<TLMapActionDue> TLMapActionDues { get; set; }
-        DbSet<TLMapActionDueSource> TLMapActionDueSources { get; set; }
-        DbSet<TLMapActionClose> TLMapActionsClose { get; set; }
-        DbSet<TLBiblioUpdate> TLBiblioUpdates { get; set; }
-        DbSet<TLTrademarkNameUpdate> TLTrademarkNameUpdates { get; set; }
-        DbSet<TLActionComparePTO> TLActionComparePTO { get; set; }
-        DbSet<TLActionUpdateHistory> TLActionUpdatesHistory { get; set; }
-        DbSet<TLBiblioUpdateHistory> TLBiblioUpdatesHistory { get; set; }
-        DbSet<TLTmkNameUpdateHistory> TLTmkNameUpdatesHistory { get; set; }
-        DbSet<TLGoodsUpdateHistory> TLGoodsUpdatesHistory { get; set; }
-        DbSet<TLSearchImageDTO> TLSearchImageDTO { get; set; }
-        DbSet<TLMapActionDocument> TLMapActionDocuments { get; set; }
-        DbSet<TLMapActionDocumentClient> TLMapActionDocumentClients { get; set; }
-        DbSet<TLActionUpdateExclude> TLActionUpdateExcludes { get; set; }
+//         DbSet<TLSearch> TLSearchRecords { get; set; } // Removed during deep clean
+//         DbSet<TLSearchAction> TLSearchActions { get; set; } // Removed during deep clean
+//         DbSet<TLSearchImage> TLSearchImages { get; set; } // Removed during deep clean
+//         DbSet<TLSearchDocument> TLSearchDocuments { get; set; } // Removed during deep clean
+//         DbSet<TLMapActionDue> TLMapActionDues { get; set; } // Removed during deep clean
+//         DbSet<TLMapActionDueSource> TLMapActionDueSources { get; set; } // Removed during deep clean
+//         DbSet<TLMapActionClose> TLMapActionsClose { get; set; } // Removed during deep clean
+//         DbSet<TLBiblioUpdate> TLBiblioUpdates { get; set; } // Removed during deep clean
+//         DbSet<TLTrademarkNameUpdate> TLTrademarkNameUpdates { get; set; } // Removed during deep clean
+//         DbSet<TLActionComparePTO> TLActionComparePTO { get; set; } // Removed during deep clean
+//         DbSet<TLActionUpdateHistory> TLActionUpdatesHistory { get; set; } // Removed during deep clean
+//         DbSet<TLBiblioUpdateHistory> TLBiblioUpdatesHistory { get; set; } // Removed during deep clean
+//         DbSet<TLTmkNameUpdateHistory> TLTmkNameUpdatesHistory { get; set; } // Removed during deep clean
+//         DbSet<TLGoodsUpdateHistory> TLGoodsUpdatesHistory { get; set; } // Removed during deep clean
+//         DbSet<TLSearchImageDTO> TLSearchImageDTO { get; set; } // Removed during deep clean
+//         DbSet<TLMapActionDocument> TLMapActionDocuments { get; set; } // Removed during deep clean
+//         DbSet<TLMapActionDocumentClient> TLMapActionDocumentClients { get; set; } // Removed during deep clean
+//         DbSet<TLActionUpdateExclude> TLActionUpdateExcludes { get; set; } // Removed during deep clean
         #endregion
 
         #region Trademark
@@ -407,52 +407,52 @@ namespace R10.Core.Interfaces
 
         #region Trademark Clearance
 
-        DbSet<TmcClearance> TmcClearances { get; set; }
-        DbSet<TmcClearanceStatus> TmcClearanceStatuses { get; set; }
-        DbSet<TmcQuestion> TmcQuestions { get; set; }
+//         DbSet<TmcClearance> TmcClearances { get; set; } // Removed during deep clean
+//         DbSet<TmcClearanceStatus> TmcClearanceStatuses { get; set; } // Removed during deep clean
+//         DbSet<TmcQuestion> TmcQuestions { get; set; } // Removed during deep clean
         //DbSet<TmcImage> TmcImages { get; set; }
-        DbSet<TmcClearanceStatusHistory> TmcClearanceStatusesHistory { get; set; }
+//         DbSet<TmcClearanceStatusHistory> TmcClearanceStatusesHistory { get; set; } // Removed during deep clean
 
-        DbSet<TmcQuestionGroup> TmcQuestionGroups { get; set; }
-        DbSet<TmcQuestionGuide> TmcQuestionGuides { get; set; }
-        DbSet<TmcQuestionGuideChild> TmcQuestionGuideChildren { get; set; }
+//         DbSet<TmcQuestionGroup> TmcQuestionGroups { get; set; } // Removed during deep clean
+//         DbSet<TmcQuestionGuide> TmcQuestionGuides { get; set; } // Removed during deep clean
+//         DbSet<TmcQuestionGuideChild> TmcQuestionGuideChildren { get; set; } // Removed during deep clean
 
-        DbSet<TmcWorkflow> TmcWorkflows { get; set; }
-        DbSet<TmcWorkflowAction> TmcWorkflowActions { get; set; }
+//         DbSet<TmcWorkflow> TmcWorkflows { get; set; } // Removed during deep clean
+//         DbSet<TmcWorkflowAction> TmcWorkflowActions { get; set; } // Removed during deep clean
 
-        DbSet<TmcKeyword> TmcKeywords { get; set; }
-        DbSet<TmcList> TmcLists { get; set; }
-        DbSet<TmcRelatedTrademark> TmcRelatedTrademarks { get; set; }
-        DbSet<TmcMark> TmcMarks { get; set; }
+//         DbSet<TmcKeyword> TmcKeywords { get; set; } // Removed during deep clean
+//         DbSet<TmcList> TmcLists { get; set; } // Removed during deep clean
+//         DbSet<TmcRelatedTrademark> TmcRelatedTrademarks { get; set; } // Removed during deep clean
+//         DbSet<TmcMark> TmcMarks { get; set; } // Removed during deep clean
 
-        DbSet<TmcClearanceCopySetting> ClearanceCopySettings { get; set; }
+//         DbSet<TmcClearanceCopySetting> ClearanceCopySettings { get; set; } // Removed during deep clean
 
         #endregion
 
         #region General Matters
-        DbSet<GMMatter> GMMatters { get; set; }
-        DbSet<GMMatterPatent> GMMatterPatents { get; set; }
-        DbSet<GMMatterAttorney> GMMatterAttorneys { get; set; }
-        DbSet<GMDueDate> GMDueDates { get; set; }
-        DbSet<GMMatterCopySetting> GMMatterCopySettings { get; set; }
-        DbSet<GMCostTrack> GMCostTracks { get; set; }
-        DbSet<GMCostType> GMCostTypes { get; set; }
-        DbSet<GMActionDue> GMActionsDue { get; set; }
-        DbSet<GMWorkflow> GMWorkflows { get; set; }
-        DbSet<GMWorkflowAction> GMWorkflowActions { get; set; }
-        DbSet<GMWorkflowActionParameter> GMWorkflowActionParameters { get; set; }
-        DbSet<LookupDTO> GMActionTypeDTO { get; set; }
-        DbSet<GMProduct> GMProducts { get; set; }
-        DbSet<GMBudgetManagement> GMBudgetManagements { get; set; }
-        DbSet<GMActionType> GMActionTypes { get; set; }
-        DbSet<GMActionParameter> GMActionParameters { get; set; }
-        DbSet<GMIndicator> GMIndicators { get; set; }
+//         DbSet<GMMatter> GMMatters { get; set; } // Removed during deep clean
+//         DbSet<GMMatterPatent> GMMatterPatents { get; set; } // Removed during deep clean
+//         DbSet<GMMatterAttorney> GMMatterAttorneys { get; set; } // Removed during deep clean
+//         DbSet<GMDueDate> GMDueDates { get; set; } // Removed during deep clean
+//         DbSet<GMMatterCopySetting> GMMatterCopySettings { get; set; } // Removed during deep clean
+//         DbSet<GMCostTrack> GMCostTracks { get; set; } // Removed during deep clean
+//         DbSet<GMCostType> GMCostTypes { get; set; } // Removed during deep clean
+//         DbSet<GMActionDue> GMActionsDue { get; set; } // Removed during deep clean
+//         DbSet<GMWorkflow> GMWorkflows { get; set; } // Removed during deep clean
+//         DbSet<GMWorkflowAction> GMWorkflowActions { get; set; } // Removed during deep clean
+//         DbSet<GMWorkflowActionParameter> GMWorkflowActionParameters { get; set; } // Removed during deep clean
+        // DbSet<LookupDTO> GMActionTypeDTO { get; set; } // Removed during deep clean
+//         DbSet<GMProduct> GMProducts { get; set; } // Removed during deep clean
+//         DbSet<GMBudgetManagement> GMBudgetManagements { get; set; } // Removed during deep clean
+//         DbSet<GMActionType> GMActionTypes { get; set; } // Removed during deep clean
+//         DbSet<GMActionParameter> GMActionParameters { get; set; } // Removed during deep clean
+//         DbSet<GMIndicator> GMIndicators { get; set; } // Removed during deep clean
 
         //Cost Tracking Import
-        DbSet<GMCostTrackingImportHistory> GMCostTrackingImportHistory { get; set; }
-        DbSet<GMCostTrackingImportMapping> GMCostTrackingImportMappings { get; set; }
-        DbSet<GMCostTrackingImportError> GMCostTrackingImportErrors { get; set; }
-        DbSet<GMCostTrackingImportTypeColumn> GMCostTrackingImportTypeColumns { get; set; }
+//         DbSet<GMCostTrackingImportHistory> GMCostTrackingImportHistory { get; set; } // Removed during deep clean
+//         DbSet<GMCostTrackingImportMapping> GMCostTrackingImportMappings { get; set; } // Removed during deep clean
+//         DbSet<GMCostTrackingImportError> GMCostTrackingImportErrors { get; set; } // Removed during deep clean
+//         DbSet<GMCostTrackingImportTypeColumn> GMCostTrackingImportTypeColumns { get; set; } // Removed during deep clean
         #endregion
 
         #region Images
@@ -611,12 +611,12 @@ namespace R10.Core.Interfaces
         DbSet<PatDueDateDeDocket> PatDueDateDeDockets { get; set; }
         DbSet<PatDueDateInvDeDocket> PatDueDateInvDeDockets { get; set; }
         DbSet<TmkDueDateDeDocket> TmkDueDateDeDockets { get; set; }
-        DbSet<GMDueDateDeDocket> GMDueDateDeDockets { get; set; }
+//         DbSet<GMDueDateDeDocket> GMDueDateDeDockets { get; set; } // Removed during deep clean
         DbSet<PatDueDateExtension> PatDueDateExtensions { get; set; }
         DbSet<PatDueDateInvExtension> PatDueDateInvExtensions { get; set; }
         DbSet<TmkDueDateExtension> TmkDueDateExtensions { get; set; }
-        DbSet<GMDueDateExtension> GMDueDateExtensions { get; set; }
-        DbSet<DMSDueDateExtension> DMSDueDateExtensions { get; set; }
+//         DbSet<GMDueDateExtension> GMDueDateExtensions { get; set; } // Removed during deep clean
+//         DbSet<DMSDueDateExtension> DMSDueDateExtensions { get; set; } // Removed during deep clean
         DbSet<DueDateExtensionLog> DueDateExtensionsLog { get; set; }
 
         DbSet<PatDueDateDeDocketResp> PatDueDateDeDocketResps { get; set; }

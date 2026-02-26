@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,14 +25,14 @@ using Newtonsoft.Json.Linq;
 using R10.Core;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 using R10.Infrastructure.Data;
 using R10.Infrastructure.Identity;
@@ -66,7 +66,7 @@ namespace R10.Web.Areas.Admin.Controllers
 
         private readonly ISystemSettings<PatSetting> _patSettings;
         private readonly ISystemSettings<TmkSetting> _tmkSettings;
-        private readonly ISystemSettings<GMSetting> _gmSettings;
+        // private readonly ISystemSettings<GMSetting> _gmSettings; // Removed during deep clean
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
 
         protected string UserId { get => User.GetUserIdentifier(); }
@@ -79,7 +79,7 @@ namespace R10.Web.Areas.Admin.Controllers
             IStringLocalizer<SharedResource> localizer,
             ISystemSettings<PatSetting> patSettings,
             ISystemSettings<TmkSetting> tmkSettings,
-            ISystemSettings<GMSetting> gmSettings,
+            // ISystemSettings<GMSetting> gmSettings, // Removed during deep clean
             ISystemSettings<DefaultSetting> defaultSettings)
         {
             _defaultWidgetManager = defaultWidgetManager;
@@ -89,7 +89,7 @@ namespace R10.Web.Areas.Admin.Controllers
             _localizer = localizer;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
+            // _gmSettings = gmSettings; // Removed during deep clean
             _defaultSettings = defaultSettings;
         }
 
@@ -428,9 +428,9 @@ namespace R10.Web.Areas.Admin.Controllers
 
             var tmkSettings = await _tmkSettings.GetSetting();
             var patSettings = await _patSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
+            // var gmSettings = await _gmSettings.GetSetting(); // Removed during deep clean
             var defaultSettings = await _defaultSettings.GetSetting();
-            var isAMSIntegrated = User.IsAMSIntegrated();
+            // var isAMSIntegrated = User.IsAMSIntegrated(); // Removed during deep clean
 
             //Replace labels in Title
             foreach (var item in widgets)
@@ -463,35 +463,35 @@ namespace R10.Web.Areas.Admin.Controllers
                                 widgetSystem = SystemType.Trademark;
                             else if (cat.ToLower().Equals("trademarklink") && tmkSettings.IsTLOn) 
                                 widgetSystem = SystemType.Trademark;
-                            //generalmatter
-                            else if (cat.Equals(SystemType.GeneralMatter)) 
-                                widgetSystem = SystemType.GeneralMatter;
-                            //ams
-                            else if (cat.Equals(SystemType.AMS) || (cat.ToLower().Equals("amsintegrated") && isAMSIntegrated)) 
-                                widgetSystem = SystemType.AMS;
-                            else if (cat.ToLower().Equals("amsstandalone") && !User.IsSystemEnabled(SystemType.Patent)) 
-                                widgetSystem = SystemType.AMS;
-                            //dms
-                            else if (cat.Equals(SystemType.DMS) || (cat.ToLower().Equals("dmsinitialdate") && defaultSettings.IsESignatureOn)) 
-                                widgetSystem = SystemType.DMS;
+                            // Removed during deep clean - GeneralMatter
+                            // else if (cat.Equals(SystemType.GeneralMatter))
+                            //     widgetSystem = SystemType.GeneralMatter;
+                            // Removed during deep clean - AMS
+                            // else if (cat.Equals(SystemType.AMS) || (cat.ToLower().Equals("amsintegrated") && isAMSIntegrated))
+                            //     widgetSystem = SystemType.AMS;
+                            // Removed during deep clean - AMS standalone
+                            // else if (cat.ToLower().Equals("amsstandalone") && !User.IsSystemEnabled(SystemType.Patent))
+                            //     widgetSystem = SystemType.AMS;
+                            // Removed during deep clean - DMS
+                            // else if (cat.Equals(SystemType.DMS) || (cat.ToLower().Equals("dmsinitialdate") && defaultSettings.IsESignatureOn))
+                            //     widgetSystem = SystemType.DMS;
                             //shared
                             else if (cat.Equals(SystemType.Shared)) 
                                 widgetSystem = SystemType.Shared;
-                            else if (cat.ToLower().Equals("shareddedocket") && (patSettings.IsDeDocketOn || tmkSettings.IsDeDocketOn || gmSettings.IsDeDocketOn)) 
+                            else if (cat.ToLower().Equals("shareddedocket") && (patSettings.IsDeDocketOn || tmkSettings.IsDeDocketOn)) // Removed gmSettings.IsDeDocketOn during deep clean
                                 widgetSystem = SystemType.Shared;
-                            else if (cat.ToLower().Equals("shareddelegation") && (patSettings.IsDelegationOn || tmkSettings.IsDelegationOn || gmSettings.IsDelegationOn || defaultSettings.IsDelegationOn))
+                            else if (cat.ToLower().Equals("shareddelegation") && (patSettings.IsDelegationOn || tmkSettings.IsDelegationOn || defaultSettings.IsDelegationOn)) // Removed gmSettings.IsDelegationOn during deep clean
                                 widgetSystem = SystemType.Shared;
-                            //search request
-                            else if (cat.Equals(SystemType.SearchRequest)) 
-                                widgetSystem = SystemType.SearchRequest;
-                            //patent clearance
-                            else if (cat.Equals(SystemType.PatClearance)) 
-                                widgetSystem = SystemType.PatClearance;
+                            // Removed during deep clean - SearchRequest
+                            // else if (cat.Equals(SystemType.SearchRequest))
+                            //     widgetSystem = SystemType.SearchRequest;
+                            // Removed during deep clean - PatClearance
+                            // else if (cat.Equals(SystemType.PatClearance))
+                            //     widgetSystem = SystemType.PatClearance;
                             //product
-                            else if (cat.ToLower().Equals("product") 
-                                && ((patSettings.IsProductsOn && widget.Policy.Contains("CanAccessPatentProducts")) 
-                                    || (tmkSettings.IsProductsOn && widget.Policy.Contains("CanAccessTrademarkProducts")) 
-                                    || (gmSettings.IsProductsOn && widget.Policy.Contains("CanAccessGeneralMatterProducts")))) 
+                            else if (cat.ToLower().Equals("product")
+                                && ((patSettings.IsProductsOn && widget.Policy.Contains("CanAccessPatentProducts"))
+                                    || (tmkSettings.IsProductsOn && widget.Policy.Contains("CanAccessTrademarkProducts")))) // Removed gmSettings.IsProductsOn during deep clean
                                 widgetSystem = "product";
                            
                             if (!string.IsNullOrEmpty(widgetSystem)) 
@@ -513,11 +513,12 @@ namespace R10.Web.Areas.Admin.Controllers
                                         var subSystem = string.Empty;
                                         if (policy.Contains(SystemType.Patent) && User.HasDashboardAccess(SystemType.Patent)) subSystem = SystemType.Patent;
                                         else if (policy.Contains(SystemType.Trademark) && User.HasDashboardAccess(SystemType.Trademark)) subSystem = SystemType.Trademark;
-                                        else if (policy.Contains(SystemType.GeneralMatter) && User.HasDashboardAccess(SystemType.GeneralMatter)) subSystem = SystemType.GeneralMatter;
-                                        else if (policy.Contains(SystemType.AMS) && User.HasDashboardAccess(SystemType.AMS)) subSystem = SystemType.AMS;
-                                        else if (policy.Contains(SystemType.DMS) && User.HasDashboardAccess(SystemType.DMS)) subSystem = SystemType.DMS;
-                                        else if (policy.Contains(SystemType.PatClearance) && User.HasDashboardAccess(SystemType.PatClearance)) subSystem = SystemType.PatClearance;
-                                        else if (policy.Contains(SystemType.SearchRequest) && User.HasDashboardAccess(SystemType.SearchRequest)) subSystem = SystemType.SearchRequest;
+                                        // Removed during deep clean - GeneralMatter, AMS, DMS, PatClearance, SearchRequest
+                                        // else if (policy.Contains(SystemType.GeneralMatter) && User.HasDashboardAccess(SystemType.GeneralMatter)) subSystem = SystemType.GeneralMatter;
+                                        // else if (policy.Contains(SystemType.AMS) && User.HasDashboardAccess(SystemType.AMS)) subSystem = SystemType.AMS;
+                                        // else if (policy.Contains(SystemType.DMS) && User.HasDashboardAccess(SystemType.DMS)) subSystem = SystemType.DMS;
+                                        // else if (policy.Contains(SystemType.PatClearance) && User.HasDashboardAccess(SystemType.PatClearance)) subSystem = SystemType.PatClearance;
+                                        // else if (policy.Contains(SystemType.SearchRequest) && User.HasDashboardAccess(SystemType.SearchRequest)) subSystem = SystemType.SearchRequest;
 
                                         if (!string.IsNullOrEmpty(subSystem))
                                         {

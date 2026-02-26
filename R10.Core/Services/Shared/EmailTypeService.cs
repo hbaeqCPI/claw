@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Exceptions;
 using R10.Core.Interfaces;
@@ -149,25 +149,25 @@ namespace R10.Core.Services
 
         private List<string> DefaultLetterSettingNames => new List<string>()
             {
-                //AMS
-                nameof(AMSSetting.ReminderCoverLetter),
-                nameof(AMSSetting.ClientConfirmationCoverLetter),
-                nameof(AMSSetting.DecisionMakerNotification),
-                nameof(AMSSetting.PrepayReminderCoverLetter),
-                nameof(AMSSetting.AttorneySummaryCoverLetter),
-                nameof(AMSSetting.AgentConfirmationCoverLetter),
-                nameof(AMSSetting.AbandonmentCoverLetter),
-                nameof(AMSSetting.InstructionNotification),
-                nameof(AMSSetting.ClearedInstructionNotification),
-                nameof(AMSSetting.InstructionGraceDateWarning),
-                nameof(AMSSetting.InstructionsToCPINotification),
-                //RMS
-                nameof(RMSSetting.ReminderCoverLetter),
-                nameof(RMSSetting.ClientConfirmationCoverLetter),
-                nameof(RMSSetting.DecisionMakerNotification),
-                nameof(RMSSetting.AgentConfirmationCoverLetter),
-                nameof(RMSSetting.InstructionNotification),
-                nameof(RMSSetting.ClearedInstructionNotification),
+                // Removed during deep clean - AMS module removed
+                // nameof(AMSSetting.ReminderCoverLetter),
+                // nameof(AMSSetting.ClientConfirmationCoverLetter),
+                // nameof(AMSSetting.DecisionMakerNotification),
+                // nameof(AMSSetting.PrepayReminderCoverLetter),
+                // nameof(AMSSetting.AttorneySummaryCoverLetter),
+                // nameof(AMSSetting.AgentConfirmationCoverLetter),
+                // nameof(AMSSetting.AbandonmentCoverLetter),
+                // nameof(AMSSetting.InstructionNotification),
+                // nameof(AMSSetting.ClearedInstructionNotification),
+                // nameof(AMSSetting.InstructionGraceDateWarning),
+                // nameof(AMSSetting.InstructionsToCPINotification),
+                // Removed during deep clean - RMS module removed
+                // nameof(RMSSetting.ReminderCoverLetter),
+                // nameof(RMSSetting.ClientConfirmationCoverLetter),
+                // nameof(RMSSetting.DecisionMakerNotification),
+                // nameof(RMSSetting.AgentConfirmationCoverLetter),
+                // nameof(RMSSetting.InstructionNotification),
+                // nameof(RMSSetting.ClearedInstructionNotification),
                 //USER SETUP
                 nameof(DefaultSetting.NewPasswordNotification),
                 nameof(DefaultSetting.TemporaryPasswordNotification),

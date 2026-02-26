@@ -1,9 +1,7 @@
 ﻿@model ChildViewModel
 @inject IStringLocalizer<SharedResource> Localizer
-@inject ISystemSettings<RMSSetting> RMSSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@{    
-    var rmsSettings = await RMSSettings.GetSetting();
+@{
     var tmkSettings = await TmkSettings.GetSetting();
     var agentIdParam = $"{{agentId: {Model.Id}}}";
     var fullModify = Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly;   

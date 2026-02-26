@@ -246,18 +246,34 @@ namespace R10.Web
             // Add systems services
             services.AddAdmin();
             services.AddPatent();
-            services.AddAMS();
             services.AddTrademark();
-            services.AddClearance();
-            services.AddPatentClearance();
-            services.AddGeneralMatter();
             services.AddShared(Configuration);
-            services.AddDisclosure();
-            services.AddRTS();
-            services.AddTL();
             services.AddReportScheduler();
-            services.AddRMS();
-            services.AddForeignFiling();
+
+            // Debloat stubs: no-op implementations for removed services still referenced in DI
+            services.AddScoped<Interfaces.IInventionViewModelService, Interfaces.NoOpInventionViewModelService>();
+            services.AddScoped<Interfaces.ICountryApplicationViewModelService, Interfaces.NoOpCountryApplicationViewModelService>();
+            services.AddScoped<Interfaces.IPatActionDueViewModelService, Interfaces.NoOpPatActionDueViewModelService>();
+            services.AddScoped<Interfaces.IPatActionDueInvViewModelService, Interfaces.NoOpPatActionDueInvViewModelService>();
+            services.AddScoped<Interfaces.IPatCostTrackingViewModelService, Interfaces.NoOpPatCostTrackingViewModelService>();
+            services.AddScoped<Interfaces.IPatCostTrackingInvViewModelService, Interfaces.NoOpPatCostTrackingInvViewModelService>();
+            services.AddScoped<Interfaces.IPatImageInvViewModelService, Interfaces.NoOpPatImageInvViewModelService>();
+            services.AddScoped<Interfaces.IPatImageAppViewModelService, Interfaces.NoOpPatImageAppViewModelService>();
+            services.AddScoped<Interfaces.IPatImageActViewModelService, Interfaces.NoOpPatImageActViewModelService>();
+            services.AddScoped<Interfaces.IPatImageActInvViewModelService, Interfaces.NoOpPatImageActInvViewModelService>();
+            services.AddScoped<Interfaces.IPatImageCostViewModelService, Interfaces.NoOpPatImageCostViewModelService>();
+            services.AddScoped<Interfaces.IPatImageCostInvViewModelService, Interfaces.NoOpPatImageCostInvViewModelService>();
+            services.AddScoped<Interfaces.IPatInventorRemunerationService, Interfaces.NoOpPatInventorRemunerationService>();
+            services.AddScoped<Interfaces.IPatInventorFRRemunerationService, Interfaces.NoOpPatInventorFRRemunerationService>();
+            services.AddScoped<Interfaces.IPatInventorAppAwardUpdateService, Interfaces.NoOpPatInventorAppAwardUpdateService>();
+            services.AddScoped<Interfaces.IEPOService, Interfaces.NoOpEPOService>();
+            services.AddScoped<Interfaces.ITmkTrademarkViewModelService, Interfaces.NoOpTmkTrademarkViewModelService>();
+            services.AddScoped<Interfaces.ITmkActionDueViewModelService, Interfaces.NoOpTmkActionDueViewModelService>();
+            services.AddScoped<Interfaces.ITmkCostTrackingViewModelService, Interfaces.NoOpTmkCostTrackingViewModelService>();
+            services.AddScoped<Interfaces.ITmkConflictViewModelService, Interfaces.NoOpTmkConflictViewModelService>();
+            services.AddScoped<Interfaces.ITmkImageViewModelService, Interfaces.NoOpTmkImageViewModelService>();
+            services.AddScoped<Interfaces.ITmkImageCostViewModelService, Interfaces.NoOpTmkImageCostViewModelService>();
+            services.AddScoped<Interfaces.ITmkImageActViewModelService, Interfaces.NoOpTmkImageActViewModelService>();
 
             services.AddTransient<IEmailSender, EmailSender>();
             services.Configure<SmtpSettings>(Configuration.GetSection("Smtp"));

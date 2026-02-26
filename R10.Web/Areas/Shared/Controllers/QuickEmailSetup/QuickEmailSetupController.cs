@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
@@ -27,7 +27,7 @@ using R10.Core.Entities.Patent;
 using DocuSign.eSign.Model;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Services.Shared;
 using R10.Web.Services;
 using Microsoft.Extensions.Options;
@@ -46,7 +46,7 @@ namespace R10.Web.Areas.Shared.Controllers
         private readonly IDistributedCache _distributedCache;
         private readonly ISystemSettings<PatSetting> _patSettings;
         private readonly ISystemSettings<TmkSetting> _tmkSettings;
-        private readonly ISystemSettings<GMSetting> _gmSettings;
+        // private readonly ISystemSettings<GMSetting> _gmSettings; // Removed during deep clean
         private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly IChildEntityService<QEMain, QETag> _qeTagService;
         private readonly EPOMailboxSettings _epoMailboxSettings;
@@ -57,7 +57,7 @@ namespace R10.Web.Areas.Shared.Controllers
         public QuickEmailSetupController(IAuthorizationService authService, IOuickEmailSetupViewModelService viewModelService,
             IQuickEmailSetupService service, IMapper mapper, IStringLocalizer<SharedResource> localizer, IDistributedCache distributedCache,
             ISystemSettings<PatSetting> patSettings, ISystemSettings<DefaultSetting> settings,
-            ISystemSettings<TmkSetting> tmkSettings, ISystemSettings<GMSetting> gmSettings, IChildEntityService<QEMain, QETag> qeTagService,
+            ISystemSettings<TmkSetting> tmkSettings, /* ISystemSettings<GMSetting> gmSettings, // Removed during deep clean */ IChildEntityService<QEMain, QETag> qeTagService,
             IOptions<EPOMailboxSettings> epoMailboxSettings)
         {
             _authService = authService;
@@ -68,7 +68,7 @@ namespace R10.Web.Areas.Shared.Controllers
             _distributedCache = distributedCache;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
+            // _gmSettings = gmSettings; // Removed during deep clean
             _settings = settings;
             _qeTagService = qeTagService;
             _epoMailboxSettings = epoMailboxSettings.Value;
@@ -86,35 +86,6 @@ namespace R10.Web.Areas.Shared.Controllers
             return await Index(SystemTypeCode.Trademark);
         }
 
-        [Authorize(Policy = GeneralMatterAuthorizationPolicy.FullRead)]
-        public async Task<IActionResult> GeneralMatter()
-        {
-            return await Index(SystemTypeCode.GeneralMatter);
-        }
-
-        [Authorize(Policy = DMSAuthorizationPolicy.CanAccessSystem)]
-        public async Task<IActionResult> Disclosure()
-        {
-            return await Index(SystemTypeCode.DMS);
-        }
-
-        [Authorize(Policy = AMSAuthorizationPolicy.CanAccessSystem)]
-        public async Task<IActionResult> AMS()
-        {
-            return await Index(SystemTypeCode.AMS);
-        }
-
-        [Authorize(Policy = SearchRequestAuthorizationPolicy.CanAccessSystem)]
-        public async Task<IActionResult> Clearance()
-        {
-            return await Index(SystemTypeCode.Clearance);
-        }
-
-        [Authorize(Policy = PatentClearanceAuthorizationPolicy.CanAccessSystem)]
-        public async Task<IActionResult> PatClearance()
-        {
-            return await Index(SystemTypeCode.PatClearance);
-        }
 
         private async Task<IActionResult> Index(string systemType)
         {
@@ -186,8 +157,8 @@ namespace R10.Web.Areas.Shared.Controllers
                     }
                 }
 
-                if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark && systemType != SystemTypeCode.GeneralMatter) 
-                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn && !_gmSettings.GetSetting().Result.IsDocumentVerificationOn))
+                if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark) // Removed SystemTypeCode.GeneralMatter during deep clean
+                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn)) // Removed _gmSettings.GetSetting().Result.IsDocumentVerificationOn during deep clean
                     templates = templates.Where(c => c.DataSource != null && c.DataSource.SystemType != SystemTypeCode.Shared);
 
                 if (systemType != SystemTypeCode.Patent || !_patSettings.GetSetting().Result.IsDocumentVerificationOn || !_epoMailboxSettings.IsAPIOn)
@@ -385,8 +356,8 @@ namespace R10.Web.Areas.Shared.Controllers
                 systemScreens = systemScreens.Where(c => !(c.ScreenName.Contains("Delegation") || c.ScreenName.Contains("Delegated Action")));
             }
                         
-            if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark && systemType != SystemTypeCode.GeneralMatter) 
-                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn && !_gmSettings.GetSetting().Result.IsDocumentVerificationOn))
+            if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark)
+                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn))
                 systemScreens = systemScreens.Where(c => c.SystemType != SystemTypeCode.Shared);
 
             return await GetPicklistData(systemScreens, request, property, text, filterType, new string[] { "ScreenId", "ScreenName" }, requiredRelation);
@@ -447,8 +418,8 @@ namespace R10.Web.Areas.Shared.Controllers
                 dataSource = dataSource.Where(c => !(c.DataSourceName.Contains("Delegation")));
             }
 
-            if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark && systemType != SystemTypeCode.GeneralMatter) 
-                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn && !_gmSettings.GetSetting().Result.IsDocumentVerificationOn))
+            if ((systemType != SystemTypeCode.Patent && systemType != SystemTypeCode.Trademark)
+                || (!_patSettings.GetSetting().Result.IsDocumentVerificationOn && !_tmkSettings.GetSetting().Result.IsDocumentVerificationOn))
                 dataSource = dataSource.Where(c => c.SystemType != SystemTypeCode.Shared);
 
             if (systemType != SystemTypeCode.Patent || !_patSettings.GetSetting().Result.IsDocumentVerificationOn || !_epoMailboxSettings.IsAPIOn)
@@ -780,12 +751,6 @@ namespace R10.Web.Areas.Shared.Controllers
                     searchUrl = this.Url.Action("Trademark");
                     break;
 
-                case "G":
-                    searchUrl = this.Url.Action("GeneralMatter");
-                    break;
-                case "D":
-                    searchUrl = this.Url.Action("Disclosure");
-                    break;
             }
 
             return searchUrl;
@@ -890,25 +855,9 @@ namespace R10.Web.Areas.Shared.Controllers
                 case SystemTypeCode.Trademark:
                     return (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullRead)).Succeeded;
 
-                case SystemTypeCode.GeneralMatter:
-                    return (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullRead)).Succeeded;
-
-                case SystemTypeCode.DMS:
-                    return (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.CanAccessSystem)).Succeeded;
-
-                case SystemTypeCode.AMS:
-                    return (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.CanAccessSystem)).Succeeded;
-
-                case SystemTypeCode.Clearance:
-                    return (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.CanAccessSystem)).Succeeded;
-
-                case SystemTypeCode.PatClearance:
-                    return (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.CanAccessSystem)).Succeeded;
-
-                case SystemTypeCode.Shared:                    
-                        return (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded 
-                        || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded 
-                        || (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded;                   
+                case SystemTypeCode.Shared:
+                        return (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded
+                        || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessDocumentVerification)).Succeeded;                   
 
                 default:
                     return false;
@@ -925,25 +874,9 @@ namespace R10.Web.Areas.Shared.Controllers
                 case SystemTypeCode.Trademark:
                     return (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanDelete)).Succeeded;
 
-                case SystemTypeCode.GeneralMatter:
-                    return (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanDelete)).Succeeded;
-
-                case SystemTypeCode.DMS:
-                    return (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.CanDelete)).Succeeded;
-
-                case SystemTypeCode.AMS:
-                    return (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.CanDelete)).Succeeded;
-
-                case SystemTypeCode.Clearance:
-                    return (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.CanDelete)).Succeeded;
-
-                case SystemTypeCode.PatClearance:
-                    return (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.CanDelete)).Succeeded;
-
                 case SystemTypeCode.Shared:
                     return (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
 
                 default:
                     return false;
@@ -960,25 +893,9 @@ namespace R10.Web.Areas.Shared.Controllers
                 case SystemTypeCode.Trademark:
                     return (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullModify)).Succeeded;
 
-                case SystemTypeCode.GeneralMatter:
-                    return (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullModify)).Succeeded;
-
-                case SystemTypeCode.DMS:
-                    return (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.FullModify)).Succeeded;
-
-                case SystemTypeCode.AMS:
-                    return (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.FullModify)).Succeeded;
-
-                case SystemTypeCode.Clearance:
-                    return (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.FullModify)).Succeeded;
-
-                case SystemTypeCode.PatClearance:
-                    return (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.FullModify)).Succeeded;
-
                 case SystemTypeCode.Shared:
                     return (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
 
                 default:
                     return false;
@@ -995,25 +912,9 @@ namespace R10.Web.Areas.Shared.Controllers
                 case SystemTypeCode.Trademark:
                     return (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
 
-                case SystemTypeCode.GeneralMatter:
-                    return (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
-
-                case SystemTypeCode.DMS:
-                    return (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
-
-                case SystemTypeCode.AMS:
-                    return (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
-
-                case SystemTypeCode.Clearance:
-                    return (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
-
-                case SystemTypeCode.PatClearance:
-                    return (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.RemarksOnlyModify)).Succeeded;
-
                 case SystemTypeCode.Shared:
                     return (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded
-                    || (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
+                    || (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.DocumentVerificationModify)).Succeeded;
 
                 default:
                     return false;
@@ -1032,22 +933,6 @@ namespace R10.Web.Areas.Shared.Controllers
                     viewModel.AddTrademarkSecurityPolicies();
                     break;
 
-                case SystemTypeCode.GeneralMatter:
-                    viewModel.AddGeneralMatterSecurityPolicies();
-                    break;
-
-                case SystemTypeCode.DMS:
-                    viewModel.AddDMSSecurityPolicies();
-                    break;
-
-                case SystemTypeCode.Clearance:
-                    viewModel.AddClearanceSecurityPolicies();
-                    break;
-
-                case SystemTypeCode.PatClearance:
-                    viewModel.AddPatentClearanceSecurityPolicies();
-                    break;
-
                 case SystemTypeCode.Shared:
                     var cacheKey = User.GetUserName() + ":QES-SystemType";
                     var cacheSystemType = await _distributedCache.GetStringAsync(cacheKey);
@@ -1055,12 +940,10 @@ namespace R10.Web.Areas.Shared.Controllers
                         viewModel.AddPatentSecurityPolicies();
                     else if (cacheSystemType == SystemTypeCode.Trademark)
                         viewModel.AddTrademarkSecurityPolicies();
-                    else if (cacheSystemType == SystemTypeCode.GeneralMatter)
-                        viewModel.AddGeneralMatterSecurityPolicies();                    
                     break;
 
-                default: //AMS
-                    viewModel.AddAMSSecurityPolicies();
+                default:
+                    viewModel.AddSharedSecurityPolicies();
                     break;
                 
             }

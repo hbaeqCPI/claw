@@ -416,14 +416,6 @@ namespace R10.Web.Services
                     data = await _quickEmailRepository.GetTmkTrademark(parentId);
                     break;
 
-                case ScreenCode.GeneralMatter:
-                    data = await _quickEmailRepository.GetGmMatter(parentId);
-                    break;
-
-                case ScreenCode.DMS:
-                    data = null;
-                    break;
-
                 case ScreenCode.Action:
                     switch (systemTypeCode)
                     {
@@ -435,9 +427,6 @@ namespace R10.Web.Services
                             data = await _quickEmailRepository.GetTmkActionDue(parentId);
                             break;
 
-                        case SystemTypeCode.GeneralMatter:
-                            data = await _quickEmailRepository.GetGmActionDue(parentId);
-                            break;
                     }
                     break;
             }
@@ -931,20 +920,6 @@ namespace R10.Web.Services
                                 recKey = SharePointViewModelService.BuildRecKey(tmk.CaseNumber, tmk.Country, tmk.SubCase);
                             }
                             break;
-                        case SharePointDocLibraryFolder.GeneralMatter:
-                            var gm = await _repository.GMMatters.Where(r => r.MatId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (gm != null)
-                            {
-                                recKey = SharePointViewModelService.BuildGMRecKey(gm.CaseNumber, gm.SubCase);
-                            }
-                            break;
-                        case SharePointDocLibraryFolder.DMS:
-                            var dms = await _repository.Disclosures.Where(d => d.DMSId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (dms != null)
-                            {
-                                recKey = dms.DisclosureNumber;
-                            }
-                            break;
 
                             //case SharePointDocLibraryFolder.Action:
                             //    break;
@@ -1019,15 +994,6 @@ namespace R10.Web.Services
                             if (tmk != null)
                             {
                                 recKey = SharePointViewModelService.BuildRecKey(tmk.CaseNumber, tmk.Country, tmk.SubCase);
-                            }
-                            break;
-                        case ScreenCode.GeneralMatter:
-                            systemFolder = "General Matter";
-                            docLibraryFolder = SharePointDocLibraryFolder.GeneralMatter;
-                            var gm = await _repository.GMMatters.Where(r => r.MatId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (gm != null)
-                            {
-                                recKey = SharePointViewModelService.BuildGMRecKey(gm.CaseNumber, gm.SubCase);
                             }
                             break;
 

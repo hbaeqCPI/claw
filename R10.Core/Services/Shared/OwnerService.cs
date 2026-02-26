@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -9,7 +9,7 @@ using R10.Core.Exceptions;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 using System;
 using System.Collections.Generic;
@@ -23,30 +23,28 @@ namespace R10.Core.Services.Shared
 {
     public class OwnerService : ParentEntityService<Owner, OwnerContact>, IOwnerService
     {
-        private readonly ISystemSettings<DMSSetting> _settings;
+        // Removed during deep clean - DMSSetting no longer exists
+        // private readonly ISystemSettings<DMSSetting> _settings;
         private readonly IEntitySyncRepository _entitySyncRepository;
         protected readonly IInventionService _inventionService;
         protected readonly ICountryApplicationService _countryApplicationService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IDisclosureService _disclosureService;
-
         public OwnerService(
             ICPiDbContext cpiDbContext,
             ClaimsPrincipal user,
             IEntitySyncRepository entitySyncRepository,
-            ISystemSettings<DMSSetting> settings,
+            // Removed during deep clean - DMSSetting no longer exists
+            // ISystemSettings<DMSSetting> settings,
             IInventionService inventionService,
             ICountryApplicationService countryApplicationService,
-            ITmkTrademarkService trademarkService,
-            IDisclosureService disclosureService
-            ) : base(cpiDbContext, user)
+            ITmkTrademarkService trademarkService) : base(cpiDbContext, user)
         {
-            _settings = settings;
+            // Removed during deep clean
+            // _settings = settings;
             _entitySyncRepository = entitySyncRepository;
             _inventionService = inventionService;
             _countryApplicationService = countryApplicationService;
             _trademarkService = trademarkService;
-            _disclosureService = disclosureService;
 
             ChildService = new EntityContactService<Owner, OwnerContact>(cpiDbContext, user);
         }
@@ -66,9 +64,7 @@ namespace R10.Core.Services.Shared
                             _inventionService.QueryableList.Any(i => i.Owners.Any(io => io.OwnerID == o.OwnerID)) ||
                             _countryApplicationService.CountryApplications.Any(ca => ca.Owners.Any(cao => cao.OwnerID == o.OwnerID)))) ||
                         (_user.IsInSystem(SystemType.Trademark) &&
-                            _trademarkService.TmkTrademarks.Any(t => t.Owners.Any(to=> to.OwnerID == o.OwnerID)) ||
-                        (_user.IsInSystem(SystemType.DMS) &&
-                            _disclosureService.QueryableList.Any(d => d.OwnerID == o.OwnerID))));
+                            _trademarkService.TmkTrademarks.Any(t => t.Owners.Any(to=> to.OwnerID == o.OwnerID))));
 
                 return owners;
             }
@@ -137,7 +133,8 @@ namespace R10.Core.Services.Shared
         {
             if (_user.GetEntityFilterType() == CPiEntityType.Owner)
             {
-                var ownerLabel = (await _settings.GetSetting()).LabelOwner;
+                // Removed during deep clean - DMSSetting no longer exists, using hardcoded label
+                var ownerLabel = "Owner";
                 Guard.Against.ValueNotAllowed(await base.EntityFilterAllowed(owner.OwnerID), ownerLabel);
             }
         }

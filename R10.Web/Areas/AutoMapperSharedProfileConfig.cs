@@ -3,9 +3,9 @@ using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Documents;
 using R10.Core.Entities.FormExtract;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.ReportScheduler;
 using R10.Core.Entities.Trademark;
 using R10.Core.Queries.Shared;
@@ -99,11 +99,7 @@ namespace R10.Web.Areas
                 .ForMember(m => m.ClientContacts, opt => opt.Ignore())
                 .ForMember(m => m.AgentContacts, opt => opt.Ignore())
                 .ForMember(m => m.OwnerContacts, opt => opt.Ignore())
-                .ForMember(m => m.Reviewers, opt => opt.Ignore())
-                .ForMember(m => m.Reviews, opt => opt.Ignore())
-                .ForMember(m => m.Valuations, opt => opt.Ignore())
-                .ForMember(m => m.EntityFilters, opt => opt.Ignore())
-                .ForMember(m => m.DMSAgendaReviewers, opt => opt.Ignore());
+                .ForMember(m => m.EntityFilters, opt => opt.Ignore());
 
             CreateMap<OwnerContact, OwnerContactViewModel>()
                 .ForMember(vm => vm.ContactName, domain => domain.MapFrom(cc => cc.Contact.ContactName))
@@ -187,16 +183,6 @@ namespace R10.Web.Areas
                                                                Language = a.LanguageName,
                                                                OrderOfEntry = a.OrderOfEntry
                                                            })));
-            CreateMap<Disclosure, TradeSecretMasterListReportViewModel>()
-               .ForMember(vm => vm.Id, domain => domain.MapFrom(d => d.DMSId))
-               .ForMember(vm => vm.CaseNumber, domain => domain.MapFrom(d => d.DisclosureNumber))
-               .ForMember(vm => vm.Title, domain => domain.MapFrom(d => d.TradeSecret.DisclosureTitle))
-               .ForMember(vm => vm.TradeSecretDate, domain => domain.MapFrom(d => d.TradeSecretDate))
-               .ForMember(vm => vm.TradeSecretDate_Fmt, domain => domain.MapFrom(d => d.TradeSecretDate.HasValue ?
-                                                                                      d.TradeSecretDate.Value.ToString("MM/dd/yyyy HH:mm:ss") :
-                                                                                      string.Empty))
-               .ForMember(vm => vm.Sys, domain => domain.MapFrom(d => "Disclosure"))
-               .ForMember(vm => vm.Inventors, domain => domain.MapFrom(d => string.Join(", ", d.Inventors.Select(d => d.PatInventor.Inventor))));
             #endregion
 
             #region Quick Docket
@@ -439,11 +425,6 @@ namespace R10.Web.Areas
                .ForMember(vm => vm.DataKey, domain => domain.MapFrom(i => "TmkId"))
                .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(i => i.TmkId));
 
-            CreateMap<GMMatter, DocumentGeneralMatterResultsViewModel>()
-               .ForMember(vm => vm.DataKey, domain => domain.MapFrom(i => "MatId"))
-               .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(i => i.MatId));
-
-
             CreateMap<PatActionDue, DocumentActionResultsViewModel>()
                 .ForMember(vm => vm.DataKey, domain => domain.MapFrom(a => "ActId"))
                 .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(a => a.ActId))
@@ -454,11 +435,6 @@ namespace R10.Web.Areas
                 .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(a => a.ActId))
                 .ForMember(vm => vm.Status, domain => domain.MapFrom(a => a.TmkTrademark.TrademarkStatus));
 
-            CreateMap<GMActionDue, DocumentActionResultsViewModel>()
-                .ForMember(vm => vm.DataKey, domain => domain.MapFrom(a => "ActId"))
-                .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(a => a.ActId))
-                .ForMember(vm => vm.Status, domain => domain.MapFrom(a => a.GMMatter.MatterStatus));
-
             CreateMap<PatCostTrack, DocumentCostResultsViewModel>()
                 .ForMember(vm => vm.DataKey, domain => domain.MapFrom(a => "CostTrackId"))
                 .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(c => c.CostTrackId));
@@ -466,11 +442,6 @@ namespace R10.Web.Areas
             CreateMap<TmkCostTrack, DocumentCostResultsViewModel>()
                 .ForMember(vm => vm.DataKey, domain => domain.MapFrom(a => "CostTrackId"))
                 .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(c => c.CostTrackId));
-
-            CreateMap<GMCostTrack, DocumentCostResultsViewModel>()
-                .ForMember(vm => vm.DataKey, domain => domain.MapFrom(a => "CostTrackId"))
-                .ForMember(vm => vm.DataKeyValue, domain => domain.MapFrom(c => c.CostTrackId))
-                .ForMember(vm => vm.Country, opt => opt.Ignore());
 
             CreateMap<DocDocument, DocDocumentListViewModel>()
                 .ForMember(vm => vm.DocId, domain => domain.MapFrom(d => d.DocId))
@@ -569,10 +540,6 @@ namespace R10.Web.Areas
                 .ForMember(vm => vm.Attorney4, domain => domain.MapFrom(t => t.Attorney4.AttorneyName))
                 .ForMember(vm => vm.Attorney5, domain => domain.MapFrom(t => t.Attorney5.AttorneyName));
 
-            CreateMap<GMMatter, DocGeneralMatterViewModel>()
-                .ForMember(vm => vm.ClientName, domain => domain.MapFrom(t => t.Client.ClientName))
-                .ForMember(vm => vm.AgentName, domain => domain.MapFrom(t => t.Agent.AgentName));
-
             CreateMap<PatActionDue, DocPatActViewModel>()
                .ForMember(vm => vm.ClientName, domain => domain.MapFrom(ad => ad.CountryApplication.Invention.Client.ClientName))
                .ForMember(vm => vm.Attorney1, domain => domain.MapFrom(ad => ad.CountryApplication.Invention.Attorney1.AttorneyCode))
@@ -601,15 +568,6 @@ namespace R10.Web.Areas
               .ForMember(vm => vm.Status, domain => domain.MapFrom(ad => ad.TmkTrademark.TrademarkStatus))
               .ForMember(vm => vm.TrademarkName, domain => domain.MapFrom(ad => ad.TmkTrademark.TrademarkName));
 
-            CreateMap<GMActionDue, DocGMActViewModel>()
-             .ForMember(vm => vm.ClientName, domain => domain.MapFrom(ad => ad.GMMatter.Client.ClientName))
-             .ForMember(vm => vm.MatterType, domain => domain.MapFrom(ad => ad.GMMatter.MatterType))
-             .ForMember(vm => vm.MatterStatus, domain => domain.MapFrom(ad => ad.GMMatter.MatterStatus))
-             .ForMember(vm => vm.MatterTitle, domain => domain.MapFrom(ad => ad.GMMatter.MatterTitle))
-             .ForMember(vm => vm.EffectiveOpenDate, domain => domain.MapFrom(ad => ad.GMMatter.EffectiveOpenDate))
-             .ForMember(vm => vm.TerminationEndDate, domain => domain.MapFrom(ad => ad.GMMatter.TerminationEndDate))
-             .ForMember(vm => vm.ResultRoyalty, domain => domain.MapFrom(ad => ad.GMMatter.ResultRoyalty));
-
             CreateMap<PatCostTrack, DocPatCostViewModel>()
               .ForMember(vm => vm.ClientName, domain => domain.MapFrom(ct => ct.CountryApplication.Invention.Client.ClientName))
               .ForMember(vm => vm.AppNumber, domain => domain.MapFrom(ct => ct.CountryApplication.AppNumber))
@@ -629,15 +587,6 @@ namespace R10.Web.Areas
               .ForMember(vm => vm.CaseType, domain => domain.MapFrom(ct => ct.TmkTrademark.CaseType))
               .ForMember(vm => vm.Status, domain => domain.MapFrom(ct => ct.TmkTrademark.TrademarkStatus))
               .ForMember(vm => vm.TrademarkName, domain => domain.MapFrom(ct => ct.TmkTrademark.TrademarkName));
-
-            CreateMap<GMCostTrack, DocGMCostViewModel>()
-              .ForMember(vm => vm.ClientName, domain => domain.MapFrom(ct => ct.GMMatter.Client.ClientName))
-              .ForMember(vm => vm.MatterType, domain => domain.MapFrom(ct => ct.GMMatter.MatterType))
-              .ForMember(vm => vm.MatterStatus, domain => domain.MapFrom(ct => ct.GMMatter.MatterStatus))
-              .ForMember(vm => vm.MatterTitle, domain => domain.MapFrom(ct => ct.GMMatter.MatterTitle))
-              .ForMember(vm => vm.EffectiveOpenDate, domain => domain.MapFrom(ct => ct.GMMatter.EffectiveOpenDate))
-              .ForMember(vm => vm.TerminationEndDate, domain => domain.MapFrom(ct => ct.GMMatter.TerminationEndDate))
-              .ForMember(vm => vm.ResultRoyalty, domain => domain.MapFrom(ct => ct.GMMatter.ResultRoyalty));
 
             CreateMap<DocFixedFolder, DocFixedFolderViewModel>();
             CreateMap<DocFolder, DocFolderViewModel>();
@@ -670,28 +619,20 @@ namespace R10.Web.Areas
 
             CreateMap<PatActionParameter, FormIFWDueDateViewModel>();
 
-            CreateMap<RTSMapActionDocument, FormIFWActionMapViewModel>()
-                .ForMember(vm => vm.DocDesc, domain => domain.MapFrom(f => f.DocumentDescription))
-                .ForMember(vm => vm.IsGenActionDE, domain => domain.MapFrom(f => f.IsGenAction));
-
-            CreateMap<TLMapActionDocument, FormIFWActionMapViewModel>()
-                            .ForMember(vm => vm.DocDesc, domain => domain.MapFrom(f => f.DocumentDescription))
-                            .ForMember(vm => vm.IsGenActionDE, domain => domain.MapFrom(f => f.IsGenAction));
-
             #endregion
 
             #region Time Tracker
             CreateMap<TimeTracker, TimeTrackerViewModel>()
-                .ForMember(vm => vm.TimeTrackerClientCode, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.Invention.Client.ClientCode : (f.SystemType.Equals("T") ? f.TmkTrademark.Client.ClientCode : f.GeneralMatter.Client.ClientCode)))
-                .ForMember(vm => vm.SystemType, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? "Patent" : (f.SystemType.Equals("T") ? "Trademark" : "General Matter")))
-                .ForMember(vm => vm.CaseNumber, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.CaseNumber : (f.SystemType.Equals("T") ? f.TmkTrademark.CaseNumber : f.GeneralMatter.CaseNumber)))
-                .ForMember(vm => vm.SubCase, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.SubCase : (f.SystemType.Equals("T") ? f.TmkTrademark.SubCase : f.GeneralMatter.SubCase)))
-                .ForMember(vm => vm.Country, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.Country : (f.SystemType.Equals("T") ? f.TmkTrademark.Country : "")))
-                .ForMember(vm => vm.Title, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.AppTitle : (f.SystemType.Equals("T") ? f.TmkTrademark.TrademarkName : f.GeneralMatter.MatterTitle)))
-                .ForMember(vm => vm.CaseType, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.CaseType : (f.SystemType.Equals("T") ? f.TmkTrademark.CaseType : f.GeneralMatter.MatterType)))
-                .ForMember(vm => vm.Status, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.ApplicationStatus : (f.SystemType.Equals("T") ? f.TmkTrademark.TrademarkStatus : f.GeneralMatter.MatterStatus)))
-                .ForMember(vm => vm.ApplicationNumber, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.AppNumber : (f.SystemType.Equals("T") ? f.TmkTrademark.AppNumber : "")))
-                .ForMember(vm => vm.FilDate, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.FilDate : (f.SystemType.Equals("T") ? f.TmkTrademark.FilDate : f.GeneralMatter.EffectiveOpenDate)));
+                .ForMember(vm => vm.TimeTrackerClientCode, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.Invention.Client.ClientCode : f.TmkTrademark.Client.ClientCode))
+                .ForMember(vm => vm.SystemType, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? "Patent" : "Trademark"))
+                .ForMember(vm => vm.CaseNumber, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.CaseNumber : f.TmkTrademark.CaseNumber))
+                .ForMember(vm => vm.SubCase, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.SubCase : f.TmkTrademark.SubCase))
+                .ForMember(vm => vm.Country, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.Country : f.TmkTrademark.Country))
+                .ForMember(vm => vm.Title, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.AppTitle : f.TmkTrademark.TrademarkName))
+                .ForMember(vm => vm.CaseType, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.CaseType : f.TmkTrademark.CaseType))
+                .ForMember(vm => vm.Status, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.ApplicationStatus : f.TmkTrademark.TrademarkStatus))
+                .ForMember(vm => vm.ApplicationNumber, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.AppNumber : f.TmkTrademark.AppNumber))
+                .ForMember(vm => vm.FilDate, domain => domain.MapFrom(f => f.SystemType.Equals("P") ? f.CountryApplication.FilDate : f.TmkTrademark.FilDate));
             CreateMap<TimeTrackerViewModel, TimeTrackerExportToExcelViewModel>();
             #endregion
 

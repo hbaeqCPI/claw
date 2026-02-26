@@ -1,5 +1,5 @@
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.GeneralMatter;
+﻿// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
@@ -19,10 +19,10 @@ namespace R10.Core.Entities
         public List<PatCostTrack>? AgentPatCostTrackings { get; set; }
         public List<TmkCostTrack>? AgentTmkCostTrackings { get; set; }
         public List<PatTaxBase>? AgentPatTaxBases { get; set; }
-        public List<GMMatter>? AgentGMMatters { get; set; }
+//         public List<GMMatter>? AgentGMMatters { get; set; } // Removed during deep clean
         public List<PatCountryLaw>? AgentPatCountryLaws { get; set; }
         public List<TmkCountryLaw>? AgentTmkCountryLaws { get; set; }
-        public List<AMSMain>? AgentAMSMain { get; set; }
+//         public List<AMSMain>? AgentAMSMain { get; set; } // Removed during deep clean
         public List<TmkConflict>? AgentTmkConflicts { get; set; }
         public List<CountryApplication>? TaxAgentCountryApplications { get; set; }
         public List<CountryApplication>? LegalRepresentativeCountryApplications { get; set; }

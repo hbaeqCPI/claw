@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using R10.Core.Entities;
 using R10.Web.Areas;
@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Http;
 using R10.Core.Interfaces;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using Microsoft.Extensions.Localization;
 using R10.Web.Models;
@@ -46,7 +46,6 @@ namespace R10.Web.Services
         private string unhandledErrorMessage = "Unhandled error.";
         private readonly ISystemSettings<PatSetting> _patSettings;
         private readonly ISystemSettings<TmkSetting> _tmkSettings;
-        private readonly ISystemSettings<GMSetting> _gmSettings;
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IAuthorizationService _authorizationService;
@@ -58,7 +57,7 @@ namespace R10.Web.Services
         private readonly ServiceAccount _serviceAccount;
 
         public ReportService(IOptions<ReportSettings> reportSettings, IHttpContextAccessor httpContextAccessor, ISystemSettings<PatSetting> patSettings,
-            ISystemSettings<TmkSetting> tmkSettings, ISystemSettings<GMSetting> gmSettings, ISystemSettings<DefaultSetting> defaultSettings, IStringLocalizer<SharedResource> localizer,
+            ISystemSettings<TmkSetting> tmkSettings, ISystemSettings<DefaultSetting> defaultSettings, IStringLocalizer<SharedResource> localizer,
             IAuthorizationService authorizationService, IEmailSender emailSender, IHostingEnvironment hostingEnvironment,
             IConfiguration configuration, 
             ICPiUserSettingManager userSettingManager,
@@ -69,7 +68,6 @@ namespace R10.Web.Services
             _httpContextAccessor = httpContextAccessor;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
             _defaultSettings = defaultSettings;
             _localizer = localizer;
             _authorizationService = authorizationService;
@@ -581,7 +579,6 @@ namespace R10.Web.Services
             SystemTypeForReport systemType = GetSystemType(rt);
             object mainSetting = await GetSetting(systemType);
             var patSettings = await _patSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
 
             var labelAgent = mainSetting.GetType().GetProperty("LabelAgent").GetValue(mainSetting).ToString();
             var labelAgentName = mainSetting.GetType().GetProperty("LabelAgentName").GetValue(mainSetting).ToString();
@@ -597,7 +594,7 @@ namespace R10.Web.Services
             var labelDisclosureNumber = systemType == SystemTypeForReport.Shared || systemType == SystemTypeForReport.DMS ?
                     mainSetting.GetType().GetProperty("LabelDisclosureNumber").GetValue(mainSetting).ToString() :
                     "Disclosure Number";
-            var labelGMCaseNumber = gmSettings.IsClientMatterOn ? gmSettings.LabelClientMatter : gmSettings.LabelCaseNumber;
+            var labelGMCaseNumber = "Case Number";
             var labelKeyword = mainSetting.GetType().GetProperty("LabelKeyword").GetValue(mainSetting).ToString();
             var labelOldCaseNumber = systemType == SystemTypeForReport.Patent || systemType == SystemTypeForReport.Trademark ?
                     mainSetting.GetType().GetProperty("LabelOldCaseNumber").GetValue(mainSetting).ToString() :
@@ -1435,7 +1432,6 @@ namespace R10.Web.Services
             SystemTypeForReport systemType = GetSystemType(rt);
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var defaultSettings = await _defaultSettings.GetSetting();
 
             switch (systemType)
@@ -1452,36 +1448,10 @@ namespace R10.Web.Services
                         parameters.Add("SettingIsTmkRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.Trademark));
                         parameters.Add("SettingIsProductsON", tmkSettings.IsProductsOn);
                         break;
-                    case SystemTypeForReport.GeneralMatter:
-                        parameters.Add("SettingIsGMRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.GeneralMatter));
-                        parameters.Add("SettingIsProductsON", gmSettings.IsProductsOn);
-                        break;
-                    case SystemTypeForReport.AMS:
-                        parameters.Add("SettingIsPatSystemOn", _httpContextAccessor.HttpContext.User.IsInSystem(SystemType.Patent));
-                        parameters.Add("SettingIsAMSRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.AMS));
-                        parameters.Add("SettingIsCorporation", defaultSettings.IsCorporation);
-                        parameters.Add("SettingHasServiceFee", false);
-                        parameters.Add("SettingHasVAT", false);
-                        parameters.Add("SettingShowCostToExpiration", false);
-                        parameters.Add("SettingShowExchangeRate", false);
-                        parameters.Add("SettingHasConfirmation", false);
-                        parameters.Add("SettingHasAgentResp", false);
-                        parameters.Add("LabelAnnuityCostFlagFooter", _localizer["* Estimated Cost"].ToString());
-                        parameters.Add("SettingIsProductsON", false);
-                        parameters.Add("SettingIsPatentScoreOn", patSettings.IsPatentScoreOn);
-                    break;
-                    case SystemTypeForReport.DMS:
-                        parameters.Add("SettingIsDMSRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.DMS));
-                        parameters.Add("SettingIsReviewerTabOn", false);
-                        parameters.Add("SettingIsActionOn", false);
-                    break;
                 default:
                         parameters.Add("SettingIsPatRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.Patent));
                         parameters.Add("SettingIsTmkRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.Trademark));
-                        parameters.Add("SettingIsGMRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.GeneralMatter));
-                        parameters.Add("SettingIsAMSRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.AMS));
-                        parameters.Add("SettingIsDMSRespOfficeON", _httpContextAccessor.HttpContext.User.IsRespOfficeOn(SystemType.DMS));
-                        parameters.Add("SettingIsProductsON", patSettings.IsProductsOn || patSettings.IsInventionProductOn || tmkSettings.IsProductsOn || gmSettings.IsProductsOn);
+                        parameters.Add("SettingIsProductsON", patSettings.IsProductsOn || patSettings.IsInventionProductOn || tmkSettings.IsProductsOn);
                         parameters.Add("SettingIsSoftDocketOn", defaultSettings.IsSoftDocketOn);
                     break;
                 }
@@ -1513,7 +1483,6 @@ namespace R10.Web.Services
         {
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var sharedSettings = await _defaultSettings.GetSetting();
             var labelAttorney1 = sharedSettings.GetType().GetProperty("LabelAttorney1").GetValue(sharedSettings).ToString();
             var labelAttorney2 = sharedSettings.GetType().GetProperty("LabelAttorney2").GetValue(sharedSettings).ToString();
@@ -1583,9 +1552,6 @@ namespace R10.Web.Services
                     parameters.Add("HidePDFAttorney3Label", labelAttorney3.Equals("Attorney 3"));
                     parameters.Add("HidePDFAttorney4Label", labelAttorney4.Equals("Attorney 4"));
                     parameters.Add("HidePDFAttorney5Label", labelAttorney5.Equals("Attorney 5"));
-                    break;
-                case ReportType.GMMatterPrintScreen:
-                    parameters.Add("LabelCustomFieldsLabel", _localizer[gmSettings.GmCustomFieldsTabLabel]);
                     break;
                 case ReportType.SRSearchRequestPrintScreen:
                     parameters.Add("LabelTmkCaseNumber", _localizer[tmkSettings.IsClientMatterOn ? tmkSettings.LabelClientMatter : tmkSettings.LabelCaseNumber].ToString());
@@ -1731,7 +1697,6 @@ namespace R10.Web.Services
                 case SystemTypeForReport.Trademark:
                     return await _tmkSettings.GetSetting();
                 case SystemTypeForReport.GeneralMatter:
-                    return await _gmSettings.GetSetting();
                 case SystemTypeForReport.AMS:
                 case SystemTypeForReport.DMS:
                     return await _defaultSettings.GetSetting();

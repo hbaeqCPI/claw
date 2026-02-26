@@ -17,8 +17,9 @@ namespace R10.Infrastructure.Data.Shared.mappings
             builder.HasOne(c => c.AddressCountry).WithMany(pc => pc.CountryClients).HasForeignKey(c => c.Country).HasPrincipalKey(pc => pc.Country);
             builder.HasOne(c => c.POAddressCountry).WithMany(pc => pc.POCountryClients).HasForeignKey(c => c.POCountry).HasPrincipalKey(pc => pc.Country);
             builder.HasMany(c => c.ClientInventions).WithOne(i => i.Client);
-            builder.HasMany(c => c.ClientDisclosures).WithOne(d => d.Client);
-            builder.HasMany(c => c.ClientDMSAgendas).WithOne(d => d.Client);
+            // Removed during deep clean
+            // builder.HasMany(c => c.ClientDisclosures).WithOne(d => d.Client);
+            // builder.HasMany(c => c.ClientDMSAgendas).WithOne(d => d.Client);
             builder.HasOne(o => o.ClientLanguage).WithMany(m => m.LanguageClients).HasForeignKey(f => f.Language).HasPrincipalKey(k => k.LanguageName);
         }
     }

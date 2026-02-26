@@ -18,7 +18,8 @@ namespace R10.Infrastructure.Data.Shared.mappings
             builder.Property(c => c.KeyID).UseIdentityColumn();
             builder.Property(c => c.KeyID).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
             builder.Property(c => c.CurrencyTypeCode).HasColumnName("CurrencyType");
-            builder.HasMany(o => o.AMSProjections).WithOne(m => m.CurrencyType).HasForeignKey(f => f.InvCurrency).HasPrincipalKey(k => k.CurrencyTypeCode);
+            // Removed during deep clean
+            // builder.HasMany(o => o.AMSProjections).WithOne(m => m.CurrencyType).HasForeignKey(f => f.InvCurrency).HasPrincipalKey(k => k.CurrencyTypeCode);
         }
     }
 }

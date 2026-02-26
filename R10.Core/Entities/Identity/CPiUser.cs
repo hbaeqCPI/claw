@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -162,7 +162,7 @@ namespace R10.Core.Identity
         public List<CPiUserGroup> CPiUserGroups { get; set; }
         //public List<PatCostTrack>? PatCostTracks { get; set; }
         //public List<TmkCostTrack>? TmkCostTracks { get; set; }
-        //public List<GMCostTrack>? PGMCostTracks { get; set; }
+//         //public List<GMCostTrack>? PGMCostTracks { get; set; } // Removed during deep clean
 
         public List<TradeSecretRequest>? TradeSecretRequests{ get; set; }
     }

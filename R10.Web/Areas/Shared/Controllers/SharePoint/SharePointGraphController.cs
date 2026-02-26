@@ -1,4 +1,4 @@
-using Kendo.Mvc.Extensions;
+﻿using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +46,7 @@ using R10.Core.Entities.GlobalSearch;
 using System.IO.Compression;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.SharePoint.News.DataModel;
@@ -61,12 +61,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http;
 using R10.Web.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
-using R10.Core.Interfaces.RMS;
+// using R10.Core.Interfaces.RMS; // Removed during deep clean
 using DocumentFormat.OpenXml.Office2013.PowerPoint.Roaming;
 using GleamTech.IO;
 using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using R10.Core.Interfaces.ForeignFiling;
+// using R10.Core.Interfaces.ForeignFiling; // Removed during deep clean
 using OpenIddict.Validation.AspNetCore;
 
 namespace R10.Web.Areas.Shared.Controllers.SharePoint
@@ -82,9 +82,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
         private readonly ICPiUserSettingManager _userSettingManager;
         private readonly ILetterService _letterService;
         private readonly ISharePointViewModelService _sharePointViewModelService;
-        private readonly IRMSDueDocService _rmsDueDocService;
-        private readonly IFFDueDocService _ffDueDocService;
-
         private readonly EPOMailboxSettings _epoMailboxSettings;
         private readonly IParentEntityService<EPOCommunication, EPOCommunicationDoc> _epoCommunicationDocService;
 
@@ -92,20 +89,18 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
         public SharePointGraphController(ISharePointService sharePointService,
                     IOptions<GraphSettings> graphSettings, IStringLocalizer<SharedResource> localizer,
                     IMapper mapper, IDocumentService documentService, ISystemSettings<DefaultSetting> settings, ICPiUserSettingManager userSettingManager,
-                    ISystemSettings<PatSetting> patSettings, ISystemSettings<TmkSetting> tmkSettings, ISystemSettings<GMSetting> gmSettings,
+                    ISystemSettings<PatSetting> patSettings, ISystemSettings<TmkSetting> tmkSettings,
                     IDocumentsViewModelService docViewModelService, IAuthorizationService authService, ILetterService letterService,
                     ISharePointViewModelService sharePointViewModelService,
                     IMailDownloadService mailDownloadService,
                     ILogger<DocDocumentsController> logger,
                     IOptions<ServiceAccount> serviceAccount,
-                    IRMSDueDocService rmsDueDocService,
-                    IFFDueDocService ffDueDocService,
                     IOptions<EPOMailboxSettings> epoMailboxSettings,
                     IParentEntityService<EPOCommunication, EPOCommunicationDoc> epoCommunicationDocService,
                     IEPOService epoService,
                     IEntityService<EPOCommunication> epoCommunicationService,
                     IDocumentsAIViewModelService documentsAIViewModelService
-            ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, gmSettings, epoService, epoCommunicationService)
+            ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, epoService, epoCommunicationService)
         {
             _sharePointService = sharePointService;
             _localizer = localizer;
@@ -114,8 +109,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
             _userSettingManager = userSettingManager;
             _letterService = letterService;
             _sharePointViewModelService = sharePointViewModelService;
-            _rmsDueDocService = rmsDueDocService;
-            _ffDueDocService = ffDueDocService;
 
             _epoMailboxSettings = epoMailboxSettings.Value;
             _epoCommunicationDocService = epoCommunicationDocService;
@@ -939,7 +932,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
 
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var settings = await _settings.GetSetting();
 
             var success = false;
@@ -947,13 +939,11 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
             var graphClient = _sharePointService.GetGraphClient();
             var folders = SharePointViewModelService.GetDocumentFolders(viewModel.DocLibraryFolder, viewModel.RecKey);
 
-            if (viewModel.CheckAct && !string.IsNullOrEmpty(viewModel.DocLibrary) && !string.IsNullOrEmpty(viewModel.DocLibraryFolder) 
-                    && ((patSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Patent.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Application.ToLower()) 
-                    || (tmkSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Trademark.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Trademark.ToLower()) 
-                    || (gmSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.GeneralMatter.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.GeneralMatter.ToLower())))
+            if (viewModel.CheckAct && !string.IsNullOrEmpty(viewModel.DocLibrary) && !string.IsNullOrEmpty(viewModel.DocLibraryFolder)
+                    && ((patSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Patent.ToLower()
+                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Application.ToLower())
+                    || (tmkSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Trademark.ToLower()
+                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Trademark.ToLower())))
             {
                 var docVerificationFolderName = string.Empty;
                 switch (viewModel.DocLibraryFolder)
@@ -963,9 +953,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                         break;
                     case SharePointDocLibraryFolder.Trademark:
                         docVerificationFolderName = tmkSettings.DocVerificationDefaultFolderName;
-                        break;
-                    case SharePointDocLibraryFolder.GeneralMatter:
-                        docVerificationFolderName = gmSettings.DocVerificationDefaultFolderName;
                         break;
                 }
 
@@ -1325,7 +1312,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
         {
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var settings = await _settings.GetSetting();
 
             var fileName = "";
@@ -1410,13 +1396,11 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                 // only apply to files from CtryApplication/Trademark/GeneralMatter and when CheckAct value changes
                 // if CheckDocket is checked move to "Dockets for Verification" folder
                 // else move to default folder
-                if (!string.IsNullOrEmpty(viewModel.DocLibrary) && !string.IsNullOrEmpty(viewModel.DocLibraryFolder) 
-                    && ((patSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Patent.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Application.ToLower()) 
-                    || (tmkSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Trademark.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Trademark.ToLower()) 
-                    || (gmSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.GeneralMatter.ToLower() 
-                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.GeneralMatter.ToLower())))
+                if (!string.IsNullOrEmpty(viewModel.DocLibrary) && !string.IsNullOrEmpty(viewModel.DocLibraryFolder)
+                    && ((patSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Patent.ToLower()
+                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Application.ToLower())
+                    || (tmkSettings.IsDocumentVerificationOn && viewModel.DocLibrary.ToLower() == SharePointDocLibrary.Trademark.ToLower()
+                        && viewModel.DocLibraryFolder.ToLower() == SharePointDocLibraryFolder.Trademark.ToLower())))
                 {
                     var docVerificationFolderName = string.Empty;
                     switch (viewModel.DocLibraryFolder)
@@ -1426,9 +1410,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                             break;
                         case SharePointDocLibraryFolder.Trademark:
                             docVerificationFolderName = tmkSettings.DocVerificationDefaultFolderName;
-                            break;
-                        case SharePointDocLibraryFolder.GeneralMatter:
-                            docVerificationFolderName = gmSettings.DocVerificationDefaultFolderName;
                             break;
                     }
 
@@ -1608,7 +1589,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
                     hasRespReportingReassigned = respReporting.IsReassigned;
                 }
 
-                if (patSettings.IsDocumentVerificationOn || tmkSettings.IsDocumentVerificationOn || gmSettings.IsDocumentVerificationOn)
+                if (patSettings.IsDocumentVerificationOn || tmkSettings.IsDocumentVerificationOn)
                 {
                     var docVerifications = await _documentService.DocVerifications.Where(d => d.DocDocument.DocFile.DriveItemId == viewModel.DriveItemId).ToListAsync();
                     if (docVerifications.Any() && viewModel.IsActRequired == false && docDocument != null)
@@ -1738,97 +1719,7 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
         #endregion
 
 
-        [Authorize(Policy = RMSAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddRMS(string documentLink, int dueId, int docId)
-        {
-            var documentLinkArray = documentLink.Split("|");
-            var actId = Convert.ToInt32(documentLinkArray[3]);
-
-            var docLibrary = _sharePointViewModelService.GetDocLibraryFromSystemTypeCode(documentLinkArray[0]);
-            var recKey = await _sharePointViewModelService.GetActionDueRecKey(documentLinkArray[0], actId);
-            var docLibraryFolder = SharePointDocLibraryFolder.Action;
-
-            var viewModel = new SharePointDocumentEntryViewModel
-            {
-                DocLibrary = docLibrary,
-                DocLibraryFolder = docLibraryFolder,
-                RecKey = recKey
-            };
-
-            ViewData["DueId"] = dueId;
-            ViewData["RequiredDocId"] = docId;
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-            ViewData["FormAction"] = "AddFileRMS";
-
-            return PartialView("_ModifyFile", viewModel);
-        }
-
-        public async Task<IActionResult> AddFileRMS(SharePointDocumentEntryViewModel viewModel, int dueId, int requiredDocId)
-        {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-            if (dueId == 0 || requiredDocId == 0)
-                return BadRequest("Missing parameters. Unable to upload document.");
-
-            var result = await AddFile(viewModel);
-
-            if (((ObjectResult)result).StatusCode == 200)
-            {
-                //save RMSDueDoc, add RMSDueDocUploadLog
-                var formFile = viewModel.UploadedFiles?.First();
-                var userFileName = formFile == null ? viewModel.RecKey : formFile.FileName;
-                await _rmsDueDocService.SaveUploaded(dueId, requiredDocId, User.GetUserName(), true, viewModel.FileId ?? 0, userFileName ?? "", System.Convert.FromBase64String(""));
-            }
-
-            return result;
-        }
-
-        [Authorize(Policy = ForeignFilingAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddFF(string documentLink, int dueId, int docId)
-        {
-            var documentLinkArray = documentLink.Split("|");
-            var actId = Convert.ToInt32(documentLinkArray[3]);
-
-            var docLibrary = _sharePointViewModelService.GetDocLibraryFromSystemTypeCode(documentLinkArray[0]);
-            var recKey = await _sharePointViewModelService.GetActionDueRecKey(documentLinkArray[0], actId);
-            var docLibraryFolder = SharePointDocLibraryFolder.Action;
-
-            var viewModel = new SharePointDocumentEntryViewModel
-            {
-                DocLibrary = docLibrary,
-                DocLibraryFolder = docLibraryFolder,
-                RecKey = recKey
-            };
-
-            ViewData["DueId"] = dueId;
-            ViewData["RequiredDocId"] = docId;
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-            ViewData["FormAction"] = "AddFileFF";
-
-            return PartialView("_ModifyFile", viewModel);
-        }
-
-        public async Task<IActionResult> AddFileFF(SharePointDocumentEntryViewModel viewModel, int dueId, int requiredDocId)
-        {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-            if (dueId == 0 || requiredDocId == 0)
-                return BadRequest("Missing parameters. Unable to upload document.");
-
-            var result = await AddFile(viewModel);
-
-            if (((ObjectResult)result).StatusCode == 200)
-            {
-                //save FFDueDoc, add FFDueDocUploadLog
-                var formFile = viewModel.UploadedFiles?.First();
-                var userFileName = formFile == null ? viewModel.RecKey : formFile.FileName;
-                await _ffDueDocService.SaveUploaded(dueId, requiredDocId, User.GetUserName(), true, viewModel.FileId ?? 0, userFileName ?? "", System.Convert.FromBase64String(""));
-            }
-
-            return result;
-        }
+        // RMS and ForeignFiling modules removed
 
         #region Tree Events
         public async Task<ActionResult> GetApplicableDocTree(string documentLink, string? id, int? parentId = 0)
@@ -2344,9 +2235,6 @@ namespace R10.Web.Areas.Shared.Controllers.SharePoint
 
                 case SharePointDocLibraryFolder.Trademark:
                     return await GenerateTrademarkWorkflow(attachments, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, hasNewRespReporting, hasRespReportingReassigned);
-
-                case SharePointDocLibraryFolder.GeneralMatter:
-                    return await GenerateGMWorkflow(attachments, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, hasNewRespReporting, hasRespReportingReassigned);
 
                 case SharePointDocLibraryFolder.Action:
                     string systemTypeCode = "";

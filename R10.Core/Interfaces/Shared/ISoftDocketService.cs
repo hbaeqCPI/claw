@@ -8,7 +8,7 @@ using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 
 namespace R10.Core.Interfaces
 {
@@ -16,7 +16,8 @@ namespace R10.Core.Interfaces
     {
         Task<CountryApplication?> GetApplication(int appId);
         Task<TmkTrademark?> GetTrademark(int tmkId);
-        Task<GMMatter?> GetMatter(int matId);
+        // Removed during deep clean
+        // Task<GMMatter?> GetMatter(int matId);
         Task<Invention?> GetInvention(int invId);
     }
         

@@ -7,7 +7,8 @@
       "Bash(cmd //c \"copy /Y \"\"D:\\\\Projects\\\\Claw\\\\Claw-Base\\\\R10.Web\\\\Extensions\\\\SharedServiceCollectionExtensions.cs\"\" \"\"D:\\\\Projects\\\\Claw\\\\Claw-Claude\\\\R10.Web\\\\Extensions\\\\SharedServiceCollectionExtensions.cs\"\" && echo 1. OK SharedServiceCollectionExtensions.cs || echo 1. FAILED SharedServiceCollectionExtensions.cs\")",
       "Bash(cmd //c \"dir D:\\\\Projects\\\\Claw\\\\Claw-Base\\\\R10.Web\\\\Extensions\")",
       "Bash(cmd //c \"xcopy D:\\\\Projects\\\\Claw\\\\Claw-Base\\\\R10.Web\\\\Extensions\\\\SharedServiceCollectionExtensions.cs D:\\\\Projects\\\\Claw\\\\Claw-Claude\\\\R10.Web\\\\Extensions\\\\ /Y /Q\")",
-      "Bash(cmd //c \"xcopy D:\\\\Projects\\\\Claw\\\\Claw-Base\\\\R10.Web\\\\Startup.cs D:\\\\Projects\\\\Claw\\\\Claw-Claude\\\\R10.Web\\\\ /Y /Q && echo 2. OK Startup.cs || echo 2. FAILED Startup.cs\")"
+      "Bash(cmd //c \"xcopy D:\\\\Projects\\\\Claw\\\\Claw-Base\\\\R10.Web\\\\Startup.cs D:\\\\Projects\\\\Claw\\\\Claw-Claude\\\\R10.Web\\\\ /Y /Q && echo 2. OK Startup.cs || echo 2. FAILED Startup.cs\")",
+      "Bash(dotnet build:*)"
     ]
   }
 }

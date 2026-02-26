@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Interfaces;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Extensions;
@@ -333,9 +333,7 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             var indicators = await _repository.PatIndicators.Select(i => new LookupDTO { Value = i.Indicator }).ToListAsync();
             var tmkIndicators = await _repository.TmkIndicators.Select(i => new LookupDTO { Value = i.Indicator }).ToListAsync();
-            var gmIndicators = await _repository.GMIndicators.Select(i => new LookupDTO { Value = i.Indicator }).ToListAsync();
             indicators.AddRange(tmkIndicators);
-            indicators.AddRange(gmIndicators);
             var result = indicators.GroupBy(i=> i.Value).Select(i=> new LookupDTO { Value = i.Key }).ToList();
             return Json(result);
         }

@@ -23,9 +23,7 @@
     <Compile Remove="Areas\Admin\Views\MenuPages\**" />
     <Compile Remove="Areas\Admin\Views\Users\**" />
     <Compile Remove="Areas\DMS\**" />
-    <Compile Include="Areas\DMS\ViewModels\Review\DMSReviewerViewModel.cs" />
-    <Compile Include="Areas\DMS\ViewModels\Review\DMSReviewerTypeViewModel.cs" />
-    <Compile Include="Areas\DMS\ViewModels\Review\DMSReviewerLookupViewModel.cs" />
+    <!-- DMSReviewer ViewModels removed during deep clean -->
     <Compile Remove="Areas\GeneralMatter\**" />
     <Compile Remove="Areas\InventorRemuneration\**" />
     <Compile Remove="Areas\Patent\Controllers\Documents\**" />

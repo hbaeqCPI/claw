@@ -10,7 +10,7 @@ using System.Data;
 using R10.Core.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System.Text.RegularExpressions;
@@ -51,9 +51,10 @@ namespace R10.Core.Services
                 .Include(tmk => tmk.Attorney5)
                 .FirstOrDefaultAsync(r => r.TmkId == tmkId);
         }
-        public async Task<GMMatter?> GetMatter(int matId) {
-            return await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == matId);
-        }
+        // Removed during deep clean - GMMatter no longer exists
+        // public async Task<GMMatter?> GetMatter(int matId) {
+        //     return await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == matId);
+        // }
 
         public async Task<Invention?> GetInvention(int invId)
         {

@@ -50,10 +50,8 @@ namespace R10.Web.Interfaces
         Task<List<DocDocumentListViewModel>> ApplyCriteria(List<DocDocumentListViewModel> documents, List<QueryFilterViewModel> criteria);
         Task<List<WorkflowViewModel>> GeneratePatentActionWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId);
         Task<List<WorkflowViewModel>> GenerateTrademarkActionWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId);
-        Task<List<WorkflowViewModel>> GenerateGMActionWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId);
         Task<List<WorkflowViewModel>> GenerateCountryAppWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId, bool isNewFileUpload = false, bool isNewRespDocketing = false, bool isRespDocketingReassigned = false, string newRespDocketingUrl = "", string reassignedRespDocketingUrl = "", bool isNewEPOFileDownload = false, bool hasNewRespReporting = false, bool hasRespReportingReassigned = false, string newRespReportingUrl = "", string reassignedRespReportingUrl = "");
         Task<List<WorkflowViewModel>> GenerateTrademarkWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId, bool isNewFileUpload = false, bool isNewRespDocketing = false, bool isRespDocketingReassigned = false, string newRespDocketingUrl = "", string reassignedRespDocketingUrl = "", bool hasNewRespReporting = false, bool hasRespReportingReassigned = false, string newRespReportingUrl = "", string reassignedRespReportingUrl = "");
-        Task<List<WorkflowViewModel>> GenerateGMWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId, bool isNewFileUpload = false, bool isNewRespDocketing = false, bool isRespDocketingReassigned = false, string newRespDocketingUrl = "", string reassignedRespDocketingUrl = "", bool hasNewRespReporting = false, bool hasRespReportingReassigned = false, string newRespReportingUrl = "", string reassignedRespReportingUrl = "");
 
         Task MarkForSignature(int fileId, string documentLink, int qeSetupId, string roleLink, bool isDMSInventorSignature = false);
 

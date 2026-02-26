@@ -1,5 +1,5 @@
 ﻿using R10.Core.Entities;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -32,6 +32,6 @@ namespace R10.Core.Entities.Patent
         public List<PatDesCaseType>? ChildPatDesCaseTypes { get; set; }
 
         public List<PatCECountrySetup>? CaseTypeCECountrySetups { get; set; }
-        public List<FFReminderSetup>? FFReminderSetups { get; set; }
+//         public List<FFReminderSetup>? FFReminderSetups { get; set; } // Removed during deep clean
     }
 }

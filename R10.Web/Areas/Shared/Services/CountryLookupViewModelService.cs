@@ -1,4 +1,3 @@
-﻿using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Interfaces;
@@ -21,18 +20,15 @@ namespace R10.Web.Services
         private readonly ClaimsPrincipal _claimsPrincipal;
         private readonly IParentEntityService<PatCountry, PatAreaCountry> _patCountryService;
         private readonly IParentEntityService<TmkCountry, TmkAreaCountry> _tmkCountryService;
-        private readonly IParentEntityService<GMCountry, GMAreaCountry> _gmCountryService;
 
         public CountryLookupViewModelService(
             ClaimsPrincipal claimsPrincipal,
             IParentEntityService<PatCountry, PatAreaCountry> patCountryService,
-            IParentEntityService<TmkCountry, TmkAreaCountry> tmkCountryService,
-            IParentEntityService<GMCountry, GMAreaCountry> gmCountryService)
+            IParentEntityService<TmkCountry, TmkAreaCountry> tmkCountryService)
         {
             _claimsPrincipal = claimsPrincipal;
             _patCountryService = patCountryService;
             _tmkCountryService = tmkCountryService;
-            _gmCountryService = gmCountryService;
         }
 
         public string CountrySource
@@ -43,9 +39,6 @@ namespace R10.Web.Services
                 {
                     { SystemType.Patent, SystemType.Patent },
                     { SystemType.Trademark, SystemType.Trademark },
-                    { SystemType.GeneralMatter, SystemType.GeneralMatter },
-                    { SystemType.AMS, SystemType.Patent },
-                    { SystemType.DMS, SystemType.Patent },
                     { SystemType.IDS, SystemType.Patent }
                 };
 
@@ -65,14 +58,6 @@ namespace R10.Web.Services
             {
                 switch (this.CountrySource)
                 {
-                    case SystemType.GeneralMatter:
-                        return _gmCountryService.QueryableList.Select(c => new CountryLookupViewModel
-                        {
-                            CountryID = c.CountryID,
-                            Country = c.Country,
-                            CountryName = c.CountryName
-                        });
-
                     case SystemType.Trademark:
                         return _tmkCountryService.QueryableList.Select(c => new CountryLookupViewModel
                         {

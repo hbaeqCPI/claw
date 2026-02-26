@@ -1,4 +1,4 @@
-using R10.Core.Entities.DMS;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Helpers;
 using R10.Core.Identity;
@@ -102,11 +102,11 @@ namespace R10.Core.Entities
         public List<ClientContact>? ClientContacts { get; set; }
         public List<AgentContact>? AgentContacts { get; set; }
         public List<OwnerContact>? OwnerContacts { get; set; }
-        public List<DMSEntityReviewer>? Reviewers { get; set; }
-        public List<DMSAgendaReviewer>? DMSAgendaReviewers { get; set; }
-        public List<DMSReview>? Reviews { get; set; }
-        public List<DMSPreview>? Previews { get; set; }
-        public List<DMSValuation>? Valuations { get; set; }
+//         public List<DMSEntityReviewer>? Reviewers { get; set; } // Removed during deep clean
+//         public List<DMSAgendaReviewer>? DMSAgendaReviewers { get; set; } // Removed during deep clean
+//         public List<DMSReview>? Reviews { get; set; } // Removed during deep clean
+//         public List<DMSPreview>? Previews { get; set; } // Removed during deep clean
+//         public List<DMSValuation>? Valuations { get; set; } // Removed during deep clean
         public Language? ContactLanguage { get; set; }
         public List<CPiUserEntityFilter>? EntityFilters { get; set; }        
 

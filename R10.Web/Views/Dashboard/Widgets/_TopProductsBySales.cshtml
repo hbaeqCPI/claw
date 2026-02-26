@@ -6,12 +6,10 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 
 @{
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
 
     var clientLabel = Localizer[patSettings.LabelClient];
     var clientNameLabel = Localizer[patSettings.LabelClientName];
@@ -30,7 +28,6 @@
 
     if (patSettings.IsProductsOn) { systems.Add(new SelectListItem() { Text = "Patent", Value = "Patent" }); }
     if (tmkSettings.IsProductsOn) { systems.Add(new SelectListItem() { Text = "Trademark", Value = "Trademark" }); }
-    if (gmSettings.IsProductsOn) { systems.Add(new SelectListItem() { Text = "General Matter", Value = "General Matter" }); }
 
     List<ClientListViewModel> clients = new List<ClientListViewModel>();
     if (userSettings.Property("Clients") != null)

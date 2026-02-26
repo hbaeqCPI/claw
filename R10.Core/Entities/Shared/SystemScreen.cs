@@ -1,6 +1,6 @@
 ﻿using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -33,7 +33,7 @@ namespace R10.Core.Entities
         public List<QEMain>? QEsMain { get; set; }
         public List<PatWorkflow>? PatWorkflows { get; set; }
         public List<TmkWorkflow>? TmkWorkflows { get; set; }
-        public List<GMWorkflow>? GMWorkflows { get; set; }
+//         public List<GMWorkflow>? GMWorkflows { get; set; } // Removed during deep clean
         public List<DOCXMain>? DOCXMain { get; set; } //DOCX
     }
 }

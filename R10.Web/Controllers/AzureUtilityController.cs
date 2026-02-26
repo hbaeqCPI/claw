@@ -32,8 +32,6 @@ namespace R10.Web.Controllers
         private readonly AzureStorage _azureStorage;
         private readonly IApplicationDbContext _repository;
         private readonly IStringLocalizer<SharedResource> _localizer;
-        private readonly IRTSService _rtsService;
-        private readonly ITLInfoService _tlInfoService;
         private readonly IConfiguration _configuration;
         private readonly IDocumentHelper _documentHelper;
 
@@ -43,16 +41,12 @@ namespace R10.Web.Controllers
         public AzureUtilityController(AzureStorage azureStorage,
                                       IApplicationDbContext repository,
                                       IStringLocalizer<SharedResource> localizer,
-                                      IRTSService rtsService,
-                                      ITLInfoService tlInfoService,
                                       IConfiguration configuration,
                                       IDocumentHelper documentHelper)
         {
             _azureStorage = azureStorage;
             _repository = repository;
             _localizer = localizer;
-            _rtsService = rtsService;
-            _tlInfoService = tlInfoService;
             _configuration = configuration;
             _documentHelper = documentHelper;
         }
@@ -105,10 +99,7 @@ namespace R10.Web.Controllers
             if (!settings.UseAzureStorage)
                 return BadRequest();
 
-            await TransferIFW();
-            await TransferTLDocs();
-            await TransferTLImages();
-
+            // RTS and TL modules have been removed; transfer methods are no longer available.
             return Ok();
         }
 
@@ -490,285 +481,7 @@ namespace R10.Web.Controllers
 
         #endregion
 
-        private async Task TransferIFW()
-        {
-            var untransferred = await _rtsService.GetUntransferredIFWs();
-            if (untransferred.Count > 0)
-            {
-                var noPerGroup = 20; //group by 20 files 
-                var groups = Math.Ceiling((double)untransferred.Count / noPerGroup);
-                var counter = 1;
-                for (var i = 1; i <= groups; i++)
-                {
-                    var filesToProcess = new List<RTSSearchUSIFW>();
-                    for (var y = 1; y <= noPerGroup; y++)
-                    {
-                        if (counter <= untransferred.Count)
-                        {
-                            var file = untransferred[counter - 1];
-                            filesToProcess.Add(file);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        counter++;
-                    }
-
-                    if (filesToProcess.Count > 0)
-                    {
-                        var rootPath = ImageHelper.GetIFWRootPath();
-                        var files = new List<DocumentStorageFile>();
-
-                        foreach (var file in filesToProcess)
-                        {
-                            var sourceFile = rootPath + @"\" + file.FileName;
-                            if (System.IO.File.Exists(sourceFile))
-                            {
-
-                                var ifwFile = _azureStorage.BuildPath(_azureStorage.ImageRootFolder, SystemType.Patent, file.FileName);
-                                var header = new DocumentStorageHeader
-                                {
-                                    SystemType = SystemType.Patent.Substring(0, 1).ToUpper(),               // global search consistency
-                                    ScreenCode = ScreenCode.Application,
-                                    ParentId = file.PLAppID.ToString(), //content is appid
-                                    DocumentType = DocumentLogType.ImageDoc,
-                                    FileName = file.FileName
-                                };
-
-                                byte[] buffer = null;
-                                if (!_metadataOnly)
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        using (var source = System.IO.File.Open(sourceFile, FileMode.Open, FileAccess.Read))
-                                        {
-                                            source.CopyTo(memoryStream);
-                                        }
-                                        buffer = memoryStream.ToArray();
-                                    }
-                                }
-
-                                var storageFile = new DocumentStorageFile
-                                {
-                                    Buffer = buffer,
-                                    FileName = ifwFile,
-                                    Header = header
-                                };
-                                files.Add(storageFile);
-                            }
-                        }
-                        if (files.Count > 0)
-                        {
-                            await _azureStorage.SaveFiles(files);
-                            foreach (var file in filesToProcess)
-                            {
-                                _rtsService.MarkIFWAsTransferred(file.FileName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task TransferTLDocs()
-        {
-            var untransferred = await _tlInfoService.GetUntransferredDocs();
-            if (untransferred.Count > 0)
-            {
-                var noPerGroup = 20; //group by 20 files 
-                var groups = Math.Ceiling((double)untransferred.Count / noPerGroup);
-                var counter = 1;
-                for (var i = 1; i <= groups; i++)
-                {
-                    var filesToProcess = new List<TLSearchDocument>();
-                    for (var y = 1; y <= noPerGroup; y++)
-                    {
-                        if (counter <= untransferred.Count)
-                        {
-                            var file = untransferred[counter - 1];
-                            filesToProcess.Add(file);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        counter++;
-                    }
-
-                    if (filesToProcess.Count > 0)
-                    {
-                        var rootPath = ImageHelper.GetTLRootPath();
-                        var files = new List<DocumentStorageFile>();
-
-                        foreach (var file in filesToProcess)
-                        {
-                            var sourceFile = rootPath + @"\" + file.FileName;
-                            if (System.IO.File.Exists(sourceFile))
-                            {
-
-                                var docFile = _azureStorage.BuildPath(_azureStorage.ImageRootFolder, SystemType.Trademark, file.FileName);
-                                var header = new DocumentStorageHeader
-                                {
-                                    SystemType = SystemType.Trademark.Substring(0, 1).ToUpper(),        // global search consistency
-                                    ScreenCode = ScreenCode.TL,
-                                    ParentId = file.TLTmkId.ToString(),
-                                    DocumentType = DocumentLogType.ImageDoc,
-                                    FileName = file.FileName
-                                };
-
-                                byte[] buffer = null;
-                                if (!_metadataOnly)
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        using (var source = System.IO.File.Open(sourceFile, FileMode.Open, FileAccess.Read))
-                                        {
-                                            source.CopyTo(memoryStream);
-                                        }
-                                        buffer = memoryStream.ToArray();
-                                    }
-                                }
-
-                                var storageFile = new DocumentStorageFile
-                                {
-                                    Buffer = buffer,
-                                    FileName = docFile,
-                                    Header = header
-                                };
-                                files.Add(storageFile);
-                            }
-                        }
-                        if (files.Count > 0)
-                        {
-                            await _azureStorage.SaveFiles(files);
-                            foreach (var file in filesToProcess)
-                            {
-                                _tlInfoService.MarkDocAsTransferred(file.FileName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task TransferTLImages()
-        {
-            var untransferred = await _tlInfoService.GetUntransferredImages();
-            if (untransferred.Count > 0)
-            {
-                var noPerGroup = 20; //group by 20 files 
-                var groups = Math.Ceiling((double)untransferred.Count / noPerGroup);
-                var counter = 1;
-                for (var i = 1; i <= groups; i++)
-                {
-                    var filesToProcess = new List<TLSearchImage>();
-                    for (var y = 1; y <= noPerGroup; y++)
-                    {
-                        if (counter <= untransferred.Count)
-                        {
-                            var file = untransferred[counter - 1];
-                            filesToProcess.Add(file);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        counter++;
-                    }
-
-                    if (filesToProcess.Count > 0)
-                    {
-                        var rootPath = ImageHelper.GetTLRootPath();
-                        var files = new List<DocumentStorageFile>();
-
-                        foreach (var file in filesToProcess)
-                        {
-                            var sourceFile = rootPath + @"\" + file.OrigFileName;
-                            if (System.IO.File.Exists(sourceFile))
-                            {
-
-                                var docFile = _azureStorage.BuildPath(_azureStorage.ImageRootFolder, SystemType.Trademark, file.OrigFileName);
-                                var header = new DocumentStorageHeader
-                                {
-                                    SystemType = SystemType.Trademark.Substring(0, 1).ToUpper(),            // global search consistency
-                                    ScreenCode = ScreenCode.Trademark,
-                                    ParentId = file.TLTmkId.ToString(), //content is tmkid
-                                    DocumentType = DocumentLogType.ImageDoc,
-                                    FileName = file.OrigFileName
-                                };
-
-                                byte[] buffer = null;
-                                if (!_metadataOnly)
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        using (var source = System.IO.File.Open(sourceFile, FileMode.Open, FileAccess.Read))
-                                        {
-                                            source.CopyTo(memoryStream);
-                                        }
-                                        buffer = memoryStream.ToArray();
-                                    }
-                                }
-
-                                var storageFile = new DocumentStorageFile
-                                {
-                                    Buffer = buffer,
-                                    FileName = docFile,
-                                    Header = header
-                                };
-                                files.Add(storageFile);
-                            }
-                        }
-
-
-                        var thumbnailsRootPath = Path.Combine(Directory.GetCurrentDirectory(), @"UserFiles\Images\Thumbnails");
-                        var thumbnailFiles = new List<DocumentStorageFile>();
-
-                        foreach (var file in filesToProcess)
-                        {
-                            var fileInfo = file.OrigFileName.Split('.');
-                            var thumbFileName = fileInfo[0] + "_thumb." + fileInfo[1];
-                            var sourceFile = thumbnailsRootPath + @"\" + thumbFileName;
-                            if (System.IO.File.Exists(sourceFile))
-                            {
-
-                                var docFile = _azureStorage.BuildPath(_azureStorage.ImageThumbnailRootFolder, "", thumbFileName);
-                                byte[] buffer = null;
-                                if (!_metadataOnly)
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        using (var source = System.IO.File.Open(sourceFile, FileMode.Open, FileAccess.Read))
-                                        {
-                                            source.CopyTo(memoryStream);
-                                        }
-                                        buffer = memoryStream.ToArray();
-                                    }
-                                }
-
-                                var storageFile = new DocumentStorageFile
-                                {
-                                    Buffer = buffer,
-                                    FileName = docFile,
-                                    Header = null
-                                };
-                                files.Add(storageFile);
-                            }
-                        }
-
-                        if (files.Count > 0)
-                        {
-                            await _azureStorage.SaveFiles(files);
-                            foreach (var file in filesToProcess)
-                            {
-                                _tlInfoService.MarkImageAsTransferred(file.OrigFileName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // TransferIFW, TransferTLDocs, TransferTLImages methods removed - RTS and TL modules deleted
 
         #region Update Metadata
         private async Task UpdateMetadataImages(List<ImageViewModel> images, string docType, string moreInfo = "")

@@ -19,7 +19,7 @@ using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Helpers;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 using R10.Core.Interfaces.Shared;
 using R10.Core.Services;
@@ -43,7 +43,7 @@ namespace R10.Web.Api.Shared
         private readonly IInventionService _inventionService;
         private readonly ICountryApplicationService _applicationService;
         private readonly ISystemSettings<PatSetting> _patSettings;
-        private readonly IDisclosureService _disclosureService;
+//         private readonly IDisclosureService _disclosureService; // Removed during deep clean
         private readonly ITradeSecretService _tradeSecretService;
         private readonly ClaimsPrincipal _user;
 
@@ -51,7 +51,7 @@ namespace R10.Web.Api.Shared
             IInventionService inventionService,
             ICountryApplicationService applicationService,
             ISystemSettings<PatSetting> patSettings, 
-            IDisclosureService disclosureService, 
+//             IDisclosureService disclosureService,  // Removed during deep clean
             ITradeSecretService tradeSecretService, 
             ClaimsPrincipal user)
         {
@@ -60,7 +60,6 @@ namespace R10.Web.Api.Shared
             _patSettings = patSettings;
             _user = user;
             _tradeSecretService = tradeSecretService;
-            _disclosureService = disclosureService;
         }
 
         [HttpGet("MasterList")]
@@ -100,23 +99,6 @@ namespace R10.Web.Api.Shared
                 }
             }
 
-            if (criteria.PrintDMS)
-            {
-                var disclosures = _disclosureService.QueryableList.Where(d => d.IsTradeSecret == true);
-                var disclosureData = await disclosures.ProjectTo<TradeSecretMasterListReportViewModel>().ToListAsync();
-                
-                foreach (var disclosure in disclosureData)
-                {
-                    disclosure.LastViewDate = await _tradeSecretService.ActivityQueryableList.
-                                                Where(a => a.RecId == disclosure.Id && a.ScreenId == "DMSDisclosure")
-                                                .MaxAsync(a => (DateTime?)a.ActivityDate);
-                    disclosure.LastViewDate_Fmt = disclosure.LastViewDate?.ToString("MM/dd/yyyy HH:mm:ss");
-
-                    await _tradeSecretService.LogActivity(TradeSecretScreen.Report, TradeSecretScreen.DMSDisclosure, disclosure.Id, TradeSecretActivityCode.Report, 0);
-                }
-
-                data.AddRange(disclosureData);
-            }           
 
             return Ok(data);
         }
@@ -248,41 +230,6 @@ namespace R10.Web.Api.Shared
                 });
             }
 
-            if (criteria.PrintDMS)
-            {
-                var userIds = await auditLogs.Where(a => a.TradeSecretActivity.ScreenId == "DMSDisclosure")
-                                        .Select(a => a.TradeSecretActivity.UserId)
-                                        .Distinct().ToListAsync();
-                var emails = await _tradeSecretService.GetUserEmails(userIds);
-
-
-                var dmsLogData = from log in auditLogs
-                                 where log.TradeSecretActivity.ScreenId == "DMSDisclosure"
-                                 join dms in _disclosureService.QueryableList
-                                    on log.TradeSecretActivity.RecId equals dms.DMSId
-                                 select new TradeSecretAuditLogReportViewModel
-                                 {
-                                     ParentId = dms.DMSId,
-                                     AuditLogId = log.AuditLogId,
-                                     ActivityId = log.ActivityId,
-                                     OldValues = log.OldValues,
-                                     NewValues = log.NewValues,
-                                     UpdatedFields = log.UpdatedFields,
-                                     UserId = log.TradeSecretActivity.UserId,
-                                     RecId = log.TradeSecretActivity.RecId,
-                                     ScreenId = log.TradeSecretActivity.ScreenId,
-                                     Sys = "Invention Disclosure",
-                                     CaseNumber = dms.DisclosureNumber,
-                                     Country = "",
-                                     SubCase = "",
-                                     Title = dms.TradeSecret.DisclosureTitle,
-                                     Inventors = dms.Inventors != null ? string.Join(", ", dms.Inventors.Select(i => i.PatInventor.Inventor)) : null,
-                                     UpdatedDate = log.TradeSecretActivity.ActivityDate.HasValue ? log.TradeSecretActivity.ActivityDate.Value.ToString("MM/dd/yyyy HH:mm:ss") : null,
-                                     UpdatedBy = emails.ContainsKey(log.TradeSecretActivity.UserId) ? emails[log.TradeSecretActivity.UserId] : null
-                                 };
-
-                data.AddRange(dmsLogData);
-            }
 
             return Ok(data);
         }
@@ -290,7 +237,7 @@ namespace R10.Web.Api.Shared
         [HttpGet("Violations")]
         public async Task<IActionResult> Violations(TradeSecretReportCriteriaViewModel criteria)
         {
-            List<string> settingTypes = new List<string>() { "RestrictPatTradeSecret", "RestrictDMSTradeSecret" };
+            List<string> settingTypes = new List<string>() { "RestrictPatTradeSecret" };
 
             var activities = _tradeSecretService.ActivityQueryableList.Where(a => a.Activity != "TimeOut");
             var activityUsers = await activities.Select(a => a.UserId).Distinct().ToListAsync();
@@ -387,27 +334,6 @@ namespace R10.Web.Api.Shared
             }
 
 
-            if (criteria.PrintDMS)
-            {
-                var disclosures = from v in violations
-                                       where v.ScreenId == "Disclosure"
-                                       join d in _disclosureService.QueryableList
-                                           on v.RecId equals d.DMSId
-                                       select new TradeSecretViolationsReportViewModel
-                                       {
-                                           ParentId = d.DMSId,
-                                           UserEmail = emails.ContainsKey(v.UserId) ? emails[v.UserId] : null,
-                                           ActivityId = v.ActivityId,
-                                           Activity = v.Activity,
-                                           ScreenId = v.ScreenId,
-                                           ActivityDate = v.ActivityDate.HasValue ? v.ActivityDate.Value.ToString("MM/dd/yyyy HH:mm:ss") : null,
-                                           RecId = v.RecId,
-                                           Source = v.Source,
-                                           CaseNumber = d.DisclosureNumber,
-                                           Title = d.TradeSecret.DisclosureTitle
-                                       };
-                data.AddRange(disclosures);
-            }
 
             return Ok(data);
         }

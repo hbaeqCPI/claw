@@ -3,13 +3,11 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 @inject IAuthorizationService AuthService
 @{
     var settings = await Settings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
 
     var documentLink = (ViewData["DocumentLink"] ?? "").ToString();
     var documentLinkArray = (documentLink ?? "").Split("|");
@@ -23,14 +21,13 @@
     }
 
     bool showVerification = false;   //hide verification when uploading new RMS required document
-    bool showPatVerification = false, showTmkVerification = false, showGMVerification = false;
+    bool showPatVerification = false, showTmkVerification = false;
     if (!string.IsNullOrEmpty(screenCode))
     {
         showPatVerification = patSettings.IsDocumentVerificationOn && screenCode.ToUpper() == ScreenCode.Application.ToUpper() && dataKey.ToLower() == "appid";
         showTmkVerification = tmkSettings.IsDocumentVerificationOn && screenCode.ToUpper() == ScreenCode.Trademark.ToUpper() && dataKey.ToLower() == "tmkid";
-        showGMVerification = gmSettings.IsDocumentVerificationOn && screenCode.ToUpper() == ScreenCode.GeneralMatter.ToUpper() && dataKey.ToLower() == "matid";
     }
-    showVerification = showPatVerification || showTmkVerification || showGMVerification;
+    showVerification = showPatVerification || showTmkVerification;
 
     var isEdit = Model.DocId > 0;
     var showTags = Model.DocId > 0; //hide tags when uploading new document
@@ -62,8 +59,7 @@
 
     var isPatFullModify = (await AuthService.AuthorizeAsync(User, PatentAuthorizationPolicy.FullModify)).Succeeded && showPatVerification;
     var isTmkFullModify = (await AuthService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullModify)).Succeeded && showTmkVerification;
-    var isGmFullModify = (await AuthService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullModify)).Succeeded && showGMVerification;
-    var isActFullModify = isPatFullModify || isTmkFullModify || isGmFullModify;
+    var isActFullModify = isPatFullModify || isTmkFullModify;
 
     string actionLink = "";
     if (!string.IsNullOrEmpty(systemType))
@@ -73,8 +69,6 @@
             areaStr = "Patent";
         else if (systemType.ToUpper() == SystemTypeCode.Trademark.ToUpper())
             areaStr = "Trademark";
-        else if (systemType.ToUpper() == SystemTypeCode.GeneralMatter.ToUpper())
-            areaStr = "GeneralMatter";
 
         actionLink = Url.Action("DetailLink", "ActionDue", new { area = areaStr, id = 0, parentId = dataKeyValue, actionTypeId = "actualValue" });
     };
@@ -84,8 +78,6 @@
         activePage = "patCountryAppPage";
     else if (screenCode.ToUpper() == ScreenCode.Trademark.ToUpper())
         activePage = "tmkTrademarkPage";
-    else if (screenCode.ToUpper() == ScreenCode.GeneralMatter.ToUpper())
-        activePage = "gmMatterPage";
 }
 @if (showVerification)
 {

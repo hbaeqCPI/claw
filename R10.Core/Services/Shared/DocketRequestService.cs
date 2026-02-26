@@ -10,7 +10,7 @@ using System.Data;
 using R10.Core.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System.Text.RegularExpressions;
@@ -26,21 +26,18 @@ namespace R10.Core.Services
         private readonly ICountryApplicationService _countryAppService;
         private readonly IInventionService _inventionService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _matterService;
         private readonly ClaimsPrincipal _user;
 
-        public DocketRequestService(IApplicationDbContext repository, ClaimsPrincipal user, 
+        public DocketRequestService(IApplicationDbContext repository, ClaimsPrincipal user,
             ICountryApplicationService countryAppService,
             IInventionService inventionService,
-            ITmkTrademarkService trademarkService,
-            IGMMatterService matterService)
+            ITmkTrademarkService trademarkService)
         {
             _repository = repository;
             _user = user;
             _countryAppService = countryAppService;
             _inventionService = inventionService;
             _trademarkService = trademarkService;
-            _matterService = matterService;
         }
 
         public IQueryable<PatDocketRequest> PatDocketRequests
@@ -85,9 +82,6 @@ namespace R10.Core.Services
             get
             {
                 var gmDocketRequests = _repository.GMDocketRequests.AsQueryable();
-                if (_user.HasEntityFilter() || _user.HasRespOfficeFilter(SystemType.GeneralMatter))
-                    gmDocketRequests = gmDocketRequests.Where(a => _matterService.QueryableList.Any(gm => gm.MatId == a.MatId));
-
                 return gmDocketRequests;
             }
         }
@@ -119,9 +113,6 @@ namespace R10.Core.Services
             get
             {
                 var gmDocketRequestResps = _repository.GMDocketRequestResps.AsQueryable();
-                if (_user.HasEntityFilter() || _user.HasRespOfficeFilter(SystemType.GeneralMatter))
-                    gmDocketRequestResps = gmDocketRequestResps.Where(a => a.GMDocketRequest != null && _matterService.QueryableList.Any(gm => gm.MatId == a.GMDocketRequest.MatId));
-
                 return gmDocketRequestResps;
             }
         }
@@ -153,10 +144,7 @@ namespace R10.Core.Services
               .Include(tmk => tmk.Attorney5)
               .FirstOrDefaultAsync(r => r.TmkId == tmkId);
         }
-        public async Task<GMMatter?> GetMatter(int matId)
-        {
-            return await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == matId);
-        }
+        // GetMatter removed during deep clean (GMMatter deleted)
 
         public async Task<Invention?> GetInvention(int invId)
         {

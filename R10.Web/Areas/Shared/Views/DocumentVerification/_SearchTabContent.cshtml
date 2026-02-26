@@ -2,14 +2,12 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GmSettings
 @inject IStringLocalizer<SharedResource> Localizer
 @inject IAuthorizationService AuthorizationService
 @{
     var settings = await Settings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GmSettings.GetSetting();
     var attorneyLabel = Localizer["Attorney(s)"];
     var attorneyNameLabel = Localizer["Attorney Name"];
     var countryLabel = Localizer["Country"];

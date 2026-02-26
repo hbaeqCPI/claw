@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -27,8 +27,6 @@ namespace R10.Web.Areas.Shared.Services
         protected readonly IInventionService _inventionService;
         protected readonly ICountryApplicationService _applicationService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IGMMatterService _gmMatterService;
-        private readonly IMultipleEntityService<GMMatter, GMMatterAttorney> _matterAttorneyService;
         private readonly IEntityService<TimeTrack> _timeTrackEntityService;
         private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly ISystemSettings<PatSetting> _patSettings;
@@ -44,8 +42,6 @@ namespace R10.Web.Areas.Shared.Services
             IInventionService inventionService,
             ICountryApplicationService applicationService,
             ITmkTrademarkService trademarkService,
-            IGMMatterService gmMatterService,
-            IMultipleEntityService<GMMatter, GMMatterAttorney> matterAttorneyService,
             IEntityService<TimeTrack> timeTrackEntityService,
             ISystemSettings<DefaultSetting> settings,
             ISystemSettings<PatSetting> patSettings,
@@ -60,8 +56,6 @@ namespace R10.Web.Areas.Shared.Services
             _inventionService = inventionService;
             _applicationService = applicationService;
             _trademarkService = trademarkService;
-            _gmMatterService = gmMatterService;
-            _matterAttorneyService = matterAttorneyService;
             _timeTrackEntityService = timeTrackEntityService;
             _settings = settings;
             _patSettings = patSettings;
@@ -293,35 +287,6 @@ namespace R10.Web.Areas.Shared.Services
                     }
                 }
             }
-            else if (systemType.Equals("G"))
-            {
-                var gm = _gmMatterService.QueryableList.FirstOrDefault(c => c.MatId == id);
-                var gmAttorneys = _matterAttorneyService.QueryableList.Where(c => c.MatId == gm.MatId).OrderBy(c => c.OrderOfEntry);
-                if(gmAttorneys.Any())
-                {
-                    var gmDefaultAttorneyId = gmAttorneys.Any(c => c.AttorneyID == attorneyId) ? attorneyId : gmAttorneys.FirstOrDefault().AttorneyID;
-                    var settings = await _settings.GetSetting();
-                    foreach (var gmAttorney in gmAttorneys)
-                    {
-                        if(!Attorneys.Any(c => c.AttorneyId == gmAttorney.AttorneyID))
-                        {
-                            var attorneyEntity = AttorneyEntities.FirstOrDefault(c => c.AttorneyID == gmAttorney.AttorneyID);
-                            if (attorneyEntity != null)
-                            {
-                                var attorney = new TimeTrackAttorney()
-                                {
-                                    AttorneyPosition = _localizer[settings.LabelAttorney].Value,
-                                    AttorneyId = gmAttorney.AttorneyID,
-                                    AttorneyCode = attorneyEntity.AttorneyCode,
-                                    AttorneyName = attorneyEntity.AttorneyName,
-                                    Default = gmAttorney.AttorneyID == gmDefaultAttorneyId
-                                };
-                                Attorneys.Add(attorney);
-                            }
-                        }
-                    }
-                }
-            }
             return Attorneys;
         }
 
@@ -399,12 +364,6 @@ namespace R10.Web.Areas.Shared.Services
                     var tmk = _trademarkService.TmkTrademarks.FirstOrDefault(c => c.TmkId == timeTracks.First().TmkId);
                     if (tmk != null)
                         caseInfo = tmk.CaseNumber + "/" + tmk.Country + (string.IsNullOrEmpty(tmk.SubCase) ? "" : "/" + tmk.SubCase);
-                }
-                else if (systemType.Equals("G"))
-                {
-                    var gm = _gmMatterService.QueryableList.FirstOrDefault(c => c.MatId == timeTracks.First().MatId);
-                    if (gm != null)
-                        caseInfo = gm.CaseNumber + (string.IsNullOrEmpty(gm.SubCase) ? "" : "/" + gm.SubCase);
                 }
             }
             else

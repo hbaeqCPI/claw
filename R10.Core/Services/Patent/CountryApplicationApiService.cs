@@ -21,7 +21,8 @@ namespace R10.Core.Services
         IQueryable<PatActionDue> Actions {  get; }
         IQueryable<PatCostTrack> Costs { get; }
         IQueryable<PatApplicationStatus> Statuses { get; }
-        IQueryable<RTSSearchUSIFW> RTSSearchUSIFWs { get; }
+        // Removed during deep clean
+        // IQueryable<RTSSearchUSIFW> RTSSearchUSIFWs { get; }
         Task<List<PatRelatedCaseDTO>> GetRelatedCases(int appId);
     }
 
@@ -58,7 +59,8 @@ namespace R10.Core.Services
 
         public IQueryable<PatApplicationStatus> Statuses => _cpiDbContext.GetRepository<PatApplicationStatus>().QueryableList;
 
-        public IQueryable<RTSSearchUSIFW> RTSSearchUSIFWs => _cpiDbContext.GetRepository<RTSSearchUSIFW>().QueryableList;
+        // Removed during deep clean
+        // public IQueryable<RTSSearchUSIFW> RTSSearchUSIFWs => _cpiDbContext.GetRepository<RTSSearchUSIFW>().QueryableList;
 
         public async Task<int> Add(CountryApplicationWebSvc webApiCountryApplication, DateTime runDate)
         {

@@ -36,7 +36,8 @@ namespace R10.Infrastructure.Data.Shared.mappings
             builder.HasMany(a => a.Attorney4Inventions).WithOne(i => i.Attorney4).HasForeignKey(i => i.Attorney4ID);
             builder.HasMany(a => a.Attorney5Inventions).WithOne(i => i.Attorney5).HasForeignKey(i => i.Attorney5ID);
 
-            builder.HasMany(a => a.AttorneyDisclosures).WithOne(d => d.Attorney).HasForeignKey(d => d.AttorneyID);
+            // Removed during deep clean
+            // builder.HasMany(a => a.AttorneyDisclosures).WithOne(d => d.Attorney).HasForeignKey(d => d.AttorneyID);
 
             builder.HasMany(a => a.Attorney1Trademarks).WithOne(t => t.Attorney1).HasForeignKey(t => t.Attorney1ID);
             builder.HasMany(a => a.Attorney2Trademarks).WithOne(t => t.Attorney2).HasForeignKey(t => t.Attorney2ID);
@@ -48,12 +49,14 @@ namespace R10.Infrastructure.Data.Shared.mappings
 
             builder.HasMany(a => a.TmkCostTrackBillings).WithOne(t => t.BillingAttorney).HasForeignKey(t => t.BillingAttorneyId);
 
-            builder.HasMany(a => a.GMCostTrackBillings).WithOne(t => t.BillingAttorney).HasForeignKey(t => t.BillingAttorneyId);
+            // Removed during deep clean
+            // builder.HasMany(a => a.GMCostTrackBillings).WithOne(t => t.BillingAttorney).HasForeignKey(t => t.BillingAttorneyId);
 
             builder.HasOne(o => o.AttorneyLanguage).WithMany(m => m.LanguageAttorneys).HasForeignKey(f => f.Language).HasPrincipalKey(k => k.LanguageName);
 
-            builder.HasMany(a => a.AttorneyDMSDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
-            builder.HasMany(a => a.AttorneyGMDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
+            // Removed during deep clean
+            // builder.HasMany(a => a.AttorneyDMSDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
+            // builder.HasMany(a => a.AttorneyGMDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
             builder.HasMany(a => a.AttorneyPatDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
             builder.HasMany(a => a.AttorneyTmkDueDates).WithOne(d => d.DueDateAttorney).IsRequired(false).HasForeignKey(d => d.AttorneyID);
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.ReportScheduler;
 using R10.Core.Entities.Shared;
@@ -38,17 +38,15 @@ namespace R10.Web.Areas.Shared.Controllers.ReportScheduler
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
         private readonly ISystemSettings<PatSetting> _PatentSettings;
         private readonly ISystemSettings<TmkSetting> _TrademarkSettings;
-        private readonly ISystemSettings<GMSetting> _GMSettings;
 
         public RSCriteriaController(//IChildEntityService<RSMain, RSCriteria> childService,
             IRSMainService rSMainService,
             IRSCriteriaService rSCriteriaService,
             IMapper mapper,
-            IStringLocalizer<SharedResource> localizer, 
+            IStringLocalizer<SharedResource> localizer,
             ISystemSettings<DefaultSetting> defaultSettings,
              ISystemSettings<PatSetting> PatentSettings,
-             ISystemSettings<TmkSetting> TrademarkSettings,
-             ISystemSettings<GMSetting> GMSettings)
+             ISystemSettings<TmkSetting> TrademarkSettings)
         {
             //_childService = childService;
             _rSMainService = rSMainService;
@@ -58,7 +56,6 @@ namespace R10.Web.Areas.Shared.Controllers.ReportScheduler
             _defaultSettings = defaultSettings;
             _PatentSettings = PatentSettings;
             _TrademarkSettings = TrademarkSettings;
-            _GMSettings = GMSettings;
         }
 
         [Authorize(Policy = SharedAuthorizationPolicy.FullModify)]

@@ -45,11 +45,8 @@
                         .ClientHeaderTemplate("&nbsp;")
                         .Width(50)
                         .Visible(fullModify);
-                    columns.Bound(p => p.InventorDetail)
+                    columns.Bound(p => p.InventorID)
                         .ClientTemplate(inventorTemplate)
-                        .EditorTemplateName("PatInventor")
-                        .EditorViewData(new { id = $"{gridName}_Inventor" })
-                        .Editable($"{pageName}.isGridColumnEditable")
                         .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
                     if (isInventorRemunerationOn)
                     {
@@ -117,7 +114,7 @@
                 {
                     model.Id(i => i.Id);
                     model.Field(i => i.OrderOfEntry).Editable(false);
-                    model.Field(i => i.InventorDetail).DefaultValue(new PatInventorListViewModel { Inventor = "" });
+                    model.Field(i => i.InventorID).Editable(false);
                 })
                 .Read(read => read.Action("GridRead", Model.Controller, new { parentId = Model.ParentId }))
                 .Update(update => update.Action("GridUpdate", Model.Controller))

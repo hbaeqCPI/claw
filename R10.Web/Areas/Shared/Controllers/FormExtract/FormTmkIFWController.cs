@@ -51,7 +51,7 @@ namespace R10.Web.Areas.Shared.Controllers
     {
         private readonly AzureFormRecognizer _azureFormRecognizer;
         private readonly IFormIFWService _ifwService;
-        private readonly ITLInfoService _tlInfoService;
+        // private readonly ITLInfoService _tlInfoService; // Removed during deep clean
         private readonly ITmkTrademarkService _tmkService;
         private readonly IDocumentStorage _documentStorage;
         private readonly ISystemSettings<TmkSetting> _settings;
@@ -69,7 +69,7 @@ namespace R10.Web.Areas.Shared.Controllers
         public FormTmkIFWController(
                     AzureFormRecognizer azureFormRecognizer, 
                     IFormIFWService ifwService,
-                    ITLInfoService tlInfoService,
+                    // ITLInfoService tlInfoService, // Removed during deep clean
                     ITmkTrademarkService tmkService,
                     IDocumentStorage documentStorage,
                     ISystemSettings<TmkSetting> settings,
@@ -82,7 +82,7 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             _azureFormRecognizer = azureFormRecognizer;
             _ifwService = ifwService;
-            _tlInfoService = tlInfoService;
+            // _tlInfoService = tlInfoService; // Removed during deep clean
             _tmkService = tmkService;
             _documentStorage = documentStorage;
             _settings = settings;
@@ -99,119 +99,17 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             var settings = await _settings.GetSetting();
 
-            var ifws = await _tlInfoService.TLSearchApplicableIFWs
-                                  .Where(r => r.FormIFWDocType.IsEnabled && r.FormIFWDocType.SystemType == "T" && r.AIParseDate == null)
-                                  .Include(r=> r.TLSearch)
-                                  .Include(r=>r.FormIFWDocType).ThenInclude(d=> d.FormIFWActMaps)
-                                  .ToListAsync();
+            // Removed during deep clean - TL service no longer available
+            // var ifws = await _tlInfoService.TLSearchApplicableIFWs
+            //                       .Where(r => r.FormIFWDocType.IsEnabled && r.FormIFWDocType.SystemType == "T" && r.AIParseDate == null)
+            //                       .Include(r=> r.TLSearch)
+            //                       .Include(r=>r.FormIFWDocType).ThenInclude(d=> d.FormIFWActMaps)
+            //                       .ToListAsync();
+            var ifws = new List<object>(); // Placeholder - TL removed during deep clean
             var userName = "PO";
 
-            foreach (var ifw in ifws) {
-                //var fileName = settings.IsSharePointIntegrationOn ? ifw.DocName : ifw.FileName;
-                var fileName = ifw.FileName;
-                var scanPages = ifw.FormIFWDocType.ScanPages;
-            
-                var fileInfo = await CreateTempFile(ifw.TLSearch.TMSTmkId, fileName, scanPages);
-                if (fileInfo !=null && !string.IsNullOrEmpty(fileInfo.FilePath))
-                {
-
-                    //some are for trademark watch only - no duedate extraction
-                    if (!string.IsNullOrEmpty(ifw.FormIFWDocType.ModelId)) {
-                        // analyze
-                        var modelId = ifw.FormIFWDocType.ModelId;
-                        var scanPageList = ScanPagesToList(scanPages, fileInfo.NoOfPages);
-                        var extractedData = await _azureFormRecognizer.AnalyzeFormFile(modelId, fileInfo.FilePath, scanPageList);
-
-                        // save analysis result
-                        await _ifwService.SaveTLExtractedData(ifw.TLDocId, ifw.DocTypeId, extractedData, userName);
-
-                        //generate actions
-                        if (ifw.FormIFWDocType.FormIFWActMaps != null && ifw.FormIFWDocType.FormIFWActMaps.Any(m => m.IsGenAction))
-                        {
-                            await _ifwService.GenTLIFWAct(ifw.TLDocId, userName);
-                        }
-                    }
-
-                    if (settings.IsTrademarkWatchOn)
-                    {
-                        var docMap = await _ifwService.TLMapActionDocuments.Where(d => d.DocumentDescription == ifw.Description && d.UseWatch && !string.IsNullOrEmpty(d.WatchModelId)).FirstOrDefaultAsync();
-                        if (docMap != null) {
-                            var modelId = docMap.WatchModelId;
-                            var scanPageList = ScanPagesToList(scanPages, fileInfo.NoOfPages);
-                            var extractedData = await _azureFormRecognizer.AnalyzeFormFile(modelId, fileInfo.FilePath, scanPageList);
-                            await _ifwService.SaveTLExtractedData(ifw.TLDocId, ifw.DocTypeId, extractedData, userName);
-
-                            var mailDate = DateTime.Now.Date;
-                            var tmkRecipients = await _tlInfoService.GetTrademarkWatchRecipients(ifw.TLTmkId, ifw.TLDocId);
-
-                            if (tmkRecipients.Any() && !string.IsNullOrEmpty(settings.TrademarkWatchRecipients))
-                            {
-                                var values = settings.TrademarkWatchRecipients.Split("|");
-
-                                foreach (var tmkRecipient in tmkRecipients)
-                                {
-                                    var recipients = new List<string>();
-                                    foreach (var value in values)
-                                    {
-                                        if (value.Contains("@"))
-                                            recipients.Add(value);
-                                        else if (value.ToLower() == "attorney1" && !string.IsNullOrEmpty(tmkRecipient.Attorney1Email))
-                                        {
-                                            var email = tmkRecipient.Attorney1Email.Replace(";", "");
-                                            if (!recipients.Any(r => r == email))
-                                                recipients.Add(email);
-                                        }
-                                        else if (value.ToLower() == "attorney2" && !string.IsNullOrEmpty(tmkRecipient.Attorney2Email))
-                                        {
-                                            var email = tmkRecipient.Attorney2Email.Replace(";", "");
-                                            if (!recipients.Any(r => r == email))
-                                                recipients.Add(email);
-                                        }
-                                        else if (value.ToLower() == "attorney3" && !string.IsNullOrEmpty(tmkRecipient.Attorney3Email))
-                                        {
-                                            var email = tmkRecipient.Attorney3Email.Replace(";", "");
-                                            if (!recipients.Any(r => r == email))
-                                                recipients.Add(email);
-                                        }
-                                        else if (value.ToLower() == "attorney4" && !string.IsNullOrEmpty(tmkRecipient.Attorney4Email))
-                                        {
-                                            var email = tmkRecipient.Attorney4Email.Replace(";", "");
-                                            if (!recipients.Any(r => r == email))
-                                                recipients.Add(email);
-                                        }
-                                        else if (value.ToLower() == "attorney5" && !string.IsNullOrEmpty(tmkRecipient.Attorney5Email))
-                                        {
-                                            var email = tmkRecipient.Attorney5Email.Replace(";", "");
-                                            if (!recipients.Any(r => r == email))
-                                                recipients.Add(email);
-                                        }
-                                    }
-
-                                    if (recipients.Any())
-                                    {
-                                        var notification = new R10.Core.Entities.Notification
-                                        {
-                                            Type = "A",
-                                            Title = tmkRecipient.Title,
-                                            Message = tmkRecipient.Message,
-                                            UserName = String.Join(",", recipients),
-                                            EffectiveFrom = DateTime.Now.Date,
-                                            NavigateToUrl = $"/Trademark/TmkTrademark/Detail/{tmkRecipient.RecId}",
-                                            CreatedBy = userName,
-                                            UpdatedBy = userName,
-                                            DateCreated = DateTime.Now,
-                                            LastUpdate = DateTime.Now
-                                        };
-                                        await _notificationService.Add(notification);
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-
-                }
-            }
+            // Removed during deep clean - TL IFW processing loop
+            // foreach (var ifw in ifws) { ... }
 
             return Ok();
         }

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -33,16 +32,13 @@ namespace R10.Web.Areas.Shared.Services
         private readonly IInventionService _inventionService;
         private readonly ICountryApplicationService _applicationService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _gmMatterService;
 
         private readonly IActionDueService<PatActionDue, PatDueDate> _patActionDueService;
         private readonly IActionDueService<TmkActionDue, TmkDueDate> _tmkActionDueService;
-        private readonly IActionDueService<GMActionDue, GMDueDate> _gmActionDueService;
 
         private readonly ICostTrackingService<PatCostTrack> _patCostTrackService;
         private readonly ICostTrackingService<PatCostTrackInv> _patCostTrackInvService;
         private readonly ICostTrackingService<TmkCostTrack> _tmkCostTrackService;
-        private readonly ICostTrackingService<GMCostTrack> _gmCostTrackService;
 
 
         private readonly ISystemSettings<DefaultSetting> _settings;
@@ -76,14 +72,11 @@ namespace R10.Web.Areas.Shared.Services
                     IInventionService inventionService,
                     ICountryApplicationService applicationService,
                     ITmkTrademarkService trademarkService,
-                    IGMMatterService gmMatterService,
                     IActionDueService<PatActionDue, PatDueDate> patActionDueService,
                     IActionDueService<TmkActionDue, TmkDueDate> tmkActionDueService,
-                    IActionDueService<GMActionDue, GMDueDate> gmActionDueService,
                     ICostTrackingService<PatCostTrack> patCostTrackService,
                     ICostTrackingService<PatCostTrackInv> patCostTrackInvService,
                     ICostTrackingService<TmkCostTrack> tmkCostTrackService,
-                    ICostTrackingService<GMCostTrack> gmCostTrackService,
                     ISystemSettings<DefaultSetting> settings,
                     IDocumentHelper documentHelper,
                     IMapper mapper)
@@ -92,16 +85,13 @@ namespace R10.Web.Areas.Shared.Services
             _inventionService = inventionService;
             _applicationService = applicationService;
             _trademarkService = trademarkService;
-            _gmMatterService = gmMatterService;
 
             _patActionDueService = patActionDueService;
             _tmkActionDueService = tmkActionDueService;
-            _gmActionDueService = gmActionDueService;
 
             _patCostTrackService = patCostTrackService;
             _patCostTrackInvService = patCostTrackInvService;
             _tmkCostTrackService = tmkCostTrackService;
-            _gmCostTrackService = gmCostTrackService;
 
             _settings = settings;
             _documentHelper = documentHelper;
@@ -636,13 +626,6 @@ namespace R10.Web.Areas.Shared.Services
             return model;
         }
 
-        public async Task<DocGeneralMatterViewModel> GetGeneralMatterDetail(string treeNodeId)
-        {
-            var matId = GetDataKeyValue(treeNodeId);
-            var model = await _gmMatterService.QueryableList.ProjectTo<DocGeneralMatterViewModel>().SingleOrDefaultAsync(i => i.MatId == matId);
-            return model;
-        }
-
         public async Task<DocPatActViewModel> GetPatActionDetail(string treeNodeId)
         {
             var actId = GetDataKeyValue(treeNodeId);
@@ -654,13 +637,6 @@ namespace R10.Web.Areas.Shared.Services
         {
             var actId = GetDataKeyValue(treeNodeId);
             var model = await _tmkActionDueService.QueryableList.Where(ad => ad.ActId == actId).ProjectTo<DocTmkActViewModel>().SingleOrDefaultAsync();
-            return model;
-        }
-
-        public async Task<DocGMActViewModel> GetGMActionDetail(string treeNodeId)
-        {
-            var actId = GetDataKeyValue(treeNodeId);
-            var model = await _gmActionDueService.QueryableList.Where(ad => ad.ActId == actId).ProjectTo<DocGMActViewModel>().SingleOrDefaultAsync();
             return model;
         }
 
@@ -682,13 +658,6 @@ namespace R10.Web.Areas.Shared.Services
         {
             var costTrackId = GetDataKeyValue(treeNodeId);
             var model = await _tmkCostTrackService.QueryableList.Where(ct => ct.CostTrackId == costTrackId).ProjectTo<DocTmkCostViewModel>().SingleOrDefaultAsync();
-            return model;
-        }
-
-        public async Task<DocGMCostViewModel> GetGMCostDetail(string treeNodeId)
-        {
-            var costTrackId = GetDataKeyValue(treeNodeId);
-            var model = await _gmCostTrackService.QueryableList.Where(ct => ct.CostTrackId == costTrackId).ProjectTo<DocGMCostViewModel>().SingleOrDefaultAsync();
             return model;
         }
 

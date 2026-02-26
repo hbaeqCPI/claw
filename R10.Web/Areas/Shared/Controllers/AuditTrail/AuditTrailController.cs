@@ -1,16 +1,16 @@
-using Kendo.Mvc.Extensions;
+﻿using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.ForeignFiling;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.PatClearance;
+// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
@@ -35,12 +35,12 @@ namespace R10.Web.Areas.Shared.Controllers
         private readonly IAuditService _auditService;
         private readonly ISystemSettings<PatSetting> _patSettings;
         private readonly ISystemSettings<TmkSetting> _tmkSettings;
-        private readonly ISystemSettings<GMSetting> _gmSettings;
+        // private readonly ISystemSettings<GMSetting> _gmSettings; // Removed during deep clean
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
-        private readonly ISystemSettings<FFSetting> _ffSettings;
-        private readonly ISystemSettings<PacSetting> _pacSettings;
-        private readonly ISystemSettings<RMSSetting> _rmsSettings;
-        private readonly ISystemSettings<TmcSetting> _tmcSettings;
+        // private readonly ISystemSettings<FFSetting> _ffSettings; // Removed during deep clean
+        // private readonly ISystemSettings<PacSetting> _pacSettings; // Removed during deep clean
+        // private readonly ISystemSettings<RMSSetting> _rmsSettings; // Removed during deep clean
+        // private readonly ISystemSettings<TmcSetting> _tmcSettings; // Removed during deep clean
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly ExportHelper _exportHelper;
         private readonly IAuthorizationService _authService;
@@ -49,12 +49,12 @@ namespace R10.Web.Areas.Shared.Controllers
             IAuditService auditService,
             ISystemSettings<PatSetting> patSettings,
             ISystemSettings<TmkSetting> tmkSettings,
-            ISystemSettings<GMSetting> gmSettings,
+            // ISystemSettings<GMSetting> gmSettings, // Removed during deep clean
             ISystemSettings<DefaultSetting> defaultSettings,
-            ISystemSettings<FFSetting> ffSettings,
-            ISystemSettings<PacSetting> pacSettings,
-            ISystemSettings<RMSSetting> rmsSettings,
-            ISystemSettings<TmcSetting> tmcSettings,
+            // ISystemSettings<FFSetting> ffSettings, // Removed during deep clean
+            // ISystemSettings<PacSetting> pacSettings, // Removed during deep clean
+            // ISystemSettings<RMSSetting> rmsSettings, // Removed during deep clean
+            // ISystemSettings<TmcSetting> tmcSettings, // Removed during deep clean
             IStringLocalizer<SharedResource> localizer,
             ExportHelper exportHelper,
             IAuthorizationService authService
@@ -63,12 +63,12 @@ namespace R10.Web.Areas.Shared.Controllers
             _auditService = auditService;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
+            // _gmSettings = gmSettings; // Removed during deep clean
             _defaultSettings = defaultSettings;
-            _ffSettings = ffSettings;
-            _pacSettings = pacSettings;
-            _rmsSettings = rmsSettings;
-            _tmcSettings = tmcSettings;
+            // _ffSettings = ffSettings; // Removed during deep clean
+            // _pacSettings = pacSettings; // Removed during deep clean
+            // _rmsSettings = rmsSettings; // Removed during deep clean
+            // _tmcSettings = tmcSettings; // Removed during deep clean
             _localizer = localizer;
             _exportHelper = exportHelper;
             _authService = authService;
@@ -81,20 +81,21 @@ namespace R10.Web.Areas.Shared.Controllers
                 authorized = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessAudit)).Succeeded;
             else if (sys == SystemTypeCode.Trademark)
                 authorized = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.GeneralMatter)
-                authorized = (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.DMS)
-                authorized = (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.ForeignFiling)
-                authorized = (await _authService.AuthorizeAsync(User, ForeignFilingAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.PatClearance)
-                authorized = (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.AMS)
-                authorized = (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.RMS)
-                authorized = (await _authService.AuthorizeAsync(User, RMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
-            else if (sys == SystemTypeCode.Clearance)
-                authorized = (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // Removed during deep clean - GeneralMatter, DMS, ForeignFiling, PatClearance, AMS, RMS, Clearance
+            // else if (sys == SystemTypeCode.GeneralMatter)
+            //     authorized = (await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.DMS)
+            //     authorized = (await _authService.AuthorizeAsync(User, DMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.ForeignFiling)
+            //     authorized = (await _authService.AuthorizeAsync(User, ForeignFilingAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.PatClearance)
+            //     authorized = (await _authService.AuthorizeAsync(User, PatentClearanceAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.AMS)
+            //     authorized = (await _authService.AuthorizeAsync(User, AMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.RMS)
+            //     authorized = (await _authService.AuthorizeAsync(User, RMSAuthorizationPolicy.CanAccessAudit)).Succeeded;
+            // else if (sys == SystemTypeCode.Clearance)
+            //     authorized = (await _authService.AuthorizeAsync(User, SearchRequestAuthorizationPolicy.CanAccessAudit)).Succeeded;
             else
                 authorized = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.CanAccessAudit)).Succeeded;
 
@@ -170,81 +171,14 @@ namespace R10.Web.Areas.Shared.Controllers
                     systemCriteria.EnableComboPaging = tmkSettings.EnableComboBoxPaging;
                     systemCriteria.ComboPagingSize = tmkSettings.ComboBoxPagingSize;
                     break;
-                case SystemTypeCode.GeneralMatter:
-                    var gmSettings = await _gmSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.GeneralMatter;
-                    systemCriteria.AreaName = SystemType.GeneralMatter;
-                    systemCriteria.ControllerName = "Matter";
-                    systemCriteria.ValueMapper = "";
-
-                    systemCriteria.LabelCaseNumber = gmSettings.LabelCaseNumber;
-                    systemCriteria.EnableComboPaging = gmSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = gmSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.DMS:
-                    var dmsDefaultSettings = await _defaultSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.DMS;
-                    systemCriteria.AreaName = SystemType.DMS;
-                    systemCriteria.ControllerName = "DisclosureLookup";
-                    systemCriteria.ValueMapper = "";
-                    systemCriteria.LabelCaseNumber = dmsDefaultSettings.LabelCaseNumber ?? "Case Number";
-                    systemCriteria.EnableComboPaging = dmsDefaultSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = dmsDefaultSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.ForeignFiling:
-                    var ffSettings = await _ffSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.ForeignFiling;
-                    systemCriteria.AreaName = SystemType.ForeignFiling;
-                    systemCriteria.ControllerName = "CountryApplicationLookup";
-                    systemCriteria.ValueMapper = "patCountryAppPage.caseNumberSearchValueMapper";
-
-                    systemCriteria.LabelCaseNumber = ffSettings.LabelCaseNumber;
-                    systemCriteria.EnableComboPaging = ffSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = ffSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.PatClearance:
-                    var pacSettings = await _pacSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.PatClearance;
-                    systemCriteria.AreaName = SystemType.PatClearance;
-                    systemCriteria.ControllerName = "PacClearanceLookup";
-                    systemCriteria.ValueMapper = "";
-
-                    systemCriteria.LabelCaseNumber = pacSettings.LabelCaseNumber;
-                    systemCriteria.EnableComboPaging = pacSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = pacSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.AMS:
-                    var amsDefaultSettings = await _defaultSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.AMS;
-                    systemCriteria.AreaName = SystemType.AMS;
-                    systemCriteria.ControllerName = "Main";
-                    systemCriteria.ValueMapper = "";
-                    systemCriteria.LabelCaseNumber = amsDefaultSettings.LabelCaseNumber ?? "Case Number";
-                    systemCriteria.EnableComboPaging = amsDefaultSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = amsDefaultSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.RMS:
-                    var rmsSettings = await _rmsSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.RMS;
-                    systemCriteria.AreaName = SystemType.RMS;
-                    systemCriteria.ControllerName = "TmkTrademarkLookup";
-                    systemCriteria.ValueMapper = "tmkTrademarkPage.caseNumberSearchValueMapper";
-
-                    systemCriteria.LabelCaseNumber = rmsSettings.LabelCaseNumber;
-                    systemCriteria.EnableComboPaging = rmsSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = rmsSettings.ComboBoxPagingSize;
-                    break;
-                case SystemTypeCode.Clearance:
-                    var tmcSettings = await _tmcSettings.GetSetting();
-                    systemCriteria.SystemName = SystemType.SearchRequest;
-                    systemCriteria.AreaName = SystemType.SearchRequest;
-                    systemCriteria.ControllerName = "TmcClearanceLookup";
-                    systemCriteria.ValueMapper = "";
-
-                    systemCriteria.LabelCaseNumber = tmcSettings.LabelCaseNumber;
-                    systemCriteria.EnableComboPaging = tmcSettings.EnableComboBoxPaging;
-                    systemCriteria.ComboPagingSize = tmcSettings.ComboBoxPagingSize;
-                    break;
+                // Removed during deep clean - GeneralMatter, DMS, ForeignFiling, PatClearance, AMS, RMS, Clearance case blocks
+                // case SystemTypeCode.GeneralMatter:
+                // case SystemTypeCode.DMS:
+                // case SystemTypeCode.ForeignFiling:
+                // case SystemTypeCode.PatClearance:
+                // case SystemTypeCode.AMS:
+                // case SystemTypeCode.RMS:
+                // case SystemTypeCode.Clearance:
                 case SystemTypeCode.Shared:
                     systemCriteria.SystemName = SystemType.Shared;
                     systemCriteria.AreaName = SystemType.Shared;
@@ -274,13 +208,14 @@ namespace R10.Web.Areas.Shared.Controllers
 
             if (User.IsInSystem(SystemType.Patent)) systemTypes = systemTypes + "P|";
             if (User.IsInSystem(SystemType.Trademark)) systemTypes = systemTypes + "T|";
-            if (User.IsInSystem(SystemType.GeneralMatter)) systemTypes = systemTypes + "G|";
-            if (User.IsInSystem(SystemType.DMS)) systemTypes = systemTypes + "D|";
-            if (User.IsInSystem(SystemType.ForeignFiling)) systemTypes = systemTypes + "F|";
-            if (User.IsInSystem(SystemType.PatClearance)) systemTypes = systemTypes + "E|";
-            if (User.IsInSystem(SystemType.AMS)) systemTypes = systemTypes + "A|";
-            if (User.IsInSystem(SystemType.RMS)) systemTypes = systemTypes + "R|";
-            if (User.IsInSystem(SystemType.SearchRequest)) systemTypes = systemTypes + "C|";
+            // Removed during deep clean - GeneralMatter, DMS, ForeignFiling, PatClearance, AMS, RMS, SearchRequest
+            // if (User.IsInSystem(SystemType.GeneralMatter)) systemTypes = systemTypes + "G|";
+            // if (User.IsInSystem(SystemType.DMS)) systemTypes = systemTypes + "D|";
+            // if (User.IsInSystem(SystemType.ForeignFiling)) systemTypes = systemTypes + "F|";
+            // if (User.IsInSystem(SystemType.PatClearance)) systemTypes = systemTypes + "E|";
+            // if (User.IsInSystem(SystemType.AMS)) systemTypes = systemTypes + "A|";
+            // if (User.IsInSystem(SystemType.RMS)) systemTypes = systemTypes + "R|";
+            // if (User.IsInSystem(SystemType.SearchRequest)) systemTypes = systemTypes + "C|";
             if (User.IsInSystem(SystemType.Shared)) systemTypes = systemTypes + "S|";
 
             return systemTypes;

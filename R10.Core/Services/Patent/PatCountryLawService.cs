@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
 using System.Transactions;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 
 namespace R10.Core.Services
 {
@@ -172,23 +172,23 @@ namespace R10.Core.Services
                     countryDue.OldFollowupAction = ""; //maybe from copy
                 }
 
-                //add to FF
-                if (!string.IsNullOrEmpty(countryDue.ActionType) &&
-                       await _repository.FFInstrxTypeAction.AsNoTracking().AnyAsync(a => a.ActionType == countryDue.ActionType && (string.IsNullOrEmpty(a.Country) || a.Country == countryDue.Country)) &&
-                    (!(await _repository.FFReminderSetup.AsNoTracking().AnyAsync(r => r.Country == countryDue.Country && r.CaseType == countryDue.CaseType && r.ActionType == countryDue.ActionType && string.IsNullOrEmpty(r.ActionDue)))))
-                {
-                    _repository.FFReminderSetup.Add(new FFReminderSetup()
-                    {
-                        Country = countryDue.Country,
-                        CaseType = countryDue.CaseType,
-                        ActionType = countryDue.ActionType,
-                        ActionDue = "",
-                        CreatedBy = countryDue.CreatedBy,
-                        UpdatedBy = countryDue.UpdatedBy,
-                        DateCreated = countryDue.DateCreated,
-                        LastUpdate = countryDue.LastUpdate,
-                    });
-                }
+                // Removed during deep clean - ForeignFiling module removed
+                // if (!string.IsNullOrEmpty(countryDue.ActionType) &&
+                //        await _repository.FFInstrxTypeAction.AsNoTracking().AnyAsync(a => a.ActionType == countryDue.ActionType && (string.IsNullOrEmpty(a.Country) || a.Country == countryDue.Country)) &&
+                //     (!(await _repository.FFReminderSetup.AsNoTracking().AnyAsync(r => r.Country == countryDue.Country && r.CaseType == countryDue.CaseType && r.ActionType == countryDue.ActionType && string.IsNullOrEmpty(r.ActionDue)))))
+                // {
+                //     _repository.FFReminderSetup.Add(new FFReminderSetup()
+                //     {
+                //         Country = countryDue.Country,
+                //         CaseType = countryDue.CaseType,
+                //         ActionType = countryDue.ActionType,
+                //         ActionDue = "",
+                //         CreatedBy = countryDue.CreatedBy,
+                //         UpdatedBy = countryDue.UpdatedBy,
+                //         DateCreated = countryDue.DateCreated,
+                //         LastUpdate = countryDue.LastUpdate,
+                //     });
+                // }
 
 
                 UpdateParentStamps(countryDue.CountryLawID, countryDue.Country, countryDue.CaseType, countryDue.UpdatedBy, countryDue.ParentTStamp);

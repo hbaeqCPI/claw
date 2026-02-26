@@ -1,13 +1,13 @@
-using DocumentFormat.OpenXml.Wordprocessing;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.ForeignFiling;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.PatClearance;
+// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
@@ -76,24 +76,6 @@ namespace R10.Web.Areas.Admin.Services
 
                 case "TMS":
                     return GetModule(new TmkSetting(), option);
-
-                case "GMS":
-                    return GetModule(new GMSetting(), option);
-
-                case "TL":
-                    return GetModule(new TLSetting(), option);
-
-                case "TMC":
-                    return GetModule(new TmcSetting(), option);
-
-                case "RMS":
-                    return GetModule(new RMSSetting(), option);
-
-                case "PAC":
-                    return GetModule(new PacSetting(), option);
-
-                case "FF":
-                    return GetModule(new FFSetting(), option);
             }
 
             return GetModule(new DefaultSetting(), option);
@@ -136,24 +118,6 @@ namespace R10.Web.Areas.Admin.Services
 
             if (setting.GetType() == typeof(TmkSetting))
                 return SystemType.Trademark;
-
-            if (setting.GetType() == typeof(GMSetting))
-                return SystemType.GeneralMatter;
-
-            //if (setting.GetType() == typeof(TLSetting))
-            //    return null
-
-            if (setting.GetType() == typeof(TmcSetting))
-                return SystemType.SearchRequest;
-
-            if (setting.GetType() == typeof(RMSSetting))
-                return SystemType.RMS;
-
-            if (setting.GetType() == typeof(PacSetting))
-                return SystemType.PatClearance;
-
-            if (setting.GetType() == typeof(FFSetting))
-                return SystemType.ForeignFiling;
 
             return null;
         }

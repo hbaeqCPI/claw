@@ -7,16 +7,11 @@ using R10.Core.Services;
 using R10.Core.Services.Shared;
 using R10.Infrastructure.Data;
 using R10.Infrastructure.Data.Patent;
-using R10.Web.Areas.Patent.Services;
 using R10.Web.Helpers;
 using R10.Web.Interfaces;
 using R10.Web.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using R10.Core.DTOs;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Services.Patent;
 using R10.Web.Areas.Shared.Services;
 
@@ -26,7 +21,6 @@ namespace R10.Web.Extensions
     {
         public static IServiceCollection AddPatent(this IServiceCollection services)
         {
-            services.AddScoped<IInventionViewModelService, InventionViewModelService>();
             services.AddScoped<IInventionService, InventionService>();
             services.AddScoped<IViewModelService<PatCountry>, ViewModelService<PatCountry>>();
             services.AddScoped<IParentEntityService<PatCountry, PatAreaCountry>, ParentEntityService<PatCountry, PatAreaCountry>>();
@@ -126,7 +120,6 @@ namespace R10.Web.Extensions
             services.AddScoped<IPatInventorService, PatInventorService>();
 
             services.AddScoped<ICountryApplicationRepository, CountryApplicationRepository>();
-            services.AddScoped<ICountryApplicationViewModelService, CountryApplicationViewModelService>();
             services.AddScoped<ICountryApplicationService, CountryApplicationService>();
             services.AddScoped<IPatTaxStartExpirationService, PatTaxStartExpirationService>();
             services.AddScoped<IAsyncRepository<PatLicensee>, EFRepository<PatLicensee>>();
@@ -145,25 +138,19 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IEntityService<PatInventorInv>, AuxService<PatInventorInv>>();
             services.AddScoped<IChildEntityService<Invention, PatIRProductSale>, ChildEntityService<Invention, PatIRProductSale>>();
-            services.AddScoped<IChildEntityService<Invention, GMMatterPatent>, ChildEntityService<Invention, GMMatterPatent>>();
+            // GMMatterPatent removed during deep clean
 
             services.AddScoped<IMultipleEntityService<PatOwnerApp>, PatOwnerAppService>();
             services.AddScoped<IMultipleEntityService<PatInventorApp>, PatInventorAppService>();
 
-            services.AddScoped<IPatCostTrackingViewModelService, PatCostTrackingViewModelService>();
             services.AddScoped<ICostTrackingService<PatCostTrack>, PatCostTrackingService>();
-
-            services.AddScoped<IPatCostTrackingInvViewModelService, PatCostTrackingInvViewModelService>();
             services.AddScoped<ICostTrackingService<PatCostTrackInv>, PatCostTrackingInvService>();
-            services.AddScoped<IPatImageCostInvViewModelService, PatImageCostInvViewModelService>();
 
-            services.AddScoped<IPatActionDueViewModelService, PatActionDueViewModelService>();
             services.AddScoped<IActionDueDeDocketService<PatActionDue, PatDueDate>, PatActionDueService>();
             services.AddScoped<IActionDueService<PatActionDue, PatDueDate>, PatActionDueService>();
             services.AddScoped<IDueDateService<PatActionDue, PatDueDate>, PatDueDateService>();
             services.AddScoped<IEntityService<PatDueDateDelegation>, AuxService<PatDueDateDelegation>>();
 
-            services.AddScoped<IPatActionDueInvViewModelService, PatActionDueInvViewModelService>();
             services.AddScoped<IActionDueDeDocketService<PatActionDueInv, PatDueDateInv>, PatActionDueInvService>();
             services.AddScoped<IActionDueService<PatActionDueInv, PatDueDateInv>, PatActionDueInvService>();
             services.AddScoped<IDueDateService<PatActionDueInv, PatDueDateInv>, PatDueDateInvService>();
@@ -189,26 +176,8 @@ namespace R10.Web.Extensions
             services.AddScoped<IEntityService<PatInventorAwardType>, AuxService<PatInventorAwardType>>();
             services.AddScoped<IParentEntityService<PatInventorAwardType, PatInventorAwardCriteria>, ParentEntityService<PatInventorAwardType, PatInventorAwardCriteria>>();
             services.AddScoped<IEntityService<PatInventorApp>, AuxService<PatInventorApp>>();
-            services.AddScoped<IPatInventorAppAwardUpdateService, PatInventorAppRewardUpdateService>();
-            services.AddScoped<IPatInventorRemunerationService, PatInventorRemunerationService>();
-            services.AddScoped<IPatInventorFRRemunerationService, PatInventorFRRemunerationService>();
             services.AddScoped<IParentEntityService<PatCostType, PatBudgetManagement>, ParentEntityService<PatCostType, PatBudgetManagement>>();
             services.AddScoped<IEntityService<PatBudgetManagement>, AuxService<PatBudgetManagement>>();
-
-            services.AddScoped<IEntityService<LSDText>, AuxService<LSDText>>();
-
-            // pat invention images
-            services.AddScoped<IPatImageInvViewModelService, PatImageInvViewModelService>();
-
-            // pat ctryapp images
-            services.AddScoped<IPatImageAppViewModelService, PatImageAppViewModelService>();
-
-            // pat action images
-            services.AddScoped<IPatImageActViewModelService, PatImageActViewModelService>();
-            services.AddScoped<IPatImageActInvViewModelService, PatImageActInvViewModelService>();
-
-            // pat cost tracking images
-            services.AddScoped<IPatImageCostViewModelService, PatImageCostViewModelService>();
 
             //settings
             services.AddScoped<ISystemSettings<PatSetting>, SystemSettings<PatSetting>>();
@@ -272,11 +241,10 @@ namespace R10.Web.Extensions
             services.AddScoped<IEntityService<PatEGrantDownloaded>, AuxService<PatEGrantDownloaded>>();
             services.AddScoped<IEntityService<PatTerminalDisclaimerChecked>, AuxService<PatTerminalDisclaimerChecked>>();
 
-            services.AddScoped<IChildEntityService<Invention, GMMatterPatent>, ChildEntityService<Invention, GMMatterPatent>>();
-            services.AddScoped<IChildEntityService<CountryApplication, GMMatterPatent>, ChildEntityService<CountryApplication, GMMatterPatent>>();
+            // GMMatterPatent removed during deep clean
+            // CountryApplication GMMatterPatent removed during deep clean
 
             //EPO
-            services.AddScoped<IEPOService, EPOService>();
             services.AddScoped<IEntityService<EPOPortfolio>, AuxService<EPOPortfolio>>();
             services.AddScoped<IEntityService<EPOApplication>, AuxService<EPOApplication>>();
             services.AddScoped<IEntityService<EPODueDate>, AuxService<EPODueDate>>();

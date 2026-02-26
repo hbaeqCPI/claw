@@ -33,10 +33,7 @@ namespace R10.Core.Services
         public IQueryable<FormIFWActMap> FormIFWActMaps => _repository.FormIFWActMaps.AsNoTracking();
         public IQueryable<FormIFWActMapPat> FormIFWActMapsPat => _repository.FormIFWActMapsPat.AsNoTracking();
         public IQueryable<FormIFWActMapTmk> FormIFWActMapsTmk => _repository.FormIFWActMapsTmk.AsNoTracking();
-        public IQueryable<RTSMapActionDocument> RTSMapActionDocuments => _repository.RTSMapActionDocuments.AsNoTracking();
-        public IQueryable<RTSMapActionDocumentClient> RTSMapActionDocumentClients => _repository.RTSMapActionDocumentClients.AsNoTracking();
-        public IQueryable<TLMapActionDocument> TLMapActionDocuments => _repository.TLMapActionDocuments.AsNoTracking();
-        public IQueryable<TLMapActionDocumentClient> TLMapActionDocumentClients => _repository.TLMapActionDocumentClients.AsNoTracking();
+        // RTS/TL MapActionDocument properties removed during deep clean
 
         #region Extracted Data Tab
         public async Task<bool> SaveExtractedData(int ifwId, int docTypeId, List<FormExtractDTO> formData, string userName, bool clearExisting = true)
@@ -80,11 +77,7 @@ namespace R10.Core.Services
 
             _repository.FormIFWDataExtracts.AddRange(extractedRows);
 
-            // update IFW extracted date
-            var ifw = await _repository.RTSSearchUSIFWs.SingleOrDefaultAsync(i => i.IFWId == ifwId);
-            ifw.AIParseDate = dateNow;
-            var parent = _repository.RTSSearchUSIFWs.Attach(ifw);
-            parent.Property(i => i.AIParseDate).IsModified = true;
+            // RTS IFW update removed during deep clean
 
             // save all
             await _repository.SaveChangesAsync();
@@ -92,55 +85,7 @@ namespace R10.Core.Services
             return true;
         }
 
-        public async Task<bool> SaveTLExtractedData(int tlDocId, int docTypeId, List<FormExtractDTO> formData, string userName, bool clearExisting = true)
-        {
-            // delete existing rows
-            if (clearExisting)
-            {
-                var oldExtracts = await FormIFWDataExtracts.Where(e => e.TLDocId == tlDocId).ToListAsync();
-                if (oldExtracts.Any())
-                {
-                    _repository.FormIFWDataExtracts.RemoveRange(oldExtracts);
-                    await _repository.SaveChangesAsync();
-                }
-            }
-
-            // insert new rows
-            var extractedRows = new List<FormIFWDataExtract>();
-            int seqNo = 0;
-            var dateNow = DateTime.Now;
-
-            formData.ForEach(r =>
-            {
-                seqNo++;
-                var fieldData = r.FieldData;
-
-                extractedRows.Add(new FormIFWDataExtract
-                {
-                    DocTypeId = docTypeId,
-                    TLDocId = tlDocId,
-                    SequenceNo = seqNo,
-                    FieldName = r.FieldName,
-                    FieldData = fieldData,
-                    Confidence = r.Confidence,
-                    CreatedBy = userName,
-                    DateCreated = dateNow
-                });
-            });
-
-            _repository.FormIFWDataExtracts.AddRange(extractedRows);
-
-            // update IFW extracted date
-            var ifw = await _repository.TLSearchDocuments.SingleOrDefaultAsync(i => i.TLDocId == tlDocId);
-            ifw.AIParseDate = dateNow;
-            var parent = _repository.TLSearchDocuments.Attach(ifw);
-            parent.Property(i => i.AIParseDate).IsModified = true;
-
-            // save all
-            await _repository.SaveChangesAsync();
-            _repository.DetachAllEntities();
-            return true;
-        }
+        // SaveTLExtractedData removed during deep clean (TL module deleted)
 
         public void UpdateExtractedDataUsageId()
         {
@@ -215,11 +160,7 @@ namespace R10.Core.Services
             var result = _repository.FormIFWActionUpdateDTO.FromSqlInterpolated($"procFR_GenIFWAct @ifwId={ifwId}, @createdBy={userName}").AsNoTracking().AsEnumerable().FirstOrDefault();
             return result;
         }
-        public async Task<FormIFWActionUpdateDTO> GenTLIFWAct(int tlDocId, string userName)
-        {
-            var result = _repository.FormIFWActionUpdateDTO.FromSqlInterpolated($"procFR_GenTLIFWAct @tlDocId={tlDocId}, @createdBy={userName}").AsNoTracking().AsEnumerable().FirstOrDefault();
-            return result;
-        }
+        // GenTLIFWAct removed during deep clean (TL module deleted)
         public async Task<FormIFWActionUpdateDTO> GenIFWIDSRecords(int ifwId, string userName)
         {
             var result = _repository.FormIFWActionUpdateDTO.FromSqlInterpolated($"procFR_GenIFW_IDS @ifwId={ifwId}, @createdBy={userName}").AsNoTracking().AsEnumerable().FirstOrDefault();
@@ -238,70 +179,7 @@ namespace R10.Core.Services
             await _repository.SaveChangesAsync();
         }
 
-        public async Task UpdateRTSMapActionDocument(List<RTSMapActionDocument> updated, string userName)
-        {
-            foreach (var item in updated) {
-                var docMap = await _repository.RTSMapActionDocuments.SingleOrDefaultAsync(m => m.MapId == item.MapId);
-                docMap.UpdatedBy = userName;
-                docMap.LastUpdate = DateTime.Now;
-                docMap.IsActRequired = item.IsActRequired;
-                docMap.CheckAct = item.CheckAct;
-                docMap.SendToClient = item.SendToClient;
-            }
-            await _repository.SaveChangesAsync();
-        }
-
-        public async Task UpdateRTSMapDocumentClient(List<RTSMapActionDocumentClient> inserted, List<RTSMapActionDocumentClient> updated)
-        {
-            if (inserted.Any()) {
-                _repository.RTSMapActionDocumentClients.AddRange(inserted);
-            }
-
-            if (updated.Any())
-            {
-                _repository.RTSMapActionDocumentClients.UpdateRange(updated);
-            }
-            await _repository.SaveChangesAsync();
-        }
-
-        public async Task DeleteRTSMapDocumentClient(RTSMapActionDocumentClient deleted)
-        {
-            if (deleted != null) { 
-                await _repository.RTSMapActionDocumentClients.Where(c=> c.MapClientId==deleted.MapClientId).ExecuteDeleteAsync();
-            }
-        }
-
-        public async Task UpdateTLMapActionDocument(List<TLMapActionDocument> updated, string userName) {
-            foreach (var item in updated)
-            {
-                var docMap = await _repository.TLMapActionDocuments.SingleOrDefaultAsync(m => m.MapId == item.MapId);
-                docMap.UpdatedBy = userName;
-                docMap.LastUpdate = DateTime.Now;
-                docMap.IsActRequired = item.IsActRequired;
-                docMap.CheckAct = item.CheckAct;
-                docMap.SendToClient = item.SendToClient;
-            }
-            await _repository.SaveChangesAsync();
-        }
-        public async Task UpdateTLMapDocumentClient(List<TLMapActionDocumentClient> inserted, List<TLMapActionDocumentClient> updated)
-        {
-            if (inserted.Any())
-            {
-                _repository.TLMapActionDocumentClients.AddRange(inserted);
-            }
-
-            if (updated.Any())
-            {
-                _repository.TLMapActionDocumentClients.UpdateRange(updated);
-            }
-            await _repository.SaveChangesAsync();
-        }
-        public async Task DeleteTLMapDocumentClient(TLMapActionDocumentClient deleted) {
-            if (deleted != null)
-            {
-                await _repository.TLMapActionDocumentClients.Where(c => c.MapClientId == deleted.MapClientId).ExecuteDeleteAsync();
-            }
-        }
+        // RTS/TL Map methods removed during deep clean
 
 
         public async Task<FormIFWActMap> GetByIdAsync(int mapHdrId)
@@ -311,21 +189,7 @@ namespace R10.Core.Services
 
         #endregion
 
-        public async Task<bool> UpdateAIInclude(int ifwId, bool aiInclude)
-        {
-            // update IFW AIInclude field
-            var ifw = await _repository.RTSSearchUSIFWs.SingleOrDefaultAsync(i => i.IFWId == ifwId);
-            ifw.AIInclude = aiInclude;
-            ifw.AIParseDate = DateTime.Now;
-            var parent = _repository.RTSSearchUSIFWs.Attach(ifw);
-            parent.Property(i => i.AIInclude).IsModified = true;
-            parent.Property(i => i.AIParseDate).IsModified = true;
-
-            // save all
-            await _repository.SaveChangesAsync();
-
-            return true;
-        }
+        // UpdateAIInclude removed during deep clean (RTS module deleted)
 
         public async Task<List<FormIFWActionRemarksDTO>> GetIFWActionRemarksData(int ifwId)
         {

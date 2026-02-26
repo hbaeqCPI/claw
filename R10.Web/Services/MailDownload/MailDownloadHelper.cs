@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
@@ -229,66 +227,6 @@ namespace R10.Web.Services.MailDownload
 
             if (filters.Any())
                 queryable = QueryHelper.BuildCriteria<TmkTrademark>(queryable, filters);
-
-            return queryable;
-        }
-
-        public static IQueryable<GMMatter> AddCriteria(this IQueryable<GMMatter> queryable, List<QueryFilterViewModel> filters)
-        {
-            var caseNumber = filters.FirstOrDefault(f => f.Property == "CaseNumber");
-            if (caseNumber != null)
-            {
-                var values = caseNumber.GetValueList();
-
-                if (values.Count > 0)
-                {
-                    queryable = queryable.Where(q => values.Contains(q.CaseNumber));
-
-                    filters.Remove(caseNumber);
-                }
-            }
-
-            var country = filters.FirstOrDefault(f => f.Property == "Country");
-            if (country != null)
-            {
-                var values = country.GetValueList();
-
-                if (values.Count > 0)
-                {
-                    queryable = queryable.Where(q => q.Countries != null && q.Countries.Any(c => values.Contains(c.Country ?? "")));
-
-                    filters.Remove(country);
-                }
-            }
-
-            var subCase = filters.FirstOrDefault(f => f.Property == "SubCase");
-            if (subCase != null)
-            {
-                var values = subCase.GetValueList();
-
-                if (values.Count > 0)
-                {
-                    queryable = queryable.Where(q => values.Contains(q.SubCase ?? ""));
-
-                    filters.Remove(subCase);
-                }
-            }
-
-            var clientRef = filters.FirstOrDefault(f => f.Property == "ClientRef");
-            if (clientRef != null)
-            {
-                var values = clientRef.GetValueList();
-
-                if (values.Count > 0)
-                {
-                    queryable = queryable.Where(q => !string.IsNullOrEmpty(q.ClientRef) && values.Contains(q.ClientRef));
-
-                    filters.Remove(clientRef);
-                }
-            }
-
-            if (filters.Any())
-                queryable = QueryHelper.BuildCriteria<GMMatter>(queryable, filters);
 
             return queryable;
         }

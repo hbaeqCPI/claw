@@ -1,6 +1,6 @@
 ﻿using R10.Core.DTOs;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Helpers;
 using System.ComponentModel.DataAnnotations;
@@ -30,7 +30,7 @@ namespace R10.Core.Entities.Patent
         public List<InventionRelatedInvention>? InventionRelateds { get; set; }
         
         public List<PatIDSManageDTO>? IDSManageCases { get; }
-        public List<GMMatterPatent>? GMMatterPatents { get; set; }
+//         public List<GMMatterPatent>? GMMatterPatents { get; set; } // Removed during deep clean
 
         public List<PatCostEstimator>? CostEstimators { get; set; }
 

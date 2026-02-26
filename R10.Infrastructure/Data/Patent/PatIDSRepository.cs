@@ -292,51 +292,7 @@ namespace R10.Infrastructure.Data.Patent
             return list;
         }
 
-        public async Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated,  string userId)
-        {
-            var genStructure = new SqlDataRecord(new SqlMetaData[] { new SqlMetaData("Id", SqlDbType.Int) });
-            var fromStructure = new SqlDataRecord(new SqlMetaData[] { new SqlMetaData("RelatedAppId", SqlDbType.Int), new SqlMetaData("RelatedCasesId", SqlDbType.Int) });
-            var toIds = to.Select(t =>
-            {
-                var record = genStructure;
-                record.SetValue(0, t);
-                return record;
-            });
-            var fromIds = from.Select(f =>
-            {
-                var record = fromStructure;
-                record.SetValue(0, f.BaseAppId);
-                record.SetValue(1, f.RelatedCasesId);
-                return record;
-            });
-
-            var fromRelatedIds = fromRelated.Select(f =>
-            {
-                var record = genStructure;
-                record.SetValue(0, f);
-                return record;
-            });
-
-            using (SqlCommand cmd = new SqlCommand("procPatIDSRelatedCasesCopy"))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandTimeout = 0;
-                cmd.Connection = new SqlConnection(_dbContext.Database.GetDbConnection().ConnectionString);
-                if (cmd.Connection?.State == ConnectionState.Closed)
-                    cmd.Connection.Open();
-
-                cmd.Parameters.AddWithValue("@CopyTo", toIds).SqlDbType = SqlDbType.Structured;
-
-                if (from.Length > 0)
-                   cmd.Parameters.AddWithValue("@CopyFrom", fromIds).SqlDbType = SqlDbType.Structured;
-
-                if (fromRelated.Length > 0)
-                    cmd.Parameters.AddWithValue("@CopyRelated", fromRelatedIds).SqlDbType = SqlDbType.Structured;
-
-                cmd.Parameters.AddWithValue("@UpdatedBy", userId);
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
+        // CopyIDSRelatedCases(int[], RTSIDSCrossCheckCopyDTO[], int[], string) removed during deep clean (RTS module deleted)
 
 
         public async Task SaveStandardizedReferences(List<PatIDSRelatedCase> relatedCases)
@@ -368,44 +324,7 @@ namespace R10.Infrastructure.Data.Patent
             }
         }
 
-        public async Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId)
-        {
-
-            var structure = new SqlDataRecord(new SqlMetaData[] { new SqlMetaData("RelatedCasesId", SqlDbType.Int), new SqlMetaData("BaseAppId", SqlDbType.Int), new SqlMetaData("AppID", SqlDbType.Int), new SqlMetaData("CopyToBase", SqlDbType.Bit) });
-            var copyInfos = copyInfo.Select(t => {
-                var record = structure;
-                record.SetValue(0, t.RelatedCasesId);
-                record.SetValue(1, t.BaseAppId);
-                record.SetValue(2, t.AppID);
-                record.SetValue(3, t.CopyToBase);
-                return record;
-            });
-
-            var structureAction = new SqlDataRecord(new SqlMetaData[] { new SqlMetaData("Id", SqlDbType.Int) });
-            var actionInfos = actionInfo.Select(t => {
-                var record = structureAction;
-                record.SetValue(0, t);
-                return record;
-            });
-
-            using (SqlCommand cmd = new SqlCommand("procPatIDSRelatedCasesCopyForIDSCrossCheck"))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandTimeout = 0;
-                cmd.Connection = new SqlConnection(_dbContext.Database.GetDbConnection().ConnectionString);
-                if (cmd.Connection?.State == ConnectionState.Closed)
-                    cmd.Connection.Open();
-
-                if (copyInfo.Length > 0)
-                    cmd.Parameters.AddWithValue("@CopyInfo", copyInfos).SqlDbType = SqlDbType.Structured;
-
-                if (actionInfo.Length > 0)
-                    cmd.Parameters.AddWithValue("@ActionInfo", actionInfos).SqlDbType = SqlDbType.Structured;
-
-                cmd.Parameters.AddWithValue("@UpdatedBy", userId);
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
+        // CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[], int[], string) removed during deep clean (RTS module deleted)
 
         public async Task CopyIDSRelatedCasesToFamily(PatIDSCopyFamilyActionDTO selection, string userId)
         {
@@ -736,15 +655,16 @@ namespace R10.Infrastructure.Data.Patent
             idsTotal.FiledCount = filedRelatedCasesCount + filedNPLCount;
             idsTotal.UnfiledCount = unfiledRelatedCasesCount + unfiledNPLCount;
 
-            var rtsSearch = await _dbContext.RTSSearchRecords.FirstOrDefaultAsync(r => r.PMSAppId == appId);
-            if (rtsSearch != null)
-            {
-
-                idsTotal.PLAppId = rtsSearch.PLAppId;
-                var filedXMLCount = await _dbContext.Database.SqlQuery<int>($"Select COALESCE(Sum(ReferenceCount+NPLCount),0) as Value  From tblPLSearchIDSCount Where PLAppId={rtsSearch.PLAppId}").FirstOrDefaultAsync();
-                idsTotal.XMLCount = filedXMLCount;
-                idsTotal.XMLCountLastUpdate = await _dbContext.Database.SqlQuery<DateTime?>($"Select Max(MailRoomDate) as Value  From tblPLSearchIDSCount Where PLAppId={rtsSearch.PLAppId}").FirstOrDefaultAsync();
-            }
+            // Removed during deep clean
+            // var rtsSearch = await _dbContext.RTSSearchRecords.FirstOrDefaultAsync(r => r.PMSAppId == appId);
+            // if (rtsSearch != null)
+            // {
+            //
+            //     idsTotal.PLAppId = rtsSearch.PLAppId;
+            //     var filedXMLCount = await _dbContext.Database.SqlQuery<int>($"Select COALESCE(Sum(ReferenceCount+NPLCount),0) as Value  From tblPLSearchIDSCount Where PLAppId={rtsSearch.PLAppId}").FirstOrDefaultAsync();
+            //     idsTotal.XMLCount = filedXMLCount;
+            //     idsTotal.XMLCountLastUpdate = await _dbContext.Database.SqlQuery<DateTime?>($"Select Max(MailRoomDate) as Value  From tblPLSearchIDSCount Where PLAppId={rtsSearch.PLAppId}").FirstOrDefaultAsync();
+            // }
             return idsTotal;
         }
 

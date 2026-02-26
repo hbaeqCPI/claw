@@ -1,20 +1,17 @@
 ﻿@model ChartDTO
 @using Newtonsoft.Json.Linq;
 @using Microsoft.EntityFrameworkCore;
-@using R10.Core.Entities.GeneralMatter
 @inject IEntityService<PatCaseType> _patCaseTypeService;
 @inject IEntityService<TmkCaseType> _tmkCaseTypeService;
-@inject IEntityService<GMMatterType> _gmMatterTypeService;
 @inject IStringLocalizer<PatentResource> patLocalizer
 @inject IStringLocalizer<TrademarkResource> tmkLocalizer
-@inject IStringLocalizer<MatterResource> gmLocalizer
 @inject IStringLocalizer<SharedResource> sharedLocalizer
-@inject ISystemSettings<AMSSetting> amsSettings
+@inject ISystemSettings<DefaultSetting> defaultSettings
 @inject IClientService ClientService
 @{
-    var AMSSettings = await amsSettings.GetSetting();
-    var clientLabel = patLocalizer[AMSSettings.LabelClient];
-    var clientNameLabel = patLocalizer[AMSSettings.LabelClientName];
+    var defSettings = await defaultSettings.GetSetting();
+    var clientLabel = patLocalizer[defSettings.LabelClient];
+    var clientNameLabel = patLocalizer[defSettings.LabelClientName];
 
     WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
     var userWidgetId = widget.Id.ToString() + "-count";
@@ -23,28 +20,8 @@
 
     bool showPatCaseType = widgetSettings.Property("ShowPatCaseType") != null ? widgetSettings["ShowPatCaseType"].Value<bool>() : false;
     bool showTmkCaseType = widgetSettings.Property("ShowTmkCaseType") != null ? widgetSettings["ShowTmkCaseType"].Value<bool>() : false;
-    bool showGMMatterType = widgetSettings.Property("ShowGMMatterType") != null ? widgetSettings["ShowGMMatterType"].Value<bool>() : false;
-    bool showAMSServiceFee = widgetSettings.Property("ShowAMSServiceFee") != null ? widgetSettings["ShowAMSServiceFee"].Value<bool>() : false;
-    if (!AMSSettings.HasServiceFee) showAMSServiceFee = false;
-
-    bool showAMSProjectionYears = widgetSettings.Property("ShowAMSProjectionYears") != null ? widgetSettings["ShowAMSProjectionYears"].Value<bool>() : false;
     bool showClientOption = widgetSettings.Property("ShowClient") != null ? (widgetSettings["ShowClient"] ?? false).Value<bool>() : false;
-    bool showSettings = (showPatCaseType || showTmkCaseType || showGMMatterType || showAMSServiceFee || showAMSProjectionYears || showClientOption);
-
-    int serviceFeeSwitch = userSettings.Property("ServiceFeeSwitch") != null ? userSettings["ServiceFeeSwitch"].Value<int>() : -1;
-
-    int amsProjectionYears = AMSSettings.ProjectionYears;
-    string projectionYears = userSettings.Property("ProjectionYears") != null ? userSettings["ProjectionYears"].Value<string>() : "2";
-
-    List<SelectListItem> projectionYearsList = new List<SelectListItem>();
-    for (int i = 1; i < amsProjectionYears; i++)
-    {
-        var item = new SelectListItem();
-        var value = i + 1;
-        item.Text = value.ToString();
-        item.Value = value.ToString();
-        projectionYearsList.Add(item);
-    }
+    bool showSettings = (showPatCaseType || showTmkCaseType || showClientOption);
 
     List<PatCaseType> patCaseTypes = new List<PatCaseType>();
 
@@ -99,36 +76,6 @@
 
         }
     }
-
-    List<GMMatterType> gMMatterTypes = new List<GMMatterType>();
-
-    if (userSettings.Property("GMMatterTypes") != null)
-    {
-        try
-        {
-            int[] matterTypeFilter = ((JArray)userSettings.Property("GMMatterTypes").Value).Select(a => (int)a).ToArray();
-
-            if (matterTypeFilter.Count() > 0)
-            {
-                gMMatterTypes = await _gmMatterTypeService.QueryableList
-                    .Where(a => matterTypeFilter.Contains(a.MatterTypeID))
-                    .Select(a => new GMMatterType
-                    {
-                        MatterTypeID = a.MatterTypeID,
-                        MatterType = a.MatterType
-                    })
-                    .ToListAsync();
-            }
-        }
-        catch (Exception e)
-        {
-            var err = e.Message;
-
-        }
-    }
-
-    var currencyFormat = AMSSettings.WidgetCurrencyFormat.Split("|")[0];
-    var currencyString = AMSSettings.WidgetCurrencyFormat.Split("|")[1];
 
     List<ClientListViewModel> clients = new List<ClientListViewModel>();
 
@@ -245,39 +192,6 @@
             caseType.value("");
         });
 
-        var gmMatterTypeList = [@String.Join(",", gMMatterTypes.Select(a => a.MatterTypeID).ToList())];
-        $(document).off("click", "#gmMatterTypeFilter_@userWidgetId .delete-gmMatterType");
-        $(document).off("change", "#GMMatterTypeCode_@userWidgetId");
-        $(document).on("click", "#gmMatterTypeFilter_@userWidgetId .delete-gmMatterType", function (e) {
-            var item = $.inArray($(this).data("id"), gmMatterTypeList);
-
-            if (item !== -1) {
-                gmMatterTypeList.splice(item, 1);
-                $(this).closest("li").remove();
-
-                saveSetting(@widget.Id, `{ GMMatterTypes: [${gmMatterTypeList.toString()}] }`, function () { refresh = true; });
-            }
-        });
-        $(document).on("change", "#GMMatterTypeCode_@userWidgetId", function (e) {
-            var caseType = $(this).data("kendoComboBox");
-
-            if (caseType.selectedIndex >= 0) {
-                var dataItem = caseType.dataItem(caseType.selectedIndex);
-
-                var caseTypeId = dataItem.MatterTypeID;
-                var caseTypeCode = dataItem.MatterType;
-
-                if ($.inArray(caseTypeId, gmMatterTypeList) == -1) {
-                    gmMatterTypeList.push(caseTypeId);
-                    $("#gmMatterTypeFilter_@userWidgetId").append(`<li class="list-group-item d-flex justify-content-between"><div><span class="gmMatterType-Code">${caseTypeCode}</span></div><div class="delete-filter delete-gmMatterType" data-id="${caseTypeId}" title="Remove ${caseTypeCode}"><i class="fal fa-trash-alt"></i></div></li>`);
-
-                    saveSetting(@widget.Id, `{ GMMatterTypes: [${gmMatterTypeList.toString()}] }`, function () { refresh = true; });
-                }
-            }
-
-            caseType.value("");
-        });
-
         var clientList = [@String.Join(",", clients.Select(a => a.ClientID).ToList())];
         $(document).off("click", "#clientFilter_@userWidgetId .delete-client");
         $(document).off("change", "#ClientCode_@userWidgetId");
@@ -358,63 +272,6 @@
                     }
                 </ul>
             }
-            @if (showGMMatterType)
-            {
-                <ul id="gmMatterTypeFilter_@userWidgetId" class="list-group">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>@gmLocalizer["Exclude Matter Type(s)"]</span>
-                        <span>
-                            @await Component.InvokeAsync("ComboBox", new { name = "GMMatterTypeCode", action = "GetActiveMatterTypeList", controller = "MatterType", area = "GeneralMatter", screen = userWidgetId, textProperty = "MatterType", valueProperty = "MatterTypeID", itemTemplate = "<div class='row'><div class='col-md-3'><span>#: data.MatterType  #</span></div><div class='col-md-5'><span>#: data.Description #</span></div></div>", listWidth = 450 })
-                        </span>
-                    </li>
-                    @foreach (GMMatterType caseType in gMMatterTypes)
-                    {
-                        <li class="list-group-item d-flex justify-content-between">
-                            <div>
-                                <span class="gmMatterType-Code">@caseType.MatterType</span>
-                            </div>
-                            <div class="delete-filter delete-gmMatterType" data-id="@caseType.MatterTypeID" title="Remove @caseType.MatterType"><i class="fal fa-trash-alt"></i></div>
-                        </li>
-                    }
-                </ul>
-            }
-            @if (showAMSServiceFee)
-            {
-                <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>@sharedLocalizer["Include service fee"]</span>
-                        <span>
-                            <label class="toggle-switch">
-                                <input id="@userWidgetId-servicefee-switch" type="checkbox" checked="@(serviceFeeSwitch==-1)">
-                                <span class="slider round"></span>
-                            </label>
-                        </span>
-                    </li>
-                </ul>
-            }
-            @if (showAMSProjectionYears)
-            {
-                <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>@sharedLocalizer["Number of years"]</span>
-                        <span>
-                            @(Html.Kendo().DropDownList()
-                                .Name(userWidgetId + "-projectionyears")
-                                .AutoBind(false)
-                                .DataTextField("Text")
-                                .DataValueField("Value")
-                                .Value(projectionYears)
-                                .Text(projectionYears)
-                                .BindTo(projectionYearsList)
-                                .Events(e =>
-                                {
-                                    e.Change("saveProjectionYears");
-                                })
-                            )
-                        </span>
-                    </li>
-                </ul>
-            }
             @if (showClientOption)
             {
                 <ul id="clientFilter_@userWidgetId" class="list-group">
@@ -444,10 +301,10 @@
 <div class="text-center" style="font-size: 65px;">
     <span style="text-decoration: none; color: @Model?.Color; font-weight: 500;">
         @if (Model?.Category == "in US Dollars")
-        {<span>@currencyFormat</span>}
+        {<span>$</span>}
         @String.Format("{0:n0}", Model == null ? 0 : Model.Value)
     </span>
 </div>
 <div class="text-center">
-    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? currencyString : sharedLocalizer[(Model?.Category==null?"":Model?.Category)])</span>
+    <span><i class="@(string.IsNullOrEmpty(Model?.Category) ? "" : widget.Icon) pr-2"></i>@(Model?.Category == "in US Dollars" ? "USD" : sharedLocalizer[(Model?.Category==null?"":Model?.Category)])</span>
 </div>

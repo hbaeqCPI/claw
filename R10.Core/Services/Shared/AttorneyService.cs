@@ -1,15 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Exceptions;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,28 +24,14 @@ namespace R10.Core.Services.Shared
     {
         protected readonly IInventionService _inventionService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IGMMatterService _gMMatterService;
-        protected readonly IDisclosureService _disclosureService;
-        protected readonly IPacClearanceService _pacClearanceService;
-        protected readonly ITmcClearanceService _tmcClearanceService;
-
         public AttorneyService(
-            ICPiDbContext cpiDbContext, 
+            ICPiDbContext cpiDbContext,
             ClaimsPrincipal user,
             IInventionService inventionService,
-            ITmkTrademarkService trademarkService,
-            IGMMatterService gMMatterService,
-            IDisclosureService disclosureService,
-            IPacClearanceService pacClearanceService,
-            ITmcClearanceService tmcClearanceService
-            ) : base(cpiDbContext, user)
+            ITmkTrademarkService trademarkService) : base(cpiDbContext, user)
         {
             _inventionService = inventionService;
             _trademarkService = trademarkService;
-            _gMMatterService = gMMatterService;
-            _disclosureService = disclosureService;
-            _pacClearanceService = pacClearanceService;
-            _tmcClearanceService = tmcClearanceService;
         }
 
         public override IQueryable<Attorney> QueryableList
@@ -70,15 +56,7 @@ namespace R10.Core.Services.Shared
                             _trademarkService.TmkTrademarks.Any(t => t.Attorney2ID == a.AttorneyID) ||
                             _trademarkService.TmkTrademarks.Any(t => t.Attorney3ID == a.AttorneyID) ||
                             _trademarkService.TmkTrademarks.Any(t => t.Attorney4ID == a.AttorneyID) ||
-                            _trademarkService.TmkTrademarks.Any(t => t.Attorney5ID == a.AttorneyID))) ||
-                        (_user.IsInSystem(SystemType.GeneralMatter) &&
-                            _gMMatterService.QueryableList.Any(g => g.Attorneys.Any(ga => ga.AttorneyID == a.AttorneyID))) ||
-                        (_user.IsInSystem(SystemType.DMS) &&
-                            _disclosureService.QueryableList.Any(d => d.AttorneyID == a.AttorneyID)) ||
-                        (_user.IsInSystem(SystemType.PatClearance) &&
-                            _pacClearanceService.QueryableList.Any(p => p.AttorneyID == a.AttorneyID)) ||
-                        (_user.IsInSystem(SystemType.SearchRequest) &&
-                            _tmcClearanceService.QueryableList.Any(t => t.AttorneyID == a.AttorneyID)));
+                            _trademarkService.TmkTrademarks.Any(t => t.Attorney5ID == a.AttorneyID))));
 
                 return attorneys;
             }

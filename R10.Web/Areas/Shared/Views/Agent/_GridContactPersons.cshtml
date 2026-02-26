@@ -1,14 +1,8 @@
 ﻿@model ChildViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<DefaultSetting> Settings
-@inject ISystemSettings<AMSSetting> AMSSettings
-@inject ISystemSettings<RMSSetting> RMSSettings
-@inject ISystemSettings<FFSetting> FFSettings
 @{
     var settings = await Settings.GetSetting();
-    var amsSettings = await AMSSettings.GetSetting();
-    var rmsSettings = await RMSSettings.GetSetting();
-    var ffSettings = await FFSettings.GetSetting();
     var agentIdParam = $"{{agentId: {Model.Id}}}";
     var fullModify = Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly;
     var genLetterTemplate = $"<span>#=GenAllLettersDescription#</span>#if (GenAllLetters===2 && AgentContactID > 0 ){{#<i class='far fa-list-alt pl-2 letter-entry' data-agent-id='#=AgentID#' data-contact-id='#=ContactID#' title='{Localizer["Show Letter Types"]}'></i>#}}#";
@@ -20,14 +14,10 @@
     });
     var contactNameTemplate = $"<span class='pr-3'>#=kendo.htmlEncode(ContactName)#</span><i class='fal fa-search-plus btn-link contactLink' data-url='{contactLinkUrl}' title='{Localizer["Open Contact Screen"]}'></i>";
 
-    var showLettersOptions = User.IsInSystem(SystemType.Patent) || User.IsInSystem(SystemType.Trademark) || User.IsInSystem(SystemType.GeneralMatter);
-    var showReceiveAMSConfirmation = User.IsInSystem(SystemType.AMS) && amsSettings.HasAgentResp;
-    var showReceiveRMSConfirmation = User.IsInSystem(SystemType.RMS) && rmsSettings.HasAgentResp;
-    var showReceiveFFConfirmation = User.IsInSystem(SystemType.ForeignFiling) && ffSettings.HasAgentResp;
+    var showLettersOptions = User.IsInSystem(SystemType.Patent) || User.IsInSystem(SystemType.Trademark);
 
     var showPat = User.IsInSystem(SystemType.Patent);
     var showTmk = User.IsInSystem(SystemType.Trademark);
-    var showGM = User.IsInSystem(SystemType.GeneralMatter);
 }
 
 <div id="agentContactsContainer" data-unsave-letter-msg="@Localizer["Please save or cancel your letter settings changes first."]">
@@ -84,38 +74,6 @@
                                                 .Editable("agentPage.isGridColumnEditable")
                                                 .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Trademark Contact"].ToString() })
                                                 .Visible(showTmk);
-                            columns.Bound(cc => cc.IsGeneralMatterContact)
-                                                .ClientTemplate("<i class='fa fal #: IsGeneralMatterContact ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["General Matter Contact"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("agentPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["General Matter Contact"].ToString() })
-                                                .Visible(showGM);
-                            columns.Bound(cc => cc.ReceiveAgentResponsibilityLetter)
-                                                .ClientTemplate("<i class='fa fal #: ReceiveAgentResponsibilityLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive AMS Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("agentPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive AMS Confirmation"].ToString() })
-                                                .Visible(showReceiveAMSConfirmation);
-                            columns.Bound(cc => cc.FFReceiveAgentResponsibilityLetter)
-                                                .ClientTemplate("<i class='fa fal #: FFReceiveAgentResponsibilityLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive Foreign Filing Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("agentPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive Foreign Filing Confirmation"].ToString() })
-                                                .Visible(showReceiveFFConfirmation);
-                            columns.Bound(cc => cc.RMSReceiveAgentResponsibilityLetter)
-                                                .ClientTemplate("<i class='fa fal #: RMSReceiveAgentResponsibilityLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive Renewal Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("agentPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive Renewal Confirmation"].ToString() })
-                                                .Visible(showReceiveRMSConfirmation);
                             columns.Command(command =>
                             {
 

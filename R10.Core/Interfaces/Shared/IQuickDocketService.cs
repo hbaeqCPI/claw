@@ -1,7 +1,7 @@
 ﻿using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
@@ -37,26 +37,31 @@ namespace R10.Core.Interfaces
 
         Task UpdatePatDueDateRemarks(PatDueDate dueDate);
         Task UpdateTmkDueDateRemarks(TmkDueDate dueDate);
-        Task UpdateGMDueDateRemarks(GMDueDate dueDate);
+        // Removed during deep clean
+        // Task UpdateGMDueDateRemarks(GMDueDate dueDate);
         Task UpdatePatDueRemarks(PatActionDue actionDue);
         Task UpdateTmkDueRemarks(TmkActionDue actionDue);
-        Task UpdateGMDueRemarks(GMActionDue actionDue);
+        // Removed during deep clean
+        // Task UpdateGMDueRemarks(GMActionDue actionDue);
 
         Task UpdatePatDateTaken(PatDueDate dueDate);
         Task UpdatePatDateTakenInv(PatDueDateInv dueDate);
         Task UpdateTmkDateTaken(TmkDueDate dueDate);
-        Task UpdateGMDateTaken(GMDueDate dueDate);
-        Task UpdateDMSDateTaken(DMSDueDate dueDate);
+        // Removed during deep clean
+        // Task UpdateGMDateTaken(GMDueDate dueDate);
+        // Task UpdateDMSDateTaken(DMSDueDate dueDate);
 
         Task UpdatePatDueDateDeDocket(PatDueDateDeDocket dueDateDeDocket);
         Task UpdateTmkDueDateDeDocket(TmkDueDateDeDocket dueDateDeDocket);
-        Task UpdateGMDueDateDeDocket(GMDueDateDeDocket dueDateDeDocket);
-        Task UpdateDMSDueDateRemarks(DMSDueDate dueDate);
-        Task UpdateDMSDueRemarks(DMSActionDue actionDue);
+        // Removed during deep clean
+        // Task UpdateGMDueDateDeDocket(GMDueDateDeDocket dueDateDeDocket);
+        // Task UpdateDMSDueDateRemarks(DMSDueDate dueDate);
+        // Task UpdateDMSDueRemarks(DMSActionDue actionDue);
 
         IQueryable<PatDueDateDeDocket> PatDueDateDeDockets { get; }
         IQueryable<TmkDueDateDeDocket> TmkDueDateDeDockets { get; }
-        IQueryable<GMDueDateDeDocket> GMDueDateDeDockets { get; }
+        // Removed during deep clean
+        // IQueryable<GMDueDateDeDocket> GMDueDateDeDockets { get; }
         IQueryable<DeDocketInstruction> DeDocketInstructions { get; }
     }
 }

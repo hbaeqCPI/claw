@@ -7,13 +7,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Exceptions;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 
 namespace R10.Core.Services
@@ -22,16 +22,12 @@ namespace R10.Core.Services
     {
         protected readonly IInventionService _inventionService;
         protected readonly ICountryApplicationService _countryApplicationService;
-        protected readonly IDisclosureService _disclosureService;
-
         public PatInventorService(ICPiDbContext cpiDbContext, ClaimsPrincipal user,
             IInventionService inventionService,
-            ICountryApplicationService countryApplicationService,
-            IDisclosureService disclosureService) : base(cpiDbContext, user)
+            ICountryApplicationService countryApplicationService) : base(cpiDbContext, user)
         {
             _inventionService = inventionService;
             _countryApplicationService = countryApplicationService;
-            _disclosureService = disclosureService;
         }
 
         public override IQueryable<PatInventor> QueryableList
@@ -46,9 +42,7 @@ namespace R10.Core.Services
                 else if (_user.IsAuxiliaryLimited(SystemType.Patent))
                     inventors = inventors.Where(i =>
                         _inventionService.QueryableList.Any(inv => inv.Inventors.Any(ii => ii.InventorID == i.InventorID)) ||
-                        _countryApplicationService.CountryApplications.Any(app => app.Inventors.Any(cai => cai.InventorID == i.InventorID)) ||
-                        (_user.IsInSystem(SystemType.DMS) &&
-                        _disclosureService.QueryableList.Any(dms => dms.Inventors.Any(di => di.InventorID == i.InventorID))));
+                        _countryApplicationService.CountryApplications.Any(app => app.Inventors.Any(cai => cai.InventorID == i.InventorID)));
 
                 return inventors;
             }

@@ -10,8 +10,9 @@ namespace R10.Infrastructure.Data.FormExtract.mappings
         {
             builder.ToTable("tblFRIFWDocType");
             builder.HasOne(d => d.FormIFWFormType).WithMany(f => f.FormIFWDocTypes).HasForeignKey(d => d.FormTypeId).HasPrincipalKey(d => d.FormTypeId);
-            builder.HasMany(d=>d.RTSSearchUSIFWs).WithOne(ifw=>ifw.FormIFWDocType).HasForeignKey(d => d.DocTypeId).HasPrincipalKey(d => d.DocTypeId);
-            builder.HasMany(d => d.TLSearchDocuments).WithOne(ifw => ifw.FormIFWDocType).HasForeignKey(d => d.DocTypeId).HasPrincipalKey(d => d.DocTypeId);
+            // Removed during deep clean
+            // builder.HasMany(d=>d.RTSSearchUSIFWs).WithOne(ifw=>ifw.FormIFWDocType).HasForeignKey(d => d.DocTypeId).HasPrincipalKey(d => d.DocTypeId);
+            // builder.HasMany(d => d.TLSearchDocuments).WithOne(ifw => ifw.FormIFWDocType).HasForeignKey(d => d.DocTypeId).HasPrincipalKey(d => d.DocTypeId);
         }
     }
 }

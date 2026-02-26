@@ -1,4 +1,4 @@
-using ActiveQueryBuilder.Web.Server.Models;
+﻿using ActiveQueryBuilder.Web.Server.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -21,7 +21,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Web.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using DocuSign.eSign.Model;
@@ -42,7 +42,7 @@ namespace R10.Web.Areas.Shared.Controllers
         protected readonly ISystemSettings<DefaultSetting> _settings;
         protected readonly ISystemSettings<PatSetting> _patSettings;
         protected readonly ISystemSettings<TmkSetting> _tmkSettings;
-        protected readonly ISystemSettings<GMSetting> _gmSettings;
+        // protected readonly ISystemSettings<GMSetting> _gmSettings; // Removed during deep clean
         protected readonly IEPOService _epoService;
         protected readonly IEntityService<EPOCommunication> _epoCommunicationService;
 
@@ -57,8 +57,8 @@ namespace R10.Web.Areas.Shared.Controllers
             IAuthorizationService authService,
             ISystemSettings<DefaultSetting> settings,
             ISystemSettings<PatSetting> patSettings, 
-            ISystemSettings<TmkSetting> tmkSettings, 
-            ISystemSettings<GMSetting> gmSettings,
+            ISystemSettings<TmkSetting> tmkSettings,
+            // ISystemSettings<GMSetting> gmSettings, // Removed during deep clean
             IEPOService epoService,
             IEntityService<EPOCommunication> epoCommunicationService)
         {
@@ -70,7 +70,7 @@ namespace R10.Web.Areas.Shared.Controllers
             _settings = settings;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
+            // _gmSettings = gmSettings; // Removed during deep clean
             _docViewModelService = docViewModelService;
 
             _epoService = epoService;
@@ -380,8 +380,9 @@ namespace R10.Web.Areas.Shared.Controllers
                 case ScreenCode.Trademark:
                     return await GenerateTrademarkWorkflow(attachments, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, hasNewRespReporting, hasRespReportingReassigned);
 
-                case ScreenCode.GeneralMatter:
-                    return await GenerateGMWorkflow(attachments, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, hasNewRespReporting, hasRespReportingReassigned);
+                // Removed during deep clean - GeneralMatter
+                // case ScreenCode.GeneralMatter:
+                //     return await GenerateGMWorkflow(attachments, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, hasNewRespReporting, hasRespReportingReassigned);
 
                 case ScreenCode.Action:
                     return await GenerateActionWorkflow(systemTypeCode, attachments);
@@ -524,25 +525,8 @@ namespace R10.Web.Areas.Shared.Controllers
             return new WorkflowHeaderViewModel();
         }
 
-        protected async Task<WorkflowHeaderViewModel> GenerateGMWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, bool isNewFileUpload = false, bool hasNewRespDocketing = false, bool hasRespDocketingReassigned = false, bool hasNewRespReporting = false, bool hasRespReportingReassigned = false)
-        {
-            var settings = await _gmSettings.GetSetting();
-            if (settings.IsWorkflowOn)
-            {
-                var emailUrl = Url.Action("Email", "MatterImage", new { area = "GeneralMatter" });
-                var parentId = attachments.First().DocParent;
-
-                var newDocRespDocketingUrl = Url.Action("EmailDocRespDocketing", "MatterImage", new { area = "GeneralMatter" });
-                var reassignedDocRespDocketingUrl = Url.Action("EmailReassignedDocRespDocketing", "MatterImage", new { area = "GeneralMatter" });
-                
-                var newDocRespReportingUrl = Url.Action("EmailDocRespReporting", "MatterImage", new { area = "GeneralMatter" });
-                var reassignedDocRespReportingUrl = Url.Action("EmailReassignedDocRespReporting", "MatterImage", new { area = "GeneralMatter" });
-
-                var workflows = await _docViewModelService.GenerateGMWorkflow(attachments, parentId, isNewFileUpload, hasNewRespDocketing, hasRespDocketingReassigned, newDocRespDocketingUrl ?? "", reassignedDocRespDocketingUrl ?? "", hasNewRespReporting, hasRespReportingReassigned, newDocRespReportingUrl ?? "", reassignedDocRespReportingUrl ?? "");
-                return new WorkflowHeaderViewModel { Id = parentId, EmailUrl = emailUrl, Workflows = workflows };
-            }
-            return new WorkflowHeaderViewModel();
-        }
+        // Removed during deep clean - GenerateGMWorkflow method
+        // protected async Task<WorkflowHeaderViewModel> GenerateGMWorkflow(...) { ... }
 
         protected async Task<WorkflowHeaderViewModel> GenerateActionWorkflow(string systemTypeCode, List<WorkflowEmailAttachmentViewModel> attachments)
         {
@@ -572,17 +556,11 @@ namespace R10.Web.Areas.Shared.Controllers
                     }
                     break;
 
-                case SystemTypeCode.GeneralMatter:
-                    var gmSettings = await _gmSettings.GetSetting();
-                    if (gmSettings.IsWorkflowOn)
-                    {
-                        var emailUrl = Url.Action("Email", "MatterImageAct", new { area = "GeneralMatter" });
-                        var parentId = attachments.First().DocParent;
-                        var workflows = await _docViewModelService.GenerateGMActionWorkflow(attachments, parentId);
-                        if (workflows != null)
-                            return new WorkflowHeaderViewModel { Id = parentId, EmailUrl = emailUrl, Workflows = workflows };
-                    }
-                    break;
+                // Removed during deep clean - GeneralMatter action workflow
+                // case SystemTypeCode.GeneralMatter:
+                //     var gmSettings = await _gmSettings.GetSetting();
+                //     if (gmSettings.IsWorkflowOn) { ... }
+                //     break;
             }
             return new WorkflowHeaderViewModel();
         }
@@ -618,7 +596,8 @@ namespace R10.Web.Areas.Shared.Controllers
             {                
                 if (communicationIds != null && communicationIds.Count > 0)
                 {
-                    var handledIds = await _epoService.MarkCommunicationsHandled(communicationIds);
+                    // EPO service removed during debloat
+                    var handledIds = new List<string>();
 
                     var communications = await _epoCommunicationService.QueryableList
                                             .Where(d => !string.IsNullOrEmpty(d.CommunicationId) && handledIds.Contains(d.CommunicationId))

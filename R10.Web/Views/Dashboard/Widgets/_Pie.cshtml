@@ -3,11 +3,11 @@
 @using Microsoft.EntityFrameworkCore;
 @inject IClientService ClientService
 @inject IStringLocalizer<MatterResource> Localizer
-@inject ISystemSettings<GMSetting> Settings
+@inject ISystemSettings<DefaultSetting> Settings
 @{
-    var gmSettings = await Settings.GetSetting();
-    var clientLabel = Localizer[gmSettings.LabelClient];
-    var clientNameLabel = Localizer[gmSettings.LabelClientName];
+    var defaultSetting = await Settings.GetSetting();
+    var clientLabel = Localizer[defaultSetting.LabelClient];
+    var clientNameLabel = Localizer[defaultSetting.LabelClientName];
 
     WidgetViewModel widget = (WidgetViewModel)(ViewData["WidgetViewModel"] ?? new WidgetViewModel());
     var viewNameSplit = widget.ViewName.ToString().Split("/");

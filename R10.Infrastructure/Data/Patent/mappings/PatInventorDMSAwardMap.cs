@@ -15,7 +15,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
         {
             builder.ToTable("tblPatInventorDMSAward");
             builder.Property(m => m.AwardId).UseIdentityColumn();
-            builder.HasOne(i => i.Disclosure).WithMany(a => a.Awards).HasForeignKey(a => a.DMSId).HasPrincipalKey(i => i.DMSId);
+            // Removed during deep clean
+            // builder.HasOne(i => i.Disclosure).WithMany(a => a.Awards).HasForeignKey(a => a.DMSId).HasPrincipalKey(i => i.DMSId);
             builder.HasOne(i => i.PatInventorAwardCriteria).WithMany(a => a.PatInventorDMSAwards).IsRequired(false).HasForeignKey(a => a.AwardCriteriaId).HasPrincipalKey(i => i.AwardCriteriaId);
 
         }

@@ -1,4 +1,4 @@
-using Kendo.Mvc.Extensions;
+﻿using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Localization;
 using R10.Core.Entities;
 using R10.Core.Entities.MailDownload;
 using R10.Core.Helpers;
-using R10.Core.Interfaces.AMS;
+// using R10.Core.Interfaces.AMS; // Removed during deep clean
 using R10.Web.Areas.Admin.Helpers;
 using R10.Web.Areas.Admin.ViewModels;
 using R10.Web.Areas.Admin.Views;

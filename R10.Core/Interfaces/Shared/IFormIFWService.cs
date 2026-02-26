@@ -17,13 +17,15 @@ namespace R10.Core.Interfaces
         IQueryable<FormIFWActMap> FormIFWActMaps { get; }
         IQueryable<FormIFWActMapPat> FormIFWActMapsPat { get; }
         IQueryable<FormIFWActMapTmk> FormIFWActMapsTmk { get; }
-        IQueryable<RTSMapActionDocument> RTSMapActionDocuments { get; }
-        IQueryable<RTSMapActionDocumentClient> RTSMapActionDocumentClients { get; }
-        IQueryable<TLMapActionDocument> TLMapActionDocuments { get; }
-        IQueryable<TLMapActionDocumentClient> TLMapActionDocumentClients { get; }
+        // Removed during deep clean
+        // IQueryable<RTSMapActionDocument> RTSMapActionDocuments { get; }
+        // IQueryable<RTSMapActionDocumentClient> RTSMapActionDocumentClients { get; }
+        // IQueryable<TLMapActionDocument> TLMapActionDocuments { get; }
+        // IQueryable<TLMapActionDocumentClient> TLMapActionDocumentClients { get; }
 
         Task<bool> SaveExtractedData(int ifwId, int docTypeId, List<FormExtractDTO> formData, string userName, bool clearExisting = true);
-        Task<bool> SaveTLExtractedData(int tlDocId, int docTypeId, List<FormExtractDTO> formData, string userName, bool clearExisting = true);
+        // Removed during deep clean
+        // Task<bool> SaveTLExtractedData(int tlDocId, int docTypeId, List<FormExtractDTO> formData, string userName, bool clearExisting = true);
 
         void UpdateExtractedDataUsageId();
 
@@ -32,19 +34,23 @@ namespace R10.Core.Interfaces
         Task<FormIFWActionUpdateDTO> GenIFWAction(int ifwId, string mapIds, string userName);           // OLD 
         Task<FormIFWActionUpdateDTO> GenIFWAct(int ifwId, string userName);                             // NEW
         Task<FormIFWActionUpdateDTO> GenIFWIDSRecords(int ifwId, string userName);
-        Task<FormIFWActionUpdateDTO> GenTLIFWAct(int tlDocId, string userName);
+        // Removed during deep clean
+        // Task<FormIFWActionUpdateDTO> GenTLIFWAct(int tlDocId, string userName);
 
         Task UpdateActMap(int mapHdrId, bool IsGenAction, bool IsCompare, string userName);
-        Task UpdateRTSMapActionDocument(List<RTSMapActionDocument> updated, string userName);
-        Task UpdateRTSMapDocumentClient(List<RTSMapActionDocumentClient> inserted, List<RTSMapActionDocumentClient> updated);
-        Task DeleteRTSMapDocumentClient(RTSMapActionDocumentClient deleted);
+//         Task UpdateRTSMapActionDocument(List<RTSMapActionDocument> updated, string userName); // Removed during deep clean
+//         Task UpdateRTSMapDocumentClient(List<RTSMapActionDocumentClient> inserted, List<RTSMapActionDocumentClient> updated); // Removed during deep clean
+        // Removed during deep clean
+        // Task DeleteRTSMapDocumentClient(RTSMapActionDocumentClient deleted);
 
-        Task UpdateTLMapActionDocument(List<TLMapActionDocument> updated, string userName);
-        Task UpdateTLMapDocumentClient(List<TLMapActionDocumentClient> inserted, List<TLMapActionDocumentClient> updated);
-        Task DeleteTLMapDocumentClient(TLMapActionDocumentClient deleted);
+//         Task UpdateTLMapActionDocument(List<TLMapActionDocument> updated, string userName); // Removed during deep clean
+//         Task UpdateTLMapDocumentClient(List<TLMapActionDocumentClient> inserted, List<TLMapActionDocumentClient> updated); // Removed during deep clean
+        // Removed during deep clean
+        // Task DeleteTLMapDocumentClient(TLMapActionDocumentClient deleted);
 
         Task<FormIFWActMap> GetByIdAsync(int mapHdrId);
-        Task<bool> UpdateAIInclude(int ifwId, bool aiInclude);
+        // Removed during deep clean
+        // Task<bool> UpdateAIInclude(int ifwId, bool aiInclude);
         Task<bool> UpdateActionMap(string userName, IEnumerable<FormIFWActionMap> newActionMaps, IEnumerable<FormIFWActionMap> updatedActionMaps, IEnumerable<FormIFWActionMap> deletedActionMaps);
         Task<List<FormPLMapDTO>> GetPLMapInfo();
 

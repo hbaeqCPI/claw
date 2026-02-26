@@ -20,7 +20,7 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Helpers;
 using R10.Core.Identity;
@@ -541,13 +541,6 @@ namespace R10.Web.Areas.Shared.Controllers
                                 recKey = SharePointViewModelService.BuildRecKey(tmk.CaseNumber, tmk.Country, tmk.SubCase);
                             }
                             break;
-                        case SharePointDocLibraryFolder.GeneralMatter:
-                            var gm = await _repository.GMMatters.Where(r => r.MatId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (gm != null)
-                            {
-                                recKey = SharePointViewModelService.BuildGMRecKey(gm.CaseNumber, gm.SubCase);
-                            }
-                            break;
 
                             //case SharePointDocLibraryFolder.Action:
                             //    break;
@@ -641,15 +634,6 @@ namespace R10.Web.Areas.Shared.Controllers
                             if (tmk != null)
                             {
                                 recKey = SharePointViewModelService.BuildRecKey(tmk.CaseNumber, tmk.Country, tmk.SubCase);
-                            }
-                            break;
-                        case ScreenCode.GeneralMatter:
-                            systemFolder = "General Matter";
-                            docLibraryFolder = SharePointDocLibraryFolder.GeneralMatter;
-                            var gm = await _repository.GMMatters.Where(r => r.MatId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (gm != null)
-                            {
-                                recKey = SharePointViewModelService.BuildGMRecKey(gm.CaseNumber, gm.SubCase);
                             }
                             break;
 

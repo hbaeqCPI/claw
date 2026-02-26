@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.VisualBasic;
 using R10.Core.Entities;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Exceptions;
 using R10.Core.Helpers;

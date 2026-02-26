@@ -417,14 +417,6 @@ namespace R10.Web.Areas.Shared.Controllers
             return Json(await attorneys.Select(c=> new { AttorneyID = c.AttorneyID, DueDateAttorneyCode = c.AttorneyCode, DueDateAttorneyName = c.AttorneyName}).OrderBy(c=>c.DueDateAttorneyName).ToListAsync());
         }
 
-        //todo: move to dmsdisclosure controller
-        public async Task<IActionResult> GetDMSDisclosureAttorneysList(string textProperty, string text, FilterType filterType, string requiredRelation = "")
-        {
-            var attorneys = this.Attorneys;
-            attorneys = attorneys.Where(a => a.AttorneyDisclosures.Any());
-            var list = attorneys.Select(a => new { AttorneyID = a.AttorneyID, AttorneyCode = a.AttorneyCode, AttorneyName = a.AttorneyName });
-            return Json(await list.ToListAsync());
-        }
 
         //public IActionResult GetApplicationAttorneysList(string textProperty, string text, FilterType filterType, string requiredRelation = "")
         //{

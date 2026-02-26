@@ -1,14 +1,8 @@
 ﻿@model ChildViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<DefaultSetting> Settings
-@inject ISystemSettings<AMSSetting> AMSSettings
-@inject ISystemSettings<RMSSetting> RMSSettings
-@inject ISystemSettings<FFSetting> FFSettings
 @{
     var settings = await Settings.GetSetting();
-    var amsSettings = await AMSSettings.GetSetting();
-    var rmsSettings = await RMSSettings.GetSetting();
-    var ffSettings = await FFSettings.GetSetting();
     var clientIdParam = $"{{clientId: {Model.Id}}}";
     var fullModify = Model.Permission.CanEditRecord && !Model.Permission.CanEditRemarksOnly;
     var genLetterTemplate = $"<span>#=GenAllLettersDescription#</span>#if (GenAllLetters===2 && ClientContactID > 0 ){{#<i class='far fa-list-alt pl-2 letter-entry' data-client-id='#=ClientID#' data-contact-id='#=ContactID#' title='{Localizer["Show Letter Types"]}'></i>#}}#";
@@ -38,18 +32,10 @@
                                 $"<span class='badge badge-info badge-dm-ff badge-pill ml-2' title='{Localizer["Foreign Filing Decision Maker"]}'>FF</span>" +
                                 "#}#";
 
-    var showLettersOptions = User.IsInSystem(SystemType.Patent) || User.IsInSystem(SystemType.Trademark) || User.IsInSystem(SystemType.GeneralMatter);
-    var showReceiveAMSConfirmation = User.IsInSystem(SystemType.AMS) && amsSettings.HasConfirmation;
-    var showIsDecisionMaker = User.IsInSystem(SystemType.AMS) && amsSettings.HasDecisionMgt && (bool)ViewData["UseDecisionMgt"];
-
-    var showReceiveRMSConfirmation = User.IsInSystem(SystemType.RMS) && rmsSettings.HasConfirmation;
-    var showIsRMSDecisionMaker = User.IsInSystem(SystemType.RMS) && rmsSettings.HasDecisionMgt && (bool)ViewData["RMSUseDecisionMgt"];
-
-    var showReceiveFFConfirmation = User.IsInSystem(SystemType.ForeignFiling) && ffSettings.HasConfirmation;
+    var showLettersOptions = User.IsInSystem(SystemType.Patent) || User.IsInSystem(SystemType.Trademark);
 
     var showPat = User.IsInSystem(SystemType.Patent);
     var showTmk = User.IsInSystem(SystemType.Trademark);
-    var showGM = User.IsInSystem(SystemType.GeneralMatter);
 }
 
 <div id="clientContactsContainer" data-unsave-letter-msg="@Localizer["Please save or cancel your letter settings changes first."]">
@@ -105,54 +91,6 @@
                                                 .Editable("clientPage.isGridColumnEditable")
                                                 .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Patent Contact"].ToString() })
                                                 .Visible(showTmk);
-                            columns.Bound(cc => cc.IsGeneralMatterContact)
-                                                .ClientTemplate("<i class='fa fal #: IsGeneralMatterContact ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["General Matter Contact"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["General Matter Contact"].ToString() })
-                                                .Visible(showGM);
-                            columns.Bound(cc => cc.ReceiveConfirmationLetter)
-                                                .ClientTemplate("<i class='fa fal #: ReceiveConfirmationLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive AMS Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive AMS Confirmation"].ToString() })
-                                                .Visible(showReceiveAMSConfirmation);
-                            columns.Bound(cc => cc.IsDecisionMaker)
-                                                .ClientTemplate("<i class='fa fal #: IsDecisionMaker ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["AMS Decision Maker"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["AMS Decision Maker"].ToString() })
-                                                .Visible(showIsDecisionMaker);
-                            columns.Bound(cc => cc.FFReceiveConfirmationLetter)
-                                                .ClientTemplate("<i class='fa fal #: FFReceiveConfirmationLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive Foreign Filing Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive Foreign Filing Confirmation"].ToString() })
-                                                .Visible(showReceiveFFConfirmation);
-                            columns.Bound(cc => cc.RMSReceiveConfirmationLetter)
-                                                .ClientTemplate("<i class='fa fal #: RMSReceiveConfirmationLetter ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["Receive Renewal Confirmation"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["Receive Renewal Confirmation"].ToString() })
-                                                .Visible(showReceiveRMSConfirmation);
-                            columns.Bound(cc => cc.RMSIsDecisionMaker)
-                                                .ClientTemplate("<i class='fa fal #: RMSIsDecisionMaker ? 'fa-check' : ''#'></i>").HtmlAttributes(new { @class = "text-center" })
-                                                .HeaderHtmlAttributes(new { @class = "-text-center", title = Localizer["RMS Decision Maker"].ToString() })
-                                                .Width(100)
-                                                .EditorTemplateName("CheckBox")
-                                                .Editable("clientPage.isGridColumnEditable")
-                                                .HtmlAttributes(new { @class = fullModify ? "editable-cell" : "", title = Localizer["RMS Decision Maker"].ToString() })
-                                                .Visible(showIsRMSDecisionMaker);
                             columns.Command(command =>
                             {
                                 if (Model.Permission.CanDeleteRecord)

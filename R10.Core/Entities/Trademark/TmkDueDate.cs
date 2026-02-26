@@ -1,5 +1,5 @@
 ﻿using R10.Core.Entities.Patent;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -16,10 +16,10 @@ namespace R10.Core.Entities.Trademark
         public TmkDueDateDeDocketOutstanding? DeDocketOutstanding { get; set; }
         public List<TmkDueDateDeDocket>? DueDateDeDockets { get; set; }
 
-        public RMSDue? RMSDue { get; set; }
-        public List<RMSDueDoc>? RMSDueDocs { get; set; }
-        public List<RMSRemLogDue>? RMSRemLogDues { get;set; }
-        public List<RMSActionCloseLogDue>? RMSActionCloseLogDues { get; set; }
+//         public RMSDue? RMSDue { get; set; } // Removed during deep clean
+//         public List<RMSDueDoc>? RMSDueDocs { get; set; } // Removed during deep clean
+//         public List<RMSRemLogDue>? RMSRemLogDues { get;set; } // Removed during deep clean
+//         public List<RMSActionCloseLogDue>? RMSActionCloseLogDues { get; set; } // Removed during deep clean
         public Attorney? DueDateAttorney { get; set; }
         public List<TmkDueDateDelegation>? Delegations { get; set; }
         public List<TmkDueDateDateTakenLog>? DateTakenLogs { get; set; }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -39,7 +39,7 @@ namespace R10.Web.Areas.Shared.Controllers
 
         private readonly ICountryApplicationService _countryApplicationService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _matterService;
+//         private readonly IGMMatterService _matterService; // Removed during deep clean
         private readonly ExportHelper _exportHelper;
         private readonly IStringLocalizer<RecentViewedViewModel> _searchResultLocalizer;
         protected readonly ClaimsPrincipal _user;
@@ -53,7 +53,7 @@ namespace R10.Web.Areas.Shared.Controllers
             IUrlHelper url,
             ICountryApplicationService countryApplicationService,
             ITmkTrademarkService trademarkService,
-            IGMMatterService matterService,
+//             IGMMatterService matterService, // Removed during deep clean
             ClaimsPrincipal user,
             ExportHelper exportHelper,
             IStringLocalizer<RecentViewedViewModel> searchResultLocalizer
@@ -66,7 +66,6 @@ namespace R10.Web.Areas.Shared.Controllers
 
             _countryApplicationService = countryApplicationService;
             _trademarkService = trademarkService;
-            _matterService = matterService;
             _exportHelper = exportHelper;
             _searchResultLocalizer = searchResultLocalizer;
             _user = user;
@@ -162,8 +161,6 @@ namespace R10.Web.Areas.Shared.Controllers
 
             var patent = mainSearchFilters.FirstOrDefault(f => f.Property == "Patent");
             var trademark = mainSearchFilters.FirstOrDefault(f => f.Property == "Trademark");
-            var generalMatter = mainSearchFilters.FirstOrDefault(f => f.Property == "GeneralMatter");
-
             var clientCode = mainSearchFilters.FirstOrDefault(f => f.Property == "Client.ClientCode");
             var viewedBy = mainSearchFilters.FirstOrDefault(f => f.Property == "ViewedBy");
             var activityDateFrom = mainSearchFilters.FirstOrDefault(f => f.Property == "ActivityDateFrom");
@@ -306,44 +303,6 @@ namespace R10.Web.Areas.Shared.Controllers
                                         })
                                         .ToList());
 
-            }
-            if (generalMatter != null)
-            {
-                var gmUrl = _url.ActionLink("Detail", "Matter", new { area = "GeneralMatter" }) + "/";
-                var matIds = activityLog.Where(d => EF.Functions.Like(d.RequestUrl, $"%{gmUrl}%"))
-                                        .Select(d => new
-                                        {
-                                            ViewedId = Int32.Parse(d.RequestUrl.Substring(gmUrl.Length, (d.RequestUrl.IndexOf("?") < 0 ? d.RequestUrl.Length : d.RequestUrl.IndexOf("?")) - d.RequestUrl.IndexOf(gmUrl) - gmUrl.Length)),
-                                            ActivityDate = d.ActivityDate,
-                                            UserId = d.UserId.Substring(0, d.UserId.IndexOf("@"))
-                                        })
-                                        .Distinct()
-                                        .ToList();
-
-                data.AddRange(_matterService.QueryableList
-                                        .Where(d => (clientCode == null || EF.Functions.Like(d.Client.ClientCode, clientCode.Value)))
-                                        .Select(d => new
-                                        {
-                                            d.MatId,
-                                            d.CaseNumber,
-                                            d.MatterTitle,
-                                            d.SubCase,
-                                            d.MatterStatus
-                                        })
-                                        .AsEnumerable()
-                                        .Join(matIds, mat => mat.MatId, filtered => filtered.ViewedId, (mat, filtered) => new RecentViewedViewModel()
-                                        {
-                                            ActivityDate = filtered.ActivityDate,
-                                            UserId = filtered.UserId,
-                                            Id = mat.MatId,
-                                            IdType = "Matter",
-                                            System = "GeneralMatter",
-                                            Title = mat.MatterTitle,
-                                            CaseNumber = mat.CaseNumber,
-                                            SubCase = mat.SubCase,
-                                            Status = mat.MatterStatus,
-                                        })
-                                        .ToList());
             }
             return data;
         }

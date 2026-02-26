@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using R10.Core.Entities.GeneralMatter;
+using Microsoft.Extensions.DependencyInjection;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Interfaces;
@@ -11,7 +11,6 @@ using R10.Core.Services.Trademark;
 using R10.Infrastructure.Data;
 using R10.Infrastructure.Data.Patent;
 using R10.Infrastructure.Data.Trademark;
-using R10.Web.Areas.Trademark.Services;
 using R10.Web.Interfaces;
 using R10.Web.Services;
 
@@ -57,7 +56,6 @@ namespace R10.Web.Extensions
             services.AddScoped<IParentEntityService<TmkActionType, TmkActionParameter>, ParentEntityService<TmkActionType, TmkActionParameter>>();
 
             services.AddScoped<ITmkTrademarkRepository, TmkTrademarkRepository>();
-            services.AddScoped<ITmkTrademarkViewModelService, TmkTrademarkViewModelService>();
             services.AddScoped<ITmkTrademarkService, TmkTrademarkService>();
 
             services.AddScoped<IChildEntityService<TmkTrademark, TmkLicensee>, TmkTrademarkChildService<TmkLicensee>>();
@@ -66,16 +64,13 @@ namespace R10.Web.Extensions
             services.AddScoped<IChildEntityService<TmkTrademark, TmkKeyword>, TmkTrademarkChildService<TmkKeyword>>();
             services.AddScoped<IChildEntityService<TmkTrademark, PatRelatedTrademark>, TmkTrademarkChildService<PatRelatedTrademark>>();
 
-            services.AddScoped<ITmkCostTrackingViewModelService, TmkCostTrackingViewModelService>();
             services.AddScoped<ICostTrackingService<TmkCostTrack>, TmkCostTrackingService>();
 
-            services.AddScoped<ITmkActionDueViewModelService, TmkActionDueViewModelService>();
             services.AddScoped<IActionDueDeDocketService<TmkActionDue, TmkDueDate>, TmkActionDueService>();
             services.AddScoped<IActionDueService<TmkActionDue, TmkDueDate>, TmkActionDueService>();
             services.AddScoped<IDueDateService<TmkActionDue, TmkDueDate>, TmkDueDateService>();
             services.AddScoped<IEntityService<TmkDueDateDelegation>, AuxService<TmkDueDateDelegation>>();
 
-            services.AddScoped<ITmkConflictViewModelService, TmkConflictViewModelService>();
             services.AddScoped<ITmkConflictService, TmkConflictService>();
             services.AddScoped<ITmkConflictRepository, TmkConflictRepository>();
 
@@ -87,15 +82,6 @@ namespace R10.Web.Extensions
             services.AddScoped<IParentEntityService<TmkCostType, TmkBudgetManagement>, ParentEntityService<TmkCostType, TmkBudgetManagement>>();
             services.AddScoped<IEntityService<TmkBudgetManagement>, AuxService<TmkBudgetManagement>>();
             services.AddScoped<IMultipleEntityService<TmkTrademark, TmkOwner>, TmkOwnerService>();
-
-            // tmk images
-            services.AddScoped<ITmkImageViewModelService, TmkImageViewModelService>();
-
-            // tmk cost tracking images
-            services.AddScoped<ITmkImageCostViewModelService, TmkImageCostViewModelService>();
-
-            // tmk action images
-            services.AddScoped<ITmkImageActViewModelService, TmkImageActViewModelService>();
 
             //settings
             services.AddScoped<ISystemSettings<TmkSetting>, SystemSettings<TmkSetting>>();
@@ -132,7 +118,7 @@ namespace R10.Web.Extensions
             services.AddScoped<IWebApiBaseService<TmkCostTrackWebSvc, TmkCostTrack>, TmkCostTrackingApiService>();
             services.AddScoped<ITmkOwnerApiService, TmkOwnerApiService>();
 
-            //cost estimator & setup           
+            //cost estimator & setup
             services.AddScoped<ITmkCECountrySetupService, TmkCECountrySetupService>();
             services.AddScoped<IAsyncRepository<TmkCECountrySetup>, EFRepository<TmkCECountrySetup>>();
             services.AddScoped<IViewModelService<TmkCECountrySetup>, ViewModelService<TmkCECountrySetup>>();
@@ -154,8 +140,8 @@ namespace R10.Web.Extensions
             services.AddScoped<IChildEntityService<TmkCostEstimator, TmkCostEstimatorCountry>, TmkCostEstimatorChildService<TmkCostEstimatorCountry>>();
             services.AddScoped<IChildEntityService<TmkCostEstimator, TmkCostEstimatorCountryCost>, TmkCostEstimatorChildService<TmkCostEstimatorCountryCost>>();
             services.AddScoped<IChildEntityService<TmkCostEstimator, TmkCEQuestionGeneral>, TmkCostEstimatorChildService<TmkCEQuestionGeneral>>();
-            
-            services.AddScoped<IChildEntityService<TmkTrademark, GMMatterTrademark>, ChildEntityService<TmkTrademark, GMMatterTrademark>>();
+
+            // GMMatterTrademark removed during deep clean
 
             return services;
         }

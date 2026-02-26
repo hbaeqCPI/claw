@@ -1,6 +1,6 @@
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+﻿// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
@@ -29,17 +29,17 @@ namespace R10.Core.Entities
         public List<Invention>? Attorney3Inventions { get; set; }
         public List<Invention>? Attorney4Inventions { get; set; }
         public List<Invention>? Attorney5Inventions { get; set; }
-        public List<Disclosure>? AttorneyDisclosures { get; set; }
+//         public List<Disclosure>? AttorneyDisclosures { get; set; } // Removed during deep clean
         public List<PatActionType>? AttorneyPatActionTypes { get; set; }
         public List<TmkActionType>? AttorneyTmkActionTypes { get; set; }
-        public List<GMActionType>? AttorneyGMActionTypes { get; set; }
-        public List<DMSActionType>? AttorneyDMSActionTypes { get; set; }
-        public List<DMSActionDue>? AttorneyDMSActionDues { get; set; }
+//         public List<GMActionType>? AttorneyGMActionTypes { get; set; } // Removed during deep clean
+//         public List<DMSActionType>? AttorneyDMSActionTypes { get; set; } // Removed during deep clean
+//         public List<DMSActionDue>? AttorneyDMSActionDues { get; set; } // Removed during deep clean
         public List<PatDueDate>? AttorneyPatDueDates { get; set; }
         public List<PatDueDateInv>? AttorneyPatDueDateInvs { get; set; }
         public List<TmkDueDate>? AttorneyTmkDueDates { get; set; }
-        public List<GMDueDate>? AttorneyGMDueDates { get; set; }
-        public List<DMSDueDate>? AttorneyDMSDueDates { get; set; }
+//         public List<GMDueDate>? AttorneyGMDueDates { get; set; } // Removed during deep clean
+//         public List<DMSDueDate>? AttorneyDMSDueDates { get; set; } // Removed during deep clean
 
         public List<TmkTrademark>? Attorney1Trademarks { get; set; }
         public List<TmkTrademark>? Attorney2Trademarks { get; set; }
@@ -49,10 +49,10 @@ namespace R10.Core.Entities
 
         public List<PatCostTrack>? PatCostTrackBillings { get; set; }
         public List<TmkCostTrack>? TmkCostTrackBillings { get; set; }
-        public List<GMCostTrack>? GMCostTrackBillings { get; set; }
+//         public List<GMCostTrack>? GMCostTrackBillings { get; set; } // Removed during deep clean
 
-        public List<GMMatterAttorney>? GMMatterAttorneys { get; set; }
-        public List<AMSMain>? AttorneyAMSMain { get; set; }
+//         public List<GMMatterAttorney>? GMMatterAttorneys { get; set; } // Removed during deep clean
+//         public List<AMSMain>? AttorneyAMSMain { get; set; } // Removed during deep clean
         public List<TimeTracker>? AttorneyTimeTrackers { get; set; }
 
         public List<CPiUserEntityFilter>? EntityFilters { get; set; }

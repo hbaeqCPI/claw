@@ -1,9 +1,6 @@
 ﻿@model DocsOutGridOptions
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<DefaultSetting> Settings
-@inject ISystemSettings<R10.Core.Entities.AMS.AMSSetting> AMSSettings
-@inject ISystemSettings<R10.Core.Entities.ForeignFiling.FFSetting> FFSettings
-@inject ISystemSettings<R10.Core.Entities.RMS.RMSSetting> RMSSettings
 @{
     var settings = await Settings.GetSetting();
     var param = $"{{systemType: '{Model.SystemType}', parentKey: '{Model.ParentKey}', parentValue: {Model.ParentValue}, documentCode: 'All'}}";
@@ -25,16 +22,6 @@
         new SelectListItem() {Text = Localizer["Electronic Forms"], Value = "EFS"}
     };
 
-    var amsSettings = await AMSSettings.GetSetting();
-    var ffSettings = await FFSettings.GetSetting();
-    var rmsSettings = await RMSSettings.GetSetting();
-
-    if (amsSettings.ShowReminderCorrespondence && Model.SystemType == "A" && User.IsInSystem(SystemType.AMS) ||
-        ffSettings.ShowReminderCorrespondence && Model.SystemType == "P" && User.IsInSystem(SystemType.ForeignFiling) ||
-        rmsSettings.ShowReminderCorrespondence && Model.SystemType == "T" && User.IsInSystem(SystemType.RMS))
-    {
-        documentTypes.Add(new SelectListItem() { Text = Localizer["Reminders"], Value = "REM" });
-    }
 
     var docEditUrl = "";
     var letterLogDocLibrary = "";

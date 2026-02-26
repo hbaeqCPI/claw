@@ -3,10 +3,10 @@ using R10.Core.DTOs;
 using R10.Core.Entities.Documents;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.PatClearance;
-using R10.Core.Entities.Clearance;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
+// using R10.Core.Entities.Clearance; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Interfaces;
 using R10.Core.Helpers;
@@ -37,7 +37,7 @@ namespace R10.Core.Services.Documents
         private readonly ClaimsPrincipal _user;
         private readonly ICountryApplicationService _applicationService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _matterService;
+//         private readonly IGMMatterService _matterService; // Removed during deep clean
         private readonly ILoggerService<Log> _errorLogger;
         private readonly ITradeSecretService _tradeSecretService;
 
@@ -50,7 +50,7 @@ namespace R10.Core.Services.Documents
             ClaimsPrincipal user,
             ICountryApplicationService applicationService,
             ITmkTrademarkService trademarkService,
-            IGMMatterService matterService,
+//             IGMMatterService matterService, // Removed during deep clean
             ILoggerService<Log> errorLogger,
             ITradeSecretService tradeSecretService
             )
@@ -61,7 +61,7 @@ namespace R10.Core.Services.Documents
             _user = user;
             _applicationService = applicationService;
             _trademarkService = trademarkService;
-            _matterService = matterService;
+            // _matterService = matterService; // Removed during deep clean
             _errorLogger = errorLogger;
             _tradeSecretService = tradeSecretService;
         }
@@ -486,14 +486,15 @@ namespace R10.Core.Services.Documents
                         tmkActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
                     }
                 }
-                if (gmActIds.Count > 0)
-                {
-                    var gmActions = await _repository.GMActionsDue.Where(a => gmActIds.Contains(a.ActId)).ToListAsync();
-                    if (gmActions.Count > 0)
-                    {
-                        gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
-                    }
-                }
+                // Removed during deep clean - GeneralMatter module removed
+                // if (gmActIds.Count > 0)
+                // {
+                //     var gmActions = await _repository.GMActionsDue.Where(a => gmActIds.Contains(a.ActId)).ToListAsync();
+                //     if (gmActions.Count > 0)
+                //     {
+                //         gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
+                //     }
+                // }
 
                 _repository.DocVerifications.AddRange(docVerifications);
                 await _repository.SaveChangesAsync();
@@ -609,14 +610,15 @@ namespace R10.Core.Services.Documents
                         tmkActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });                        
                     }
                 }
-                else if (systemType.ToLower() == "g")
-                {
-                    var gmActions = await _repository.GMActionsDue.Where(a => resetActIds.Contains(a.ActId) && !a.CheckDocket).ToListAsync();
-                    if (gmActions.Count > 0)
-                    {
-                        gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });                        
-                    }
-                }
+                // Removed during deep clean - GeneralMatter module removed
+                // else if (systemType.ToLower() == "g")
+                // {
+                //     var gmActions = await _repository.GMActionsDue.Where(a => resetActIds.Contains(a.ActId) && !a.CheckDocket).ToListAsync();
+                //     if (gmActions.Count > 0)
+                //     {
+                //         gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
+                //     }
+                // }
             }
 
             await _repository.SaveChangesAsync();         
@@ -635,7 +637,7 @@ namespace R10.Core.Services.Documents
         {
             var patActions = new List<PatActionDue>();
             var tmkActions = new List<TmkActionDue>();
-            var gmActions = new List<GMActionDue>();
+//             var gmActions = new List<GMActionDue>(); // Removed during deep clean
             foreach (var item in keyIds)
             {
                 var keyArr = item.Split("|");
@@ -653,10 +655,11 @@ namespace R10.Core.Services.Documents
                 {
                     tmkActions.AddRange(await _repository.TmkActionDues.Where(d => d.ActId == keyId).ToListAsync());
                 }
-                if (systemType.ToLower() == "g")
-                {
-                    gmActions.AddRange(await _repository.GMActionsDue.Where(d => d.ActId == keyId).ToListAsync());
-                }
+                // Removed during deep clean - GeneralMatter module removed
+                // if (systemType.ToLower() == "g")
+                // {
+                //     gmActions.AddRange(await _repository.GMActionsDue.Where(d => d.ActId == keyId).ToListAsync());
+                // }
             }
             var userId = _user.GetUserIdentifier();
 
@@ -670,11 +673,12 @@ namespace R10.Core.Services.Documents
                 tmkActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
                 await _repository.SaveChangesAsync();
             }
-            if (gmActions.Count > 0)
-            {
-                gmActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
-                await _repository.SaveChangesAsync();
-            }
+            // Removed during deep clean - GeneralMatter module removed
+            // if (gmActions.Count > 0)
+            // {
+            //     gmActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
+            //     await _repository.SaveChangesAsync();
+            // }
         }
 
         /// <summary>
@@ -781,14 +785,15 @@ namespace R10.Core.Services.Documents
 
                 newActId = await _repository.TmkActionDues.AsNoTracking().Where(d => d.ActionType == tmkActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync(); 
             }
-            else if (systemType.ToLower() == "g")
-            {
-                await _matterService.GenerateWorkflowAction(parentId, actionTypeId, baseDate);
-                var gmActionType = await _repository.GMActionTypes.AsNoTracking().Where(d => d.ActionTypeID == actionTypeId).FirstOrDefaultAsync();                        
-                if (gmActionType == null) return newActId;
-
-                newActId = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActionType == gmActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync();
-            }
+            // Removed during deep clean - GeneralMatter module removed
+            // else if (systemType.ToLower() == "g")
+            // {
+            //     await _matterService.GenerateWorkflowAction(parentId, actionTypeId, baseDate);
+            //     var gmActionType = await _repository.GMActionTypes.AsNoTracking().Where(d => d.ActionTypeID == actionTypeId).FirstOrDefaultAsync();
+            //     if (gmActionType == null) return newActId;
+            //
+            //     newActId = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActionType == gmActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync();
+            // }
 
             return newActId;
         }
@@ -884,10 +889,11 @@ namespace R10.Core.Services.Documents
                 _repository.DocFileSignatures.Add(newDocFileSignature);
                 await _repository.SaveChangesAsync();
                 
-                if (isDMSInventorSignature)
-                {
-                    await _repository.Disclosures.Where(d => d.DMSId == dataKeyValue).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newDocFileSignature.SignatureFileId));
-                }
+                // Removed during deep clean - DMS/Disclosure module removed
+                // if (isDMSInventorSignature)
+                // {
+                //     await _repository.Disclosures.Where(d => d.DMSId == dataKeyValue).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newDocFileSignature.SignatureFileId));
+                // }
             }
         }
 
@@ -922,10 +928,11 @@ namespace R10.Core.Services.Documents
             _repository.SharePointFileSignatures.Add(newSharePointFileSignature);
             await _repository.SaveChangesAsync();
 
-            if (isDMSInventorSignature)
-            {
-                await _repository.Disclosures.Where(d => d.DMSId == parentId).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newSharePointFileSignature.SignatureFileId));
-            }
+            // Removed during deep clean - DMS/Disclosure module removed
+            // if (isDMSInventorSignature)
+            // {
+            //     await _repository.Disclosures.Where(d => d.DMSId == parentId).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newSharePointFileSignature.SignatureFileId));
+            // }
         }
 
 
@@ -1286,63 +1293,71 @@ namespace R10.Core.Services.Documents
             }
         }
 
+        // Removed during deep clean - GeneralMatter module removed
         private async Task UpdateGeneralMatterParentStamp(DocFolder folder)
         {
-            BaseEntity mainRecord = null;
-            switch (folder.ScreenCode.ToUpper())
-            {
-                case "GM":
-                    mainRecord = await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == folder.DataKeyValue);
-                    break;
-
-                case "ACT":
-                    mainRecord = await _repository.GMActionsDue.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
-                    break;
-
-                case "COST":
-                    mainRecord = await _repository.GMCostTracks.FirstOrDefaultAsync(r => r.CostTrackId == folder.DataKeyValue);
-                    break;
-            }
-            if (mainRecord != null)
-            {
-                UpdateStamp(folder.UpdatedBy, mainRecord);
-            }
+            // BaseEntity mainRecord = null;
+            // switch (folder.ScreenCode.ToUpper())
+            // {
+            //     case "GM":
+            //         mainRecord = await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == folder.DataKeyValue);
+            //         break;
+            //
+            //     case "ACT":
+            //         mainRecord = await _repository.GMActionsDue.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
+            //         break;
+            //
+            //     case "COST":
+            //         mainRecord = await _repository.GMCostTracks.FirstOrDefaultAsync(r => r.CostTrackId == folder.DataKeyValue);
+            //         break;
+            // }
+            // if (mainRecord != null)
+            // {
+            //     UpdateStamp(folder.UpdatedBy, mainRecord);
+            // }
+            await Task.CompletedTask;
         }
 
+        // Removed during deep clean - DMS/Disclosure module removed
         private async Task UpdateDMSParentStamp(DocFolder folder)
         {
-            if (folder.ScreenCode.ToUpper() == "DMS")
-            {
-                var mainRecord = await _repository.Disclosures.FirstOrDefaultAsync(r => r.DMSId == folder.DataKeyValue);
-                if (mainRecord != null)
-                {
-                    UpdateStamp(folder.UpdatedBy, mainRecord);
-                }
-            }
+            // if (folder.ScreenCode.ToUpper() == "DMS")
+            // {
+            //     var mainRecord = await _repository.Disclosures.FirstOrDefaultAsync(r => r.DMSId == folder.DataKeyValue);
+            //     if (mainRecord != null)
+            //     {
+            //         UpdateStamp(folder.UpdatedBy, mainRecord);
+            //     }
+            // }
+            await Task.CompletedTask;
         }
 
+        // Removed during deep clean - PatClearance module removed
         private async Task UpdatePatClearanceParentStamp(DocFolder folder)
         {
-            if (folder.ScreenCode.ToUpper() == "PAC")
-            {
-                var mainRecord = await _repository.PacClearances.FirstOrDefaultAsync(r => r.PacId == folder.DataKeyValue);
-                if (mainRecord != null)
-                {
-                    UpdateStamp(folder.UpdatedBy, mainRecord);
-                }
-            }
+            // if (folder.ScreenCode.ToUpper() == "PAC")
+            // {
+            //     var mainRecord = await _repository.PacClearances.FirstOrDefaultAsync(r => r.PacId == folder.DataKeyValue);
+            //     if (mainRecord != null)
+            //     {
+            //         UpdateStamp(folder.UpdatedBy, mainRecord);
+            //     }
+            // }
+            await Task.CompletedTask;
         }
 
+        // Removed during deep clean - TmkClearance module removed
         private async Task UpdateTmkSearchParentStamp(DocFolder folder)
         {
-            if (folder.ScreenCode.ToUpper() == "TMC")
-            {
-                var mainRecord = await _repository.TmcClearances.FirstOrDefaultAsync(r => r.TmcId == folder.DataKeyValue);
-                if (mainRecord != null)
-                {
-                    UpdateStamp(folder.UpdatedBy, mainRecord);
-                }
-            }
+            // if (folder.ScreenCode.ToUpper() == "TMC")
+            // {
+            //     var mainRecord = await _repository.TmcClearances.FirstOrDefaultAsync(r => r.TmcId == folder.DataKeyValue);
+            //     if (mainRecord != null)
+            //     {
+            //         UpdateStamp(folder.UpdatedBy, mainRecord);
+            //     }
+            // }
+            await Task.CompletedTask;
         }
 
         private void UpdateStamp<T>(string userName, T entity) where T : BaseEntity
@@ -2134,20 +2149,21 @@ namespace R10.Core.Services.Documents
                 parentKey = "TmkId";
                 parentKeyValue = await _repository.TmkCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.TmkId).FirstOrDefaultAsync();
             }
-            else if (systemType == "G" && dataKey == "actid")
-            {
-                //get general matters
-                screenCode = "GM";
-                parentKey = "MatId";
-                parentKeyValue = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "G" && dataKey == "costtrackid")
-            {
-                //get general matters
-                screenCode = "GM";
-                parentKey = "MatId";
-                parentKeyValue = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
-            }
+            // Removed during deep clean - GeneralMatter module removed
+            // else if (systemType == "G" && dataKey == "actid")
+            // {
+            //     //get general matters
+            //     screenCode = "GM";
+            //     parentKey = "MatId";
+            //     parentKeyValue = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
+            // }
+            // else if (systemType == "G" && dataKey == "costtrackid")
+            // {
+            //     //get general matters
+            //     screenCode = "GM";
+            //     parentKey = "MatId";
+            //     parentKeyValue = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
+            // }
 
             if (parentKeyValue > 0)
                 return $"{systemType}|{screenCode}|{parentKey}|{parentKeyValue}";
@@ -2187,12 +2203,13 @@ namespace R10.Core.Services.Documents
             else if (systemType == "T" && dataKey == "costtrackid")
                 folderName = await _repository.TmkCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
 
-            else if (systemType == "G" && dataKey == "matid")
-                folderName = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => d.CaseNumber).FirstOrDefaultAsync();
-            else if (systemType == "G" && dataKey == "actid")
-                folderName = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
-            else if (systemType == "G" && dataKey == "costtrackid")
-                folderName = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
+            // Removed during deep clean - GeneralMatter module removed
+            // else if (systemType == "G" && dataKey == "matid")
+            //     folderName = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => d.CaseNumber).FirstOrDefaultAsync();
+            // else if (systemType == "G" && dataKey == "actid")
+            //     folderName = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
+            // else if (systemType == "G" && dataKey == "costtrackid")
+            //     folderName = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
 
             return folderName ?? $"{documentLinkArray[2]}.{documentLinkArray[3]}";
         }
@@ -2224,12 +2241,13 @@ namespace R10.Core.Services.Documents
                     if (tmk != null)
                         return (tmk.ClientCode, tmk.ClientName, tmk.MatterNumber ?? tmk.CaseNumber);
                 }
-                else if (systemType == "G" && dataKey == "matid")
-                {
-                    var gm = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => new { d.CaseNumber, d.MatterNumber, d.Client.ClientCode, d.Client.ClientName }).FirstOrDefaultAsync();
-                    if (gm != null)
-                        return (gm.ClientCode, gm.ClientName, gm.MatterNumber ?? gm.CaseNumber);
-                }
+                // Removed during deep clean - GeneralMatter module removed
+                // else if (systemType == "G" && dataKey == "matid")
+                // {
+                //     var gm = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => new { d.CaseNumber, d.MatterNumber, d.Client.ClientCode, d.Client.ClientName }).FirstOrDefaultAsync();
+                //     if (gm != null)
+                //         return (gm.ClientCode, gm.ClientName, gm.MatterNumber ?? gm.CaseNumber);
+                // }
             }
 
             return ("", "", "");
@@ -2348,11 +2366,12 @@ namespace R10.Core.Services.Documents
                     if (application != null)
                         return _tradeSecretService.CreateLocator(TradeSecretScreen.Invention, application.InvId);
                     break;
-                case "dmsid":
-                    var disclosure = await _repository.Disclosures.AsNoTracking().Where(d => (d.IsTradeSecret ?? false) && d.DMSId == parentKeyId).FirstOrDefaultAsync();
-                    if (disclosure != null)
-                        return _tradeSecretService.CreateLocator(TradeSecretScreen.DMSDisclosure, disclosure.DMSId);
-                    break;
+                // Removed during deep clean - DMS/Disclosure module removed
+                // case "dmsid":
+                //     var disclosure = await _repository.Disclosures.AsNoTracking().Where(d => (d.IsTradeSecret ?? false) && d.DMSId == parentKeyId).FirstOrDefaultAsync();
+                //     if (disclosure != null)
+                //         return _tradeSecretService.CreateLocator(TradeSecretScreen.DMSDisclosure, disclosure.DMSId);
+                //     break;
             }
 
             return null;

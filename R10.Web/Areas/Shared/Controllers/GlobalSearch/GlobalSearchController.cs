@@ -11,15 +11,15 @@ using Newtonsoft.Json;
 using R10.Core;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.ReportScheduler;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 using R10.Web.Areas.Patent.ViewModels;
 using R10.Web.Areas.Shared.ViewModels;
@@ -56,8 +56,8 @@ namespace R10.Web.Areas.Shared.Controllers
         private readonly IInventionService _inventionService;
         private readonly ICountryApplicationService _countryApplicationService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _gmMatterService;
-        private readonly IDisclosureService _disclosureService;
+//         private readonly IGMMatterService _gmMatterService; // Removed during deep clean
+//         private readonly IDisclosureService _disclosureService; // Removed during deep clean
 
         private readonly string pageTitle = "Global Search";
         private const string BASICSEARCH = "b";
@@ -71,10 +71,8 @@ namespace R10.Web.Areas.Shared.Controllers
                 IAuthorizationService authService,
                 IInventionService inventionService,
                 ICountryApplicationService countryApplicationService,
-                ITmkTrademarkService trademarkService,
-                IGMMatterService gmMatterService,
-                IDisclosureService disclosureService
-            )
+                ITmkTrademarkService trademarkService)
+            // IGMMatterService gmMatterService, IDisclosureService disclosureService removed during deep clean
         {
             _azureSearch = azureSearch;
             _documentStorageService = documentStorageService;
@@ -86,8 +84,9 @@ namespace R10.Web.Areas.Shared.Controllers
             _inventionService = inventionService;
             _countryApplicationService = countryApplicationService;
             _trademarkService = trademarkService;
-            _gmMatterService = gmMatterService;
-            _disclosureService = disclosureService;
+            // Removed during deep clean
+            // _gmMatterService = gmMatterService;
+            // _disclosureService = disclosureService;
         }
 
         public async Task<IActionResult> Index()
@@ -221,50 +220,16 @@ namespace R10.Web.Areas.Shared.Controllers
                                                     Action = Url.Action("Detail", "TmkTrademark", new { area = "Trademark", id = d.TmkId })
                                                 }).Distinct().ToListAsync());
                     }                        
-                    else if (screen == ScreenCode.GeneralMatter.ToLower())
-                    {
-                        var filteredFields = searchFields.Where(d => typeof(GMMatter).GetProperty(d.FieldName) != null && d.ScreenCode.ToLower() == screen)
-                                                .Select(d => new QueryFilterViewModel()
-                                                {
-                                                    Property = d.FieldName,
-                                                    Value = "%" + trimmedStr + "%",
-                                                    Operator = "like"
-                                                })
-                                                .ToList();
-
-                        if (filteredFields == null || filteredFields.Count == 0) continue;
-
-                        recordFound.AddRange(await QueryHelper.BuildOrCriteria<GMMatter>(_gmMatterService.QueryableList, filteredFields)
-                                                .Select(d => new CaseListViewModel()
-                                                {
-                                                    Id = d.MatId,
-                                                    IdType = "MatId",
-                                                    System = ScreenCode.GeneralMatter,
-                                                    Action = Url.Action("Detail", "Matter", new { area = "GeneralMatter", id = d.MatId })
-                                                }).Distinct().ToListAsync());
-                    }
-                    else if (screen == ScreenCode.DMS.ToLower())
-                    {
-                        var filteredFields = searchFields.Where(d => typeof(Disclosure).GetProperty(d.FieldName) != null && d.ScreenCode.ToLower() == screen)
-                                                .Select(d => new QueryFilterViewModel()
-                                                {
-                                                    Property = d.FieldName,
-                                                    Value = "%" + trimmedStr + "%",
-                                                    Operator = "like"
-                                                })
-                                                .ToList();
-
-                        if (filteredFields == null || filteredFields.Count == 0) continue;
-
-                        recordFound.AddRange(await QueryHelper.BuildOrCriteria<Disclosure>(_disclosureService.QueryableList, filteredFields)
-                                                .Select(d => new CaseListViewModel()
-                                                {
-                                                    Id = d.DMSId,
-                                                    IdType = "DMSId",
-                                                    System = ScreenCode.DMS,
-                                                    Action = Url.Action("Detail", "Disclosure", new { area = "DMS", id = d.DMSId })
-                                                }).Distinct().ToListAsync());
-                    }
+                    // Removed during deep clean - GeneralMatter module removed
+                    // else if (screen == ScreenCode.GeneralMatter.ToLower())
+                    // {
+                    //     ...
+                    // }
+                    // Removed during deep clean - DMS/Disclosure module removed
+                    // else if (screen == ScreenCode.DMS.ToLower())
+                    // {
+                    //     ...
+                    // }
                 }
 
                 if (recordFound != null)
@@ -336,14 +301,16 @@ namespace R10.Web.Areas.Shared.Controllers
                                         redirectUrl = Url.Action("Search", "TmkTrademark", new { area = "Trademark" });
                                         queryFilters = searchFields.Where(d => d.ScreenCode.ToLower() == screenFound.ToLower() && typeof(TmkTrademark).GetProperty(d.FieldName) != null).Select(d => d.FieldName).ToList();
                                         break;
-                                    case ScreenCode.GeneralMatter:                                        
-                                        redirectUrl = Url.Action("Search", "Matter", new { area = "GeneralMatter" });
-                                        queryFilters = searchFields.Where(d => d.ScreenCode.ToLower() == screenFound.ToLower() && typeof(GMMatter).GetProperty(d.FieldName) != null).Select(d => d.FieldName).ToList();
-                                        break;
-                                    case ScreenCode.DMS:
-                                        redirectUrl = Url.Action("Search", "Disclosure", new { area = "DMS" });
-                                        queryFilters = searchFields.Where(d => d.ScreenCode.ToLower() == screenFound.ToLower() && typeof(Disclosure).GetProperty(d.FieldName) != null).Select(d => d.FieldName).ToList();
-                                        break;
+                                    // Removed during deep clean - GeneralMatter module removed
+                                    // case ScreenCode.GeneralMatter:
+                                    //     redirectUrl = Url.Action("Search", "Matter", new { area = "GeneralMatter" });
+                                    //     queryFilters = searchFields.Where(d => d.ScreenCode.ToLower() == screenFound.ToLower() && typeof(GMMatter).GetProperty(d.FieldName) != null).Select(d => d.FieldName).ToList();
+                                    //     break;
+                                    // Removed during deep clean - DMS/Disclosure module removed
+                                    // case ScreenCode.DMS:
+                                    //     redirectUrl = Url.Action("Search", "Disclosure", new { area = "DMS" });
+                                    //     queryFilters = searchFields.Where(d => d.ScreenCode.ToLower() == screenFound.ToLower() && typeof(Disclosure).GetProperty(d.FieldName) != null).Select(d => d.FieldName).ToList();
+                                    //     break;
                                     default:
                                         break;
                                 }                               

@@ -1,9 +1,9 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
@@ -198,60 +198,60 @@ namespace R10.Core.Services.Shared
         }
         #endregion
 
-        #region GMDueDate
-        public async Task UpdateGMDueDateRemarks(GMDueDate dueDate)
-        {
-            var entity = _repository.GMDueDates.Attach(dueDate);
-            entity.Property(c => c.Remarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
-        public async Task UpdateGMDueRemarks(GMActionDue actionDue)
-        {
-            var entity = _repository.GMActionsDue.Attach(actionDue);
-            entity.Property(c => c.Remarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
-        public async Task UpdateGMDateTaken(GMDueDate dueDate)
-        {
-            var entity = _repository.GMDueDates.Attach(dueDate);
-            entity.Property(c => c.DateTaken).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
+        // Removed during deep clean - GMDueDate, GMActionDue, DMSDueDate, DMSActionDue no longer exist
+        // #region GMDueDate
+        // public async Task UpdateGMDueDateRemarks(GMDueDate dueDate)
+        // {
+        //     var entity = _repository.GMDueDates.Attach(dueDate);
+        //     entity.Property(c => c.Remarks).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // public async Task UpdateGMDueRemarks(GMActionDue actionDue)
+        // {
+        //     var entity = _repository.GMActionsDue.Attach(actionDue);
+        //     entity.Property(c => c.Remarks).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // public async Task UpdateGMDateTaken(GMDueDate dueDate)
+        // {
+        //     var entity = _repository.GMDueDates.Attach(dueDate);
+        //     entity.Property(c => c.DateTaken).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // #endregion
 
-        #endregion
-
-        #region DMSDueDate
-        public async Task UpdateDMSDueDateRemarks(DMSDueDate dueDate)
-        {
-            var entity = _repository.DMSDueDates.Attach(dueDate);
-            entity.Property(c => c.Remarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
-        public async Task UpdateDMSDueRemarks(DMSActionDue actionDue)
-        {
-            var entity = _repository.DMSActionDues.Attach(actionDue);
-            entity.Property(c => c.Remarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
-        public async Task UpdateDMSDateTaken(DMSDueDate dueDate)
-        {
-            var entity = _repository.DMSDueDates.Attach(dueDate);
-            entity.Property(c => c.DateTaken).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
-            await _repository.SaveChangesAsync();
-        }
-        #endregion
+        // #region DMSDueDate
+        // public async Task UpdateDMSDueDateRemarks(DMSDueDate dueDate)
+        // {
+        //     var entity = _repository.DMSDueDates.Attach(dueDate);
+        //     entity.Property(c => c.Remarks).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // public async Task UpdateDMSDueRemarks(DMSActionDue actionDue)
+        // {
+        //     var entity = _repository.DMSActionDues.Attach(actionDue);
+        //     entity.Property(c => c.Remarks).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // public async Task UpdateDMSDateTaken(DMSDueDate dueDate)
+        // {
+        //     var entity = _repository.DMSDueDates.Attach(dueDate);
+        //     entity.Property(c => c.DateTaken).IsModified = true;
+        //     entity.Property(c => c.UpdatedBy).IsModified = true;
+        //     entity.Property(c => c.LastUpdate).IsModified = true;
+        //     await _repository.SaveChangesAsync();
+        // }
+        // #endregion
 
         #region DeDocket
         public async Task UpdatePatDueDateDeDocket(PatDueDateDeDocket dueDateDeDocket)
@@ -282,25 +282,27 @@ namespace R10.Core.Services.Shared
             await _repository.SaveChangesAsync();
         }
 
-        public async Task UpdateGMDueDateDeDocket(GMDueDateDeDocket dueDateDeDocket)
-        {
-            if (dueDateDeDocket.DeDocketId == 0)
-                _repository.GMDueDateDeDockets.Add(dueDateDeDocket);
-            else
-                _repository.GMDueDateDeDockets.Update(dueDateDeDocket);
-
-            if (dueDateDeDocket.DateTaken != null)
-            {
-                await _repository.GMDueDates.Where(d => d.DDId == dueDateDeDocket.DDId).ExecuteUpdateAsync(d => d.SetProperty(p => p.DateTaken, p => dueDateDeDocket.DateTaken));
-            }
-
-            await _repository.SaveChangesAsync();
-        }
+        // Removed during deep clean - GMDueDateDeDocket no longer exists
+        // public async Task UpdateGMDueDateDeDocket(GMDueDateDeDocket dueDateDeDocket)
+        // {
+        //     if (dueDateDeDocket.DeDocketId == 0)
+        //         _repository.GMDueDateDeDockets.Add(dueDateDeDocket);
+        //     else
+        //         _repository.GMDueDateDeDockets.Update(dueDateDeDocket);
+        //
+        //     if (dueDateDeDocket.DateTaken != null)
+        //     {
+        //         await _repository.GMDueDates.Where(d => d.DDId == dueDateDeDocket.DDId).ExecuteUpdateAsync(d => d.SetProperty(p => p.DateTaken, p => dueDateDeDocket.DateTaken));
+        //     }
+        //
+        //     await _repository.SaveChangesAsync();
+        // }
         #endregion
 
         public IQueryable<PatDueDateDeDocket> PatDueDateDeDockets => _repository.PatDueDateDeDockets.AsNoTracking();
         public IQueryable<TmkDueDateDeDocket> TmkDueDateDeDockets => _repository.TmkDueDateDeDockets.AsNoTracking();
-        public IQueryable<GMDueDateDeDocket> GMDueDateDeDockets => _repository.GMDueDateDeDockets.AsNoTracking();
+        // Removed during deep clean
+        // public IQueryable<GMDueDateDeDocket> GMDueDateDeDockets => _repository.GMDueDateDeDockets.AsNoTracking();
         public IQueryable<DeDocketInstruction> DeDocketInstructions =>  _repository.DeDocketInstructions.AsNoTracking();
         
 

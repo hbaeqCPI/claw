@@ -1,4 +1,4 @@
-﻿using R10.Core.Entities.DMS;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -17,7 +17,7 @@ namespace R10.Core.Entities.Patent
 
         public int OrderOfEntry { get; set; }
 
-        public Disclosure? InventionDisclosure { get; set; }
+//         public Disclosure? InventionDisclosure { get; set; } // Removed during deep clean
 
         public Invention? Invention { get; set; }
     }

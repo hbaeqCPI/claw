@@ -1,5 +1,4 @@
 ﻿using R10.Core.Entities;
-using R10.Web.Areas.Patent.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -21,9 +20,6 @@ namespace R10.Web.Areas.Shared.ViewModels
 
         public string? Remarks { get; set; }
 
-        [UIHint("PatInventor")]
-        [Display(Name = "Inventor")]
-        public PatInventorListViewModel? InventorDetail { get; set; }
         public bool ReadOnly { get; set; }
 
         [Display(Name = "Applicant?")]

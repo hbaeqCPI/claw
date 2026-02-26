@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,13 +17,13 @@ using Newtonsoft.Json;
 using R10.Core.DTOs;
 using R10.Core.Interfaces.Shared;
 using R10.Web.Services.DocumentStorage;
-using R10.Core.Entities.AMS;
+// using R10.Core.Entities.AMS; // Removed during deep clean
 using R10.Core.Entities;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using R10.Core.Entities.Trademark;
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.ForeignFiling;
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using R10.Core.Helpers;
 using Microsoft.Extensions.Localization;
 using R10.Web.Areas.Patent.ViewModels;
@@ -103,8 +103,6 @@ namespace R10.Web.Areas.Shared.Controllers
                     canDeleteRecord = (await _authService.AuthorizeAsync(User, deleted.DocumentCode == "Let" ? PatentAuthorizationPolicy.LetterModify : PatentAuthorizationPolicy.CanDelete)).Succeeded;
                 else if (deleted.SystemType == SystemTypeCode.Trademark)
                     canDeleteRecord = (await _authService.AuthorizeAsync(User, deleted.DocumentCode == "Let" ? TrademarkAuthorizationPolicy.LetterModify : TrademarkAuthorizationPolicy.CanDelete)).Succeeded;
-                else if (deleted.SystemType == SystemTypeCode.GeneralMatter)
-                    canDeleteRecord = (await _authService.AuthorizeAsync(User, deleted.DocumentCode == "Let" ? GeneralMatterAuthorizationPolicy.LetterModify : GeneralMatterAuthorizationPolicy.CanDelete)).Succeeded;
 
                 if (canDeleteRecord) {
                     if (deleted.DocumentCode == "Let") {
@@ -233,62 +231,17 @@ namespace R10.Web.Areas.Shared.Controllers
                 
         }
 
-        private async Task<IActionResult> OpenReminderLog(int logEmailId, string systemType)
+        private Task<IActionResult> OpenReminderLog(int logEmailId, string systemType)
         {
-            var remLogEmailDetail  = new RemLogEmailDetail();
-            switch (systemType)
-            {
-                case "A":
-                    remLogEmailDetail = await _service.GetRemLogEmailDetail<AMSDue, AMSRemLogDue>(logEmailId);
-                    break;
-
-                case "P":
-                    remLogEmailDetail = await _service.GetRemLogEmailDetail<PatDueDate, FFRemLogDue>(logEmailId);
-                    break;
-
-                case "T":
-                    remLogEmailDetail = await _service.GetRemLogEmailDetail<TmkDueDate, RMSRemLogDue>(logEmailId);
-                    break;
-            }
-            ViewData["SystemType"] = systemType;
-            return PartialView("ReminderEmailLog", remLogEmailDetail);
+            // Reminder log functionality removed - AMS/FF/RMS modules have been removed
+            return Task.FromResult<IActionResult>(BadRequest("Reminder log is not available."));
         }
 
         [HttpPost]
-        public async Task<IActionResult> GetReminderAttachment(string systemType, string fileName)
+        public Task<IActionResult> GetReminderAttachment(string systemType, string fileName)
         {
-            var path = "";
-            switch (systemType)
-            {
-                case "A":
-                    path = Path.Combine(_hostingEnvironment.GetAMSLogFolder(), fileName);
-                    break;
-
-                case "P":
-                    path = Path.Combine(_hostingEnvironment.GetFFLogFolder(), fileName);
-                    break;
-
-                case "T":
-                    path = Path.Combine(_hostingEnvironment.GetRMSLogFolder(), fileName);
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(path))
-            {
-                var file = new FileInfo(path);
-
-                if (file.Exists)
-                {
-                    var memoryStream = new MemoryStream();
-                    using (var fileStream = file.OpenRead())
-                    {
-                        fileStream.CopyTo(memoryStream);
-                    }
-                    return new FileContentResult(memoryStream.ToArray(), ImageHelper.GetContentType(fileName));
-                }
-            }
-
-            return BadRequest("File not found");
+            // Reminder attachment functionality removed - AMS/FF/RMS modules have been removed
+            return Task.FromResult<IActionResult>(BadRequest("File not found"));
         }
 
     }

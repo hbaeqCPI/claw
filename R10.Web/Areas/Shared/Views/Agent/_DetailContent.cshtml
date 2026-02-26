@@ -1,17 +1,11 @@
 ﻿@model AgentDetailViewModel
 @inject ISystemSettings<DefaultSetting> Settings
-@inject ISystemSettings<AMSSetting> AMSSettings
-@inject ISystemSettings<RMSSetting> RMSSettings
-@inject ISystemSettings<FFSetting> FFSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @inject ICountryLookupViewModelService CountryLookupService
 @{
     var settings = await Settings.GetSetting();
-    var amsSettings = await AMSSettings.GetSetting();
-    var rmsSettings = await RMSSettings.GetSetting();
-    var ffSettings = await FFSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
 
@@ -30,9 +24,6 @@
 
     var childViewModel = new ChildViewModel { Id = id, Permission = detailPagePermission };
 
-    var hasAMSSettings = User.IsInSystem(SystemType.AMS) && amsSettings.HasAgentResp;
-    var hasRMSSettings = User.IsInSystem(SystemType.RMS) && rmsSettings.HasAgentResp;
-    var hasFFSettings = User.IsInSystem(SystemType.ForeignFiling) && ffSettings.HasAgentResp;
     var isShowCustomFieldOn = settings.IsShowCustomFieldOn;
     var pageId = ViewData["PageId"];
 
@@ -82,24 +73,6 @@
         <li class="nav-item">
             <a class="nav-link" id="agentDetailPOBoxAddressTab" data-toggle="tab" role="tab" aria-controls="agentDetailPOBoxAddressTabContent" aria-selected="false" href="#agentDetailPOBoxAddressTabContent">@SharedLocalizer["PO Box"]</a>
         </li>
-        @if (hasAMSSettings)
-        {
-            <li class="nav-item">
-                <a class="nav-link" id="agentDetailAMSSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailAMSSettingsTabContent" aria-selected="false" href="#agentDetailAMSSettingsTabContent">@SharedLocalizer["AMS Settings"]</a>
-            </li>
-        }
-        @if (hasFFSettings)
-        {
-            <li class="nav-item">
-                <a class="nav-link" id="agentDetailFFSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailFFSettingsTabContent" aria-selected="false" href="#agentDetailFFSettingsTabContent">@SharedLocalizer["Foreign Filing Settings"]</a>
-            </li>
-        }
-        @if (hasRMSSettings)
-        {
-            <li class="nav-item">
-                <a class="nav-link" id="agentDetailRMSSettingsTab" data-toggle="tab" role="tab" aria-controls="agentDetailRMSSettingsTabContent" aria-selected="false" href="#agentDetailRMSSettingsTabContent">@SharedLocalizer["RMS Settings"]</a>
-            </li>
-        }
         @if (showCostEstimatorTab)
         {
             <li class="nav-item">
@@ -340,138 +313,6 @@
                 </div>
             </div>
         </div>
-
-        @if (hasAMSSettings)
-        {
-            <div class="tab-pane page-content cpiMainEntry" id="agentDetailAMSSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailAMSSettingsTab">
-                <div class="form-row">
-                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        @if (amsSettings.HasAgentResp)
-                        {
-                            <div class="d-flex justify-content-between">
-                                <label for="GenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="GenerateAgentResponsibilityLetter" name="GenerateAgentResponsibilityLetter" checked="@(Model.GenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </div>
-                        }
-                    </div>
-                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
-                        @if (amsSettings.HasAgentResp)
-                        {
-                            <div class="form-group float-label confirmation-cover-letter">
-                                <label asp-for="AgentResponsibilityCoverLetter"></label>
-                                @if (isReadOnly)
-                                {
-                                    <input type="text" class="form-control form-control-sm" asp-for="AgentResponsibilityCoverLetter" disabled />
-                                }
-                                else
-                                {
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("AgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSAgentResponsibilityCoverLetter).Name, Model.AgentResponsibilityCoverLetter))
-                                    <span asp-validation-for="AgentResponsibilityCoverLetter"></span>
-                                }
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-        else
-        {
-            <input type="hidden" asp-for="GenerateAgentResponsibilityLetter" class="boolean" />
-            <input type="hidden" asp-for="AgentResponsibilityCoverLetter" />
-        }
-
-        @if (hasFFSettings)
-        {
-            <div class="tab-pane page-content cpiMainEntry" id="agentDetailFFSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailFFSettingsTab">
-                <div class="form-row">
-                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        @if (ffSettings.HasAgentResp)
-                        {
-                            <div class="d-flex justify-content-between">
-                                <label for="FFGenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="FFGenerateAgentResponsibilityLetter" name="FFGenerateAgentResponsibilityLetter" checked="@(Model.FFGenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </div>
-                        }
-                    </div>
-                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
-                        @if (ffSettings.HasAgentResp)
-                        {
-                            <div class="form-group float-label confirmation-cover-letter">
-                                <label asp-for="FFAgentResponsibilityCoverLetter"></label>
-                                @if (isReadOnly)
-                                {
-                                    <input type="text" class="form-control form-control-sm" asp-for="FFAgentResponsibilityCoverLetter" disabled />
-                                }
-                                else
-                                {
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("FFAgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(FFAgentResponsibilityCoverLetter).Name, Model.FFAgentResponsibilityCoverLetter))
-                                    <span asp-validation-for="FFAgentResponsibilityCoverLetter"></span>
-                                }
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-        else
-        {
-            <input type="hidden" asp-for="FFGenerateAgentResponsibilityLetter" class="boolean" />
-            <input type="hidden" asp-for="FFAgentResponsibilityCoverLetter" />
-        }
-
-        @if (hasRMSSettings)
-        {
-            <div class="tab-pane page-content" id="agentDetailRMSSettingsTabContent" role="tabpanel" aria-labelledby="agentDetailRMSSettingsTab">
-                <div class="form-row cpiMainEntry">
-                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        @if (rmsSettings.HasAgentResp)
-                        {
-                            <div class="d-flex justify-content-between">
-                                <label for="RMSGenerateAgentResponsibilityLetter">@SharedLocalizer[$"Send {agentLabel} Responsibility"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="RMSGenerateAgentResponsibilityLetter" name="RMSGenerateAgentResponsibilityLetter" checked="@(Model.RMSGenerateAgentResponsibilityLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </div>
-                        }
-                    </div>
-                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
-                        @if (rmsSettings.HasAgentResp)
-                        {
-                            <div class="form-group float-label confirmation-cover-letter">
-                                <label asp-for="RMSAgentResponsibilityCoverLetter"></label>
-                                @if (isReadOnly)
-                                {
-                                    <input type="text" class="form-control form-control-sm" asp-for="RMSAgentResponsibilityCoverLetter" disabled />
-                                }
-                                else
-                                {
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("RMSAgentResponsibilityCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(RMSAgentResponsibilityCoverLetter).Name, Model.RMSAgentResponsibilityCoverLetter))
-                                    <span asp-validation-for="RMSAgentResponsibilityCoverLetter"></span>
-                                }
-                            </div>
-                        }
-                    </div>
-                </div>                
-            </div>
-        }
-        else
-        {
-            <input type="hidden" asp-for="RMSGenerateAgentResponsibilityLetter" class="boolean" />
-            <input type="hidden" asp-for="RMSAgentResponsibilityCoverLetter" />
-        }
 
         @if (showCostEstimatorTab)
         {

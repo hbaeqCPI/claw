@@ -33,8 +33,9 @@ namespace R10.Core.Interfaces.Patent
 
         IQueryable<PatRelatedCaseDTO> GetCopyRelatedCasesSources(string? caseNumber, string? country, string? subCase,
            string? inventor, string? keyword, string? artUnit, bool activeOnly, int excludeAppId);
-        Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId);
-        Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId);
+        // Removed during deep clean
+        // Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId);
+        // Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId);
         Task IDSRelatedCasesDelete(PatIDSRelatedCase deletedIdsRelatedCase);
         Task IDSRelatedCasesUpdate(PatIDSRelatedCase idsRelatedCase);
         Task IDSRelatedCasesUpdate(int appId, string userName, IEnumerable<PatIDSRelatedCase> updatedRelatedCases);

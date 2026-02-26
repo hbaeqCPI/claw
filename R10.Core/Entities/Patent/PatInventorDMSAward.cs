@@ -1,5 +1,5 @@
 ﻿using R10.Core.Entities;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -10,7 +10,7 @@ namespace R10.Core.Entities.Patent
 {
     public class PatInventorDMSAward : PatInventorDMSAwardDetail
     {
-        public Disclosure? Disclosure { get; set; }
+//         public Disclosure? Disclosure { get; set; } // Removed during deep clean
         public PatInventor? PatInventor { get; set; }
         public PatInventorAwardCriteria? PatInventorAwardCriteria { get; set; }
     }

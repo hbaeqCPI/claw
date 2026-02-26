@@ -32,8 +32,9 @@ namespace R10.Core.Interfaces.Patent
         Task CopyIDSRelatedCasesToFamily(PatIDSCopyFamilyActionDTO selection, string userId);
         Task CopyIDSNonPatLiteratureToFamily(PatIDSCopyFamilyActionDTO selection, string userId);
 
-        Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId);
-        Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId);
+        // Removed during deep clean
+        // Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId);
+        // Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId);
         Task SaveStandardizedReferences(List<PatIDSRelatedCase> relatedCases);
         IQueryable<PatIDSRelatedCaseDTO> IDSRelatedCasesDTO { get; }
         IQueryable<PatIDSRelatedCase> IDSRelatedCases { get; }

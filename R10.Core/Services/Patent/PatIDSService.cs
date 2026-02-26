@@ -322,15 +322,17 @@ namespace R10.Core.Services
         //    return relatedCases.AsNoTracking();
         //}
 
-        public async Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId)
-        {
-            await _repository.CopyIDSRelatedCases(to, from, fromRelated, userId);
-        }
+        // Removed during deep clean
+        // public async Task CopyIDSRelatedCases(int[] to, RTSIDSCrossCheckCopyDTO[] from, int[] fromRelated, string userId)
+        // {
+        //     await _repository.CopyIDSRelatedCases(to, from, fromRelated, userId);
+        // }
 
-        public async Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId)
-        {
-            await _repository.CopyIDSRelatedCases(copyInfo, actionInfo, userId);
-        }
+        // Removed during deep clean
+        // public async Task CopyIDSRelatedCases(RTSIDSCrossCheckCopyDTO[] copyInfo, int[] actionInfo, string userId)
+        // {
+        //     await _repository.CopyIDSRelatedCases(copyInfo, actionInfo, userId);
+        // }
 
         public async Task SaveStandardizedReferences(List<PatIDSRelatedCase> relatedCases) {
             await _repository.SaveStandardizedReferences(relatedCases);

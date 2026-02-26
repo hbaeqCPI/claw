@@ -1,5 +1,4 @@
 ﻿@using Microsoft.AspNetCore.Authorization;
-@using R10.Core.Entities.GeneralMatter;
 @using R10.Core.Entities.Patent;
 @using R10.Core.Entities.Trademark;
 @using R10.Web.Models.DashboardViewModels;
@@ -7,7 +6,6 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 @inject IAuthorizationService AuthService
 @{    
     var userTypes = Html.GetUserTypeSelectList(User).ToList();

@@ -21,8 +21,9 @@ namespace R10.Core.Services
         IQueryable<TmkCostTrack> Costs { get; }
         IQueryable<TmkTrademarkStatus> Statuses { get; }
         IQueryable<TmkMarkType> MarkTypes { get; }
-        IQueryable<TLSearchDocument> TLSearchDocuments { get; }
-        IQueryable<TLSearchImage> TLSearchImages { get; }
+        // Removed during deep clean - TLSearchDocument, TLSearchImage no longer exist
+        // IQueryable<TLSearchDocument> TLSearchDocuments { get; }
+        // IQueryable<TLSearchImage> TLSearchImages { get; }
     }
 
     public class TmkTrademarkApiService : WebApiBaseService<TmkTrademarkWebSvc>, ITmkTrademarkApiService
@@ -51,9 +52,10 @@ namespace R10.Core.Services
 
         public IQueryable<TmkMarkType> MarkTypes => _cpiDbContext.GetRepository<TmkMarkType>().QueryableList;
 
-        public IQueryable<TLSearchDocument> TLSearchDocuments => _cpiDbContext.GetRepository<TLSearchDocument>().QueryableList;
+        // Removed during deep clean - TLSearchDocument, TLSearchImage no longer exist
+        // public IQueryable<TLSearchDocument> TLSearchDocuments => _cpiDbContext.GetRepository<TLSearchDocument>().QueryableList;
 
-        public IQueryable<TLSearchImage> TLSearchImages => _cpiDbContext.GetRepository<TLSearchImage>().QueryableList;
+        // public IQueryable<TLSearchImage> TLSearchImages => _cpiDbContext.GetRepository<TLSearchImage>().QueryableList;
 
         public async Task<int> Add(TmkTrademarkWebSvc webApiTrademark, DateTime runDate)
         {

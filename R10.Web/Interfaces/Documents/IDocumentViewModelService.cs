@@ -55,16 +55,13 @@ namespace R10.Web.Interfaces
         Task<DocInventionViewModel> GetInventionDetail(string treeNodeId);
         Task<DocCtryAppViewModel> GetCtryAppDetail(string treeNodeId);
         Task<DocTrademarkViewModel> GetTrademarkDetail(string treeNodeId);
-        Task<DocGeneralMatterViewModel> GetGeneralMatterDetail(string treeNodeId);
 
         Task<DocPatActViewModel> GetPatActionDetail(string treeNodeId);
         Task<DocTmkActViewModel> GetTmkActionDetail(string treeNodeId);
-        Task<DocGMActViewModel> GetGMActionDetail(string treeNodeId);
 
         Task<DocPatCostViewModel> GetPatCostDetail(string treeNodeId);
         Task<DocPatCostInvViewModel> GetPatCostInvDetail(string treeNodeId);
         Task<DocTmkCostViewModel> GetTmkCostDetail(string treeNodeId);
-        Task<DocGMCostViewModel> GetGMCostDetail(string treeNodeId);
 
 
         #endregion

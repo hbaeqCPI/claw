@@ -1,4 +1,4 @@
-﻿using Kendo.Mvc.UI;
+using Kendo.Mvc.UI;
 using R10.Core.Entities.FormExtract;
 using R10.Core.Entities.Patent;
 using R10.Web.Areas.Shared.ViewModels;
@@ -14,7 +14,6 @@ namespace R10.Web.Interfaces
 
         IQueryable<FormIFWFormTypeViewModel> GetIFWFormTypeList(string textProperty, string text, FilterType filterType);
         IQueryable<FormIFWDocTypeViewModel> GetIFWDocTypeList(string textProperty, string text, FilterType filterType);
-        IQueryable<RTSSearchUSIFW> AddCriteria(IQueryable<RTSSearchUSIFW> ifws, List<QueryFilterViewModel> mainSearchFilters);
 
         Task<string> GetDetailViewAsync(string formType);
 

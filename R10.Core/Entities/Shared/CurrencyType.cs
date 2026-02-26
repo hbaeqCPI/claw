@@ -1,5 +1,5 @@
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.GeneralMatter;
+﻿// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System.Collections.Generic;
@@ -58,7 +58,7 @@ namespace R10.Core.Entities
 
         public List<TmkCostTrack>? CurrencyTmkCostTracks { get; set; }
         public List<PatCostTrack>? CurrencyPatCostTracks { get; set; }
-        public List<GMCostTrack>? CurrencyGMCostTracks { get; set; }
+//         public List<GMCostTrack>? CurrencyGMCostTracks { get; set; } // Removed during deep clean
         public List<PatTaxBase>? CurrencyPatTaxBases { get; set; }
 
         public List<PatCECountrySetup>? CurrencyPatCECountrySetups { get; set; }
@@ -69,7 +69,7 @@ namespace R10.Core.Entities
         public List<TmkCECountryCostChild>? CurrencyTmkCECountryCostChilds { get; set; }
         public List<TmkCEFeeDetail>? CurrencyTmkCEFeeDetails { get; set; }
 
-        public List<AMSProjection>? AMSProjections { get; set; }
+//         public List<AMSProjection>? AMSProjections { get; set; } // Removed during deep clean
 
         public List<PatCostTrackInv>? CurrencyPatCostTrackInvs { get; set; }
 

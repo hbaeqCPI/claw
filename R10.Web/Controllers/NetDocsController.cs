@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using OpenIddict.Validation.AspNetCore;
@@ -9,7 +9,7 @@ using R10.Web.Services.MailDownload;
 using R10.Web.Services;
 using R10.Web.Services.NetDocuments;
 using R10.Web.Interfaces;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -30,8 +30,8 @@ using R10.Core.Entities.Documents;
 using Microsoft.EntityFrameworkCore;
 using R10.Web.Helpers;
 using AutoMapper;
-using R10.Core.Interfaces.RMS;
-using R10.Core.Interfaces.ForeignFiling;
+// using R10.Core.Interfaces.RMS; // Removed during deep clean
+// using R10.Core.Interfaces.ForeignFiling; // Removed during deep clean
 using R10.Web.Security;
 
 namespace R10.Web.Controllers
@@ -48,8 +48,6 @@ namespace R10.Web.Controllers
         private readonly IDocumentService _docService;
         private readonly INetDocumentsViewModelService _netDocsViewModelService;
         private readonly IMapper _mapper;
-        private readonly IRMSDueDocService _rmsDueDocService;
-        private readonly IFFDueDocService _ffDueDocService;
 
         public NetDocsController(
             INetDocumentsClientFactory netDocumentsClientFactory,
@@ -65,15 +63,12 @@ namespace R10.Web.Controllers
             ISystemSettings<DefaultSetting> settings,
             ISystemSettings<PatSetting> patSettings,
             ISystemSettings<TmkSetting> tmkSettings,
-            ISystemSettings<GMSetting> gmSettings,
             IEPOService epoService,
             IEntityService<EPOCommunication> epoCommunicationService,
             IDocumentService docService,
             INetDocumentsViewModelService netDocsViewModelService,
-            IMapper mapper,
-            IRMSDueDocService rmsDueDocService,
-            IFFDueDocService ffDueDocService
-        ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, gmSettings, epoService, epoCommunicationService)
+            IMapper mapper
+        ) : base(mailDownloadService, docViewModelService, graphSettings, serviceAccount, logger, authService, settings, patSettings, tmkSettings, epoService, epoCommunicationService)
         {
             _netDocumentsClientFactory = netDocumentsClientFactory;
             _authProvider = authProvider;
@@ -82,8 +77,6 @@ namespace R10.Web.Controllers
             _docService = docService;
             _netDocsViewModelService = netDocsViewModelService;
             _mapper = mapper;
-            _rmsDueDocService = rmsDueDocService;
-            _ffDueDocService = ffDueDocService;
         }
 
         [HttpGet]
@@ -812,7 +805,6 @@ namespace R10.Web.Controllers
             // else move to default folder
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var documentLinkArr = new List<string>();
             var systemType = string.Empty;
             var screenCode = string.Empty;
@@ -829,10 +821,9 @@ namespace R10.Web.Controllers
                 dataKeyValue = int.Parse(documentLinkArr[3] ?? "0");
             }
             
-            if (!string.IsNullOrEmpty(folderId) 
-                && ((patSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Patent.ToLower() && screenCode.ToLower() == ScreenCode.Application.ToLower()) 
-                    || (tmkSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Trademark.ToLower() && screenCode.ToLower() == ScreenCode.Trademark.ToLower()) 
-                    || (gmSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower() && screenCode.ToLower() == ScreenCode.GeneralMatter.ToLower())))
+            if (!string.IsNullOrEmpty(folderId)
+                && ((patSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Patent.ToLower() && screenCode.ToLower() == ScreenCode.Application.ToLower())
+                    || (tmkSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Trademark.ToLower() && screenCode.ToLower() == ScreenCode.Trademark.ToLower())))
             {
                 var docVerificationFolderName = "Dockets for Verification";
                 //var docVerificationFolderName = string.Empty;
@@ -843,9 +834,6 @@ namespace R10.Web.Controllers
                         break;
                     case SystemTypeCode.Trademark:
                         docVerificationFolderName = tmkSettings.DocVerificationDefaultFolderName;
-                        break;
-                    case SystemTypeCode.GeneralMatter:
-                        docVerificationFolderName = gmSettings.DocVerificationDefaultFolderName;
                         break;
                 }
 
@@ -919,10 +907,10 @@ namespace R10.Web.Controllers
             //save docDocument
             var docDocument = await _docViewModelService.SaveDocument(docViewModel);
 
-            //save fileId for RMS/FF upload
+            //save fileId
             model.FileId = docDocument.FileId;
 
-            //save responsible 
+            //save responsible
             var respDocketing = await _docViewModelService.SaveRespDocketing(docViewModel, User.GetUserName());
             var respReporting = await _docViewModelService.SaveRespReporting(docViewModel, User.GetUserName());
 
@@ -1084,84 +1072,6 @@ namespace R10.Web.Controllers
             return Ok();
         }
 
-        [Authorize(Policy = RMSAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddRMS(int tmkId, int actId, int dueId, int rmsDocId)
-        {
-            if (tmkId == 0 || actId == 0 || dueId == 0)
-                return BadRequest();
-
-            var documentLink = $"T|Act|ActId|{actId}";
-            var roleLink = $"TM,{tmkId}|TMAct,{actId}";
-            var docFolder = await _netDocsViewModelService.GetOrAddDefaultFolderByDocumentLink(documentLink);
-            var folderId = _netDocsViewModelService.GetDefaultDocumentFolder(docFolder);
-
-            if (docFolder == null || string.IsNullOrEmpty(folderId))
-                return BadRequest(_localizer["Upload folder is undefined."].Value);
-
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-            ViewData["FormAction"] = Url.Action("SaveDocumentRMS", new { folderId = folderId, documentLink = documentLink, roleLink = roleLink });
-            return PartialView("_DocumentEditor", new DocumentViewModel()
-            {
-                FolderId = docFolder.FolderId,
-                DueId = dueId,
-                RequiredDocId = rmsDocId
-            });
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveDocumentRMS(DocumentViewModel model, string folderId, string documentLink, string roleLink)
-        {
-            if (model.DueId == 0 || model.RequiredDocId == 0)
-                return BadRequest("Missing parameters. Unable to upload document.");
-
-            var result = await SaveDocument(model, folderId, documentLink, roleLink);
-            if (((ObjectResult)result).StatusCode == 200)
-            {
-                //save RMSDueDoc, add RMSDueDocUploadLog
-                var userFileName = model.FormFile == null ? model.FileId.ToString() : model.FormFile.FileName;
-                await _rmsDueDocService.SaveUploaded(model.DueId, model.RequiredDocId, User.GetUserName(), true, model.FileId ?? 0, userFileName ?? "", System.Convert.FromBase64String(""));
-            }
-            return result;
-        }
-
-        [Authorize(Policy = ForeignFilingAuthorizationPolicy.DecisionMaker)]
-        public async Task<IActionResult> ImageAddFF(int invId, int appId, int actId, int dueId, int ffDocId)
-        {
-            if (appId == 0 || actId == 0 || dueId == 0)
-                return BadRequest();
-
-            var documentLink = $"P|Act|ActId|{actId}";
-            var roleLink = $"PI,{invId}|PC,{appId}|PatAct,{actId}";
-            var docFolder = await _netDocsViewModelService.GetOrAddDefaultFolderByDocumentLink(documentLink);
-            var folderId = _netDocsViewModelService.GetDefaultDocumentFolder(docFolder);
-
-            if (docFolder == null || string.IsNullOrEmpty(folderId))
-                return BadRequest(_localizer["Upload folder is undefined."].Value);
-
-            ViewData["RequiredDocs"] = Array.Empty<object>();
-            ViewData["FormAction"] = Url.Action("SaveDocumentFF", new { folderId = folderId, documentLink = documentLink, roleLink = roleLink });
-            return PartialView("_DocumentEditor", new DocumentViewModel()
-            {
-                FolderId = docFolder.FolderId,
-                DueId = dueId,
-                RequiredDocId = ffDocId
-            });
-        }
-
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveDocumentFF(DocumentViewModel model, string folderId, string documentLink, string roleLink)
-        {
-            if (model.DueId == 0 || model.RequiredDocId == 0)
-                return BadRequest("Missing parameters. Unable to upload document.");
-
-            var result = await SaveDocument(model, folderId, documentLink, roleLink);
-            if (((ObjectResult)result).StatusCode == 200)
-            {
-                //save FFDueDoc, add FFDueDocUploadLog
-                var userFileName = model.FormFile == null ? model.FileId.ToString() : model.FormFile.FileName;
-                await _ffDueDocService.SaveUploaded(model.DueId, model.RequiredDocId, User.GetUserName(), true, model.FileId ?? 0, userFileName ?? "", System.Convert.FromBase64String(""));
-            }
-            return result;
-        }
+        // RMS ImageAddRMS/SaveDocumentRMS and FF ImageAddFF/SaveDocumentFF methods removed - modules deleted
     }
 }

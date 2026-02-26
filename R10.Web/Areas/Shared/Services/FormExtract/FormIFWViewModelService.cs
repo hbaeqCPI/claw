@@ -1,4 +1,4 @@
-﻿using Kendo.Mvc;
+using Kendo.Mvc;
 using Kendo.Mvc.UI;
 using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities.FormExtract;
@@ -19,13 +19,11 @@ namespace R10.Web.Areas.Shared.Services
     {
         private readonly ICountryApplicationService _applicationService;
         private readonly IFormIFWService _ifwService;
-        private readonly IRTSService _rtsService;
 
-        public FormIFWViewModelService(ICountryApplicationService applicationService, IFormIFWService ifwService, IRTSService rtsService)
+        public FormIFWViewModelService(ICountryApplicationService applicationService, IFormIFWService ifwService)
         {
             _applicationService = applicationService;
             _ifwService = ifwService;
-            _rtsService = rtsService;
         }
 
         public IQueryable<CountryApplication> CtryAppsWithIFW
@@ -33,91 +31,8 @@ namespace R10.Web.Areas.Shared.Services
             get
             {
                 var ctryApps = _applicationService.CountryApplications;
-                ctryApps = ctryApps.Where(c => c.RTSSearch.RTSSearchUSIFWs.Any());
                 return ctryApps;
             }
-        }
-
-
-        public IQueryable<RTSSearchUSIFW> AddCriteria(IQueryable<RTSSearchUSIFW> ifws, List<QueryFilterViewModel> mainSearchFilters)
-        {
-            
-            if (mainSearchFilters.Count > 0)
-            {
-
-                var caseTypeOp = mainSearchFilters.GetFilterOperator("CaseTypeOp");
-                var caseType = mainSearchFilters.FirstOrDefault(f => f.Property.EndsWith(".CaseType"));
-                if (caseType != null)
-                {
-                    caseType.Operator = caseTypeOp;
-                    var caseTypes = caseType.GetValueList();
-
-                    if (caseTypes.Count > 0)
-                    {
-                        if (caseType.Operator == "eq")
-                            ifws = ifws.Where(m => caseTypes.Contains(m.RTSSearch.CountryApplication.CaseType));
-                        else
-                            ifws = ifws.Where(m => !caseTypes.Contains(m.RTSSearch.CountryApplication.CaseType));
-
-                        mainSearchFilters.Remove(caseType);
-                    }
-                }
-
-                var applicationStatusOp = mainSearchFilters.GetFilterOperator("ApplicationStatusOp");
-                var applicationStatus = mainSearchFilters.FirstOrDefault(f => f.Property.EndsWith(".ApplicationStatus"));
-                if (applicationStatus != null)
-                {
-                    applicationStatus.Operator = applicationStatusOp;
-                    var statuses = applicationStatus.GetValueList();
-                    if (statuses.Count > 0)
-                    {
-                        if (applicationStatus.Operator == "eq")
-                            ifws = ifws.Where(m => statuses.Contains(m.RTSSearch.CountryApplication.ApplicationStatus));
-                        else
-                            ifws = ifws.Where(m => !statuses.Contains(m.RTSSearch.CountryApplication.ApplicationStatus));
-
-                        mainSearchFilters.Remove(applicationStatus);
-                    }
-                }
-
-                var aiParsedStatus = mainSearchFilters.FirstOrDefault(f => f.Property == "AIParsed");
-                if (aiParsedStatus != null)
-                {
-                    switch (aiParsedStatus.Value) {
-                        case "true": ifws = ifws.Where(m => m.AIParseDate != null); break;
-                        case "false": ifws = ifws.Where(m => m.AIParseDate == null); break;
-                    }
-                    mainSearchFilters.Remove(aiParsedStatus);
-                }
-
-                var actionGenStatus = mainSearchFilters.FirstOrDefault(f => f.Property == "ActionGen");
-                if (actionGenStatus != null)
-                {
-                    switch (actionGenStatus.Value)
-                    {
-                        case "true": ifws = ifws.Where(m => m.AIActionGenDate != null); break;
-                        case "false": ifws = ifws.Where(m => m.AIActionGenDate == null); break;
-                    }
-                    mainSearchFilters.Remove(actionGenStatus);
-                }
-
-                var includeStatus = mainSearchFilters.FirstOrDefault(f => f.Property == "IsIncluded");
-                if (includeStatus != null)
-                {
-                    switch (includeStatus.Value)
-                    {
-                        case "true": ifws = ifws.Where(m => (bool) m.AIInclude); break;
-                        case "false": ifws = ifws.Where(m => ! (bool)m.AIInclude); break;
-                    }
-                    mainSearchFilters.Remove(includeStatus);
-                }
-
-                if (mainSearchFilters.Any())
-                {
-                    ifws = QueryHelper.BuildCriteria<RTSSearchUSIFW>(ifws, mainSearchFilters);
-                }
-            }
-            return ifws;
         }
 
 
@@ -158,6 +73,6 @@ namespace R10.Web.Areas.Shared.Services
             return model;
         }
 
-     
+
     }
 }

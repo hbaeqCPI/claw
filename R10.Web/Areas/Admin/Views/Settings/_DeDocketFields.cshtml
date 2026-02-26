@@ -1,21 +1,17 @@
 ﻿@model SystemSettingsViewModel
 @using R10.Core.Entities.Patent;
 @using R10.Core.Entities.Trademark;
-@using R10.Core.Entities.GeneralMatter;
 @using System.Reflection;
 @using System.ComponentModel.DataAnnotations;
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GmSettings
 @inject IStringLocalizer<SharedResource> Localizer
 
 @{
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GmSettings.GetSetting();
     var isPatDeDocketOn = User.IsSystemEnabled(SystemType.Patent) && patSettings.IsDeDocketOn;
     var isTmkDeDocketOn = User.IsSystemEnabled(SystemType.Trademark) && tmkSettings.IsDeDocketOn;
-    var isGmDeDocketOn = User.IsSystemEnabled(SystemType.GeneralMatter) && gmSettings.IsDeDocketOn;
     var groups = Model.DeDocketFields.GetType().GetProperties();
 }
 
@@ -25,8 +21,7 @@
         var system = group.GetCustomAttribute<DisplayAttribute>()?.GroupName ?? "";
 
         @if(system == SystemType.Patent && isPatDeDocketOn ||
-            system == SystemType.Trademark && isTmkDeDocketOn ||
-            system == SystemType.GeneralMatter && isGmDeDocketOn)
+            system == SystemType.Trademark && isTmkDeDocketOn)
         {
             var deDocketFields = group.GetValue(Model.DeDocketFields);
             var screen = group.Name;

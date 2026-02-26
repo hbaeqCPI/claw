@@ -1,4 +1,4 @@
-﻿using R10.Core.Entities.GeneralMatter;
+﻿// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System;
@@ -13,7 +13,7 @@ namespace R10.Core.Entities
         public Attorney? Attorney { get; set; }
         public CountryApplication? CountryApplication { get; set; }
         public TmkTrademark? TmkTrademark { get; set; }
-        public GMMatter? GeneralMatter { get; set; }
+//         public GMMatter? GeneralMatter { get; set; } // Removed during deep clean
     }
 
     public class TimeTrackerDetail : BaseEntity

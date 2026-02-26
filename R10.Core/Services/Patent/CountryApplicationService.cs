@@ -12,10 +12,10 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using R10.Core.Exceptions;
 using System.Security.Claims;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Helpers;
 using static System.Net.Mime.MediaTypeNames;
-using R10.Core.Services.GeneralMatter;
+// using R10.Core.Services.GeneralMatter; // Removed during deep clean
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using R10.Core.Entities.ReportScheduler;
 using System.Diagnostics.Metrics;
@@ -610,7 +610,8 @@ namespace R10.Core.Services
         public IQueryable<Client> Clients => _repository.Clients.AsNoTracking();
         public IQueryable<Owner> Owners => _repository.Owners.AsNoTracking();
         public IQueryable<Product> Products => _repository.Products.AsNoTracking();
-        public IQueryable<GMMatterPatent> GMMatterPatents => _repository.GMMatterPatents.AsNoTracking();
+        // Removed during deep clean
+        // public IQueryable<GMMatterPatent> GMMatterPatents => _repository.GMMatterPatents.AsNoTracking();
         public IQueryable<PatCountryLaw> PatCountryLaws => _repository.PatCountryLaws.AsNoTracking();
         public IQueryable<PatCountryDue> PatCountryDues => _repository.PatCountryDues.AsNoTracking();
         public IQueryable<PatActionType> PatActionTypes => _repository.PatActionTypes.AsNoTracking();

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
 using System.Transactions;
-using R10.Core.Entities.RMS;
+// using R10.Core.Entities.RMS; // Removed during deep clean
 
 namespace R10.Core.Services
 {
@@ -150,19 +150,19 @@ namespace R10.Core.Services
                     _repository.TmkCountryDues.Add(countryDue);
                     countryDue.OldFollowupAction = ""; //maybe from copy
 
-                    //add to rms
-                    if (!string.IsNullOrEmpty(countryDue.ActionType) &&
-                           await _repository.RMSInstrxTypeAction.AsNoTracking().AnyAsync(a => a.ActionType == countryDue.ActionType) &&
-                        (!(await _repository.RMSReminderSetup.AsNoTracking().AnyAsync(r => r.Country == countryDue.Country && r.CaseType == countryDue.CaseType && r.ActionType == countryDue.ActionType && string.IsNullOrEmpty(r.ActionDue)))))
-                    {
-                        _repository.RMSReminderSetup.Add(new RMSReminderSetup()
-                        {
-                            Country = countryDue.Country,
-                            CaseType = countryDue.CaseType,
-                            ActionType = countryDue.ActionType,
-                            ActionDue = ""
-                        });
-                    }
+                    // Removed during deep clean - RMS module removed
+                    // if (!string.IsNullOrEmpty(countryDue.ActionType) &&
+                    //        await _repository.RMSInstrxTypeAction.AsNoTracking().AnyAsync(a => a.ActionType == countryDue.ActionType) &&
+                    //     (!(await _repository.RMSReminderSetup.AsNoTracking().AnyAsync(r => r.Country == countryDue.Country && r.CaseType == countryDue.CaseType && r.ActionType == countryDue.ActionType && string.IsNullOrEmpty(r.ActionDue)))))
+                    // {
+                    //     _repository.RMSReminderSetup.Add(new RMSReminderSetup()
+                    //     {
+                    //         Country = countryDue.Country,
+                    //         CaseType = countryDue.CaseType,
+                    //         ActionType = countryDue.ActionType,
+                    //         ActionDue = ""
+                    //     });
+                    // }
                 }
 
                 UpdateParentStamps(countryDue.CountryLawID, countryDue.Country, countryDue.CaseType, countryDue.UpdatedBy, countryDue.ParentTStamp);

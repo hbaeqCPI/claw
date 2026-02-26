@@ -1,4 +1,4 @@
-using R10.Core.Entities.DMS;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Helpers;
 using System.ComponentModel.DataAnnotations;
@@ -12,7 +12,7 @@ namespace R10.Core.Entities
         public Language? OwnerLanguage { get; set; }
         public List<OwnerContact>? OwnerContacts { get; set; }
 
-        public List<Disclosure>? OwnerDisclosures { get; set; }
+//         public List<Disclosure>? OwnerDisclosures { get; set; } // Removed during deep clean
         
         public List<PatOwnerInv>? OwnerInvInventions { get; set; }
         public List<PatOwnerApp>? OwnerAppCountryApplications { get; set; }              

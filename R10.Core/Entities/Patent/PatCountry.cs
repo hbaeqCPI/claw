@@ -1,5 +1,5 @@
-﻿using R10.Core.Entities.AMS;
-using R10.Core.Entities.ForeignFiling;
+﻿// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -72,11 +72,11 @@ namespace R10.Core.Entities.Patent
 
         public List<ClientDesignatedCountry>? ClientDesignatedCountries { get; set; }
 
-        public List<AMSMain>? AMSMain { get; set; }
-        public List<AMSVATRate>? AMSVATRate { get; set; }
+//         public List<AMSMain>? AMSMain { get; set; } // Removed during deep clean
+//         public List<AMSVATRate>? AMSVATRate { get; set; } // Removed during deep clean
 
-        public List<FFDueCountry>? FFDueDesCountry { get; set; }
-        public List<FFReminderSetup>? FFReminderSetups { get; set; }
+//         public List<FFDueCountry>? FFDueDesCountry { get; set; } // Removed during deep clean
+//         public List<FFReminderSetup>? FFReminderSetups { get; set; } // Removed during deep clean
 
         public List<PatInventorAwardCriteria>? PatInventorAwardCriterias { get; set; }
         

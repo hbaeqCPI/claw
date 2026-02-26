@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,14 +17,14 @@ using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Models.PageViewModels;
 using AutoMapper;
 using R10.Core.Services;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Helpers;
 using OpenIddict.Validation.AspNetCore;
 using R10.Core.Interfaces.Patent;
 using R10.Core.DTOs;
 using System.ComponentModel.DataAnnotations;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.Clearance;
+// using R10.Core.Entities.Clearance; // Removed during deep clean
 using R10.Core.Identity;
 
 using R10.Web.Areas;
@@ -246,24 +246,6 @@ namespace R10.Web.Areas.Shared.Controllers
                     }
                     break;
 
-                case SystemTypeCode.GeneralMatter:
-                    if (!(await _authService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.CanRequestDocket)).Succeeded)
-                        return Forbid();
-
-                    model.HasCountry = false;
-                    var gm = await _softDocketService.GetMatter(parentId);
-                    if (gm != null)
-                    {
-                        model.Area = "GeneralMatter";
-                        model.CaseNumber = gm.CaseNumber;
-                        model.SubCase = gm.SubCase;
-                        model.CaseType = gm.MatterType;
-                        model.Status = gm.MatterStatus;
-                        model.Title = gm.MatterTitle;
-                        model.RefreshCountUrl = Url.Action("RequestDocketPendingCount", "Matter", new { area = model.Area, parentId = parentId });
-                    }
-
-                    break;
             }
 
             return PartialView("_DocketRequestEntry", model);

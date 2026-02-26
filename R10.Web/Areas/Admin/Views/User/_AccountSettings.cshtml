@@ -1,21 +1,15 @@
 ﻿@using Microsoft.EntityFrameworkCore;
-@using R10.Core.Entities.GeneralMatter
 @using R10.Core.Interfaces;
-@using R10.Core.Entities.AMS;
 @using R10.Core.Entities.Patent;
 @using R10.Core.Entities.Trademark;
-@using R10.Core.Entities.DMS;
 @using Microsoft.Extensions.Options;
 @using R10.Web.Services;
 @using R10.Web.Security;
 @model AccountSettingsViewModel
 @inject CPiUserManager UserManager
 @inject ICPiUserPermissionManager PermissionManager
-@inject ISystemSettings<AMSSetting> AMSSettings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
-@inject ISystemSettings<DMSSetting> DmsSettings
 @inject IOptions<GraphSettings> GraphSettings
 @inject IStringLocalizer<AdminResource> Localizer
 @inject IOptions<EPOMailboxSettings> EPOMailboxSettings
@@ -23,15 +17,10 @@
     //todo: toggle ExportControl based on Patent role
 
     var patSettings = await PatSettings.GetSetting();
-    var amsSettings = await AMSSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
-    var dmsSettings = await DmsSettings.GetSetting();
 
     var graphSettings = GraphSettings.Value;
     var epoMailboxSettings = EPOMailboxSettings.Value;
-
-    var allowAMSAttorney = amsSettings.IsSendRemindersToAttorney;
 
     var letterRoles = new List<CPiRole>();
     letterRoles.Add(new CPiRole() { Id = "", Name = "" });
@@ -98,17 +87,12 @@
 
     var showDocumentStorageSettings = patSettings.DocumentStorage != DocumentStorageOptions.BlobOrFileSystem;
 
-    var isDMSPreviewOn = dmsSettings.IsPreviewOn;
-
     var showPatTradeSecretSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanHaveTSClearance.Contains(Model.UserType);
     var showPatTradeSecretReportsSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanAccessTSReports.Contains(Model.UserType);
 
-    var isSoftDocketOn = patSettings.IsSoftDocketOn || tmkSettings.IsSoftDocketOn || gmSettings.IsSoftDocketOn;
+    var isSoftDocketOn = patSettings.IsSoftDocketOn || tmkSettings.IsSoftDocketOn;
 
-    var isRequestDocketOn = patSettings.IsDocketRequestOn || tmkSettings.IsDocketRequestOn || gmSettings.IsDocketRequestOn;
-
-    var showDMSTradeSecretSetting = dmsSettings.IsTradeSecretOn && User.IsSystemEnabled(SystemType.DMS) && ((CPiPermissions.CanHaveTSClearance.Contains(Model.UserType) || (Model.UserType == CPiUserType.Inventor) || Model.UserType == CPiUserType.ContactPerson));
-    var showDMSTradeSecretReportsSetting = dmsSettings.IsTradeSecretOn && User.IsSystemEnabled(SystemType.DMS) && CPiPermissions.CanAccessTSReports.Contains(Model.UserType);
+    var isRequestDocketOn = patSettings.IsDocketRequestOn || tmkSettings.IsDocketRequestOn;
 
 }
 
@@ -160,18 +144,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             </label>
                         </span>
                     </li>
-                    @if (isDMSPreviewOn)
-                    {
-                        <li class="d-flex justify-content-between">
-                            <label for="IsDmsPreviewer">@Localizer["Invention Disclosure Previewer"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="IsDmsPreviewer" type="checkbox" checked="@Model.IsPreviewer" class="toggle-option is-previewer" data-save-previewer-url="@Url.Action("SaveDMSPreviewerRole", "AccountSettings", new { Area = "Admin" })">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
                     @if (User.IsSystemEnabled(SystemType.Patent))
                     {
                         <li class="d-flex justify-content-between">
@@ -212,18 +184,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             <span class="field-validation-error" style="display:none;" data-valmsg-for="Attorney"></span>
                         </span>
                     </li>
-                    @if (User.IsSystemEnabled(SystemType.AMS) && allowAMSAttorney)
-                    {
-                        <li class="d-flex justify-content-between">
-                            <label for="IsAMSDecisionMaker">@Localizer["Annuity Management Decision Maker"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="IsAMSDecisionMaker" type="checkbox" checked="@Model.IsAMSDecisionMaker" class="toggle-option is-decision-maker" data-system="@SystemType.AMS">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
                     @if (User.IsSystemEnabled(SystemType.Patent))
                     {
                         <li class="d-flex justify-content-between">
@@ -305,18 +265,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                                 </label>
                             </span>
                         </li>
-                        @if (isDMSPreviewOn)
-                        {
-                            <li class="d-flex justify-content-between">
-                                <label for="IsContactDmsPreviewer">@Localizer["Invention Disclosure Previewer"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input id="IsContactDmsPreviewer" type="checkbox" checked="@Model.IsPreviewer" class="toggle-option is-previewer" data-save-previewer-url="@Url.Action("SaveDMSPreviewerRole", "AccountSettings", new { Area = "Admin" })">
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </li>
-                        }
                     }
                     @if (User.IsSystemEnabled(SystemType.AMS))
                     {
@@ -1077,18 +1025,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             </span>
                         </li>
                     }
-                    @if (Model.HasGeneralMatter && gmSettings.IsSoftDocketOn)
-                    {
-                        <li class="d-flex justify-content-between soft-docket">
-                            <label for="SoftDocketGeneralMatter" class="toggle-label">@Localizer[$"Allow General Matter Soft Docket"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="SoftDocketGeneralMatter" type="checkbox" checked="@Model.IsGeneralMatterSoftDocket" class="toggle-option is-soft-docket" data-system="@SystemType.GeneralMatter">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
                 </ul>
             </div>
         }
@@ -1122,18 +1058,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             </span>
                         </li>
                     }
-                    @if (Model.HasGeneralMatter && gmSettings.IsDocketRequestOn)
-                    {
-                        <li class="d-flex justify-content-between request-docket">
-                            <label for="RequestDocketGeneralMatter" class="toggle-label">@Localizer[$"Allow General Matter Docket Request"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="RequestDocketGeneralMatter" type="checkbox" checked="@Model.IsGeneralMatterRequestDocket" class="toggle-option is-request-docket" data-system="@SystemType.GeneralMatter">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
                 </ul>
             </div>
         }
@@ -1156,7 +1080,7 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
             </div>
         }
 
-        @if (Model.HasPatent || showPatTradeSecretSetting || showDMSTradeSecretSetting || showPatTradeSecretReportsSetting || showDMSTradeSecretReportsSetting)
+        @if (Model.HasPatent || showPatTradeSecretSetting || showPatTradeSecretReportsSetting)
         {
             <div class="card">
                 <h5 class="">@Localizer["Access Control"]</h5>
@@ -1192,30 +1116,6 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             <span>
                                 <label class="toggle-switch">
                                     <input id="RestrictInventorInfo" type="checkbox" checked="@Model.Settings.RestrictInventorInfo" data-setting="RestrictInventorInfo" class="toggle-option">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
-                    @if (showDMSTradeSecretSetting)
-                    {
-                        <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
-                            <label for="RestrictDMSTradeSecret">@Localizer["Restrict access to DMS trade secret"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="RestrictDMSTradeSecret" type="checkbox" checked="@Model.Settings.RestrictDMSTradeSecret" data-setting="RestrictDMSTradeSecret" class="toggle-option">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
-                    @if (showDMSTradeSecretReportsSetting)
-                    {
-                        <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
-                            <label for="RestrictDMSTradeSecretReports">@Localizer["Restrict access to DMS trade secret reports"]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="RestrictDMSTradeSecretReports" type="checkbox" checked="@Model.Settings.RestrictDMSTradeSecretReports" data-setting="RestrictDMSTradeSecretReports" class="toggle-option">
                                     <span class="slider round"></span>
                                 </label>
                             </span>

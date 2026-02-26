@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -22,13 +22,8 @@ using Microsoft.AspNetCore.Hosting;
 using R10.Web.Extensions;
 using R10.Core.Entities.Trademark;
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities;
 using R10.Core.Entities.Shared;
-using R10.Core.Entities.ForeignFiling;
-using R10.Core.Entities.PatClearance;
-using R10.Core.Entities.RMS;
-using R10.Core.Entities.Clearance;
 
 namespace R10.Web.Services
 {
@@ -41,12 +36,7 @@ namespace R10.Web.Services
         private readonly IWebHostEnvironment _environment;
         private readonly ISystemSettings<PatSetting> _patSettings;
         private readonly ISystemSettings<TmkSetting> _tmkSettings;
-        private readonly ISystemSettings<GMSetting> _gmSettings;
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
-        private readonly ISystemSettings<FFSetting> _ffSettings;
-        private readonly ISystemSettings<PacSetting> _pacSettings;
-        private readonly ISystemSettings<RMSSetting> _rmsSettings;
-        private readonly ISystemSettings<TmcSetting> _tmcSettings;
         private readonly CPiIdentitySettings _cpiSettings;
 
         public CPiUserClaimsPrincipalFactory(
@@ -59,12 +49,7 @@ namespace R10.Web.Services
             IWebHostEnvironment environment,
             ISystemSettings<PatSetting> patSettings,
             ISystemSettings<TmkSetting> tmkSettings,
-            ISystemSettings<GMSetting> gmSettings,
             ISystemSettings<DefaultSetting> defaultSettings,
-            ISystemSettings<FFSetting> ffSettings,
-            ISystemSettings<PacSetting> pacSettings,
-            ISystemSettings<RMSSetting> rmsSettings,
-            ISystemSettings<TmcSetting> tmcSettings,
             IOptions<CPiIdentitySettings> cpiSettings
             ) : base(userManager, roleManager, options)
         {
@@ -75,12 +60,7 @@ namespace R10.Web.Services
             _environment = environment;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
             _defaultSettings = defaultSettings;
-            _ffSettings = ffSettings;
-            _pacSettings = pacSettings;
-            _rmsSettings = rmsSettings;
-            _tmcSettings = tmcSettings;
             _cpiSettings = cpiSettings.Value;
         }
         protected override async Task<ClaimsIdentity> GenerateClaimsAsync(CPiUser user)
@@ -253,64 +233,12 @@ namespace R10.Web.Services
                     modules.Add(CPiModule.TmkCostEstimator);
             }
 
-            if (systems.Any(s => s.Id == SystemType.GeneralMatter))
-            {
-                var gmSettings = await _gmSettings.GetSetting();
-
-                if (gmSettings.IsAuditOn)
-                    modules.Add(CPiModule.GMAudit);
-                if (gmSettings.IsDeDocketOn)
-                    modules.Add(CPiModule.GMDeDocket);
-                if (gmSettings.IsPortfolioOnboardingOn)
-                    modules.Add(CPiModule.GMPortfolioOnboarding);
-                if (gmSettings.IsCustomReportON)
-                    modules.Add(CPiModule.GMCustomReport);
-                if (gmSettings.IsProductsOn)
-                    modules.Add(CPiModule.GMProducts);
-                if (gmSettings.IsShowCustomFieldOn && !modules.Any(m => m == CPiModule.CustomField))
-                    modules.Add(CPiModule.CustomField);
-                if (gmSettings.IsDocumentVerificationOn)
-                    modules.Add(CPiModule.GMDocumentVerification);
-            }
-
             if (systems.Any(s => s.Id == SystemType.IDS))
             {
                 var idsSettings = await _patSettings.GetSetting();
 
                 if (idsSettings.IsIDSImportOn)
                     modules.Add(CPiModule.IDSImport);
-            }
-
-            if (systems.Any(s => s.Id == SystemType.ForeignFiling))
-            {
-                var ffSettings = await _ffSettings.GetSetting();
-
-                if (ffSettings.IsAuditOn)
-                    modules.Add(CPiModule.FFAudit);
-            }
-
-            if (systems.Any(s => s.Id == SystemType.PatClearance))
-            {
-                var pacSettings = await _pacSettings.GetSetting();
-
-                if (pacSettings.IsAuditOn)
-                    modules.Add(CPiModule.PacAudit);
-            }
-
-            if (systems.Any(s => s.Id == SystemType.RMS))
-            {
-                var rmsSettings = await _rmsSettings.GetSetting();
-
-                if (rmsSettings.IsAuditOn)
-                    modules.Add(CPiModule.RMSAudit);
-            }
-
-            if (systems.Any(s => s.Id == SystemType.SearchRequest))
-            {
-                var tmcSettings = await _tmcSettings.GetSetting();
-
-                if (tmcSettings.IsAuditOn)
-                    modules.Add(CPiModule.TmcAudit);
             }
 
             if (defaultSettings.GetType().GetProperty("IsPowerBIConnectorOn")?.GetValue(defaultSettings) is bool powerBIConnectorOn && powerBIConnectorOn)
@@ -340,8 +268,7 @@ namespace R10.Web.Services
                     if ((role.StartsWith("patentcostestimator") && !modules.Contains(CPiModule.PatCostEstimator)) ||
                         (role.StartsWith("trademarkcostestimator") && !modules.Contains(CPiModule.TmkCostEstimator)) ||
                         (role.StartsWith("patentdedocketer") && !modules.Contains(CPiModule.PatDeDocket)) ||
-                        (role.StartsWith("trademarkdedocketer") && !modules.Contains(CPiModule.TmkDeDocket)) ||
-                        (role.StartsWith("generalmatterdedocketer") && !modules.Contains(CPiModule.GMDeDocket)))
+                        (role.StartsWith("trademarkdedocketer") && !modules.Contains(CPiModule.TmkDeDocket)))
                         userSystemRoles.Remove(claim);
                 }
 

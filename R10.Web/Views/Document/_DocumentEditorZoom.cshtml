@@ -4,13 +4,11 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 @inject IAuthorizationService AuthService
 @{
     var settings = await Settings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
 
     var addMode = Model.DocId == 0;
     var fileSizeLimit = settings.FileUploadSizeLimit;
@@ -29,20 +27,18 @@
         dataKeyValue = documentLinkArray[3];
     }
 
-    bool showPatVerification = false, showTmkVerification = false, showGMVerification = false;
+    bool showPatVerification = false, showTmkVerification = false;
     var tempScreenCode = Model.ScreenCode != null ? Model.ScreenCode.ToUpper() : screenCode.ToUpper();
     if (!string.IsNullOrEmpty(tempScreenCode))
     {
         showPatVerification = patSettings.IsDocumentVerificationOn && tempScreenCode == ScreenCode.Application.ToUpper() && dataKey.ToLower() == "appid";
         showTmkVerification = tmkSettings.IsDocumentVerificationOn && tempScreenCode == ScreenCode.Trademark.ToUpper() && dataKey.ToLower() == "tmkid";
-        showGMVerification = gmSettings.IsDocumentVerificationOn && tempScreenCode == ScreenCode.GeneralMatter.ToUpper() && dataKey.ToLower() == "matid";
     }
-    var showVerification = showPatVerification || showTmkVerification || showGMVerification;
+    var showVerification = showPatVerification || showTmkVerification;
 
     var isPatFullModify = (await AuthService.AuthorizeAsync(User, PatentAuthorizationPolicy.FullModify)).Succeeded && showPatVerification;
     var isTmkFullModify = (await AuthService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullModify)).Succeeded && showTmkVerification;
-    var isGmFullModify = (await AuthService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullModify)).Succeeded && showGMVerification;
-    var isActFullModify = isPatFullModify || isTmkFullModify || isGmFullModify;
+    var isActFullModify = isPatFullModify || isTmkFullModify;
 
     var activePage = "";
     if (screenCode.ToUpper() == ScreenCode.Application.ToUpper())

@@ -15,8 +15,9 @@ namespace R10.Infrastructure.Data.Patent.mappings
             builder.ToTable("tblPatArea");
             builder.HasIndex(a => a.Area).IsUnique();
             builder.HasMany(a => a.PatAreaCountries).WithOne(ca => ca.Area).HasPrincipalKey(a=>a.AreaID).HasForeignKey(ca => ca.AreaID);
-            builder.HasMany(c => c.AreaDisclosures).WithOne(d => d.Area).HasPrincipalKey(a=>a.AreaID).HasForeignKey(ca => ca.AreaID);
-            builder.HasMany(o => o.AreaDMSAgendas).WithOne(d => d.Area).HasPrincipalKey(a=>a.AreaID).HasForeignKey(d => d.AreaID);
+            // Removed during deep clean
+            // builder.HasMany(c => c.AreaDisclosures).WithOne(d => d.Area).HasPrincipalKey(a=>a.AreaID).HasForeignKey(ca => ca.AreaID);
+            // builder.HasMany(o => o.AreaDMSAgendas).WithOne(d => d.Area).HasPrincipalKey(a=>a.AreaID).HasForeignKey(d => d.AreaID);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using R10.Core.Entities.Patent;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.Clearance;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.Clearance; // Removed during deep clean
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -37,11 +37,11 @@ namespace R10.Core.Entities.Trademark
         public List<TmkRelatedTrademark>? TmkRelatedTrademarks { get; set; }
         public List<TmkRelatedTrademark>? TmkTrademarkRelateds { get; set; }
         public List<PatRelatedTrademark>? PatRelatedTrademarks { get; set; }
-        public List<GMMatterTrademark>? GMMatterTrademarks { get; set; }
+//         public List<GMMatterTrademark>? GMMatterTrademarks { get; set; } // Removed during deep clean
 
-        public List<TmcRelatedTrademark>? TmcRelatedTrademarks { get; set; }
+//         public List<TmcRelatedTrademark>? TmcRelatedTrademarks { get; set; } // Removed during deep clean
 
-        public TLSearch? TLSearch { get; set; }
+//         public TLSearch? TLSearch { get; set; } // Removed during deep clean
         public List<TimeTracker>? TimeTrackers { get; set; }
 
         public List<TmkCostEstimator>? CostEstimators { get; set; }

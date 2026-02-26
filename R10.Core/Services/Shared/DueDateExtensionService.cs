@@ -122,8 +122,8 @@ namespace R10.Core.Services
             await ExtendPatDueDate(updatedBy);
             await ExtendPatDueDateInv(updatedBy);
             await ExtendTmkDueDate(updatedBy);
-            await ExtendGMDueDate(updatedBy);
-            await ExtendDMSDueDate(updatedBy);
+            // await ExtendGMDueDate(updatedBy); // Removed during deep clean - GeneralMatter module removed
+            // await ExtendDMSDueDate(updatedBy); // Removed during deep clean - DMS module removed
         }
 
         private async Task ExtendPatDueDate(string updatedBy)
@@ -243,83 +243,25 @@ namespace R10.Core.Services
             }
         }
 
-        private async Task ExtendGMDueDate(string updatedBy)
-        {
-            var gmDueDateExtensions = await _repository.GMDueDateExtensions.Where(e => e.GMDueDate.DateTaken == null && e.IsEnabled && e.NextRunDate <= DateTime.Now.Date).Include(e => e.GMDueDate).AsNoTracking().ToListAsync();
-            foreach (var item in gmDueDateExtensions)
-            {
-                var currentRunDate = item.NextRunDate;
-                var newDueDate = ComputeNextDueDate(item.GMDueDate.DueDate, item.ExtendMonth, item.ExtendWeek, item.ExtendDay);
-                ComputeNextRunDate(item);
-                while (item.NextRunDate != null && item.NextRunDate > currentRunDate && item.NextRunDate < DateTime.Now.Date)
-                {
-                    newDueDate = ComputeNextDueDate(newDueDate, item.ExtendMonth, item.ExtendWeek, item.ExtendDay);
-                    ComputeNextRunDate(item);
-                }
+        // Removed during deep clean - GeneralMatter module removed
+        // private async Task ExtendGMDueDate(string updatedBy)
+        // {
+        //     var gmDueDateExtensions = await _repository.GMDueDateExtensions.Where(e => e.GMDueDate.DateTaken == null && e.IsEnabled && e.NextRunDate <= DateTime.Now.Date).Include(e => e.GMDueDate).AsNoTracking().ToListAsync();
+        //     foreach (var item in gmDueDateExtensions)
+        //     {
+        //         ...
+        //     }
+        // }
 
-                using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted }, TransactionScopeAsyncFlowOption.Enabled))
-                {
-                    var result = await _repository.GMDueDateExtensions.Where(e => e.ExtensionId == item.ExtensionId && e.NextRunDate == currentRunDate)
-                                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.LastDueDate, x => item.GMDueDate.DueDate)
-                                           .SetProperty(x => x.NewDueDate, x => newDueDate).SetProperty(x => x.NextRunDate, x => item.NextRunDate)
-                                           .SetProperty(x => x.OccurenceCount, x => x.OccurenceCount + 1).SetProperty(x => x.LastRunDate, x => DateTime.Now.Date));
-
-                    if (result > 0)
-                    {
-                        await _repository.GMDueDates.Where(dd => dd.DDId == item.DDId)
-                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.DueDate, x => newDueDate)
-                           .SetProperty(x => x.UpdatedBy, x => updatedBy).SetProperty(x => x.LastUpdate, x => DateTime.Now));
-
-                        await _repository.GMActionsDue.Where(ad => ad.DueDates.Any(dd => dd.DDId == item.DDId))
-                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.UpdatedBy, x => updatedBy).SetProperty(x => x.LastUpdate, x => DateTime.Now));
-
-                        var log = BuildDueDateExtensionLog(item, (DateTime)currentRunDate, newDueDate, item.GMDueDate.DueDate, "G");
-                        _repository.DueDateExtensionsLog.Add(log);
-                        await _repository.SaveChangesAsync();
-                    }
-                    scope.Complete();
-                }
-            }
-        }
-
-        private async Task ExtendDMSDueDate(string updatedBy)
-        {
-            var dmsDueDateExtensions = await _repository.DMSDueDateExtensions.Where(e => e.DMSDueDate.DateTaken == null && e.IsEnabled && e.NextRunDate <= DateTime.Now.Date).Include(e => e.DMSDueDate).AsNoTracking().ToListAsync();
-            foreach (var item in dmsDueDateExtensions)
-            {
-                var currentRunDate = item.NextRunDate;
-                var newDueDate = ComputeNextDueDate(item.DMSDueDate.DueDate, item.ExtendMonth, item.ExtendWeek, item.ExtendDay);
-                ComputeNextRunDate(item);
-                while (item.NextRunDate != null && item.NextRunDate > currentRunDate && item.NextRunDate < DateTime.Now.Date)
-                {
-                    newDueDate = ComputeNextDueDate(newDueDate, item.ExtendMonth, item.ExtendWeek, item.ExtendDay);
-                    ComputeNextRunDate(item);
-                }
-
-                using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted }, TransactionScopeAsyncFlowOption.Enabled))
-                {
-                    var result = await _repository.DMSDueDateExtensions.Where(e => e.ExtensionId == item.ExtensionId && e.NextRunDate == currentRunDate)
-                                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.LastDueDate, x => item.DMSDueDate.DueDate)
-                                           .SetProperty(x => x.NewDueDate, x => newDueDate).SetProperty(x => x.NextRunDate, x => item.NextRunDate)
-                                           .SetProperty(x => x.OccurenceCount, x => x.OccurenceCount + 1).SetProperty(x => x.LastRunDate, x => DateTime.Now.Date));
-
-                    if (result > 0)
-                    {
-                        await _repository.DMSDueDates.Where(dd => dd.DDId == item.DDId)
-                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.DueDate, x => newDueDate)
-                           .SetProperty(x => x.UpdatedBy, x => updatedBy).SetProperty(x => x.LastUpdate, x => DateTime.Now));
-
-                        await _repository.DMSActionDues.Where(ad => ad.DueDates.Any(dd => dd.DDId == item.DDId))
-                           .ExecuteUpdateAsync(p => p.SetProperty(x => x.UpdatedBy, x => updatedBy).SetProperty(x => x.LastUpdate, x => DateTime.Now));
-
-                        var log = BuildDueDateExtensionLog(item, (DateTime)currentRunDate, newDueDate, item.DMSDueDate.DueDate, "D");
-                        _repository.DueDateExtensionsLog.Add(log);
-                        await _repository.SaveChangesAsync();
-                    }
-                    scope.Complete();
-                }
-            }
-        }
+        // Removed during deep clean - DMS/Disclosure module removed
+        // private async Task ExtendDMSDueDate(string updatedBy)
+        // {
+        //     var dmsDueDateExtensions = await _repository.DMSDueDateExtensions.Where(e => e.DMSDueDate.DateTaken == null && e.IsEnabled && e.NextRunDate <= DateTime.Now.Date).Include(e => e.DMSDueDate).AsNoTracking().ToListAsync();
+        //     foreach (var item in dmsDueDateExtensions)
+        //     {
+        //         ...
+        //     }
+        // }
 
         private DueDateExtensionLog BuildDueDateExtensionLog(DueDateExtension setting, DateTime currentRunDate, DateTime newDueDate, DateTime lastDueDate, string systemType)
         {

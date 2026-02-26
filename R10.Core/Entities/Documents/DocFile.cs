@@ -1,6 +1,6 @@
-﻿using R10.Core.Entities.DMS;
-using R10.Core.Entities.ForeignFiling;
-using R10.Core.Entities.RMS;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
+// using R10.Core.Entities.RMS; // Removed during deep clean
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -31,9 +31,9 @@ namespace R10.Core.Entities.Documents
         public bool? SignedDoc { get; set; }
         public DocFileSignature? DocFileSignature { get; set; }
 
-        public List<RMSDueDocUploadLog>? RMSDueDocsUploadLogs { get; set; }
-        public List<FFDueDocUploadLog>? FFDueDocsUploadLogs { get; set; }
+//         public List<RMSDueDocUploadLog>? RMSDueDocsUploadLogs { get; set; } // Removed during deep clean
+//         public List<FFDueDocUploadLog>? FFDueDocsUploadLogs { get; set; } // Removed during deep clean
 
-        public DMSFaqDoc? DMSFaqDoc { get; set; }
+//         public DMSFaqDoc? DMSFaqDoc { get; set; } // Removed during deep clean
     }
 }

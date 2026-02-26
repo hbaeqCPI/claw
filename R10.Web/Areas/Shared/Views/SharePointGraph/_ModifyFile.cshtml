@@ -4,18 +4,15 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 @inject IAuthorizationService AuthService
 @{
     var settings = await Settings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
 
     var showPatVerification = patSettings.IsDocumentVerificationOn && (Model.DocLibraryFolder ?? "").ToUpper() == SharePointDocLibraryFolder.Application.ToUpper();
     var showTmkVerification = tmkSettings.IsDocumentVerificationOn && (Model.DocLibraryFolder ?? "").ToUpper() == SharePointDocLibraryFolder.Trademark.ToUpper();
-    var showGMVerification = gmSettings.IsDocumentVerificationOn && (Model.DocLibraryFolder ?? "").ToUpper() == SharePointDocLibraryFolder.GeneralMatter.ToUpper();
-    var showVerification = showPatVerification || showTmkVerification || showGMVerification;
+    var showVerification = showPatVerification || showTmkVerification;
 
     var formActionAdd = "AddFile";
     var showOptions = true;
@@ -39,8 +36,7 @@
 
     var isPatFullModify = (await AuthService.AuthorizeAsync(User, PatentAuthorizationPolicy.FullModify)).Succeeded && showPatVerification;
     var isTmkFullModify = (await AuthService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.FullModify)).Succeeded && showTmkVerification;
-    var isGmFullModify = (await AuthService.AuthorizeAsync(User, GeneralMatterAuthorizationPolicy.FullModify)).Succeeded && showGMVerification;
-    var isActFullModify = isPatFullModify || isTmkFullModify || isGmFullModify;
+    var isActFullModify = isPatFullModify || isTmkFullModify;
 
     var isNewDocVerification = ViewData["IsNewDocVerification"] == null ? false : (bool)ViewData["IsNewDocVerification"];
     if (isNewDocVerification) showVerification = false;
@@ -50,8 +46,6 @@
         activePage = "patCountryAppPage";
     else if ((Model.DocLibraryFolder ?? "").ToUpper() == SharePointDocLibraryFolder.Trademark.ToUpper())
         activePage = "tmkTrademarkPage";
-    else if ((Model.DocLibraryFolder ?? "").ToUpper() == SharePointDocLibraryFolder.GeneralMatter.ToUpper())
-        activePage = "gmMatterPage";
 
     string actionLink = "";
     string docLink = "";
@@ -64,17 +58,11 @@
             areaStr = "Patent";
             systemType = "P";
         }
-        else if (Model.DocLibrary.ToUpper() == SharePointDocLibrary.Trademark.ToUpper()) 
+        else if (Model.DocLibrary.ToUpper() == SharePointDocLibrary.Trademark.ToUpper())
         {
             areaStr = "Trademark";
             systemType = "T";
         }
-        
-        else if (Model.DocLibrary.ToUpper() == SharePointDocLibrary.GeneralMatter.ToUpper())
-        {
-            areaStr = "GeneralMatter";
-            systemType = "G";
-        }        
 
         actionLink = Url.Action("DetailLink", "ActionDue", new { area = areaStr, id = 0, parentId = Model.ParentId, actionTypeId = "actualValue" });
         docLink = string.Format("{0}|||{1}", systemType, Model.ParentId.ToString());

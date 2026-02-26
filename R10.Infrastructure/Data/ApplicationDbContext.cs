@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.DMS;
+// Removed during deep clean - using R10.Core.Entities.Clearance;
+// Removed during deep clean - using R10.Core.Entities.DMS;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.GeneralMatter;
+// Removed during deep clean - using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.GlobalSearch;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.ReportScheduler;
@@ -13,33 +13,33 @@ using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
 using R10.Core.Queries.Shared;
-using R10.Infrastructure.Data.AMS.mappings;
-using R10.Infrastructure.Data.Clearance.mappings;
-using R10.Infrastructure.Data.DMS.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.AMS.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.Clearance.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.DMS.mappings;
 using R10.Infrastructure.Data.Documents.mappings;
-using R10.Infrastructure.Data.GeneralMatter.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.GeneralMatter.mappings;
 using R10.Infrastructure.Data.GlobalSearch.mappings;
 using R10.Infrastructure.Data.Patent.mappings;
 using R10.Infrastructure.Data.ReportScheduler.mappings;
-using R10.Infrastructure.Data.RTS.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.RTS.mappings;
 using R10.Infrastructure.Data.Shared.mappings;
-using R10.Infrastructure.Data.TL.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.TL.mappings;
 using R10.Infrastructure.Data.Trademark.mappings;
 using R10.Infrastructure.Identity.Mappings;
-using R10.Infrastructure.Data.RMS.mappings;
-using R10.Core.Entities.PatClearance;
-using R10.Infrastructure.Data.PatClearance.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.RMS.mappings;
+// Removed during deep clean - using R10.Core.Entities.PatClearance;
+// Removed during deep clean - using R10.Infrastructure.Data.PatClearance.mappings;
 using R10.Core.Entities.FormExtract;
 using R10.Infrastructure.Data.FormExtract.mappings;
-using R10.Infrastructure.Data.ForeignFiling.mappings;
+// Removed during deep clean - using R10.Infrastructure.Data.ForeignFiling.mappings;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using R10.Infrastructure.Data.MailDownload.mappings;
-using R10.Core.Entities.AMS;
+// Removed during deep clean - using R10.Core.Entities.AMS;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using R10.Core.Helpers;
-using R10.Core.Entities.RMS;
+// Removed during deep clean - using R10.Core.Entities.RMS;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using R10.Core.Entities.ForeignFiling;
+// Removed during deep clean - using R10.Core.Entities.ForeignFiling;
 
 namespace R10.Infrastructure.Data
 {
@@ -284,6 +284,8 @@ namespace R10.Infrastructure.Data
         public DbSet<PatOPSLog> PatOPSLogs { get; set; }
         #endregion
 
+        // Removed during deep clean - Patent Clearance Search region
+        /*
         #region Patent Clearance Search
 
         public DbSet<PacClearance> PacClearances { get; set; }
@@ -311,7 +313,10 @@ namespace R10.Infrastructure.Data
         public DbSet<PacInventor> PacInventors { get; set; }
 
         #endregion
+        */
 
+        // Removed during deep clean - AMS region
+        /*
         #region AMS
         public DbSet<AMSMain> AMSMain { get; set; }
         //public DbSet<AMSDue> AMSDue { get; set; }
@@ -320,17 +325,26 @@ namespace R10.Infrastructure.Data
         //public DbSet<AMSInstrxType> AMSInstrxTypes { get; set; }
         //public DbSet<AMSStatusType> AMSStatusTypes { get; set; }
         #endregion AMS
+        */
 
+        // Removed during deep clean - RMS region
+        /*
         #region RMS
         public DbSet<RMSReminderSetup> RMSReminderSetup { get; set; }
         public DbSet<RMSInstrxTypeAction> RMSInstrxTypeAction { get; set; }
         #endregion
+        */
 
+        // Removed during deep clean - FF (ForeignFiling) region
+        /*
         #region RMS
         public DbSet<FFReminderSetup> FFReminderSetup { get; set; }
         public DbSet<FFInstrxTypeAction> FFInstrxTypeAction { get; set; }
         #endregion
+        */
 
+        // Removed during deep clean - DMS region
+        /*
         #region DMS
         // main
         public DbSet<Disclosure> Disclosures { get; set; }
@@ -396,7 +410,10 @@ namespace R10.Infrastructure.Data
 
         public DbSet<DMSFaqDoc> DMSFaqDocs { get; set; }
         #endregion DMS
+        */
 
+        // Removed during deep clean - RTS region
+        /*
         #region RTS
         public DbSet<RTSInfoSettingsMenu> RTSInfoSettingsMenu { get; set; }
         public DbSet<RTSInfoSettingsMenuCountry> RTSInfoCountrySettings { get; set; }
@@ -450,7 +467,10 @@ namespace R10.Infrastructure.Data
 
         public DbSet<RTSSearchIDSCount> RTSSearchIDSCounts { get; set; }
         #endregion RTS
+        */
 
+        // Removed during deep clean - TL region
+        /*
         #region TL
         public DbSet<TLInfoSettingsMenu> TLInfoSettingsMenu { get; set; }
         public DbSet<TLInfoSettingsMenuCountry> TLInfoCountrySettings { get; set; }
@@ -484,6 +504,7 @@ namespace R10.Infrastructure.Data
         public DbSet<TLActionUpdateExclude> TLActionUpdateExcludes { get; set; }
 
         #endregion
+        */
 
         #region EFS
         public DbSet<EFS> EFS { get; set; }
@@ -565,6 +586,8 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkCostEstimatorCostSub> TmkCostEstimatorCostSubs { get; set; }
         #endregion
 
+        // Removed during deep clean - Trademark Clearance region
+        /*
         #region Trademark Clearance
 
         public DbSet<TmcClearance> TmcClearances { get; set; }
@@ -592,7 +615,10 @@ namespace R10.Infrastructure.Data
         public DbSet<TmcDiscussionReply> TmcDiscussionReplies { get; set; }
 
         #endregion
+        */
 
+        // Removed during deep clean - General Matters region
+        /*
         #region General Matters
         //general matter
         public DbSet<GMMatter> GMMatters { get; set; }
@@ -645,6 +671,7 @@ namespace R10.Infrastructure.Data
         public DbSet<GMCostTrackingImportError> GMCostTrackingImportErrors { get; set; }
         public DbSet<GMCostTrackingImportTypeColumn> GMCostTrackingImportTypeColumns { get; set; }
         #endregion
+        */
 
         #region Images
         public DbSet<ImageType> ImageTypes { get; set; }
@@ -676,13 +703,13 @@ namespace R10.Infrastructure.Data
         public DbSet<PatDueDateDeDocket> PatDueDateDeDockets { get; set; }
         public DbSet<PatDueDateInvDeDocket> PatDueDateInvDeDockets { get; set; }
         public DbSet<TmkDueDateDeDocket> TmkDueDateDeDockets { get; set; }
-        public DbSet<GMDueDateDeDocket> GMDueDateDeDockets { get; set; }
+        // Removed during deep clean - public DbSet<GMDueDateDeDocket> GMDueDateDeDockets { get; set; }
 
         public DbSet<PatDueDateExtension> PatDueDateExtensions { get; set; }
         public DbSet<PatDueDateInvExtension> PatDueDateInvExtensions { get; set; }
         public DbSet<TmkDueDateExtension> TmkDueDateExtensions { get; set; }
-        public DbSet<GMDueDateExtension> GMDueDateExtensions { get; set; }
-        public DbSet<DMSDueDateExtension> DMSDueDateExtensions { get; set; }
+        // Removed during deep clean - public DbSet<GMDueDateExtension> GMDueDateExtensions { get; set; }
+        // Removed during deep clean - public DbSet<DMSDueDateExtension> DMSDueDateExtensions { get; set; }
         public DbSet<DueDateExtensionLog> DueDateExtensionsLog { get; set; }
 
         public DbSet<PatDueDateDeDocketResp> PatDueDateDeDocketResps { get; set; }        
@@ -702,7 +729,7 @@ namespace R10.Infrastructure.Data
         public DbSet<PatDueDateDateTakenLog> PatDueDateDateTakenLogs { get; set; }
         public DbSet<PatDueDateInvDateTakenLog> PatDueDateDateInvTakenLogs { get; set; }
         public DbSet<TmkDueDateDateTakenLog> TmkDueDateDateTakenLogs { get; set; }
-        public DbSet<GMDueDateDateTakenLog> GMDueDateDateTakenLogs { get; set; }
+        // Removed during deep clean - public DbSet<GMDueDateDateTakenLog> GMDueDateDateTakenLogs { get; set; }
 
         #endregion
 
@@ -976,7 +1003,7 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkGlobalUpdatePreviewDTO> TmkGlobalUpdatePreviewDTO { get; set; }
         public DbSet<TmkGlobalUpdateLog> TmkGlobalUpdateLog { get; set; }
         public DbSet<GMGlobalUpdatePreviewDTO> GMGlobalUpdatePreviewDTO { get; set; }
-        public DbSet<GMGlobalUpdateLog> GMGlobalUpdateLog { get; set; }
+        // Removed during deep clean - public DbSet<GMGlobalUpdateLog> GMGlobalUpdateLog { get; set; }
         public DbSet<DelegationUtilityPreviewDTO> DelegationUtilityPreviewDTO { get; set; }
         public DbSet<DelegationActionTypeDTO> DelegationActionTypeDTO { get; set; }
         public DbSet<DelegationActionDueDTO> DelegationActionDueDTO { get; set; }
@@ -1352,6 +1379,8 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatOPSLogMap());
             #endregion
 
+            // Removed during deep clean - Patent Clearance Search region
+            /*
             #region Patent Clearance Search
 
             builder.ApplyConfiguration(new PacClearanceMap());
@@ -1380,7 +1409,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PacInventorMap());
 
             #endregion
+            */
 
+            // Removed during deep clean - AMS region
+            /*
             #region AMS
             builder.ApplyConfiguration(new AMSMainMap());
             builder.ApplyConfiguration(new AMSDueMap());
@@ -1408,7 +1440,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new AMSCostExportLogMap());
             builder.ApplyConfiguration(new AMSInstrxCPiViewLogMap());
             #endregion AMS
+            */
 
+            // Removed during deep clean - RMS region
+            /*
             #region RMS
             builder.ApplyConfiguration(new RMSDueMap());
             builder.ApplyConfiguration(new RMSReminderSetupMap());
@@ -1430,7 +1465,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new RMSReminderSetupDocMap());
             builder.ApplyConfiguration(new RMSDueCountryMap());
             #endregion RMS
+            */
 
+            // Removed during deep clean - Foreign Filing region
+            /*
             #region Foreign Filing
             builder.ApplyConfiguration(new FFDueMap());
             builder.ApplyConfiguration(new FFDueCountryMap());
@@ -1452,7 +1490,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new FFReminderSetupMap());
             builder.ApplyConfiguration(new FFReminderSetupDocMap());
             #endregion Foreign Filing
+            */
 
+            // Removed during deep clean - DMS region
+            /*
             #region DMS
             //DMS - invention disclosure
             builder.ApplyConfiguration(new DisclosureMap());
@@ -1470,7 +1511,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new DMSActionParameterMap());
             builder.ApplyConfiguration(new DMSActionDueMap());
             builder.ApplyConfiguration(new DMSDueDateMap());
-            builder.ApplyConfiguration(new DMSDueDateDelegationMap());            
+            builder.ApplyConfiguration(new DMSDueDateDelegationMap());
             builder.ApplyConfiguration(new DisclosureRelatedDisclosureMap());
             builder.ApplyConfiguration(new DMSActionReminderLogMap());
             builder.ApplyConfiguration(new DMSCombinedMap());
@@ -1509,7 +1550,10 @@ namespace R10.Infrastructure.Data
 
             builder.ApplyConfiguration(new DMSFaqDocMap());
             #endregion
+            */
 
+            // Removed during deep clean - RTS region
+            /*
             #region RTS
             builder.ApplyConfiguration(new RTSInfoSettingsMenuMap());
             builder.ApplyConfiguration(new RTSInfoSettingsMenuCountryMap());
@@ -1530,7 +1574,10 @@ namespace R10.Infrastructure.Data
 
             builder.ApplyConfiguration(new RTSSearchIDSCountMap());
             #endregion
+            */
 
+            // Removed during deep clean - TL region
+            /*
             #region TL
             builder.ApplyConfiguration(new TLInfoSettingsMenuMap());
             builder.ApplyConfiguration(new TLInfoSettingsMenuCountryMap());
@@ -1554,9 +1601,8 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TLMapActionDocumentClientMap());
             builder.ApplyConfiguration(new TLActionUpdateExcludeMap());
 
-            
-
             #endregion
+            */
 
             #region EFS
             builder.ApplyConfiguration(new EFSLogMap());
@@ -1636,6 +1682,8 @@ namespace R10.Infrastructure.Data
 
             #endregion
 
+            // Removed during deep clean - Trademark Clearance region
+            /*
             #region Trademark Clearance
 
             builder.ApplyConfiguration(new TmcClearanceMap());
@@ -1648,7 +1696,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmcQuestionGuideChildMap());
             builder.ApplyConfiguration(new TmcQuestionMap());
 
-            //builder.ApplyConfiguration(new TmcImageMap());            
+            //builder.ApplyConfiguration(new TmcImageMap());
 
             builder.ApplyConfiguration(new TmcWorkflowMap());
             builder.ApplyConfiguration(new TmcWorkflowActionMap());
@@ -1664,7 +1712,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmcDiscussionReplyMap());
 
             #endregion
+            */
 
+            // Removed during deep clean - General Matter region
+            /*
             #region General Matter
             //general matter
             builder.ApplyConfiguration(new GMMatterMap());
@@ -1713,6 +1764,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new GMCostTrackingImportErrorMap());
             builder.ApplyConfiguration(new GMCostTrackingImportTypeColumnMap());
             #endregion
+            */
 
             #region Quick Email
             builder.ApplyConfiguration(new QEMainMap());
@@ -1731,39 +1783,45 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatDueDateDeDocketMap());
             builder.ApplyConfiguration(new PatDueDateInvDeDocketMap());
             builder.ApplyConfiguration(new TmkDueDateDeDocketMap());
-            builder.ApplyConfiguration(new GMDueDateDeDocketMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDueDateDeDocketMap());
 
             builder.ApplyConfiguration(new PatDueDateDeDocketRespMap());            
             builder.ApplyConfiguration(new TmkDueDateDeDocketRespMap());
-            builder.ApplyConfiguration(new GMDueDateDeDocketRespMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDueDateDeDocketRespMap());
             #endregion
 
             #region DuedateExtension
             builder.ApplyConfiguration(new PatDueDateExtensionMap());
             builder.ApplyConfiguration(new PatDueDateInvExtensionMap());
             builder.ApplyConfiguration(new TmkDueDateExtensionMap());
-            builder.ApplyConfiguration(new GMDueDateExtensionMap());
-            builder.ApplyConfiguration(new DMSDueDateExtensionMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDueDateExtensionMap());
+            // builder.ApplyConfiguration(new DMSDueDateExtensionMap());
             builder.ApplyConfiguration(new DueDateExtensionLogMap());
             #endregion
 
             #region DocketRequest
             builder.ApplyConfiguration(new PatDocketRequestMap());
             builder.ApplyConfiguration(new TmkDocketRequestMap());
-            builder.ApplyConfiguration(new GMDocketRequestMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDocketRequestMap());
             builder.ApplyConfiguration(new PatDocketInvRequestMap());
 
             builder.ApplyConfiguration(new PatDocketRequestRespMap());
             builder.ApplyConfiguration(new TmkDocketRequestRespMap());
-            builder.ApplyConfiguration(new GMDocketRequestRespMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDocketRequestRespMap());
             #endregion
 
             #region Duedatelog
             builder.ApplyConfiguration(new PatDueDateDateTakenLogMap());
             builder.ApplyConfiguration(new PatDueDateInvDateTakenLogMap());
             builder.ApplyConfiguration(new TmkDueDateDateTakenLogMap());
-            builder.ApplyConfiguration(new GMDueDateDateTakenLogMap());
-            builder.ApplyConfiguration(new DMSDueDateDateTakenLogMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMDueDateDateTakenLogMap());
+            // builder.ApplyConfiguration(new DMSDueDateDateTakenLogMap());
             #endregion
 
             #region Quick Email
@@ -1983,7 +2041,8 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new GlobalUpdateFieldsMap());
             builder.ApplyConfiguration(new PatGlobalUpdateLogMap());
             builder.ApplyConfiguration(new TmkGlobalUpdateLogMap());
-            builder.ApplyConfiguration(new GMGlobalUpdateLogMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new GMGlobalUpdateLogMap());
 
             builder.ApplyConfiguration(new ActivityLogMap());
             builder.ApplyConfiguration(new ApiLogMap());
@@ -2079,7 +2138,8 @@ namespace R10.Infrastructure.Data
             #endregion
 
             #region API
-            builder.ApplyConfiguration(new AMSInstrxWebSvcMap());
+            // Removed during deep clean
+            // builder.ApplyConfiguration(new AMSInstrxWebSvcMap());
             builder.ApplyConfiguration(new InventionWebSvcMap());
             builder.ApplyConfiguration(new CountryApplicationWebSvcMap());
             builder.ApplyConfiguration(new PatInventorInvWebSvcMap());

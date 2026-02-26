@@ -1,4 +1,4 @@
-using ActiveQueryBuilder.View.DatabaseSchemaView;
+﻿using ActiveQueryBuilder.View.DatabaseSchemaView;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Kendo.Mvc.Extensions;
@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -20,7 +19,6 @@ using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
 using R10.Core.Interfaces.Patent;
-using R10.Core.Services.GeneralMatter;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Helpers;
 using R10.Web.Interfaces;
@@ -45,15 +43,12 @@ namespace R10.Web.Areas.Shared.Services
         private ISystemSettings<DefaultSetting> _settings;
         private ISystemSettings<PatSetting> _patSettings;
         private ISystemSettings<TmkSetting> _tmkSettings;
-        private ISystemSettings<GMSetting> _gmSettings;
         private readonly ICountryApplicationService _applicationService;
         private readonly IActionDueService<PatActionDue, PatDueDate> _patActionDueService;
         private readonly IPatActionDueViewModelService _patActionDueViewModelService;
         private readonly IActionDueService<TmkActionDue, TmkDueDate> _tmkActionDueService;
         private readonly ITmkActionDueViewModelService _tmkActionDueViewModelService;
-        private readonly IActionDueService<GMActionDue, GMDueDate> _gmActionDueService;
         private readonly ITmkTrademarkService _trademarkService;
-        private readonly IGMMatterService _gmMatterService;
         private readonly IDocumentHelper _documentHelper;
         private readonly IMapper _mapper;
         private readonly IWorkflowViewModelService _workflowViewModelService;
@@ -62,7 +57,6 @@ namespace R10.Web.Areas.Shared.Services
         private readonly UserManager<CPiUser> _userManager;
         private readonly IDocumentsAIViewModelService _documentsAIViewModelService;
         private readonly IAuthorizationService _authService;
-        private readonly IActionDueDeDocketService<GMActionDue, GMDueDate> _actionDueService;
         private readonly IDocumentStorage _documentStorage;
         private readonly IUrlHelper _url;
 
@@ -77,23 +71,19 @@ namespace R10.Web.Areas.Shared.Services
                     ISystemSettings<DefaultSetting> settings,
                     ISystemSettings<PatSetting> patSettings,
                     ISystemSettings<TmkSetting> tmkSettings,
-                    ISystemSettings<GMSetting> gmSettings,
                     ICountryApplicationService applicationService,
                     IActionDueService<PatActionDue, PatDueDate> patActionDueService,
                     IPatActionDueViewModelService patActionDueViewModelService,
                     IActionDueService<TmkActionDue, TmkDueDate> tmkActionDueService,
                     ITmkActionDueViewModelService tmkActionDueViewModelService,
-                    IActionDueService<GMActionDue, GMDueDate> gmActionDueService,
                     ITmkTrademarkService trademarkService,
-                    IGMMatterService gmMatterService,
                     IDocumentHelper documentHelper,
-                    IMapper mapper, 
+                    IMapper mapper,
                     IWorkflowViewModelService workflowViewModelService,
                     ClaimsPrincipal user,
                     ICPiUserGroupManager groupManager,
                     UserManager<CPiUser> userManager, IDocumentsAIViewModelService documentsAIViewModelService,
                     IAuthorizationService authService,
-                    IActionDueDeDocketService<GMActionDue, GMDueDate> actionDueService,
                     IDocumentStorage documentStorage,
                     IUrlHelper url)
         {
@@ -101,15 +91,12 @@ namespace R10.Web.Areas.Shared.Services
             _settings = settings;
             _patSettings = patSettings;
             _tmkSettings = tmkSettings;
-            _gmSettings = gmSettings;
             _patActionDueService = patActionDueService;
             _patActionDueViewModelService = patActionDueViewModelService;
             _tmkActionDueService = tmkActionDueService;
             _tmkActionDueViewModelService = tmkActionDueViewModelService;
-            _gmActionDueService = gmActionDueService;
             _applicationService = applicationService;
             _trademarkService = trademarkService;
-            _gmMatterService = gmMatterService;
 
             _documentHelper = documentHelper;
             _mapper = mapper;
@@ -119,7 +106,6 @@ namespace R10.Web.Areas.Shared.Services
             _groupManager = groupManager;
             _userManager = userManager;
             _documentsAIViewModelService = documentsAIViewModelService;
-            _actionDueService = actionDueService;
             _authService = authService;
 
             _documentStorage = documentStorage;
@@ -291,14 +277,13 @@ namespace R10.Web.Areas.Shared.Services
         {
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
             var settings = await _settings.GetSetting();
 
             // save/update document
             var document = _mapper.Map<DocDocumentViewModel, DocDocument>(viewModel);
-            
+
             // move document to "Dockets for Verification" folder if CheckAct is checked and DocVerification module is on
-            // only apply to files from CtryApplication/Trademark/GeneralMatter and when CheckAct value changes
+            // only apply to files from CtryApplication/Trademark and when CheckAct value changes
             // if CheckDocket is checked move to "Dockets for Verification" folder
             // else move to default folder
             if (settings.DocumentStorage == DocumentStorageOptions.BlobOrFileSystem)
@@ -307,10 +292,9 @@ namespace R10.Web.Areas.Shared.Services
                 var systemType = documentLinkArray[0];
                 var screenCode = documentLinkArray[1];
                 var key = documentLinkArray[2];
-                var value = int.Parse(documentLinkArray[3] ?? "0");            
-                if ((patSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Patent.ToLower() && screenCode.ToLower() == ScreenCode.Application.ToLower()) 
-                    || (tmkSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Trademark.ToLower() && screenCode.ToLower() == ScreenCode.Trademark.ToLower()) 
-                    || (gmSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower() && screenCode.ToLower() == ScreenCode.GeneralMatter.ToLower()))
+                var value = int.Parse(documentLinkArray[3] ?? "0");
+                if ((patSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Patent.ToLower() && screenCode.ToLower() == ScreenCode.Application.ToLower())
+                    || (tmkSettings.IsDocumentVerificationOn && systemType.ToLower() == SystemTypeCode.Trademark.ToLower() && screenCode.ToLower() == ScreenCode.Trademark.ToLower()))
                 {
                     var docVerificationFolderName = string.Empty;
                     switch (systemType)
@@ -320,9 +304,6 @@ namespace R10.Web.Areas.Shared.Services
                             break;
                         case SystemTypeCode.Trademark:
                             docVerificationFolderName = tmkSettings.DocVerificationDefaultFolderName;
-                            break;
-                        case SystemTypeCode.GeneralMatter:
-                            docVerificationFolderName = gmSettings.DocVerificationDefaultFolderName;
                             break;
                     }
 
@@ -355,7 +336,7 @@ namespace R10.Web.Areas.Shared.Services
                 }
                 await _docService.UpdateDocuments(viewModel.UpdatedBy, new List<DocDocument>() { document }, new List<DocDocument>(), new List<DocDocument>());
 
-                if (patSettings.IsDocumentVerificationOn || tmkSettings.IsDocumentVerificationOn || gmSettings.IsDocumentVerificationOn)
+                if (patSettings.IsDocumentVerificationOn || tmkSettings.IsDocumentVerificationOn)
                 {
                     var docVerifications = await _docService.DocVerifications.Where(d => d.DocId == document.DocId).ToListAsync();
                     if (docVerifications.Any() && document.IsActRequired == false)
@@ -510,7 +491,6 @@ namespace R10.Web.Areas.Shared.Services
         {
             var patSettings = await _patSettings.GetSetting();
             var tmkSettings = await _tmkSettings.GetSetting();
-            var gmSettings = await _gmSettings.GetSetting();
 
             // save any uploaded file
             if (viewModel.UploadedFiles != null)
@@ -1111,174 +1091,7 @@ namespace R10.Web.Areas.Shared.Services
             return null;
         }
 
-        public async Task<List<WorkflowViewModel>> GenerateGMWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId, bool isNewFileUpload = false, bool hasNewRespDocketing = false, bool hasRespDocketingReassigned = false, string newRespDocketingUrl = "", string reassignedRespDocketingUrl = "", bool hasNewRespReporting = false, bool hasRespReportingReassigned = false, string newRespReportingUrl = "", string reassignedRespReportingUrl = "")
-        {
-            var settings = await _settings.GetSetting();
-
-            var workFlows = new List<WorkflowViewModel>();
-            var matter = await _gmMatterService.GetByIdAsync(parentId);
-
-            //var workflowActions = await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.NewFileUploaded, false);
-            var workflowActions = new List<GMWorkflowAction>();
-
-            if (isNewFileUpload)
-                workflowActions.AddRange(await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.NewFileUploaded, false));
-
-            if (hasNewRespDocketing)
-                workflowActions.AddRange(await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.DocumentRespDocketingAssigned, false));
-
-            if (hasRespDocketingReassigned)
-                workflowActions.AddRange(await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.DocumentRespDocketingReAssigned, false));
-
-            if (hasNewRespReporting)
-                workflowActions.AddRange(await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.DocumentRespReportingAssigned, false));
-
-            if (hasRespReportingReassigned)
-                workflowActions.AddRange(await _workflowViewModelService.GetGeneralMatterWorkflowActions(matter, GMWorkflowTriggerType.DocumentRespReportingReAssigned, false));
-
-            workflowActions = workflowActions.Where(a => a.Workflow.SystemScreen == null || a.Workflow.SystemScreen.ScreenCode.ToLower() == "gm-workflow").ToList();
-            workflowActions = _workflowViewModelService.ClearGMBaseWorkflowActions(workflowActions);
-            if (workflowActions.Any())
-            {
-
-                //attachments.ForEach(a => a.FileName = a.FileName.ToLower());
-                foreach (var item in workflowActions)
-                {
-                    var filteredAttachments = attachments;
-                    if (!string.IsNullOrEmpty(item.Workflow.TriggerValueName))
-                    {
-                        filteredAttachments = attachments.Where(f => item.Workflow.TriggerValueName.ToLower().Replace("*", "").Split(',').Any(tv => f.FileName.ToLower().Contains(tv))).ToList();
-                    }
-
-                    if (filteredAttachments.Any())
-                    {
-
-                        var workFlow = new WorkflowViewModel
-                        {
-                            ActionTypeId = item.ActionTypeId,
-                            ActionValueId = item.ActionValueId,
-                            Preview = item.Preview,
-                            AutoAttachImages = item.IncludeAttachments,
-                            Attachments = filteredAttachments,
-                            AttachmentFilter = item.AttachmentFilter
-                        };
-
-                        if (item.Workflow.TriggerTypeId == (int)GMWorkflowTriggerType.DocumentRespDocketingAssigned)
-                        {
-                            workFlow.EmailUrl = newRespDocketingUrl;
-                            var addedResponsibleLog = new DocResponsibleLog();
-
-                            var docDocument = new DocDocument();
-                            if (settings.IsSharePointIntegrationOn)
-                            {
-                                docDocument = await _docService.DocDocuments.AsNoTracking().SingleOrDefaultAsync(d => d.DocFile.DriveItemId == filteredAttachments.First().Id);
-                            }
-                            else
-                            {
-                                docDocument = await _docService.GetDocumentById(filteredAttachments.First().DocId);
-                            }
-
-                            if (docDocument != null)
-                                addedResponsibleLog = await _docService.GetAddedDocRespDocketing(docDocument.DocId);
-
-                            if (addedResponsibleLog != null)
-                                workFlow.EmailTo = await GetResponsibleEmail(addedResponsibleLog.GroupIds ?? "", addedResponsibleLog.UserIds ?? "");
-
-                        }
-                        else if (item.Workflow.TriggerTypeId == (int)GMWorkflowTriggerType.DocumentRespDocketingReAssigned)
-                        {
-                            workFlow.EmailUrl = reassignedRespDocketingUrl;
-                            var deletedResponsibleLog = new DocResponsibleLog();
-
-                            var docDocument = new DocDocument();
-                            if (settings.IsSharePointIntegrationOn)
-                            {
-                                docDocument = await _docService.DocDocuments.AsNoTracking().SingleOrDefaultAsync(d => d.DocFile.DriveItemId == filteredAttachments.First().Id);
-                            }
-                            else
-                            {
-                                docDocument = await _docService.GetDocumentById(filteredAttachments.First().DocId);
-                            }
-
-                            if (docDocument != null)
-                                deletedResponsibleLog = await _docService.GetDeletedDocRespDocketing(docDocument.DocId);
-
-                            if (deletedResponsibleLog != null)
-                                workFlow.EmailTo = await GetResponsibleEmail(deletedResponsibleLog.GroupIds ?? "", deletedResponsibleLog.UserIds ?? "");
-                        }
-                        else if (item.Workflow.TriggerTypeId == (int)GMWorkflowTriggerType.DocumentRespReportingAssigned)
-                        {
-                            workFlow.EmailUrl = newRespReportingUrl;
-                            var addedResponsibleLog = new DocResponsibleLog();
-
-                            var docDocument = new DocDocument();
-                            if (settings.IsSharePointIntegrationOn)
-                            {
-                                docDocument = await _docService.DocDocuments.AsNoTracking().SingleOrDefaultAsync(d => d.DocFile.DriveItemId == filteredAttachments.First().Id);
-                            }
-                            else
-                            {
-                                docDocument = await _docService.GetDocumentById(filteredAttachments.First().DocId);
-                            }
-
-                            if (docDocument != null)
-                                addedResponsibleLog = await _docService.GetAddedDocRespReporting(docDocument.DocId);
-
-                            if (addedResponsibleLog != null)
-                                workFlow.EmailTo = await GetResponsibleEmail(addedResponsibleLog.GroupIds ?? "", addedResponsibleLog.UserIds ?? "");
-
-                        }
-                        else if (item.Workflow.TriggerTypeId == (int)GMWorkflowTriggerType.DocumentRespReportingReAssigned)
-                        {
-                            workFlow.EmailUrl = reassignedRespReportingUrl;
-                            var deletedResponsibleLog = new DocResponsibleLog();
-
-                            var docDocument = new DocDocument();
-                            if (settings.IsSharePointIntegrationOn)
-                            {
-                                docDocument = await _docService.DocDocuments.AsNoTracking().SingleOrDefaultAsync(d => d.DocFile.DriveItemId == filteredAttachments.First().Id);
-                            }
-                            else
-                            {
-                                docDocument = await _docService.GetDocumentById(filteredAttachments.First().DocId);
-                            }
-
-                            if (docDocument != null)
-                                deletedResponsibleLog = await _docService.GetDeletedDocRespReporting(docDocument.DocId);
-
-                            if (deletedResponsibleLog != null)
-                                workFlow.EmailTo = await GetResponsibleEmail(deletedResponsibleLog.GroupIds ?? "", deletedResponsibleLog.UserIds ?? "");
-                        }
-
-                        workFlows.Add(workFlow);
-                    }
-                }
-
-                _gmMatterService.DetachAllEntities();
-                var createActionWorkflows = workFlows.Where(wf => wf.ActionTypeId == (int)GMWorkflowActionType.CreateAction).Distinct().ToList();
-                foreach (var item in createActionWorkflows)
-                {
-                    await _gmMatterService.GenerateWorkflowAction(parentId, item.ActionValueId);
-                }
-
-                var closeActionWorkflows = workFlows.Where(wf => wf.ActionTypeId == (int)GMWorkflowActionType.CloseAction).Distinct().ToList();
-                foreach (var item in closeActionWorkflows)
-                {
-                    var actionDuesToClose = await _gmMatterService.CloseWorkflowAction(parentId, item.ActionValueId);
-                    if (actionDuesToClose.Any())
-                    {
-                        foreach (var actionDueToClose in actionDuesToClose)
-                        {
-                            await _actionDueService.Update(actionDueToClose);
-                            _gmMatterService.DetachAllEntities();
-                        }
-                    }
-                }
-
-                return workFlows;
-            }
-            return null;
-        }
+        // GenerateGMWorkflow method removed - GeneralMatter module deleted
 
         public async Task<List<WorkflowViewModel>> GeneratePatentActionWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId)
         {
@@ -1398,66 +1211,7 @@ namespace R10.Web.Areas.Shared.Services
             return null;
         }
 
-        public async Task<List<WorkflowViewModel>> GenerateGMActionWorkflow(List<WorkflowEmailAttachmentViewModel> attachments, int parentId)
-        {
-            var workFlows = new List<WorkflowViewModel>();
-            var actionDue = await _gmActionDueService.QueryableList.Where(a => a.ActId == parentId).Include(g => g.GMMatter).FirstOrDefaultAsync();
-            
-            var workflowActions = await _workflowViewModelService.GetGMActionDueWorkflowActions(actionDue, GMWorkflowTriggerType.NewFileUploaded, false);
-            workflowActions = workflowActions.Where(a => a.Workflow.SystemScreen == null || a.Workflow.SystemScreen.ScreenCode.ToLower() == "act-workflow").ToList();
-            workflowActions = _workflowViewModelService.ClearGMBaseWorkflowActions(workflowActions);
-
-            if (workflowActions.Any())
-            {
-                attachments.ForEach(a => a.FileName = a.FileName.ToLower());
-                foreach (var item in workflowActions)
-                {
-                    var filteredAttachments = attachments;
-                    if (!string.IsNullOrEmpty(item.Workflow.TriggerValueName))
-                    {
-                        filteredAttachments = attachments.Where(f => item.Workflow.TriggerValueName.ToLower().Replace("*", "").Split(',').Any(tv => f.FileName.ToLower().Contains(tv))).ToList();
-                    }   
-
-                    if (filteredAttachments.Any())
-                    {
-                        var workFlow = new WorkflowViewModel
-                        {
-                            ActionTypeId = item.ActionTypeId,
-                            ActionValueId = item.ActionValueId,
-                            Preview = item.Preview,
-                            AutoAttachImages = item.IncludeAttachments,
-                            Attachments = filteredAttachments,
-                            AttachmentFilter = item.AttachmentFilter
-                        };
-                        workFlows.Add(workFlow);
-                    }
-                }
-
-                _gmMatterService.DetachAllEntities();
-                var createActionWorkflows = workFlows.Where(wf => wf.ActionTypeId == (int)GMWorkflowActionType.CreateAction).Distinct().ToList();
-                foreach (var item in createActionWorkflows)
-                {
-                    await _gmMatterService.GenerateWorkflowAction(parentId, item.ActionValueId);
-                }
-
-                var closeActionWorkflows = workFlows.Where(wf => wf.ActionTypeId == (int)GMWorkflowActionType.CloseAction).Distinct().ToList();
-                foreach (var item in closeActionWorkflows)
-                {
-                    var actionDuesToClose = await _gmMatterService.CloseWorkflowAction(parentId, item.ActionValueId);
-                    if (actionDuesToClose.Any())
-                    {
-                        foreach (var actionDueToClose in actionDuesToClose)
-                        {
-                            await _actionDueService.Update(actionDueToClose);
-                            _gmMatterService.DetachAllEntities();
-                        }
-                    }
-                }
-
-                return workFlows;
-            }
-            return null;
-        }
+        // GenerateGMActionWorkflow method removed - GeneralMatter module deleted
 
         protected bool HasDefault(string documentLink)
         {
@@ -1640,21 +1394,6 @@ namespace R10.Web.Areas.Shared.Services
                             authorized = (await _authService.AuthorizeAsync(_user, TrademarkAuthorizationPolicy.CostTrackingUpload)).Succeeded;
                     }
                     break;
-                case SystemTypeCode.GeneralMatter:
-                    authorized = (await _authService.AuthorizeAsync(_user, GeneralMatterAuthorizationPolicy.CanUploadDocuments)).Succeeded;
-                    if (!authorized)
-                    {
-                        var settings = await _gmSettings.GetSetting();
-                        if (settings.IsDeDocketOn && screenCode == ScreenCode.Action)
-                        {
-                            authorized = _user.IsDeDocketer(SystemType.GeneralMatter, respOffice);
-                        }
-
-                        if (!authorized && dataKey.StartsWith("costtrack"))
-                            authorized = (await _authService.AuthorizeAsync(_user, GeneralMatterAuthorizationPolicy.CostTrackingUpload)).Succeeded;
-                    }
-                    break;
-
                 case SystemTypeCode.DMS:
                     authorized = (await _authService.AuthorizeAsync(_user, DMSAuthorizationPolicy.CanUploadDocuments)).Succeeded;
                     break;
@@ -1720,26 +1459,13 @@ namespace R10.Web.Areas.Shared.Services
             {
                 if (systemType.ToLower() == SystemTypeCode.Patent.ToLower())
                 {
-                    foreach (var actId in newActIds)
-                    {
-                        var actionDue = await _patActionDueService.QueryableList.AsNoTracking().Where(d => d.ActId == actId).FirstOrDefaultAsync();
-                        if (actionDue != null)
-                            emailWorkflows.AddRange(await _patActionDueViewModelService.NewOrCompletedActionWorkflow(actionDue, patEmailurl, true));
-                    }
+                    // Patent action workflow removed during debloat
                 }
                 else if (systemType.ToLower() == SystemTypeCode.Trademark.ToLower())
                 {
-                    foreach (var actId in newActIds)
-                    {
-                        var actionDue = await _tmkActionDueService.QueryableList.AsNoTracking().Where(d => d.ActId == actId).FirstOrDefaultAsync();
-                        if (actionDue != null)
-                            emailWorkflows.AddRange(await _tmkActionDueViewModelService.NewOrCompletedActionWorkflow(actionDue, tmkEmailUrl, true));
-                    }
+                    // Trademark action workflow removed during debloat
                 }
-                else if (systemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower())
-                {
-                    // GM action workflow removed (IGMActionDueViewModelService no longer used)
-                } 
+                // GeneralMatter case removed - module deleted
                 
                 foreach (var actId in newActIds)
                 {

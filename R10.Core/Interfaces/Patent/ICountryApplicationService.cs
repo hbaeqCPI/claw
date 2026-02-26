@@ -5,7 +5,7 @@ using R10.Core.Identity;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using System;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -39,7 +39,8 @@ namespace R10.Core.Interfaces.Patent
         IQueryable<Client> Clients { get; }
         IQueryable<Owner> Owners { get; }
         IQueryable<Product> Products { get; }
-        IQueryable<GMMatterPatent> GMMatterPatents { get; }
+        // Removed during deep clean
+        // IQueryable<GMMatterPatent> GMMatterPatents { get; }
         IQueryable<PatCountryLaw> PatCountryLaws { get; }
         IQueryable<PatCountryDue> PatCountryDues { get; }
         IQueryable<PatActionType> PatActionTypes { get; }

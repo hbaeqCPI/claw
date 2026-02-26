@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -10,8 +10,8 @@ using R10.Core.Exceptions;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.AMS;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.AMS; // Removed during deep clean
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Patent;
 using System;
 using System.Collections.Generic;
@@ -25,42 +25,26 @@ namespace R10.Core.Services.Shared
 {
     public class ClientService : EntityService<Client>, IClientService 
     {
-        protected readonly IAMSFeeService _feeService;
-        protected readonly IAMSVATRateService _vatService;
-        protected readonly ISystemSettings<DMSSetting> _dmsSettings;
+        // Removed during deep clean - DMSSetting no longer exists
+        // protected readonly ISystemSettings<DMSSetting> _dmsSettings;
         protected readonly IEntitySyncRepository _entitySyncRepository;
         protected readonly IInventionService _inventionService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IGMMatterService _gMMatterService;
-        protected readonly IDisclosureService _disclosureService;
-        protected readonly IPacClearanceService _pacClearanceService;
-        protected readonly ITmcClearanceService _tmcClearanceService;
 
         public ClientService(
             ICPiDbContext cpiDbContext,
             ClaimsPrincipal user,
-            IAMSFeeService feeService,
-            IAMSVATRateService vatService,
-            ISystemSettings<DMSSetting> dmsSettings,
+            // Removed during deep clean - DMSSetting no longer exists
+            // ISystemSettings<DMSSetting> dmsSettings,
             IEntitySyncRepository entitySyncRepository,
             IInventionService inventionService,
-            ITmkTrademarkService trademarkService,
-            IGMMatterService gMMatterService,
-            IDisclosureService disclosureService,
-            IPacClearanceService pacClearanceService,
-            ITmcClearanceService tmcClearanceService
-            ) : base(cpiDbContext, user)
+            ITmkTrademarkService trademarkService) : base(cpiDbContext, user)
         {
-            _feeService = feeService;
-            _vatService = vatService;
-            _dmsSettings = dmsSettings;
+            // Removed during deep clean - DMSSetting no longer exists
+            // _dmsSettings = dmsSettings;
             _entitySyncRepository = entitySyncRepository;
             _inventionService = inventionService;
             _trademarkService = trademarkService;
-            _gMMatterService = gMMatterService;
-            _disclosureService = disclosureService;
-            _pacClearanceService = pacClearanceService;
-            _tmcClearanceService = tmcClearanceService;
 
             ChildService = new ClientContactService(cpiDbContext, user);
         }
@@ -77,11 +61,7 @@ namespace R10.Core.Services.Shared
                 if (_user.IsSharedLimited() && (!_user.HasEntityFilter() || (_user.HasEntityFilter() && _user.GetEntityFilterType() != CPiEntityType.Client)))
                     clients = clients.Where(c =>
                         (_user.IsInSystem(SystemType.Patent) && _inventionService.QueryableList.Any(i => i.ClientID == c.ClientID)) ||
-                        (_user.IsInSystem(SystemType.Trademark) && _trademarkService.TmkTrademarks.Any(t => t.ClientID == c.ClientID)) ||
-                        (_user.IsInSystem(SystemType.GeneralMatter) && _gMMatterService.QueryableList.Any(g => g.ClientID == c.ClientID)) ||
-                        (_user.IsInSystem(SystemType.DMS) && _disclosureService.QueryableList.Any(d => d.ClientID == c.ClientID)) ||
-                        (_user.IsInSystem(SystemType.PatClearance) && _pacClearanceService.QueryableList.Any(p => p.ClientID == c.ClientID)) ||
-                        (_user.IsInSystem(SystemType.SearchRequest) && _tmcClearanceService.QueryableList.Any(t => t.ClientID == c.ClientID)));
+                        (_user.IsInSystem(SystemType.Trademark) && _trademarkService.TmkTrademarks.Any(t => t.ClientID == c.ClientID)));
 
                 return clients;
             }
@@ -97,19 +77,12 @@ namespace R10.Core.Services.Shared
                     return c => UserEntityFilters.Any(f => f.UserId == UserId && f.EntityId == c.ClientID);
 
                 case CPiEntityType.ContactPerson:
-                    //REVIEWER ENTITY TYPE DEFAULTS TO CLIENT
-                    if (_dmsSettings.GetSetting().Result.ReviewerEntityType != DMSReviewerType.Area)
-                        //AMS DECISION MAKERS
-                        //DMS REVIEWERS
-                        return c => UserEntityFilters.Any(f => f.UserId == UserId && (
-                                        c.ClientContacts.Any(cp => cp.ContactID == f.EntityId) ||
-                                        c.Reviewers.Any(cr => cr.ReviewerId == f.EntityId && cr.ReviewerType == CPiEntityType.ContactPerson)
-                                        ));
-                    else
-                        //AMS DECISION MAKERS
-                        return c => UserEntityFilters.Any(f => f.UserId == UserId && (
-                                        c.ClientContacts.Any(cp => cp.ContactID == f.EntityId)
-                                        ));
+                    // Removed during deep clean - DMSSetting/DMSReviewerType no longer exist
+                    // Original code checked _dmsSettings.GetSetting().Result.ReviewerEntityType != DMSReviewerType.Area
+                    // Defaulting to AMS DECISION MAKERS path only
+                    return c => UserEntityFilters.Any(f => f.UserId == UserId && (
+                                    c.ClientContacts.Any(cp => cp.ContactID == f.EntityId)
+                                    ));
             }
 
             return c => true;
@@ -137,9 +110,6 @@ namespace R10.Core.Services.Shared
         {
             await ValidateClient(entity);
             await base.Add(entity);
-
-            await _feeService.RecalculateServiceFee(entity.FeeSetupName, entity.ClientCode);
-            await _vatService.RecalculateVATRate(entity.ClientCode);
         }
 
         public override async Task Update(Client entity)
@@ -149,9 +119,6 @@ namespace R10.Core.Services.Shared
             //EF.core will not update Client field because it is set as principal key in tblAMSMain.CPIClient -> tblClient.Client mapping.
             await _cpiDbContext.GetRepository<Client>().UpdateKeyAsync(entity, "Client", "ClientID", entity.ClientCode, entity.ClientID,_user.GetUserName());
             await base.Update(entity);
-
-            await _feeService.RecalculateServiceFee(entity.FeeSetupName, entity.ClientCode);
-            await _vatService.RecalculateVATRate(entity.ClientCode);
         }
 
         public override async Task Delete(Client entity)
@@ -180,7 +147,8 @@ namespace R10.Core.Services.Shared
         {
             if (_user.GetEntityFilterType() == CPiEntityType.Client)
             {
-                var clientLabel = (await _dmsSettings.GetSetting()).LabelClient;
+                // Removed during deep clean - DMSSetting no longer exists, using hardcoded label
+                var clientLabel = "Client";
                 Guard.Against.ValueNotAllowed(await base.EntityFilterAllowed(client.ClientID), clientLabel);
             }
         }

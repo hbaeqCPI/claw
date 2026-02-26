@@ -1,4 +1,4 @@
-using R10.Core.Entities.GeneralMatter;
+﻿// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using System;
@@ -32,6 +32,6 @@ namespace R10.Core.Entities
 
     public class GMDueDateDeDocketResp : DueDateDeDocketResp
     {
-        public GMDueDateDeDocket? GMDueDateDeDocket { get; set; }
+//         public GMDueDateDeDocket? GMDueDateDeDocket { get; set; } // Removed during deep clean
     }
 }

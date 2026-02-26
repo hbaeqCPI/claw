@@ -1,7 +1,6 @@
 ﻿@model AttorneyDetailViewModel
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @inject ICountryLookupViewModelService CountryLookupService
-@inject ISystemSettings<AMSSetting> AMSSettings
 @inject ISystemSettings<DefaultSetting> Settings
 @inject IAuthorizationService AuthorizationService
 @{
@@ -16,9 +15,6 @@
     var countryLabel = SharedLocalizer["Country"];
     var countryNameLabel = SharedLocalizer["Country Name"];
 
-    var amsSettings = await AMSSettings.GetSetting();
-    var showReminderSettings = User.IsInSystem(SystemType.AMS) && amsSettings.IsSendRemindersToAttorney;
-    var showPrepay = false; //prepay reminders are always sent to clients
     bool isTimeTrackerOn = (await AuthorizationService.AuthorizeAsync(User, SharedAuthorizationPolicy.CanAccessTimeTrackerAuxiliary)).Succeeded;
     var childViewModel = new ChildViewModel { Id = id, Permission = detailPagePermission };
     var pageId = ViewData["PageId"];
@@ -41,10 +37,6 @@
                 @if (Model.IsTrademarkUser) 
                 {
                     <span class="badge badge-info badge-dm-tmk badge-pill ml-1" title="@SharedLocalizer["Trademark User"]">TMK</span>
-                }
-                @if (Model.IsGeneralMatterUser) 
-                {
-                    <span class="badge badge-info badge-dm-gm badge-pill ml-1" title="@SharedLocalizer["General Matter User"]">GM</span>
                 }
             </div>
             }
@@ -90,12 +82,6 @@
         <li class="nav-item">
             <a class="nav-link" id="attorneyDetailPOBoxAddressTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailPOBoxAddressTabContent" aria-selected="false" href="#attorneyDetailPOBoxAddressTabContent">@SharedLocalizer["PO Box"]</a>
         </li>
-        @if (showReminderSettings)
-        {
-            <li class="nav-item">
-                <a class="nav-link" id="attorneyDetailAMSSettingsTab" data-toggle="tab" role="tab" aria-controls="attorneyDetailAMSSettingsTabContent" aria-selected="false" href="#attorneyDetailAMSSettingsTabContent">@SharedLocalizer["AMS Settings"]</a>
-            </li>
-        }
         @if (!detailPagePermission.HasLimitedRead)
         {
             <li class="nav-item">
@@ -339,90 +325,6 @@
             </div>
         </div>
 
-        @if (showReminderSettings)
-        {
-            <input type="hidden" asp-for="ReceiveReminderOnline" />
-            <input type="hidden" asp-for="ReceiveReminderReport" />
-            <input type="hidden" asp-for="ReceivePrepayReminder" />
-            <input type="hidden" asp-for="LastReminderSentDate" />
-            <input type="hidden" asp-for="LastConfirmationLetterSentDate" />
-            <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailAMSSettingsTabContent" role="tabpanel" aria-labelledby="attorneyDetailAMSSettingsTab">
-                <div class="form-row">
-                    <div class="col-12 col-sm-6 col-lg-4 col-xl3">
-                        @if (amsSettings.HasConfirmation)
-                        {
-                            <div class="d-flex justify-content-between">
-                                <label for="ReceiveConfirmationLetter">@SharedLocalizer[$"Receive Confirmation"]</label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="ReceiveConfirmationLetter" name="ReceiveConfirmationLetter" checked="@(Model.ReceiveConfirmationLetter ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </div>
-                        }
-                        @if (showPrepay)
-                        {
-                            <div class="d-flex justify-content-between">
-                                <label asp-for="PayBeforeSending"></label>
-                                <span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="PayBeforeSending" name="PayBeforeSending" checked="@(Model.PayBeforeSending ?? false)" class="toggle-option" @(isReadOnly ? "disabled" : "")>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </span>
-                            </div>
-                        }
-                    </div>
-                    <div class="col-12 col-sm-6 col-lg-4 offset-xl-1">
-                        @if (amsSettings.HasConfirmation)
-                        {
-                            <div class="form-group float-label confirmation-cover-letter">
-                                <label asp-for="ConfirmationCoverLetter"></label>
-                                @if (isReadOnly)
-                                {
-                                    <input type="text" class="form-control form-control-sm" asp-for="ConfirmationCoverLetter" disabled />
-                                }
-                                else
-                                {
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("ConfirmationCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSConfirmationCoverLetter).Name, Model.ConfirmationCoverLetter))
-                                    <span asp-validation-for="ConfirmationCoverLetter"></span>
-                                }
-                            </div>
-                        }
-                        @if (showPrepay)
-                        {
-                            <div class="form-group float-label">
-                                <label asp-for="PrePayCoverLetter"></label>
-                                @if (isReadOnly)
-                                {
-                                    <input type="text" class="form-control form-control-sm" asp-for="PrePayCoverLetter" disabled />
-                                }
-                                else
-                                {
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("PrePayCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSReminderCoverLetter).Name, Model.PrePayCoverLetter))
-                                    <span asp-validation-for="PrePayCoverLetter"></span>
-                                }
-                            </div>
-                        }
-                        <div class="form-group float-label">
-                            <label asp-for="ReminderCoverLetter"></label>
-                            @if (isReadOnly)
-                            {
-                                <input type="text" class="form-control form-control-sm" asp-for="ReminderCoverLetter" disabled />
-                            }
-                            else
-                            {
-                                @await Component.InvokeAsync("ComboBox", ComboBoxHelper.EmailSetupWithLink("ReminderCoverLetter", SharedLocalizer["Name"], SharedLocalizer["Description"], typeof(AMSReminderCoverLetter).Name, Model.ReminderCoverLetter))
-                                <span asp-validation-for="ReminderCoverLetter"></span>
-                            }
-                        </div>
-                    </div>
-                    <div class="col-12 col-sm-6 col-lg-4 offset-sm-6 offset-lg-0">
-                    </div>
-                </div>
-            </div>
-        }
         @if (!detailPagePermission.HasLimitedRead)
         {
             <div class="tab-pane page-content cpiMainEntry" id="attorneyDetailRemarksTabContent" role="tabpanel" aria-labelledby="attorneyDetailRemarksTab">

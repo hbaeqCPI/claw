@@ -1,4 +1,4 @@
-using Kendo.Mvc.Extensions;
+﻿using Kendo.Mvc.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +11,7 @@ using R10.Core.Entities;
 using R10.Core.Entities.Shared;
 using R10.Core.Helpers;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using R10.Core.Interfaces.Shared;
 using R10.Web.Areas.Shared.Controllers;
 using R10.Web.Areas.Shared.ViewModels;
@@ -40,7 +40,7 @@ namespace R10.Web.Api.Shared
         private readonly IDocuSignService _docuSignService;       
         private readonly IDocumentService _docService;
 
-        private readonly IDisclosureService _disclosureService;
+//         private readonly IDisclosureService _disclosureService; // Removed during deep clean
 
         private readonly IOuickEmailViewModelService _quickEmailViewModelService;        
         private readonly ICPiUserGroupManager _userGroupManager;        
@@ -58,7 +58,7 @@ namespace R10.Web.Api.Shared
             ISystemSettings<DefaultSetting> defaultSettings,  
             IDocuSignService docuSignService,
             IDocumentService docService,
-            IDisclosureService disclosureService,
+//             IDisclosureService disclosureService, // Removed during deep clean
             IOuickEmailViewModelService quickEmailViewModelService,
             ICPiUserGroupManager userGroupManager,
             IStringLocalizer<QuickEmailResource> qeLocalizer,
@@ -75,9 +75,6 @@ namespace R10.Web.Api.Shared
             _defaultSettings = defaultSettings;  
             _docuSignService = docuSignService;
             _docService = docService;
-
-            _disclosureService = disclosureService;
-
             _quickEmailViewModelService = quickEmailViewModelService;
             _userGroupManager = userGroupManager;
             _qeLocalizer = qeLocalizer;
@@ -218,7 +215,6 @@ namespace R10.Web.Api.Shared
                 "appid" => ScreenCode.Application,
                 "invid" => ScreenCode.Invention,
                 "tmkid" => ScreenCode.Trademark,
-                "matid" => ScreenCode.GeneralMatter,
                 _ => ""
             };
 
@@ -298,7 +294,7 @@ namespace R10.Web.Api.Shared
                             //DMS Ready for Submission
                             if (envelopeStatus == DocuSignEnvelopeStatus.completed)
                             {
-                                // DMS disclosure workflow removed (IDisclosureViewModelService no longer used)
+//                                 // DMS disclosure workflow removed (IDisclosureViewModelService no longer used) // Removed during deep clean
                             }
                         }
                     }
@@ -352,7 +348,7 @@ namespace R10.Web.Api.Shared
                             //DMS Ready for Submission
                             if (envelopeStatus == DocuSignEnvelopeStatus.completed)
                             {
-                                // DMS disclosure workflow removed (IDisclosureViewModelService no longer used)
+//                                 // DMS disclosure workflow removed (IDisclosureViewModelService no longer used) // Removed during deep clean
                             }
                         }
                     }

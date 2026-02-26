@@ -19,7 +19,7 @@ namespace R10.Core.Entities.FormExtract
 
         public FormIFWFormType FormIFWFormType { get; set; }
         public List<FormIFWActMap> FormIFWActMaps { get; set; }
-        public List<RTSSearchUSIFW> RTSSearchUSIFWs { get; set; }
-        public List<TLSearchDocument> TLSearchDocuments { get; set; }
+//         public List<RTSSearchUSIFW> RTSSearchUSIFWs { get; set; } // Removed during deep clean
+//         public List<TLSearchDocument> TLSearchDocuments { get; set; } // Removed during deep clean
     }
 }

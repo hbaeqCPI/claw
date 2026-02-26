@@ -1,5 +1,5 @@
-﻿using R10.Core.Entities.DMS;
-using R10.Core.Entities.PatClearance;
+﻿// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -158,18 +158,18 @@ namespace R10.Core.Entities.Patent
 
         public List<PatInventorApp>? InventorCountryApplications { get; set; }
 
-        public List<DMSEntityReviewer>? Reviewers { get; set; }
-        public List<DMSAgendaReviewer>? DMSAgendaReviewers { get; set; }
+//         public List<DMSEntityReviewer>? Reviewers { get; set; } // Removed during deep clean
+//         public List<DMSAgendaReviewer>? DMSAgendaReviewers { get; set; } // Removed during deep clean
 
-        public List<DMSReview>? Reviews { get; set; }
-        public List<DMSPreview>? Previews { get; set; }
-        public List<DMSValuation>? Valuations { get; set; }
+//         public List<DMSReview>? Reviews { get; set; } // Removed during deep clean
+//         public List<DMSPreview>? Previews { get; set; } // Removed during deep clean
+//         public List<DMSValuation>? Valuations { get; set; } // Removed during deep clean
 
-        public List<DMSInventor>? DisclosureInventors { get; set; }
+//         public List<DMSInventor>? DisclosureInventors { get; set; } // Removed during deep clean
         public List<PatInventorAppAward>? InventorAppAwards { get; set; }
         public List<PatInventorDMSAward>? InventorDMSAwards { get; set; }
 
-        public List<PacInventor>? PacClearanceInventors { get; set; }
+//         public List<PacInventor>? PacClearanceInventors { get; set; } // Removed during deep clean
         public List<CPiUserEntityFilter>? EntityFilters { get; set; }
 
         [NotMapped]

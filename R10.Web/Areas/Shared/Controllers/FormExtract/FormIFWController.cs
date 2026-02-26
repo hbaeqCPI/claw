@@ -50,7 +50,7 @@ namespace R10.Web.Areas.Shared.Controllers
     {
         private readonly AzureFormRecognizer _azureFormRecognizer;
         private readonly IFormIFWService _ifwService;
-        private readonly IRTSService _rtsService;
+        // private readonly IRTSService _rtsService; // Removed during deep clean
         private readonly ICountryApplicationService _ctryAppService;
         private readonly IDocumentStorage _documentStorage;
         private readonly ISystemSettings<PatSetting> _settings;
@@ -65,8 +65,8 @@ namespace R10.Web.Areas.Shared.Controllers
 
         public FormIFWController(
                     AzureFormRecognizer azureFormRecognizer, 
-                    IFormIFWService ifwService, 
-                    IRTSService rtsService,
+                    IFormIFWService ifwService,
+                    // IRTSService rtsService, // Removed during deep clean
                     ICountryApplicationService ctryAppService,
                     IDocumentStorage documentStorage,
                     ISystemSettings<PatSetting> settings,
@@ -78,7 +78,7 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             _azureFormRecognizer = azureFormRecognizer;
             _ifwService = ifwService;
-            _rtsService = rtsService;
+            // _rtsService = rtsService; // Removed during deep clean
             _ctryAppService = ctryAppService;
 
             _documentStorage = documentStorage;
@@ -101,62 +101,18 @@ namespace R10.Web.Areas.Shared.Controllers
             var hasIDSAutoDocket = await _settings.GetValue<bool>("RTS", "HasPAIR_IDS_Download");
             var idsCitedByExaminerDesc = await _settings.GetValue<string>("RTS", "IFWReferencesFromExaminerDesc");
 
-            var ifws = await _rtsService.RTSSearchApplicableIFWs
-                                  .Where(r => r.FormIFWDocType.IsEnabled && r.FormIFWDocType.SystemType=="P"  && r.AIParseDate == null)
-                                  .Include(r=> r.RTSSearch)
-                                  .Include(r=>r.FormIFWDocType).ThenInclude(d=> d.FormIFWActMaps)
-                                  .OrderBy(r => r.PLAppID).ThenByDescending(r => r.OrderOfEntry)
-                                  .ToListAsync();
+            // Removed during deep clean - RTS service no longer available
+            // var ifws = await _rtsService.RTSSearchApplicableIFWs
+            //                       .Where(r => r.FormIFWDocType.IsEnabled && r.FormIFWDocType.SystemType=="P"  && r.AIParseDate == null)
+            //                       .Include(r=> r.RTSSearch)
+            //                       .Include(r=>r.FormIFWDocType).ThenInclude(d=> d.FormIFWActMaps)
+            //                       .OrderBy(r => r.PLAppID).ThenByDescending(r => r.OrderOfEntry)
+            //                       .ToListAsync();
+            var ifws = new List<object>(); // Placeholder - RTS removed during deep clean
             var userName = "PO";
 
-            foreach (var ifw in ifws) {
-                //var fileName = settings.DocumentStorage != DocumentStorageOptions.BlobOrFileSystem ? ifw.DocName : ifw.FileName;
-                var fileName = ifw.FileName;
-
-                var scanPages = ifw.FormIFWDocType.ScanPages;
-
-                if (hasIDSAutoDocket && ifw.Description.ToLower() == idsCitedByExaminerDesc.ToLower())
-                {
-                    //parse it by page
-                    for (int i = 0; i < ifw.NoPages; i++)
-                    {
-                        var tempFilePath = await CreateTempFile(ifw.RTSSearch.PMSAppId, fileName, ifw.PageStart + i, 1, scanPages);
-                        if (!string.IsNullOrEmpty(tempFilePath))
-                        {
-                            var modelId = ifw.FormIFWDocType.ModelId;
-                            var scanPageList = ScanPagesToList(scanPages, 1);
-                            var extractedData = await _azureFormRecognizer.AnalyzeFormFile(modelId, tempFilePath, scanPageList);
-
-                            // save analysis result
-                            await _ifwService.SaveExtractedData(ifw.IFWId, ifw.DocTypeId, extractedData, userName, false);
-                        }
-                    }
-                    await _ifwService.GenIFWIDSRecords(ifw.IFWId, userName);
-                }
-                else
-                {
-                    var tempFilePath = await CreateTempFile(ifw.RTSSearch.PMSAppId, fileName, ifw.PageStart, ifw.NoPages, scanPages);
-                    if (!string.IsNullOrEmpty(tempFilePath))
-                    {
-
-                        // analyze
-                        var modelId = ifw.FormIFWDocType.ModelId;
-                        var scanPageList = ScanPagesToList(scanPages, ifw.NoPages);
-
-                        var extractedData = await _azureFormRecognizer.AnalyzeFormFile(modelId, tempFilePath, scanPageList);
-
-                        // save analysis result
-                        await _ifwService.SaveExtractedData(ifw.IFWId, ifw.DocTypeId, extractedData, userName);
-
-                        //generate actions
-                        if (ifw.FormIFWDocType.FormIFWActMaps != null && ifw.FormIFWDocType.FormIFWActMaps.Any(m => m.IsGenAction))
-                        {
-                            await _ifwService.GenIFWAct(ifw.IFWId, userName);
-                        }
-                    }
-                }
-                
-            }
+            // Removed during deep clean - RTS IFW processing loop
+            // foreach (var ifw in ifws) { ... }
             return Ok();
         }
 

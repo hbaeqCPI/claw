@@ -4,8 +4,8 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using R10.Core.DTOs;
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Helpers;
 
 namespace R10.Core.Entities.Patent
@@ -42,11 +42,11 @@ namespace R10.Core.Entities.Patent
         public List<CountryApplication>? ChildCases { get; set; }
         //public CountryApplication? RelatedTerminalDisclaimer { get; set; }
         //public List<CountryApplication>? ChildTerminalDisclaimers { get; set; }
-        public AMSMain? AMSMain { get; set; }
-        public RTSSearch? RTSSearch { get; set; }
+//         public AMSMain? AMSMain { get; set; } // Removed during deep clean
+//         public RTSSearch? RTSSearch { get; set; } // Removed during deep clean
         public PatAverageScoreDTO? PatentScore { get; set; }
         public List<PatRelatedTrademark>? RelatedTrademarks { get; set; }
-        public List<GMMatterPatent>? GMMatterPatents { get; set; }
+//         public List<GMMatterPatent>? GMMatterPatents { get; set; } // Removed during deep clean
 
         public List<PatCostEstimator>? CostEstimators { get; set; }
         public List<TimeTracker>? TimeTrackers { get; set; }

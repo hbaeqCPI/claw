@@ -1,8 +1,8 @@
-using R10.Core.Entities.AMS;
-using R10.Core.Entities.Clearance;
-using R10.Core.Entities.DMS;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.PatClearance;
+﻿// using R10.Core.Entities.AMS; // Removed during deep clean
+// using R10.Core.Entities.Clearance; // Removed during deep clean
+// using R10.Core.Entities.DMS; // Removed during deep clean
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.PatClearance; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Helpers;
@@ -28,22 +28,22 @@ namespace R10.Core.Entities
         public Attorney? TmkDefaultAtty4 { get; set; }
         public Attorney? TmkDefaultAtty5 { get; set; }
         public Language? ClientLanguage { get; set; }
-        public AMSFee? AMSFee { get; set; }
+//         public AMSFee? AMSFee { get; set; } // Removed during deep clean
 
         public List<ClientContact>? ClientContacts { get; set; }
         public List<ClientDesignatedCountry>? ClientDesignatedCountries { get; set; }
         public List<Invention>? ClientInventions { get; set; }
-        public List<Disclosure>? ClientDisclosures { get; set; }
-        public List<DMSAgenda>? ClientDMSAgendas { get; set; }
+//         public List<Disclosure>? ClientDisclosures { get; set; } // Removed during deep clean
+//         public List<DMSAgenda>? ClientDMSAgendas { get; set; } // Removed during deep clean
         public List<TmkTrademark>? ClientTrademarks { get; set; }
-        public List<GMMatter>? ClientGMMatters { get; set; }
-        public List<AMSMain>? ClientAMSMain { get; set; }
-        public List<DMSEntityReviewer>? Reviewers { get; set; }
+//         public List<GMMatter>? ClientGMMatters { get; set; } // Removed during deep clean
+//         public List<AMSMain>? ClientAMSMain { get; set; } // Removed during deep clean
+//         public List<DMSEntityReviewer>? Reviewers { get; set; } // Removed during deep clean
 
-        public List<TmcClearance>? ClientClearances { get; set; }
-        public List<PacClearance>? ClientPacClearances { get; set; }
-        public List<RTSMapActionDocumentClient>? RTSMapActionDocumentClients { get; set; }
-        public List<TLMapActionDocumentClient>? TLMapActionDocumentClients { get; set; }
+//         public List<TmcClearance>? ClientClearances { get; set; } // Removed during deep clean
+//         public List<PacClearance>? ClientPacClearances { get; set; } // Removed during deep clean
+//         public List<RTSMapActionDocumentClient>? RTSMapActionDocumentClients { get; set; } // Removed during deep clean
+//         public List<TLMapActionDocumentClient>? TLMapActionDocumentClients { get; set; } // Removed during deep clean
 
         public PatCEFee? PatCEFee { get; set; }
         public PatCEGeneralSetup? PatCEGeneralSetup { get; set; }

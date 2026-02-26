@@ -5,8 +5,8 @@ using R10.Core.DTOs;
 using System.Text;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
-using R10.Core.Entities.AMS;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+// using R10.Core.Entities.AMS; // Removed during deep clean
 
 namespace R10.Core.Entities
 {
@@ -16,8 +16,8 @@ namespace R10.Core.Entities
         public List<PatProduct>? CountryApplicationProducts { get; set; }
         public List<PatProductInv>? InventionProducts { get; set; }
         public List<TmkProduct>? TrademarkProducts { get; set; }
-        public List<GMProduct>? GeneralMatterProducts { get; set; }
-        public List<AMSProduct>? AMSProducts { get; set; }
+//         public List<GMProduct>? GeneralMatterProducts { get; set; } // Removed during deep clean
+//         public List<AMSProduct>? AMSProducts { get; set; } // Removed during deep clean
         public List<ProductSale>? ProductSales { get; set; }
 
         public ProductLatestTopSaleDTO? ProductLatestTopSale { get; set; }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Interfaces;
@@ -19,9 +18,8 @@ namespace R10.Web.Areas.Admin.Services
         {
             var patIndicators = await _cpiDbContext.GetReadOnlyRepositoryAsync<PatIndicator>().QueryableList.Select(i => i.Indicator ?? "").ToListAsync();
             var tmkIndicators = await _cpiDbContext.GetReadOnlyRepositoryAsync<TmkIndicator>().QueryableList.Select(i => i.Indicator ?? "").ToListAsync();
-            var gmIndicators = await _cpiDbContext.GetReadOnlyRepositoryAsync<GMIndicator>().QueryableList.Select(i => i.Indicator ?? "").ToListAsync();
 
-            return patIndicators.Union(tmkIndicators).Union(gmIndicators).ToList().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            return patIndicators.Union(tmkIndicators).ToList().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
     }
 

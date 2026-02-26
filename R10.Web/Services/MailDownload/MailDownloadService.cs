@@ -5,7 +5,7 @@ using Kendo.Mvc.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using System.Text.Json;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.MailDownload;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
@@ -324,11 +324,6 @@ namespace R10.Web.Services.MailDownload
                                                  .Select(d => d.TmkId).ToListAsync();
                         return ids.Select(id => $"T|Tmk|TmkId|{id.ToString()}").ToList();
 
-                    case MailDownloadActionType.GeneralMatter:
-                        ids = await _cpiDbContext.GetReadOnlyRepositoryAsync<GMMatter>().QueryableList
-                                                 .AddCriteria(searchFilters)
-                                                 .Select(d => d.MatId).ToListAsync();
-                        return ids.Select(id => $"G|GM|MatId|{id.ToString()}").ToList();
                 }
             }
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities;
-using R10.Core.Entities.GeneralMatter;
+// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -25,21 +25,16 @@ namespace R10.Core.Services.Shared
         private readonly ISystemSettings<DefaultSetting> _settings;
         protected readonly ICountryApplicationService _countryApplicationService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IGMMatterService _gMMatterService;
-
         public AgentService(
             ICPiDbContext cpiDbContext,
             ClaimsPrincipal user,
             ISystemSettings<DefaultSetting> settings,
             ICountryApplicationService countryApplicationService,
-            ITmkTrademarkService trademarkService,
-            IGMMatterService gMMatterService
-            ) : base(cpiDbContext, user)
+            ITmkTrademarkService trademarkService) : base(cpiDbContext, user)
         {
             _settings = settings;
             _countryApplicationService = countryApplicationService;
             _trademarkService = trademarkService;
-            _gMMatterService = gMMatterService;
 
             //ChildService = new EntityContactService<Agent, AgentContact>(cpiDbContext, user);
             ChildService = new AgentContactService(cpiDbContext, user);
@@ -57,8 +52,7 @@ namespace R10.Core.Services.Shared
                 else if (_user.IsSharedLimited())
                     agents = agents.Where(a =>
                         (_user.IsInSystem(SystemType.Patent) && _countryApplicationService.CountryApplications.Any(i => i.AgentID == a.AgentID)) ||
-                        (_user.IsInSystem(SystemType.Trademark) && _trademarkService.TmkTrademarks.Any(t => t.AgentID == a.AgentID)) ||
-                        (_user.IsInSystem(SystemType.GeneralMatter) && _gMMatterService.QueryableList.Any(g => g.AgentID == a.AgentID)));
+                        (_user.IsInSystem(SystemType.Trademark) && _trademarkService.TmkTrademarks.Any(t => t.AgentID == a.AgentID)));
 
                 return agents;
             }

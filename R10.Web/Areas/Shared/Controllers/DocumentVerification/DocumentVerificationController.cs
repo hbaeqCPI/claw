@@ -300,18 +300,7 @@ namespace R10.Web.Areas.Shared.Controllers
                             && d.TmkDueDateDeDocketResps.Any(r => r.UserId == userId || userGroupIds.Contains(r.GroupId ?? 0)))
                         .DistinctBy(d => d.DeDocketId).Count();
             }
-            if (canAccessGmDocVer)
-            {
-                toDoItemCount += _docketRequestService.GMDocketRequests.AsNoTracking().Include(d => d.GMDocketRequestResps).AsEnumerable()
-                    .Where(d => d.CompletedDate == null && d.GMDocketRequestResps != null && d.GMDocketRequestResps.Any(r => r.UserId == userId || userGroupIds.Contains(r.GroupId ?? 0)))
-                    .DistinctBy(d => d.ReqId).Count();
-
-                if (defaultSettings.IncludeDeDocketInVerification == true)
-                    toDoItemCount += _repository.GMDueDateDeDockets.AsNoTracking().Include(d => d.GMDueDateDeDocketResps).AsEnumerable()
-                        .Where(d => d.CompletedDate == null && d.InstructionCompleted == false && d.GMDueDateDeDocketResps != null
-                            && d.GMDueDateDeDocketResps.Any(r => r.UserId == userId || userGroupIds.Contains(r.GroupId ?? 0)))
-                        .DistinctBy(d => d.DeDocketId).Count();
-            }
+            // GM module removed
 
             //****************************************************************************
             //4th tab - Count documents need to be sent to client
@@ -402,12 +391,7 @@ namespace R10.Web.Areas.Shared.Controllers
                                             .Select(d => new { UserId = d.UserId ?? "", GroupId = d.GroupId ?? 0 }).ToListAsync())
                                     .Select(d => (d.UserId, d.GroupId)).ToList());
 
-                var gmReqIds = reqIdList.Where(d => d.SystemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower()).Select(d => d.DataKeyValue).Distinct().ToList();
-                if (gmReqIds != null && gmReqIds.Count > 0)
-                    respIds.AddRange((await _docketRequestService.GMDocketRequestResps.AsNoTracking()
-                                            .Where(d => gmReqIds.Contains(d.ReqId) && ((d.UserId != "" && d.UserId != null) || (d.GroupId != null && d.GroupId > 0)))
-                                            .Select(d => new { UserId = d.UserId ?? "", GroupId = d.GroupId ?? 0 }).ToListAsync())
-                                    .Select(d => (d.UserId, d.GroupId)).ToList());
+                // GM module removed
 
                 //tbl_DueDateDeDocketResp
                 var dedocketIdList = idList.Where(d => !string.IsNullOrEmpty(d.DataKey) && d.DataKey.ToLower() == "dedocketid").Select(d => new { d.SystemType, d.DataKeyValue }).ToList();
@@ -740,10 +724,7 @@ namespace R10.Web.Areas.Shared.Controllers
                         currentDocketRequestResps = await _docketRequestService.TmkDocketRequestResps.AsNoTracking()
                         .Where(d => d.ReqId == reqId).Select(d => new DocketRequestResp() { RespId = d.RespId, ReqId = d.ReqId, UserId = d.UserId, GroupId = d.GroupId }).ToListAsync();
                         break;
-                    case SystemTypeCode.GeneralMatter:
-                        currentDocketRequestResps = await _docketRequestService.GMDocketRequestResps.AsNoTracking()
-                        .Where(d => d.ReqId == reqId).Select(d => new DocketRequestResp() { RespId = d.RespId, ReqId = d.ReqId, UserId = d.UserId, GroupId = d.GroupId }).ToListAsync();
-                        break;
+                    // GM module removed
                     default:
                         break;
                 }
@@ -795,9 +776,7 @@ namespace R10.Web.Areas.Shared.Controllers
                             case SystemTypeCode.Trademark:
                                 await _docketRequestService.UpdateTmkDocketRequestResp(updatedRespDocketingList, userName, reqId);
                                 break;
-                            case SystemTypeCode.GeneralMatter:
-                                await _docketRequestService.UpdateGMDocketRequestResp(updatedRespDocketingList, userName, reqId);
-                                break;
+                            // GM module removed
                             default:
                                 break;
                         }
@@ -1510,11 +1489,7 @@ namespace R10.Web.Areas.Shared.Controllers
             {
                 await _docketRequestService.DeleteTmkDocketRequests(tmkDocketRequests.Select(d => d.dataKeyValue).Distinct().ToList());
             }
-            var gmDocketRequests = keyList.Where(d => d.systemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower() && d.dataKey.ToLower() == "reqid").ToList();
-            if (gmDocketRequests.Any())
-            {
-                await _docketRequestService.DeleteGMDocketRequests(gmDocketRequests.Select(d => d.dataKeyValue).Distinct().ToList());
-            }
+            // GM module removed
 
             return Ok(new { success = _localizer["Record(s) has been deleted successfully."].ToString() });
         }
@@ -1985,8 +1960,7 @@ namespace R10.Web.Areas.Shared.Controllers
             var tmkReqIds = keyList.Where(d => d.systemType.ToLower() == SystemTypeCode.Trademark.ToLower() && d.dataKey.ToLower() == "reqid").Select(d => d.dataKeyValue).ToList();
             if (tmkReqIds.Any()) await _docketRequestService.MarkTmkDocketRequestsAsCompleted(tmkReqIds, completedDate);
 
-            var gmReqIds = keyList.Where(d => d.systemType.ToLower() == SystemTypeCode.GeneralMatter.ToLower() && d.dataKey.ToLower() == "reqid").Select(d => d.dataKeyValue).ToList();
-            if (gmReqIds.Any()) await _docketRequestService.MarkGMDocketRequestsAsCompleted(gmReqIds, completedDate);
+            // GM module removed
 
             //DeDocket
             if (defaultSettings.IsDeDocketOn && defaultSettings.IncludeDeDocketInVerification)
@@ -2137,8 +2111,7 @@ namespace R10.Web.Areas.Shared.Controllers
                                         .Select(d => new { SystemType = SystemTypeCode.Patent, d.ReqId, d.UserId, d.GroupId, d.LastUpdate })
                                         .Union(_docketRequestService.TmkDocketRequestResps.AsNoTracking()
                                         .Select(d => new { SystemType = SystemTypeCode.Trademark, d.ReqId, d.UserId, d.GroupId, d.LastUpdate }))
-                                        .Union(_docketRequestService.GMDocketRequestResps.AsNoTracking()
-                                        .Select(d => new { SystemType = SystemTypeCode.GeneralMatter, d.ReqId, d.UserId, d.GroupId, d.LastUpdate }))
+                                        // GM module removed
                                         .ToListAsync();
 
             //DeDocket
@@ -2507,12 +2480,7 @@ namespace R10.Web.Areas.Shared.Controllers
                     || (selectGroupIdFilter > 0 && d.GroupId == selectGroupIdFilter))
                 )
                 .Select(d => new { SystemType = SystemTypeCode.Trademark, d.ReqId, d.UserId, d.GroupId, d.LastUpdate, d.TmkDocketRequest!.CompletedDate }))
-                .Union(_docketRequestService.GMDocketRequestResps.AsNoTracking()
-                .Where(d => d.GMDocketRequest != null && (string.IsNullOrEmpty(selectedTaskDistributionEntity)
-                    || ((!string.IsNullOrEmpty(selectUserIdFilter) && d.UserId == selectUserIdFilter))
-                    || (selectGroupIdFilter > 0 && d.GroupId == selectGroupIdFilter))
-                )
-                .Select(d => new { SystemType = SystemTypeCode.GeneralMatter, d.ReqId, d.UserId, d.GroupId, d.LastUpdate, d.GMDocketRequest!.CompletedDate }))
+                // GM module removed
                 .ToListAsync();
 
             //DeDocket
@@ -2528,12 +2496,7 @@ namespace R10.Web.Areas.Shared.Controllers
                     || (selectGroupIdFilter > 0 && d.GroupId == selectGroupIdFilter))
                 )
                 .Select(d => new { SystemType = SystemTypeCode.Trademark, d.DeDocketId, d.UserId, d.GroupId, d.LastUpdate, d.TmkDueDateDeDocket!.InstructionCompleted }))
-                .Union(_repository.GMDueDateDeDocketResps.AsNoTracking()
-                .Where(d => d.GMDueDateDeDocket != null && (string.IsNullOrEmpty(selectedTaskDistributionEntity)
-                    || ((!string.IsNullOrEmpty(selectUserIdFilter) && d.UserId == selectUserIdFilter))
-                    || (selectGroupIdFilter > 0 && d.GroupId == selectGroupIdFilter))
-                )
-                .Select(d => new { SystemType = SystemTypeCode.GeneralMatter, d.DeDocketId, d.UserId, d.GroupId, d.LastUpdate, d.GMDueDateDeDocket!.InstructionCompleted }))
+                // GM module removed
                 .ToListAsync();
 
             if (defaultSettings.IncludeDeDocketInVerification == false)
@@ -3140,10 +3103,7 @@ namespace R10.Web.Areas.Shared.Controllers
                 docketRequestTaskCount.AddRange(await _docketRequestService.TmkDocketRequests.AsNoTracking()
                     .Where(d => d.DateCreated != null && d.DateCreated >= startDate && d.DateCreated <= endDate)
                     .GroupBy(grp => grp.DateCreated!.Value.Month).Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer1 = d.Count() }).ToListAsync());
-            if (showGenMatter)
-                docketRequestTaskCount.AddRange(await _docketRequestService.GMDocketRequests.AsNoTracking()
-                    .Where(d => d.DateCreated != null && d.DateCreated >= startDate && d.DateCreated <= endDate)
-                    .GroupBy(grp => grp.DateCreated!.Value.Month).Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer1 = d.Count() }).ToListAsync());
+            // GM module removed
 
             //DeDocket
             var deDocketTaskCount = new List<StackedChartViewModel>();
@@ -3210,11 +3170,7 @@ namespace R10.Web.Areas.Shared.Controllers
                     .Where(d => d.LastUpdate != null && d.LastUpdate >= startDate && d.LastUpdate <= endDate)
                     .GroupBy(grp => grp.LastUpdate!.Value.Month)
                     .Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer2 = d.Count() }).ToListAsync());
-            if (showGenMatter)
-                docketRequestAssignedCount.AddRange(await _docketRequestService.GMDocketRequestResps.AsNoTracking()
-                    .Where(d => d.LastUpdate != null && d.LastUpdate >= startDate && d.LastUpdate <= endDate)
-                    .GroupBy(grp => grp.LastUpdate!.Value.Month)
-                    .Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer2 = d.Count() }).ToListAsync());
+            // GM module removed
 
             //DeDocket
             var deDocketAssignedCount = new List<StackedChartViewModel>();
@@ -3276,11 +3232,7 @@ namespace R10.Web.Areas.Shared.Controllers
                     .Where(d => d.CompletedDate != null && d.CompletedDate >= startDate && d.CompletedDate <= endDate)
                     .GroupBy(grp => grp.CompletedDate!.Value.Month)
                     .Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer3 = d.Count() }).ToListAsync());
-            if (showGenMatter)
-                docketRequestCompletedCount.AddRange(await _docketRequestService.GMDocketRequests.AsNoTracking()
-                    .Where(d => d.CompletedDate != null && d.CompletedDate >= startDate && d.CompletedDate <= endDate)
-                    .GroupBy(grp => grp.CompletedDate!.Value.Month)
-                    .Select(d => new StackedChartViewModel() { Id = d.Key, StackLayer3 = d.Count() }).ToListAsync());
+            // GM module removed
 
             //DeDocket
             var deDocketCompletedCount = new List<StackedChartViewModel>();
@@ -3451,9 +3403,7 @@ namespace R10.Web.Areas.Shared.Controllers
             if (canAccessTmkDocVer)
                 docketRequestTaskCount += await _docketRequestService.TmkDocketRequests.AsNoTracking()
                     .CountAsync(d => d.DateCreated != null && d.DateCreated >= startDate && d.DateCreated <= endDate);
-            if (canAccessGmDocVer)
-                docketRequestTaskCount += await _docketRequestService.GMDocketRequests.AsNoTracking()
-                    .CountAsync(d => d.DateCreated != null && d.DateCreated >= startDate && d.DateCreated <= endDate);
+            // GM module removed
 
             //DeDocket
             int deDocketTaskCount = 0;
@@ -3532,9 +3482,7 @@ namespace R10.Web.Areas.Shared.Controllers
             if (canAccessTmkDocVer)
                 docketRequestAssignedCount += await _docketRequestService.TmkDocketRequestResps.AsNoTracking()
                     .CountAsync(d => d.LastUpdate != null && d.LastUpdate >= startDate && d.LastUpdate <= endDate);
-            if (canAccessGmDocVer)
-                docketRequestAssignedCount += await _docketRequestService.GMDocketRequestResps.AsNoTracking()
-                    .CountAsync(d => d.LastUpdate != null && d.LastUpdate >= startDate && d.LastUpdate <= endDate);
+            // GM module removed
 
             //DeDocket
             int deDocketAssignedCount = 0;
@@ -3583,9 +3531,7 @@ namespace R10.Web.Areas.Shared.Controllers
             if (canAccessTmkDocVer)
                 docketRequestCompletedCount += await _docketRequestService.TmkDocketRequests.AsNoTracking()
                     .CountAsync(d => d.CompletedDate != null && d.CompletedDate >= startDate && d.CompletedDate <= endDate);
-            if (canAccessGmDocVer)
-                docketRequestCompletedCount += await _docketRequestService.GMDocketRequests.AsNoTracking()
-                    .CountAsync(d => d.CompletedDate != null && d.CompletedDate >= startDate && d.CompletedDate <= endDate);
+            // GM module removed
 
             //DeDocket
             int deDocketCompletedCount = 0;
@@ -4375,10 +4321,7 @@ namespace R10.Web.Areas.Shared.Controllers
                     {
                         docketRequestTypes.AddRange(await _docketRequestService.TmkDocketRequests.AsNoTracking().Select(d => d.RequestType ?? "").Distinct().ToListAsync());
                     }
-                    if (systemType.Contains(SystemTypeCode.GeneralMatter))
-                    {
-                        docketRequestTypes.AddRange(await _docketRequestService.GMDocketRequests.AsNoTracking().Select(d => d.RequestType ?? "").Distinct().ToListAsync());
-                    }
+                    // GM module removed
 
                     filtered.AddRange(docketRequestTypes.Select(d => new DocumentVerificationLookupViewModel() { Id = "", ActionType = d, BaseDate = "" }).Distinct().ToList());
                 }
@@ -4449,8 +4392,7 @@ namespace R10.Web.Areas.Shared.Controllers
                 if (systemType.Contains(SystemTypeCode.Trademark))
                     docNames.AddRange(await _docService.DocFiles.AsNoTracking().Where(d => _docketRequestService.TmkDocketRequests.Any(r => r.FileId == d.FileId)).Select(d => d.UserFileName ?? "").ToListAsync());
 
-                if (systemType.Contains(SystemTypeCode.GeneralMatter))
-                    docNames.AddRange(await _docService.DocFiles.AsNoTracking().Where(d => _docketRequestService.GMDocketRequests.Any(r => r.FileId == d.FileId)).Select(d => d.UserFileName ?? "").ToListAsync());
+                // GM module removed
             }
 
             if (settings.IsDeDocketOn && settings.IncludeDeDocketInVerification)
@@ -4493,8 +4435,7 @@ namespace R10.Web.Areas.Shared.Controllers
                 if (systemType.Contains(SystemTypeCode.Trademark))
                     uploadedBys.AddRange(await _docService.DocFiles.AsNoTracking().Where(d => _docketRequestService.TmkDocketRequests.Any(r => r.FileId == d.FileId)).Select(d => d.UpdatedBy ?? "").ToListAsync());
 
-                if (systemType.Contains(SystemTypeCode.GeneralMatter))
-                    uploadedBys.AddRange(await _docService.DocFiles.AsNoTracking().Where(d => _docketRequestService.GMDocketRequests.Any(r => r.FileId == d.FileId)).Select(d => d.UpdatedBy ?? "").ToListAsync());
+                // GM module removed
             }
 
             if (settings.IsDeDocketOn && settings.IncludeDeDocketInVerification)
@@ -4589,10 +4530,7 @@ namespace R10.Web.Areas.Shared.Controllers
                                                 .Where(d => (d.UserId != "" && d.UserId != null) || (d.GroupId != null && d.GroupId > 0))
                                                .Select(d => new { UserId = d.UserId, GroupId = d.GroupId }).ToListAsync());
 
-                if (string.IsNullOrEmpty(systemType) || systemType.Contains(SystemTypeCode.GeneralMatter))
-                    responsibleIds.AddRange(await _docketRequestService.GMDocketRequestResps.AsNoTracking()
-                                                .Where(d => (d.UserId != "" && d.UserId != null) || (d.GroupId != null && d.GroupId > 0))
-                                                .Select(d => new { UserId = d.UserId, GroupId = d.GroupId }).ToListAsync());
+                // GM module removed
             }
 
             //////////////////////////////////////////////////
@@ -4857,14 +4795,7 @@ namespace R10.Web.Areas.Shared.Controllers
                             Value = d.TmkTrademark.Client.ClientName
                         }).Distinct().ToListAsync());
 
-                if (systemType.Contains(SystemTypeCode.GeneralMatter))
-                    clientList.AddRange(await _docketRequestService.GMDocketRequests.AsNoTracking()
-                        .Where(d => d.GMMatter != null && d.GMMatter.Client != null)
-                        .Select(d => new SelectListItem()
-                        {
-                            Text = d.GMMatter!.Client!.ClientCode,
-                            Value = d.GMMatter.Client.ClientName
-                        }).Distinct().ToListAsync());
+                // GM module removed
             }
 
             if (settings.IsDeDocketOn && settings.IncludeDeDocketInVerification)

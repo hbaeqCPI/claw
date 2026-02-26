@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +32,6 @@ using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
-using R10.Core.Entities.GeneralMatter;
 using R10.Core.Entities.Shared;
 using R10.Web.Interfaces.Shared;
 using Newtonsoft.Json;
@@ -61,13 +60,11 @@ namespace R10.Web.Areas.Shared.Controllers
         protected readonly IInventionService _inventionService;
         protected readonly ICountryApplicationService _applicationService;
         protected readonly ITmkTrademarkService _trademarkService;
-        protected readonly IGMMatterService _gmMatterService;
         private readonly IConfiguration _configuration;
         private readonly IEntityService<TimeTrack> _timeTrackEntityService;
         private readonly ITimeTrackerService _timeTrackerService;
         protected readonly ICostTrackingService<PatCostTrack> _PatCostTrackingService;
         protected readonly ICostTrackingService<TmkCostTrack> _TmkCostTrackingService;
-        protected readonly ICostTrackingService<GMCostTrack> _GMCostTrackingService;
         private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly ExportHelper _exportHelper;
         private readonly IStringLocalizer<TimeTrackerExportToExcelViewModel> _searchResultLocalizer;
@@ -86,13 +83,11 @@ namespace R10.Web.Areas.Shared.Controllers
             IInventionService inventionService,
             ICountryApplicationService applicationService,
             ITmkTrademarkService trademarkService,
-            IGMMatterService gmMatterService, 
             IConfiguration configuration,
             IEntityService<TimeTrack> timeTrackEntityService,
             ITimeTrackerService timeTrackerService,
             ICostTrackingService<PatCostTrack> PatCostTrackingService,
             ICostTrackingService<TmkCostTrack> TmkCostTrackingService,
-            ICostTrackingService<GMCostTrack> GMCostTrackingService,
             ISystemSettings<DefaultSetting> settings,
             ExportHelper exportHelper,
             IStringLocalizer<TimeTrackerExportToExcelViewModel> searchResultLocalizer)
@@ -110,13 +105,11 @@ namespace R10.Web.Areas.Shared.Controllers
             _inventionService = inventionService;
             _applicationService = applicationService;
             _trademarkService = trademarkService;
-            _gmMatterService = gmMatterService;
             _timeTrackEntityService = timeTrackEntityService;
             _timeTrackerService = timeTrackerService;
             _configuration = configuration;
             _PatCostTrackingService = PatCostTrackingService;
             _TmkCostTrackingService = TmkCostTrackingService;
-            _GMCostTrackingService = GMCostTrackingService;
             _settings = settings;
             _exportHelper = exportHelper;
             _searchResultLocalizer = searchResultLocalizer;
@@ -138,10 +131,6 @@ namespace R10.Web.Areas.Shared.Controllers
                 else if (deletedTimeTracker.TmkId != null && deletedTimeTracker.Exported)
                 {
                     await _TmkCostTrackingService.Delete(_TmkCostTrackingService.QueryableList.FirstOrDefault(c => c.CostTrackId == deletedTimeTracker.CostTrackId));
-                }
-                else if (deletedTimeTracker.MatId != null && deletedTimeTracker.Exported)
-                {
-                    await _GMCostTrackingService.Delete(_GMCostTrackingService.QueryableList.FirstOrDefault(c => c.CostTrackId == deletedTimeTracker.CostTrackId));
                 }
                 if (string.IsNullOrEmpty(deletedTimeTracker.TrackUserId))
                     await _attorneyTimeTrackerService.ChildService.Update((int)deletedTimeTracker.AttorneyID, User.GetUserName(), new List<TimeTracker>(), new List<TimeTracker>(), new List<TimeTracker>() { deletedTimeTracker });
@@ -347,10 +336,6 @@ namespace R10.Web.Areas.Shared.Controllers
                 {
                     await _TmkCostTrackingService.Delete(_TmkCostTrackingService.QueryableList.FirstOrDefault(c => c.CostTrackId == deletedTimeTracker.CostTrackId));
                 }
-                else if (deletedTimeTracker.MatId != null && deletedTimeTracker.Exported)
-                {
-                    await _GMCostTrackingService.Delete(_GMCostTrackingService.QueryableList.FirstOrDefault(c => c.CostTrackId == deletedTimeTracker.CostTrackId));
-                }
                 await _attorneyTimeTrackerService.ChildService.Delete(_mapper.Map<TimeTracker>(deleted));
                 return Ok(new { success = _localizer["Time Tracker has been deleted successfully."].ToString() });
             }
@@ -400,10 +385,6 @@ namespace R10.Web.Areas.Shared.Controllers
                 {
                     timeTracker.TmkId = _trademarkService.TmkTrademarks.FirstOrDefault(c => c.CaseNumber.Equals(viewModel.CaseNumber) && c.Country.Equals(viewModel.Country) && (viewModel.SubCase == null || c.SubCase.Equals(viewModel.SubCase))).TmkId;
                 }
-                else if (viewModel.SystemType.Equals("General Matter"))
-                {
-                    timeTracker.MatId = _gmMatterService.QueryableList.FirstOrDefault(c => c.CaseNumber.Equals(viewModel.CaseNumber) && (viewModel.SubCase == null || c.SubCase.Equals(viewModel.SubCase))).MatId;
-                }
 
             }
             else
@@ -435,11 +416,6 @@ namespace R10.Web.Areas.Shared.Controllers
                 var sysType = new SystemTypeForTimeTracker() { SystemType = "Trademark" };
                 list.Add(sysType);
             }
-            if (User.IsInSystem(SystemType.GeneralMatter))
-            {
-                var sysType = new SystemTypeForTimeTracker() { SystemType = "General Matter" };
-                list.Add(sysType);
-            }
             return Json(list);
         }
 
@@ -453,36 +429,15 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             if (string.IsNullOrEmpty(systemType))
             {
-                var result = _gmMatterService.QueryableList.Where(c=>false).Select(c => new { CaseNumber = c.CaseNumber }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
+                var result = new List<object>();
+                return Json(result);
             }
 
             string text = filter;
             if (!string.IsNullOrEmpty(text))
                 text = text.Substring(text.IndexOf("'")+1, text.LastIndexOf("'") - text.IndexOf("'")-1);
 
-            if (systemType.Equals("General Matter"))
-            {
-                var result = _gmMatterService.QueryableList.Where(c=> text == null || c.CaseNumber.StartsWith(text)).Select(c => new { CaseNumber = c.CaseNumber }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
-            }
-            else if (systemType.Equals("Trademark"))
+            if (systemType.Equals("Trademark"))
             {
                 var result = _trademarkService.TmkTrademarks.Where(c => text == null || c.CaseNumber.StartsWith(text)).Select(c => new { CaseNumber = c.CaseNumber }).Distinct().ToList();
 
@@ -551,36 +506,15 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             if (string.IsNullOrEmpty(systemType))
             {
-                var result = _gmMatterService.QueryableList.Where(c => false).Select(c => new { Country = "" }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
+                var result = new List<object>();
+                return Json(result);
             }
 
             string text = filter;
             if (!string.IsNullOrEmpty(text))
                 text = text.Substring(text.IndexOf("'") + 1, text.LastIndexOf("'") - text.IndexOf("'") - 1);
 
-            if (systemType.Equals("General Matter"))
-            {
-                var result = _gmMatterService.QueryableList.Where(c => c.CaseNumber.Equals(caseNumber)).Select(c => new { Country = "" }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
-            }
-            else if (systemType.Equals("Trademark"))
+            if (systemType.Equals("Trademark"))
             {
                 var result = _trademarkService.TmkTrademarks.Where(c => c.CaseNumber.Equals(caseNumber) && (text == null || c.Country.StartsWith(text))).Select(c => new { Country = c.Country }).Distinct().ToList();
 
@@ -613,36 +547,15 @@ namespace R10.Web.Areas.Shared.Controllers
         {
             if (string.IsNullOrEmpty(systemType))
             {
-                var result = _gmMatterService.QueryableList.Where(c => false).Select(c => new { SubCase = c.SubCase }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
+                var result = new List<object>();
+                return Json(result);
             }
 
             string text = filter;
             if (!string.IsNullOrEmpty(text))
                 text = text.Substring(text.IndexOf("'") + 1, text.LastIndexOf("'") - text.IndexOf("'") - 1);
 
-            if (systemType.Equals("General Matter"))
-            {
-                var result = _gmMatterService.QueryableList.Where(c => c.CaseNumber.Equals(caseNumber) && (text == null || c.SubCase.StartsWith(text))).Select(c => new { SubCase = c.SubCase }).Distinct().ToList();
-
-                if (request.PageSize > 0)
-                {
-                    request.Filters.Clear();
-                    return Json(await result.ToDataSourceResultAsync(request));
-                }
-
-                var list = result;
-                return Json(list);
-            }
-            else if (systemType.Equals("Trademark"))
+            if (systemType.Equals("Trademark"))
             {
                 var result = _trademarkService.TmkTrademarks.Where(c => c.CaseNumber.Equals(caseNumber) && c.Country.Equals(country) && (text == null || c.SubCase.StartsWith(text))).Select(c => new { SubCase = c.SubCase }).Distinct().ToList();
 

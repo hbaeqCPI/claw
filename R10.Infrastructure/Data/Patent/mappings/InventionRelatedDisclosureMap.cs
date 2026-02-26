@@ -14,7 +14,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
             builder.ToTable("tblPatInventionRelatedDisclosure");
             builder.HasKey("KeyId");
             builder.HasIndex(id => new { id.InvId, id.DMSId }).IsUnique();
-            builder.HasOne(id=> id.InventionDisclosure).WithMany(d=> d.InventionRelatedDisclosures).HasForeignKey(id=>id.DMSId).HasPrincipalKey(d=>d.DMSId);
+            // Removed during deep clean
+            // builder.HasOne(id=> id.InventionDisclosure).WithMany(d=> d.InventionRelatedDisclosures).HasForeignKey(id=>id.DMSId).HasPrincipalKey(d=>d.DMSId);
             builder.HasOne(ir => ir.Invention).WithMany(d => d.InventionRelatedDisclosures).HasForeignKey(ir => ir.InvId).HasPrincipalKey(d => d.InvId);
         }
     }

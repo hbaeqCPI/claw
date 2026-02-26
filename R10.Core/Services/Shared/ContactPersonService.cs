@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities;
-using R10.Core.Entities.DMS;
+// using R10.Core.Entities.DMS; // Removed during deep clean
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Core.Interfaces.DMS;
+// using R10.Core.Interfaces.DMS; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,21 +21,16 @@ namespace R10.Core.Services.Shared
         protected readonly IClientService _clientService;
         protected readonly IAgentService _agentService;
         protected readonly IOwnerService _ownerService;
-        protected readonly IDisclosureService _disclosureService;
-
         public ContactPersonService(
-            ICPiDbContext cpiDbContext, 
+            ICPiDbContext cpiDbContext,
             ClaimsPrincipal user,
             IClientService clientService,
             IAgentService agentService,
-            IOwnerService ownerService,
-            IDisclosureService disclosureService
-            ) : base(cpiDbContext, user)
+            IOwnerService ownerService) : base(cpiDbContext, user)
         {
             _clientService = clientService;
             _agentService = agentService;
             _ownerService = ownerService;
-            _disclosureService = disclosureService;
         }
 
         public override IQueryable<ContactPerson> QueryableList
@@ -51,12 +46,7 @@ namespace R10.Core.Services.Shared
                     contacts = contacts.Where(c =>
                         _clientService.QueryableList.Any(cl => cl.ClientContacts.Any(cc => cc.ContactID == c.ContactID)) ||
                         _agentService.QueryableList.Any(a => a.AgentContacts.Any(ac => ac.ContactID == c.ContactID)) ||
-                        _ownerService.QueryableList.Any(o => o.OwnerContacts.Any(oc => oc.ContactID == c.ContactID)) ||
-                        (_user.IsInSystem(SystemType.DMS) && (
-                        _clientService.QueryableList.Any(cl => cl.Reviewers.Any(der => der.ReviewerId == c.ContactID && der.ReviewerType == CPiEntityType.ContactPerson)) ||                        
-                        _disclosureService.QueryableList.Any(d => d.Reviews.Any(dr => dr.ReviewerId == c.ContactID && dr.ReviewerType == CPiEntityType.ContactPerson)) ||
-                        _disclosureService.QueryableList.Any(d => d.Valuations.Any(dv => dv.ReviewerId == c.ContactID && dv.ReviewerType == CPiEntityType.ContactPerson))
-                        )));
+                        _ownerService.QueryableList.Any(o => o.OwnerContacts.Any(oc => oc.ContactID == c.ContactID)));
 
                 return contacts;
             }

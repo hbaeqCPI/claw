@@ -4,7 +4,6 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject ISystemSettings<GMSetting> GMSettings
 @model ProductIndexReportViewModel
 
 @{
@@ -16,11 +15,9 @@
     ViewBag.PageId = "ProductIndex";
     var isPatRespOfficeOn = User.IsRespOfficeOn(SystemType.Patent);
     var isTmkRespOfficeOn = User.IsRespOfficeOn(SystemType.Trademark);
-    var isGmRespOfficeOn = User.IsRespOfficeOn(SystemType.GeneralMatter);
     var settings = await Settings.GetSetting();
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
-    var gmSettings = await GMSettings.GetSetting();
 
     var caseNumberLabel = settings.IsClientMatterOn ? settings.LabelClientMatter : settings.LabelCaseNumber;
     var oldCaseNumberLabel = settings.LabelOldCaseNumber;

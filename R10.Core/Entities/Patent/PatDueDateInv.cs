@@ -1,4 +1,4 @@
-﻿using R10.Core.Entities.ForeignFiling;
+﻿// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,8 +15,8 @@ namespace R10.Core.Entities.Patent
         public PatDueDateInvDeDocketOutstanding? DeDocketOutstanding { get; set; }
 
         //public FFDue? FFDue { get; set; }
-        //public List<FFRemLogDue>? FFRemLogDues { get; set; }
-        //public List<FFActionCloseLogDue>? FFActionCloseLogDues { get; set; }
+//         //public List<FFRemLogDue>? FFRemLogDues { get; set; } // Removed during deep clean
+//         //public List<FFActionCloseLogDue>? FFActionCloseLogDues { get; set; } // Removed during deep clean
         public Attorney? DueDateInvAttorney { get; set; }
         public List<PatDueDateInvDelegation>? Delegations { get; set; }
         public List<PatDueDateInvDateTakenLog>? DateTakenLogs { get; set; }
