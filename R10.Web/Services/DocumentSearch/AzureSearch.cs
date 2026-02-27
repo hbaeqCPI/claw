@@ -9,7 +9,7 @@ using Microsoft.Rest.Azure;
 using R10.Core.DTOs;
 using R10.Core.Entities.Shared;
 using R10.Core.Interfaces;
-using R10.Web.Models.GlobalSearch;
+
 using R10.Web.Services.DocumentStorage;
 using System;
 using System.Collections.Generic;

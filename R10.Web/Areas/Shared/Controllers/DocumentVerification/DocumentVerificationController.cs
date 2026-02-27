@@ -28,7 +28,7 @@ using R10.Web.Extensions.ActionResults;
 using R10.Web.Helpers;
 using R10.Web.Interfaces;
 using R10.Web.Models;
-using R10.Web.Models.DashboardViewModels;
+
 using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
 using R10.Web.Services;
@@ -3960,7 +3960,7 @@ namespace R10.Web.Areas.Shared.Controllers
                         {
                             qeScreenParameterVM.SystemType = SystemTypeCode.Patent;
                             qeScreenParameterVM.ScreenCode = "CA-QEmail";
-                            qeScreenParameterVM.ParentScreenName = ScreenName.PatCountryApplication;
+                            qeScreenParameterVM.ParentScreenName = ScreenName.PatCountryApplication.ToString();
                             qeScreenParameterVM.ParentKey = "AppId";
                             qeScreenParameterVM.ParentId = parentId;
                             qeScreenParameterVM.ParentTable = "PC";
@@ -4002,7 +4002,7 @@ namespace R10.Web.Areas.Shared.Controllers
                         {
                             qeScreenParameterVM.SystemType = SystemTypeCode.Trademark;
                             qeScreenParameterVM.ScreenCode = "Tmk-QEmail";
-                            qeScreenParameterVM.ParentScreenName = ScreenName.TmkTrademark;
+                            qeScreenParameterVM.ParentScreenName = ScreenName.TmkTrademark.ToString();
                             qeScreenParameterVM.ParentKey = "TmkId";
                             qeScreenParameterVM.ParentId = parentId;
                             qeScreenParameterVM.ParentTable = "TM";

@@ -1,4 +1,4 @@
-﻿using R10.Core.Identity;
+using R10.Core.Identity;
 
 namespace R10.Web.Areas.Shared.ViewModels
 {

@@ -1,47 +1,96 @@
 @inject IStringLocalizer<SharedResource> Localizer
+@inject IStringLocalizer<MenuResource> MenuLocalizer
 @{
     ViewData["Title"] = "Home";
+    var userName = User.FindFirst(R10.Core.Helpers.CPiClaimTypes.FirstName)?.Value ?? "";
 }
 
 <div class="page-content">
-    <div class="row">
-        <div class="col-lg-3">
-            <h3 class="pb-3">@Localizer["Patent"]</h3>
-            <div class="manage-nav sidebar-nav p-3">
-                <ul class="nav nav-pills cpi-nav-vertical flex-column">
-                    <li class="nav-item">
-                        <a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="nav-link">@Localizer["Country Law"]</a>
-                    </li>
-                    <li class="nav-separator mt-2">
-                        <h5>@Localizer["Auxiliary"]</h5>
-                    </li>
-                    <li class="nav-item">
-                        <a asp-area="Patent" asp-controller="Country" asp-action="Index" class="nav-link">@Localizer["Country"]</a>
-                    </li>
-                    <li class="nav-item">
-                        <a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="nav-link">@Localizer["Case Type"]</a>
-                    </li>
-                </ul>
+    <div class="home-welcome pt-4 pb-4">
+        <h2 class="mb-1">@Localizer["Welcome back"], @userName</h2>
+        <p class="text-muted mb-0">@Localizer["Select a module to get started."]</p>
+    </div>
+
+    <div class="row pt-2">
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fad fa-file-certificate fa-2x text-primary mr-3"></span>
+                        <h4 class="card-title mb-0">@MenuLocalizer["Patent"]</h4>
+                    </div>
+                    <p class="card-text text-muted mb-3">@Localizer["Manage patent country laws, countries, and case types."]</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="Patent" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3">
-            <h3 class="pb-3">@Localizer["Trademark"]</h3>
-            <div class="manage-nav sidebar-nav p-3">
-                <ul class="nav nav-pills cpi-nav-vertical flex-column">
-                    <li class="nav-item">
-                        <a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="nav-link">@Localizer["Country Law"]</a>
-                    </li>
-                    <li class="nav-separator mt-2">
-                        <h5>@Localizer["Auxiliary"]</h5>
-                    </li>
-                    <li class="nav-item">
-                        <a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="nav-link">@Localizer["Country"]</a>
-                    </li>
-                    <li class="nav-item">
-                        <a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="nav-link">@Localizer["Case Type"]</a>
-                    </li>
-                </ul>
+
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fad fa-trademark fa-2x text-primary mr-3"></span>
+                        <h4 class="card-title mb-0">@MenuLocalizer["Trademark"]</h4>
+                    </div>
+                    <p class="card-text text-muted mb-3">@Localizer["Manage trademark country laws, countries, and case types."]</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
+
     </div>
 </div>
+
+<style>
+    .home-welcome {
+        border-bottom: 1px solid #eee;
+        margin-bottom: 1.5rem;
+    }
+    .card {
+        transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important;
+    }
+    .home-link {
+        color: var(--link-nav, #495057);
+        padding: 0.35rem 0.5rem;
+        border-radius: 4px;
+    }
+    .home-link:hover {
+        background-color: rgba(0,0,0,.04);
+        text-decoration: none;
+    }
+</style>

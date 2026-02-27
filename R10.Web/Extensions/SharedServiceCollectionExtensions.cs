@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 using R10.Core.Interfaces.Shared;
 using R10.Web.Helpers;
 using R10.Core.Entities.Shared;
-using R10.Web.Interfaces.Shared;
 using R10.Web.Areas.Shared.Services;
 using R10.Core.Services.Documents;
 using Microsoft.Extensions.Configuration;
@@ -41,19 +40,17 @@ namespace R10.Web.Extensions
     {
         public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration Configuration)
         {
-            services.AddScoped<IClientViewModelService, ClientViewModelService>();
+            // Client/Agent/Owner core services (ViewModelServices removed in debloat)
             services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IClientContactService, ClientContactService>();
 
             services.AddScoped<IClientDesignatedCountryService, ClientDesignatedCountryService>();
             services.AddScoped<IEntitySyncRepository, EntitySyncRepository>();
 
-            services.AddScoped<IAgentViewModelService, AgentViewModelService>();
             services.AddScoped<IAgentService, AgentService>();
             services.AddScoped<IAgentContactService, AgentContactService>();
             services.AddScoped<IChildEntityService<Agent, AgentCEFee>, ChildEntityService<Agent, AgentCEFee>>();
 
-            services.AddScoped<IOwnerViewModelService, OwnerViewModelService>();
             services.AddScoped<IOwnerService, OwnerService>();
 
             services.AddScoped<IViewModelService<Attorney>, ViewModelService<Attorney>>();
@@ -61,7 +58,6 @@ namespace R10.Web.Extensions
             services.AddScoped<IEntityService<TimeTracker>, AuxService<TimeTracker>>();
             services.AddScoped<IParentEntityService<Attorney, TimeTracker>, ParentEntityService<Attorney, TimeTracker>>();
             services.AddScoped<IEntityService<TimeTrack>, AuxService<TimeTrack>>();
-            services.AddScoped<ITimeTrackerService, TimeTrackerService>();
 
 
             services.AddScoped<IEntityService<Language>, AuxService<Language>>();
@@ -75,10 +71,10 @@ namespace R10.Web.Extensions
             services.AddScoped<IAsyncRepository<QELog>, EFRepository<QELog>>();
             services.AddScoped<IImageTypeRepository, ImageTypeRepository>();
 
-            services.AddScoped<IOuickDocketViewModelService, QuickDocketViewModelService>();
+            // QuickDocket core (ViewModelService removed in debloat)
             services.AddScoped<IQuickDocketService, QuickDocketService>();
             services.AddScoped<IQuickDocketRepository, QuickDocketRepository>();
-            
+
             services.AddScoped<IViewModelService<DeDocketInstruction>, ViewModelService<DeDocketInstruction>>();
             services.AddScoped<IEntityService<DeDocketInstruction>, AuxService<DeDocketInstruction>>();
 
@@ -92,24 +88,20 @@ namespace R10.Web.Extensions
             services.AddScoped<IWebLinksService, WebLinksService>();
             services.AddScoped<INumberFormatService, NumberFormatService>();
 
-            //letters
+            //letters (ViewModelServices removed in debloat)
             services.AddScoped<ILetterService, LetterService>();
-            services.AddScoped<ILetterViewModelService, LetterViewModelService>();
             services.AddScoped<ILetterEntitySettingRepository, LetterEntitySettingRepository>();
             services.AddScoped<IAsyncRepository<LetterCategory>, EFRepository<LetterCategory>>();
             services.AddScoped<IViewModelService<LetterCategory>, ViewModelService<LetterCategory>>();
             services.AddScoped<IAsyncRepository<LetterLog>, EFRepository<LetterLog>>();
-            services.AddScoped<ILetterDataSourceViewModelService, LetterDataSourceViewModelService>();
             services.AddScoped<IAsyncRepository<LetterSubCategory>, EFRepository<LetterSubCategory>>();
             services.AddScoped<IViewModelService<LetterSubCategory>, ViewModelService<LetterSubCategory>>();
             services.AddScoped<IEntityService<LetterSubCategory>, AuxService<LetterSubCategory>>();
             services.AddScoped<IViewModelService<LetterSubCategory>, ViewModelService<LetterSubCategory>>();
             services.AddScoped<IChildEntityService<LetterMain, LetterTag>, ChildEntityService<LetterMain, LetterTag>>();
 
-            // DOCX
+            // DOCX (ViewModelService removed in debloat)
             services.AddScoped<IDOCXService, DOCXService>();
-            services.AddScoped<IDOCXViewModelService, DOCXViewModelService>();
-            //services.AddScoped<IDOCXEntitySettingRepository, DOCXEntitySettingRepository>();
             services.AddScoped<IAsyncRepository<DOCXCategory>, EFRepository<DOCXCategory>>();
             services.AddScoped<IViewModelService<DOCXCategory>, ViewModelService<DOCXCategory>>();
             services.AddScoped<IAsyncRepository<DOCXLog>, EFRepository<DOCXLog>>();
@@ -124,22 +116,17 @@ namespace R10.Web.Extensions
             services.AddScoped<IAsyncRepository<ModuleMain>, EFRepository<ModuleMain>>();
             services.AddScoped<IAsyncRepository<QEMain>, EFRepository<QEMain>>();
             services.AddScoped<IAsyncRepository<QEDataSource>, EFRepository<QEDataSource>>();
-            //services.AddScoped<IAsyncRepository<QERecipient>, EFRepository<QERecipient>>();
             services.AddScoped<IQEDataSourceRepository, QEDataSourceRepository>();
-            //services.AddScoped<IQERecipientRepository, QERecipientRepository>();
-            
+
             services.AddScoped<IAsyncRepository<QELayout>, EFRepository<QELayout>>();
             services.AddScoped<IAsyncRepository<QERoleSource>, EFRepository<QERoleSource>>();
             services.AddScoped<IAsyncRepository<QELog>, EFRepository<QELog>>();
             services.AddScoped<IAsyncRepository<CPiLanguage>, EFRepository<CPiLanguage>>();
             services.AddScoped<IQuickEmailRepository, QuickEmailRepository>();
-            services.AddScoped<IOuickEmailViewModelService, QuickEmailViewModelServiceStub>();
-            services.AddScoped<IOuickEmailSetupViewModelService, OuickEmailSetupViewModelService>();
             services.AddScoped<IQuickEmailService, QuickEmailService>();
             services.AddScoped<IQuickEmailSetupService, QuickEmailSetupService>();
             services.AddScoped<IViewModelService<QEDataSource>, ViewModelService<QEDataSource>>();
             services.AddScoped<IViewModelService<QERoleSource>, ViewModelService<QERoleSource>>();
-            services.AddScoped<IQEDataSourceViewModelService, QEDataSourceViewModelService>();
             services.AddScoped<IAsyncRepository<QECategory>, EFRepository<QECategory>>();
             services.AddScoped<IViewModelService<QECategory>, ViewModelService<QECategory>>();
             services.AddScoped<IEntityService<QECategory>, AuxService<QECategory>>();
@@ -158,9 +145,8 @@ namespace R10.Web.Extensions
             services.AddScoped<ICountryLookupViewModelService, CountryLookupViewModelService>();
             services.AddScoped<IEFSHelper, EFSHelper>();
 
-            // data query
+            // data query (ViewModelService removed in debloat)
             services.AddScoped<IDataQueryService, DataQueryService>();
-            services.AddScoped<IDataQueryViewModelService, DataQueryViewModelService>();
             services.AddScoped<IAsyncRepository<DataQueryCategory>, EFRepository<DataQueryCategory>>();
             services.AddScoped<IViewModelService<DataQueryCategory>, ViewModelService<DataQueryCategory>>();
             services.AddScoped<IEntityService<DataQueryCategory>, AuxService<DataQueryCategory>>();
@@ -169,19 +155,13 @@ namespace R10.Web.Extensions
 
             //settings
             services.AddScoped<ISystemSettings<DefaultSetting>, SystemSettings<DefaultSetting>>();
-            // Note: Settings and services for other modules (AMS, DMS, GM, FF, RMS, etc.)
-            // are registered via their own extension files called in Startup.cs
 
-            //reports
+            //reports (ViewModelServices and deploy removed in debloat)
             services.AddScoped<IReportService, ReportService>();
-            services.AddScoped<IReportDeployService, ReportDeployService>();
             services.AddScoped<ISharedReportRepository, SharedReportRepository>();
-            services.AddScoped<ISharedReportViewModelService, SharedReportViewModelService>();
             services.AddScoped<IReportParameterService, ReportParameterService>();
 
-            services.AddScoped<ICustomReportService, CustomReportService>();
             services.AddScoped<IEntityService<CustomReport>, AuxService<CustomReport>>();
-            services.AddScoped<ICustomReportViewModelService, CustomReportViewModelService>();
 
             //delegation
             services.AddScoped<IDelegationService, DelegationService>();
@@ -196,11 +176,6 @@ namespace R10.Web.Extensions
             //map
             services.AddScoped<IMapService, MapService>();
             services.AddScoped<IMapRepository, MapRepository>();
-
-            //dashboard
-            services.AddScoped<IDashboardManager, DashboardManager>();
-            services.AddScoped<IWidgetDataService, WidgetDataService>();
-            // Shared/Patent/Trademark widget services removed with debloat; dashboard will return null for those widgets
 
             //CTM
             services.AddScoped<IRSCTMService, RSCTMService>();
@@ -226,7 +201,6 @@ namespace R10.Web.Extensions
             services.AddScoped<ICPiCompression, CPiCompression>();
 
             services.AddScoped<ExportHelper, ExportHelper>();
-            //services.AddScoped<DocumentHelper, DocumentHelper>();
 
             //Product Aux
             services.AddScoped<IViewModelService<ProductCategory>, ViewModelService<ProductCategory>>();
@@ -234,18 +208,16 @@ namespace R10.Web.Extensions
             services.AddScoped<IViewModelService<ProductGroup>, ViewModelService<ProductGroup>>();
             services.AddScoped<IEntityService<ProductGroup>, AuxService<ProductGroup>>();
 
-            services.AddScoped<IProductViewModelService, ProductViewModelService>();
             services.AddScoped<IProductService, ProductService>();
 
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IProductSaleService, ProductSaleService>();
-            services.AddScoped<IProductImageViewModelService, ProductImageViewModelService>();
 
 
             services.AddScoped<IViewModelService<RelatedProductDTO>, ViewModelService<RelatedProductDTO>>();
             services.AddScoped<IAsyncRepository<RelatedProductDTO>, EFRepository<RelatedProductDTO>>();
 
-            services.AddScoped<IViewModelService<Brand>, ViewModelService<Brand>>(); 
+            services.AddScoped<IViewModelService<Brand>, ViewModelService<Brand>>();
             services.AddScoped<IEntityService<Brand>, AuxService<Brand>>();
 
             //Product import
@@ -265,9 +237,8 @@ namespace R10.Web.Extensions
             services.AddScoped<AzureStorage, AzureStorage>();
             services.AddScoped<IDocumentPermission, DocumentPermissionStub>();
 
-            // global search
+            // global search (ViewModelService removed in debloat)
             services.AddScoped<IGlobalSearchService, GlobalSearchService>();
-            services.AddScoped<IGlobalSearchViewModelService, GlobalSearchViewModelService>();
             services.AddScoped<AzureSearch, AzureSearch>();
 
             // form recognizer/extraction
@@ -329,7 +300,7 @@ namespace R10.Web.Extensions
 
             //Sharepoint utility
             services.AddScoped<ISharePointRepository, SharePointRepository>();
-            
+
             //iManage
             services.AddScoped<IiManageAuthProvider, iManageAuthProvider>();
             services.AddScoped<IiManageClientFactory, iManageClientFactory>();
@@ -346,7 +317,7 @@ namespace R10.Web.Extensions
             services.AddScoped<ISoftDocketService, SoftDocketService>();
             services.AddScoped<IDocketRequestService, DocketRequestService>();
 
-            
+
             //Google Patent
             services.AddScoped<ICPIGoogleService, CPIGoogleService>();
 

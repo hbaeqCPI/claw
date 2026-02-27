@@ -1,7 +1,0 @@
-﻿@inject IStringLocalizer<SharedResource> SharedLocalizer
-@model DOCXFilterOperatorViewModel
-@(Html.Kendo().DropDownListFor(m => m)
-      .DataValueField("Value")
-      .DataTextField("Text")
-      .BindTo(DOCXFilterOperatorViewModel.BuildList(SharedLocalizer))
-      )

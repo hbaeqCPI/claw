@@ -36,7 +36,6 @@ namespace R10.Web.Services
     public class DocuSignService : IDocuSignService
     {
         private readonly IQuickEmailRepository _quickEmailRepository;
-        private readonly IOuickEmailViewModelService _qeViewModelService;
         private readonly DocuSignSettings _docuSignSettings;
         private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly Microsoft.AspNetCore.Hosting.IHostingEnvironment _hostingEnvironment;
@@ -52,14 +51,13 @@ namespace R10.Web.Services
 
         private static readonly string DocuSignFolder = @"Resources\DocuSign";
 
-        public DocuSignService(IQuickEmailRepository quickEmailRepository, IOuickEmailViewModelService qeViewModelService,
+        public DocuSignService(IQuickEmailRepository quickEmailRepository,
                                IOptions<DocuSignSettings> docuSignSettings, ISystemSettings<DefaultSetting> settings,
                                Microsoft.AspNetCore.Hosting.IHostingEnvironment hostingEnvironment, IStringLocalizer<SharedResource> localizer, IDocumentService docService,
                                ClaimsPrincipal user, IDocumentsViewModelService docViewModelService,
                                ISharePointService sharePointService, IApplicationDbContext repository, IOptions<GraphSettings> graphSettings, IHttpContextAccessor httpContextAccessor, IDocumentStorage documentStorage)
         {
             _quickEmailRepository = quickEmailRepository;
-            _qeViewModelService = qeViewModelService;
             _docuSignSettings = docuSignSettings.Value;
             _settings = settings;
             _hostingEnvironment = hostingEnvironment;
@@ -332,71 +330,13 @@ namespace R10.Web.Services
 
         public async Task<List<DocuSignRecipientViewModel>> GetRecipientsForDisplay(int qeSetupId, string roleLink, string sendAs)
         {
-            var recipients = await _qeViewModelService.GetRecipients(qeSetupId, sendAs);
-            if (recipients == null)
-                return null;
-
-            var list = new List<DocuSignRecipientViewModel>();
-
-            var mainRecipients = recipients.Where(r => r.QERoleSource.SourceSQL != "tblPubOptions" && r.QERoleSource.SourceSQL.ToLower() != "custom").ToList();
-            foreach (var recipient in mainRecipients)
-            {
-                var emails = await _qeViewModelService.GetRecipientNameAndEmail(roleLink, recipient.QERoleSource);
-                if (emails.Count == 0)
-                {
-                    list.Add(new DocuSignRecipientViewModel { Role = recipient.QERoleSource.RoleName });
-                }
-                else
-                {
-                    foreach (var item in emails)
-                    {
-                        list.Add(new DocuSignRecipientViewModel
-                        {
-                            Role = recipient.QERoleSource.RoleName,
-                            Name = item.Key,
-                            Email = item.Value,
-                        });
-                    }
-                }
-            }
-
-            var customRecipients = recipients.Where(r => r.QERoleSource.SourceSQL.ToLower() == "custom").ToList();
-            foreach (var recipient in customRecipients)
-            {
-                var email = recipient.QERoleSource.RoleName;
-                if (!string.IsNullOrEmpty(email))
-                {
-                    list.Add(new DocuSignRecipientViewModel
-                    {
-                        Role = "custom",
-                        Name = "custom",
-                        Email = email,
-                    });
-                }
-            }
-            return list;
-
+            throw new NotImplementedException();
         }
 
         #region Email Data helpers
         private async Task<DocuSignEmailViewModel> GetEmailData(int qeSetupId, int parentId, string screenCode, string roleLink, string systemTypeCode)
         {
-            var quickEmail = await _qeViewModelService.GetQuickEmailById(qeSetupId);
-
-            if (quickEmail != null)
-            {
-                quickEmail.RoleLink = roleLink;
-                var parentData = await GetParentData(parentId, screenCode, systemTypeCode);
-
-                var viewModel = new DocuSignEmailViewModel();
-                viewModel.To = await GenerateEmailAddresses(quickEmail, "To");
-                viewModel.CopyTo = await GenerateEmailAddresses(quickEmail, "Copy to");
-
-                viewModel.Subject = GenerateSubject(quickEmail.Subject, parentData, quickEmail.LanguageCulture);
-                viewModel.Body = GenerateBody(quickEmail, parentData);
-                return viewModel;
-            }
-            return null;
+            throw new NotImplementedException();
         }
 
         private async Task<object> GetParentData(int parentId, string screenCode, string systemTypeCode)
@@ -433,72 +373,9 @@ namespace R10.Web.Services
             return data;
         }
 
-        private async Task<List<DocuSignRecipientParam>> GenerateEmailAddresses(QuickEmailDetailViewModel quickEmail, string sendAs)
+        private async Task<List<DocuSignRecipientParam>> GenerateEmailAddresses(object quickEmail, string sendAs)
         {
-            var recipients = await _qeViewModelService.GetRecipients(quickEmail.QESetupID, sendAs);
-            if (recipients == null)
-                return null;
-
-            var list = new List<DocuSignRecipientParam>();
-
-            var mainRecipients = recipients.Where(r => r.QERoleSource.SourceSQL != "tblPubOptions" && r.QERoleSource.SourceSQL.ToLower() != "custom").ToList();
-            foreach (var recipient in mainRecipients)
-            {
-                var emails = await _qeViewModelService.GetRecipientNameAndEmail(quickEmail.RoleLink, recipient.QERoleSource);
-
-                //All To recipients must have an email address
-                if (emails.Count == 0 && sendAs == "To")
-                {
-                    return null;
-                }
-
-                var counter = 1;
-                foreach (var item in emails)
-                {
-                    list.Add(new DocuSignRecipientParam
-                    {
-                        Name = item.Key,
-                        Email = item.Value,
-                        RoutingOrder = recipient.RoutingOrder == 0 ? counter : recipient.RoutingOrder ?? 1,
-                        AnchorCode = recipient.AnchorCode
-                    });
-                    counter++;
-                }
-            }
-
-            var otherRecipients = recipients.Where(r => r.QERoleSource.SourceSQL == "tblPubOptions").FirstOrDefault();
-            if (otherRecipients != null)
-            {
-                var email = (await _settings.GetSetting()).FirmContact;
-                if (!string.IsNullOrEmpty(email))
-                {
-                    list.Add(new DocuSignRecipientParam
-                    {
-                        Name = email,
-                        Email = email,
-                        RoutingOrder = otherRecipients.RoutingOrder ?? 1,
-                        AnchorCode = otherRecipients.AnchorCode
-                    });
-                }
-            }
-
-            var customRecipients = recipients.Where(r => r.QERoleSource.SourceSQL.ToLower() == "custom").ToList();
-            foreach (var recipient in customRecipients)
-            {
-                var email = recipient.QERoleSource.RoleName;
-                if (!string.IsNullOrEmpty(email))
-                {
-                    list.Add(new DocuSignRecipientParam
-                    {
-                        Name = email,
-                        Email = email,
-                        RoutingOrder = recipient.RoutingOrder ?? 1,
-                        AnchorCode = recipient.AnchorCode
-                    });
-                }
-            }
-            return list;
-
+            throw new NotImplementedException();
         }
 
         private string GenerateSubject(string subject, object data, string languageCulture)
@@ -509,30 +386,9 @@ namespace R10.Web.Services
             return ReplaceMergeFields(subject, data, languageCulture ?? "en");
         }
 
-        private string GenerateBody(QuickEmailDetailViewModel quickEmail, object data)
+        private string GenerateBody(object quickEmail, object data)
         {
-            var body = BuildBody(quickEmail);
-
-            if (string.IsNullOrEmpty(quickEmail.Detail) || data == null)
-                return body;
-
-            return ReplaceMergeFields(body, data, quickEmail.LanguageCulture ?? "en");
-        }
-
-        private string BuildBody(QuickEmailDetailViewModel viewModel)
-        {
-            var body = string.Empty;
-
-            if (viewModel.Header != "")
-                body = viewModel.Header + "<br/>";
-
-            if (viewModel.Detail != "")
-                body = body + viewModel.Detail + "<br/>";
-
-            if (viewModel.Footer != "")
-                body = body + viewModel.Footer;
-
-            return body.Replace("&lt;", "<").Replace("&gt;", ">").Replace("&amp;", "&");
+            throw new NotImplementedException();
         }
 
         private string ReplaceMergeFields(string text, object data, string languageCulture)
@@ -949,131 +805,14 @@ namespace R10.Web.Services
             return false;
         }
 
-        public async Task<bool> ProcessSignedDocsOutAndSaveToSharePoint(DocsOutSignatureSignedViewModel viewModelParam, string accessToken, bool needGraphClient = false)
+        public async Task<bool> ProcessSignedDocsOutAndSaveToSharePoint(object viewModelParam, string accessToken, bool needGraphClient = false)
         {
-            var envelopeParam = new DocuSignEnvelopeGetParam()
-            {
-                AuthServer = _docuSignSettings.AuthServer,
-                AccessToken = accessToken,
-                EnvelopeId = viewModelParam.EnvelopeId
-            };
-
-            var envelope = await GetEnvelopeData(envelopeParam);
-            if (envelope.Status.ToLower() == "completed")
-            {
-                var stream = GetSignedDocuments(envelopeParam);
-                var docLibraryFolder = "";
-                var systemFolder = "";
-                if (stream != null)
-                {
-                    var recKey = "";
-                    switch (viewModelParam.ScreenCode)
-                    {
-                        case ScreenCode.Invention:
-                            systemFolder = "Patent";
-                            docLibraryFolder = SharePointDocLibraryFolder.Invention;
-                            var inv = await _repository.Inventions.Where(r => r.InvId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (inv != null)
-                            {
-                                recKey = inv.CaseNumber;
-                            }
-                            break;
-                        case ScreenCode.Application:
-                            systemFolder = "Patent";
-                            docLibraryFolder = SharePointDocLibraryFolder.Application;
-                            var ca = await _repository.CountryApplications.Where(r => r.AppId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (ca != null)
-                            {
-                                recKey = SharePointViewModelService.BuildRecKey(ca.CaseNumber, ca.Country, ca.SubCase);
-                            }
-                            break;
-                        case ScreenCode.Trademark:
-                            systemFolder = "Trademark";
-                            docLibraryFolder = SharePointDocLibraryFolder.Trademark;
-                            var tmk = await _repository.TmkTrademarks.Where(r => r.TmkId == viewModelParam.ParentId).FirstOrDefaultAsync();
-                            if (tmk != null)
-                            {
-                                recKey = SharePointViewModelService.BuildRecKey(tmk.CaseNumber, tmk.Country, tmk.SubCase);
-                            }
-                            break;
-
-                            //case ScreenCode.Action:
-                            //    break;
-                            //case ScreenCode.Cost:
-                            //    break;
-                    }
-
-                    if (!string.IsNullOrEmpty(recKey))
-                    {
-                        var folders = new List<string> { systemFolder };
-                        var subFolders = SharePointViewModelService.GetDocumentFolders(docLibraryFolder, recKey);
-                        folders.AddRange(subFolders);
-                        var graphClient = _sharePointService.GetGraphClient();
-
-                        if (needGraphClient == true)
-                            graphClient = _sharePointService.GetGraphClientByClientCredentials();
-
-                        var docName = viewModelParam.LetFile.Split(".");
-                        var fileName = $"{docName[0]}-Signed.pdf";
-                        var docLibrary = viewModelParam.DocumentCode.ToUpper() == "LET" ? SharePointDocLibrary.LetterLog : SharePointDocLibrary.IPFormsLog;
-                        var result = await graphClient.UploadSiteFile(_graphSettings.Site.RelativePath, _graphSettings.Site.HostName, docLibrary, folders, stream, fileName);
-                        if (!string.IsNullOrEmpty(result.DriveItemId))
-                        {
-                            if (viewModelParam.DocumentCode.ToUpper() == "LET")
-                            {
-                                await _docService.MarkSignedLetter(viewModelParam.DocLogId, fileName, result.DriveItemId, _user.GetUserName());
-                            }
-                            else if (viewModelParam.DocumentCode.ToUpper() == "EFS")
-                            {
-                                await _docService.MarkSignedEFSLog(viewModelParam.DocLogId, fileName, result.DriveItemId, _user.GetUserName());
-                            }
-                        }
-                    }
-                }
-                return true;
-            }
-            return false;
+            throw new NotImplementedException();
         }
 
-        public async Task<bool> ProcessSignedDocsOutAndSave(DocsOutSignatureSignedViewModel viewModelParam, string accessToken)
+        public async Task<bool> ProcessSignedDocsOutAndSave(object viewModelParam, string accessToken)
         {
-            var envelopeParam = new DocuSignEnvelopeGetParam()
-            {
-                AuthServer = _docuSignSettings.AuthServer,
-                AccessToken = accessToken,
-                EnvelopeId = viewModelParam.EnvelopeId
-            };
-
-            var envelope = await GetEnvelopeData(envelopeParam);
-            if (envelope.Status.ToLower() == "completed")
-            {
-                var stream = GetSignedDocuments(envelopeParam);
-                if (stream != null)
-                {
-                    var fileName = $"{viewModelParam.DocumentCode}-{DateTime.Now:yy-MM-dd-hhmmsstt}-Signed.pdf";
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        stream.CopyTo(memoryStream);
-                        memoryStream.Position = 0;
-
-                        if (viewModelParam.DocumentCode.ToUpper() == "LET")
-                        {
-                            var outputFile = Path.Combine(_documentStorage.LetterLogFolder, fileName).Replace(@"\", "/");
-                            await _documentStorage.SaveFile(memoryStream.ToArray(), outputFile, null);
-                            await _docService.MarkSignedLetter(viewModelParam.DocLogId, fileName, "", _user.GetUserName());
-                        }
-                        else if (viewModelParam.DocumentCode.ToUpper() == "EFS")
-                        {
-                            var outputFile = Path.Combine(_documentStorage.EFSLogFolder, fileName).Replace(@"\", "/");
-                            await _documentStorage.SaveFile(memoryStream.ToArray(), outputFile, null);
-                            await _docService.MarkSignedEFSLog(viewModelParam.DocLogId, fileName, "", _user.GetUserName());
-                        }
-
-                    }
-                }
-                return true;
-            }
-            return false;
+            throw new NotImplementedException();
         }
 
         private async System.Threading.Tasks.Task SendToListener(string envelopeId)

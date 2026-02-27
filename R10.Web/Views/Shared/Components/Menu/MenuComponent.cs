@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using R10.Core.Entities;
 using R10.Core.Interfaces;
 using R10.Web.Interfaces;
 using R10.Web.Models.MenuViewModels;
@@ -14,10 +17,45 @@ namespace Telerik.Exercise.Shared.Components.Menu
     {
 
         private readonly ICPiMenuItemManager _service;
+        private readonly HashSet<string> _validRoutes;
 
-        public MenuComponent(ICPiMenuItemManager service)
+        public MenuComponent(ICPiMenuItemManager service, IActionDescriptorCollectionProvider actionProvider)
         {
             _service = service;
+            _validRoutes = BuildValidRoutes(actionProvider);
+        }
+
+        /// <summary>
+        /// Build a set of "area/controller" keys from all registered controller actions.
+        /// Used to filter out menu items that point to deleted controllers.
+        /// </summary>
+        private static HashSet<string> BuildValidRoutes(IActionDescriptorCollectionProvider actionProvider)
+        {
+            var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var descriptor in actionProvider.ActionDescriptors.Items)
+            {
+                if (descriptor is ControllerActionDescriptor cad)
+                {
+                    cad.RouteValues.TryGetValue("area", out var area);
+                    cad.RouteValues.TryGetValue("controller", out var controller);
+                    routes.Add($"{area ?? ""}/{controller ?? ""}");
+                }
+            }
+            return routes;
+        }
+
+        private bool IsValidMenuItem(CPiMenuItem item)
+        {
+            // External links (no Page) are always valid
+            if (item.Page == null) return true;
+
+            var area = "";
+            if (item.Page.RouteData != null && item.Page.RouteData.TryGetValue("area", out var areaValue))
+            {
+                area = areaValue?.ToString() ?? "";
+            }
+            var controller = item.Page.Controller ?? "";
+            return _validRoutes.Contains($"{area}/{controller}");
         }
 
         public async Task<IViewComponentResult> InvokeAsync()
@@ -27,15 +65,6 @@ namespace Telerik.Exercise.Shared.Components.Menu
 
             foreach (var mainMenuItem in mainMenu)
             {
-                var menuItem = new MenuItemViewModel
-                {
-                    Id = mainMenuItem.Id,
-                    Title = mainMenuItem.Title,
-                    PageId = mainMenuItem.PageId,
-                    Page = mainMenuItem.Page,
-                    Url = mainMenuItem.Url
-                };
-
                 var subMenuItems = new List<MenuItemViewModel>();
                 var subMenu = await _service.GetUserMenuItemsByParentIdAsync(mainMenuItem.Id);
 
@@ -46,14 +75,10 @@ namespace Telerik.Exercise.Shared.Components.Menu
                         var menu = await _service.GetUserMenuItemsByParentIdAsync(subMenuItem.Id);
                         if (menu.Count() > 0)
                         {
-                            var item = new MenuItemViewModel
-                            {
-                                Id = subMenuItem.Id,
-                                Title = subMenuItem.Title,
-                                PageId = subMenuItem.PageId,
-                                Page = subMenuItem.Page,
-                                Url = subMenuItem.Url,
-                                SubMenuItems = menu.Select(m => new MenuItemViewModel
+                            // Filter leaf items to only include those with valid routes
+                            var validLeafItems = menu
+                                .Where(m => IsValidMenuItem(m))
+                                .Select(m => new MenuItemViewModel
                                 {
                                     Id = m.Id,
                                     Title = m.Title,
@@ -62,18 +87,42 @@ namespace Telerik.Exercise.Shared.Components.Menu
                                     Page = m.Page,
                                     Url = m.Url,
                                     OpenInNewWindow = m.OpenInNewWindow
-                                }).ToList()
-                            };
-                            subMenuItems.Add(item);
+                                }).ToList();
+
+                            // Only add category if it has valid children
+                            if (validLeafItems.Any())
+                            {
+                                var item = new MenuItemViewModel
+                                {
+                                    Id = subMenuItem.Id,
+                                    Title = subMenuItem.Title,
+                                    PageId = subMenuItem.PageId,
+                                    Page = subMenuItem.Page,
+                                    Url = subMenuItem.Url,
+                                    SubMenuItems = validLeafItems
+                                };
+                                subMenuItems.Add(item);
+                            }
                         }
                     }
-                    menuItem.SubMenuItems = subMenuItems;
                 }
-                menuItems.Add(menuItem);
+
+                // Only add top-level menu if it has valid sub-items
+                if (subMenuItems.Any())
+                {
+                    var menuItem = new MenuItemViewModel
+                    {
+                        Id = mainMenuItem.Id,
+                        Title = mainMenuItem.Title,
+                        PageId = mainMenuItem.PageId,
+                        Page = mainMenuItem.Page,
+                        Url = mainMenuItem.Url,
+                        SubMenuItems = subMenuItems
+                    };
+                    menuItems.Add(menuItem);
+                }
             }
             return View("MegaMenu", menuItems);
         }
-
-
     }
 }

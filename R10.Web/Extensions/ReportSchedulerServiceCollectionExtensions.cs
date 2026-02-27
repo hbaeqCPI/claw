@@ -1,9 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using R10.Core.Entities.ReportScheduler;
 using R10.Core.Interfaces;
 using R10.Core.Services;
-using R10.Web.Areas.Shared.Services.ReportScheduler;
-using R10.Web.Interfaces.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +26,7 @@ namespace R10.Web.Extensions
             services.AddScoped<IRSHistoryService, RSHistoryService>();
             services.AddScoped<IEntityService<RSHistory>, AuxService<RSHistory>>();
 
-            services.AddScoped<IRSMainViewModelService, RSMainViewModelService>();
+            // RSMainViewModelService removed in debloat
 
             services.AddScoped<IRSLogService, RSLogService>();
             services.AddScoped<IEntityService<RSLog>, AuxService<RSLog>>();

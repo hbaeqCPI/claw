@@ -1,4 +1,4 @@
-﻿namespace R10.Web.Areas.Shared.ViewModels
+namespace R10.Web.Areas.Shared.ViewModels
 {
     public class OutlookAddInRegistration : EmailContent
     {

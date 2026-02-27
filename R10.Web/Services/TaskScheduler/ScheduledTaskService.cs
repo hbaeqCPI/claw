@@ -15,7 +15,7 @@ using R10.Core.Interfaces;
 using R10.Core.Services;
 using R10.Core.Services.Shared;
 using R10.Web.Areas.Shared.ViewModels;
-using R10.Web.Areas.Shared.ViewModels.EmailTemplate;
+
 using R10.Web.Extensions;
 using R10.Web.Interfaces;
 using System.Net.Http.Headers;

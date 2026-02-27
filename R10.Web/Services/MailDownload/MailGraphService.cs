@@ -2,7 +2,6 @@
 using Microsoft.Graph;
 using R10.Web.Areas.Shared.ViewModels;
 using Microsoft.AspNetCore.StaticFiles;
-using R10.Web.Models.MailViewModels;
 using R10.Web.Helpers;
 using Kendo.Mvc.Extensions;
 
@@ -366,11 +365,9 @@ namespace R10.Web.Services
             return (Page: msgs.CurrentPage.ToList(), Count: count);
         }
 
-        public static async Task<(List<MailListViewModel> Page, int Count)> GetMailListViewModel(this GraphServiceClient graphClient, DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters, string? select = null)
+        public static async Task<(List<object> Page, int Count)> GetMailListViewModel(this GraphServiceClient graphClient, DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters, string? select = null)
         {
-            var msgs = await graphClient.GetMessages(request, mainSearchFilters);
-
-            return (Page: msgs.Page.AsQueryable().ProjectTo<MailListViewModel>().ToList(), Count: msgs.Count);
+            throw new NotImplementedException();
         }
 
         public static string GetMailFolderId(this List<QueryFilterViewModel> mainSearchFilters)

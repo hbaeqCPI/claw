@@ -23,6 +23,8 @@ using Newtonsoft.Json;
 using R10.Core.Helpers;
 using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using R10.Web.Services;
@@ -39,6 +41,7 @@ namespace R10.Web.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IBaseService<Help> _helpService;
         private readonly CPiIdentitySettings _cpiSettings;
+        private readonly HashSet<string> _validRoutes;
 
         public HomeController(
             ILogger<HomeController> logger,
@@ -48,7 +51,8 @@ namespace R10.Web.Controllers
             IStringLocalizer<MenuResource> localizer,
             IWebHostEnvironment env,
             IBaseService<Help> helpService,
-            IOptions<CPiIdentitySettings> cpiSettings)
+            IOptions<CPiIdentitySettings> cpiSettings,
+            IActionDescriptorCollectionProvider actionProvider)
         {
             _logger = logger;
             _authorizationService = authorizationService;
@@ -58,6 +62,31 @@ namespace R10.Web.Controllers
             _env = env;
             _helpService = helpService;
             _cpiSettings = cpiSettings.Value;
+            _validRoutes = BuildValidRoutes(actionProvider);
+        }
+
+        private static HashSet<string> BuildValidRoutes(IActionDescriptorCollectionProvider actionProvider)
+        {
+            var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var descriptor in actionProvider.ActionDescriptors.Items)
+            {
+                if (descriptor is ControllerActionDescriptor cad)
+                {
+                    cad.RouteValues.TryGetValue("area", out var area);
+                    cad.RouteValues.TryGetValue("controller", out var controller);
+                    routes.Add($"{area ?? ""}/{controller ?? ""}");
+                }
+            }
+            return routes;
+        }
+
+        private bool IsValidMenuItem(CPiMenuItem item)
+        {
+            if (item.Page == null) return true;
+            var area = "";
+            if (item.Page.RouteData != null && item.Page.RouteData.TryGetValue("area", out var areaValue))
+                area = areaValue?.ToString() ?? "";
+            return _validRoutes.Contains($"{area}/{item.Page.Controller}");
         }
 
         [Authorize]
@@ -90,68 +119,6 @@ namespace R10.Web.Controllers
             return View("SystemMenu", model);
         }
 
-        [Authorize(Policy = GeneralMatterAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> GeneralMatter()
-        {
-            ViewData["Title"] = _localizer["General Matters System"].ToString();
-            var model = await GetSystemMenuItems(SystemType.GeneralMatter);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = AMSAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> AMS()
-        {
-            ViewData["Title"] = _localizer["Annuity Management System"].ToString();
-            var model = await GetSystemMenuItems(SystemType.AMS);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = DMSAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> DMS()
-        {
-            ViewData["Title"] = _localizer["Invention Disclosure System"].ToString();
-            var model = await GetSystemMenuItems(SystemType.DMS);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = SearchRequestAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> SearchRequest()
-        {
-            ViewData["Title"] = _localizer["Trademark Search Request"].ToString();
-            var model = await GetSystemMenuItems(SystemType.SearchRequest);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = PatentClearanceAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> PatClearance()
-        {
-            ViewData["Title"] = _localizer["Patent Clearance Search Management System"].ToString();
-            var model = await GetSystemMenuItems(SystemType.PatClearance);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = RMSAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> RMS()
-        {
-            ViewData["Title"] = _localizer["Trademark Renewal Management System"].ToString();
-            var model = await GetSystemMenuItems(SystemType.RMS);
-            return View("SystemMenu", model);
-        }
-
-        [Authorize(Policy = ForeignFilingAuthorizationPolicy.CanAccessSystem)]
-        [Route("[action]")]
-        public async Task<IActionResult> ForeignFiling()
-        {
-            ViewData["Title"] = _localizer["Patent Foreign Filing"].ToString();
-            var model = await GetSystemMenuItems(SystemType.ForeignFiling);
-            return View("SystemMenu", model);
-        }
 
         [Route("[action]")]
         //[Authorize(Policy = CPiAuthorizationPolicy.CPiAdmin)]
@@ -242,6 +209,8 @@ namespace R10.Web.Controllers
                 {
                     foreach (var menuItem in menuItems)
                     {
+                        if (!IsValidMenuItem(menuItem)) continue;
+
                         subMenuItems.Add(new MenuItemViewModel
                         {
                             Title = menuItem.Title,
@@ -250,8 +219,11 @@ namespace R10.Web.Controllers
                             Url = menuItem.Url
                         });
                     }
-                    menuItemViewModel.SubMenuItems = subMenuItems;
-                    model.Add(menuItemViewModel);
+                    if (subMenuItems.Any())
+                    {
+                        menuItemViewModel.SubMenuItems = subMenuItems;
+                        model.Add(menuItemViewModel);
+                    }
                 }
             }
             return model;

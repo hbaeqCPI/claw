@@ -34,17 +34,15 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IParentEntityService<PatCountry,PatAreaCountry> _patCountryService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IMapper _mapper;
-        private readonly IReportService _reportService;
         private readonly IEntityService<PatCountry> _auxService;
 
         private readonly string _dataContainer = "patCountryDetail";
 
         public CountryController(
-            IAuthorizationService authService, 
+            IAuthorizationService authService,
             IViewModelService<PatCountry> viewModelService,
             IParentEntityService<PatCountry, PatAreaCountry> patCountryService,
             IStringLocalizer<SharedResource> localizer,
-            IReportService reportService,
             IMapper mapper,
             IEntityService<PatCountry> auxService)
         {
@@ -52,7 +50,6 @@ namespace R10.Web.Areas.Patent.Controllers
             _viewModelService = viewModelService;
             _patCountryService = patCountryService;
             _localizer = localizer;
-            _reportService = reportService;
             _mapper = mapper;
             _auxService = auxService;
         }
@@ -169,12 +166,8 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel patCountryPrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(patCountryPrintModel, ReportType.PatCountryPrintScreen).Result;
-            }
-
-            return BadRequest("Unhandled error.");
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]

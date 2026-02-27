@@ -388,7 +388,7 @@ namespace R10.Web.Areas.Shared.Services
 
         private async Task SaveToStorage(IFormFile formFile, string fileName, int appId)
         {
-            var systemType = QuickEmailHelper.GetSystem(SystemTypeCode.Patent);
+            var systemType = SystemTypeHelper.GetSystem(SystemTypeCode.Patent);
             var fullPath = _documentStorage.GetFilePath(systemType, fileName, ImageHelper.CPiSavedFileType.IDSReferences);
             await _documentStorage.SaveFile(formFile, fullPath, new DocumentStorageHeader
             {

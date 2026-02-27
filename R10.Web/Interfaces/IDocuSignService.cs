@@ -22,8 +22,8 @@ namespace R10.Web.Interfaces
         Task AddRecipients(DocuSignEnvelopeEmailParam envelopeParam, string envelopeId);
         Task<bool> ProcessSignedDocumentsAndSave(DocDocumentListViewModel viewModelParam, string accessToken);
         Task<bool> ProcessSignedDocumentsAndSaveToSharePoint(DocDocumentListViewModel viewModelParam, string accessToken, bool needGraphClient = false);
-        Task<bool> ProcessSignedDocsOutAndSaveToSharePoint(DocsOutSignatureSignedViewModel viewModelParam, string accessToken, bool needGraphClient = false);
-        Task<bool> ProcessSignedDocsOutAndSave(DocsOutSignatureSignedViewModel viewModelParam, string accessToken);
+        Task<bool> ProcessSignedDocsOutAndSaveToSharePoint(object viewModelParam, string accessToken, bool needGraphClient = false);
+        Task<bool> ProcessSignedDocsOutAndSave(object viewModelParam, string accessToken);
         Task<List<DocuSignRecipientViewModel>> GetRecipientsForDisplay(int qeSetupId, string roleLink, string sendAs);
         Task<List<DocFileSignatureRecipient>> GetDocuSignRecipients(string envelopeId);
     }

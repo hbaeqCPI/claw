@@ -10,7 +10,6 @@ using R10.Core.Entities.Shared;
 using R10.Core.Helpers;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
-using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Helpers;
 using R10.Web.Interfaces;
 using R10.Web.Models;
@@ -101,43 +100,6 @@ namespace R10.Web.Services
                 return list.AsQueryable<CPiUser>();
             }
             return _userManager.Users;
-        }
-
-        public List<DueDateDelegationViewModelDetail> GetAvaliableGroupAndUser(string? system = null, int? caseId = null)
-        {
-            List<CPiGroup> groups = new List<CPiGroup>();
-            List<CPiUser> users = new List<CPiUser>();
-            if (system != null && caseId != null)
-            {
-                var dt = GetAvaliableGroupAndUserTable(system, caseId);
-                var allGroups = _userGroupManager.GetGroups().ToList();
-                foreach (var group in allGroups)
-                {
-                    if (dt.AsEnumerable().Any(c => group.Id.Equals(c.Field<int?>("GroupId"))))
-                        groups.Add(group);
-                }
-
-                var allUsers = _userManager.Users.ToList();
-
-                foreach (var user in allUsers)
-                {
-                    if (dt.AsEnumerable().Any(c => user.Id.Equals(c.Field<string?>("UserId"))))
-                        users.Add(user);
-                }
-            }
-            else
-            {
-                groups = _userGroupManager.GetGroups().Where(c=>c.CPiUserGroups.Count>0).ToList();
-                users = _userManager.Users.Where(c=> !EF.Functions.Like(c.Email, "%@cpiip.com") && !EF.Functions.Like(c.Email, "%@computerpackages.com")).ToList();
-            }
-
-            var delegationGroups = groups.Select(c => new DueDateDelegationViewModelDetail { DelegationId = 0, Name = c.Name, Id = c.Id.ToString() }).ToList();
-            if (system != null && caseId != null)
-                delegationGroups.Add(new DueDateDelegationViewModelDetail { DelegationId = 0, Name = "", Id = "" });
-            delegationGroups = delegationGroups.OrderBy(c => c.Name).ToList();
-            var delegationUsers = users.Select(c => new DueDateDelegationViewModelDetail { DelegationId = 0, Name = c.FirstName + " " + c.LastName + "(" + c.Email + ")", Id = c.Id }).OrderBy(c => c.Name).ToList();
-            delegationGroups.AddRange(delegationUsers);
-            return delegationGroups;
         }
 
         private DataTable GetAvaliableGroupAndUserTable(string? system = null, int? caseId = null)

@@ -26,17 +26,20 @@ namespace R10.Web.Interfaces
         /// <returns>New password if new user account was created, otherwise empty string.</returns>
         Task<string> CreateDecisionMakerUser(CPiUserType userType, string systemType, string email, string firstName, string lastName, int contactId, bool requireChangePassword);
 
-        Task<EmailSenderResult> SendNewPassword(string locale, string emailTypeName, UserAccountEmail data);
-
         Task<string> GetDefaultNewPasswordNotification(bool requireChangePassword);
 
-        Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification data);
-        Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data);
-        Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration data);
         Task<RegisterClientResult> RegisterOutlookAddInClient(string email);
 
         Task<bool> DeleteOutlookAddInClient(string clientId);
 
         Task LinkUserAccount(CPiUser user);
+
+        Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail model);
+
+        Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification model);
+
+        Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration model);
+
+        Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification model);
     }
 }

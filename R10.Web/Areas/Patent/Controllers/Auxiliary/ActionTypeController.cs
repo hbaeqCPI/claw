@@ -40,24 +40,21 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IParentEntityService<PatActionType,PatActionParameter> _actionTypeService;
         private readonly IActionDueService<PatActionDue, PatDueDate> _actionDueService;
         private readonly IStringLocalizer<SharedResource> _localizer;
-        private readonly IReportService _reportService;
 
         private readonly string _dataContainer = "patActionTypeDetail";
 
         public ActionTypeController(
-            IAuthorizationService authService, 
+            IAuthorizationService authService,
             IViewModelService<PatActionType> viewModelService,
             IParentEntityService<PatActionType, PatActionParameter> actionTypeService,
             IActionDueService<PatActionDue, PatDueDate> actionDueService,
-            IStringLocalizer<SharedResource> localizer,
-            IReportService reportService)
+            IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _actionTypeService = actionTypeService;
             _actionDueService = actionDueService;
             _localizer = localizer;
-            _reportService = reportService;
         }
 
         public async Task<IActionResult> Index()
@@ -161,12 +158,8 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel patActionTypePrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(patActionTypePrintModel, ReportType.PatActionTypePrintScreen).Result;
-            }
-
-            return BadRequest("Unhandled error.");
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.ActionTypeModify)]

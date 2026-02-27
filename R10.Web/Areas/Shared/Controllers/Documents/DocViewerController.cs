@@ -95,14 +95,14 @@ namespace R10.Web.Areas.Shared.Controllers
         public IActionResult PreviewDocument(string system, string screenCode, string docFileName, int key)
         {
             if (system.Length == 1)
-                system = QuickEmailHelper.GetSystem(system);
+                system = SystemTypeHelper.GetSystem(system);
             docFileName = _documentStorage.GetFilePath(system, docFileName, CPiSavedFileType.DocMgt);
 
             return RedirectToAction("GetDocumentViewer", new { system = system, screenCode = screenCode, docFileName = docFileName, key = key, fileType = CPiSavedFileType.DocMgt });
         }
         public IActionResult ZoomDocument(string system, string screenCode, string fileName, int key, CPiSavedFileType fileType)
         {
-            ViewBag.System = system.Length == 1 ? QuickEmailHelper.GetSystem(system) : system;
+            ViewBag.System = system.Length == 1 ? SystemTypeHelper.GetSystem(system) : system;
             ViewBag.ScreenCode = screenCode;
             ViewBag.Key = key;
             ViewBag.FileType = fileType;
@@ -143,7 +143,7 @@ namespace R10.Web.Areas.Shared.Controllers
             var recordKey = docLink[3] != null ? Convert.ToInt32(docLink[3]) : 0;
             var folderId = docLink[6] != null ? Convert.ToInt32(docLink[6]) : 0;
             var docType = docLink[4];
-            ViewBag.System = QuickEmailHelper.GetSystem(docLink[0]);
+            ViewBag.System = SystemTypeHelper.GetSystem(docLink[0]);
             ViewBag.ScreenCode = docLink[1];
             ViewBag.Key = recordKey;
 
@@ -210,7 +210,7 @@ namespace R10.Web.Areas.Shared.Controllers
 
         public async Task<IActionResult> ZoomDocsOut(string systemType, string documentCode, int docLogId, string screenCode, int key)
         {
-            var systemName = QuickEmailHelper.GetSystem(systemType);
+            var systemName = SystemTypeHelper.GetSystem(systemType);
             string fileName = "";
 
             ViewBag.System = systemName;
@@ -244,7 +244,7 @@ namespace R10.Web.Areas.Shared.Controllers
         public IActionResult ZoomGSDoc(string systemType, string screenCode, string documentType, int parentId, string fileName)         // global search zoom
         {
 
-            var systemName = QuickEmailHelper.GetSystem(systemType);
+            var systemName = SystemTypeHelper.GetSystem(systemType);
             var fileType = GetCPiSavedFileType(documentType);
             ViewBag.System = systemName;
             ViewBag.ScreenCode = screenCode;

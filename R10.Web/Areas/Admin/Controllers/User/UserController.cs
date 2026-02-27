@@ -93,7 +93,7 @@ namespace R10.Web.Areas.Admin.Controllers
 
         private string DataContainer => "adminUserDetail";
         private string SidebarTitle => _localizer[AdminNavPages.SidebarTitle].ToString();
-        private string SidebarPartialView => "_SidebarNav";
+        private string SidebarPartialView => "_AdminNav";
 
         private IQueryable<CPiUser> UserList
         {

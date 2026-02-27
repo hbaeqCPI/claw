@@ -116,6 +116,12 @@ namespace R10.Web.Areas.Admin.Services
             return newPassword;
         }
 
+        public async Task<string> GetDefaultNewPasswordNotification(bool requireChangePassword)
+        {
+            var defaultSettings = await _defaultSettings.GetSetting();
+            return requireChangePassword ? defaultSettings.TemporaryPasswordNotification : defaultSettings.NewPasswordNotification;
+        }
+
         public async Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail data)
         {
             var emailMessage = await _emailTemplateService.GetEmailMessage(emailType, locale, data);
@@ -126,10 +132,25 @@ namespace R10.Web.Areas.Admin.Services
                 return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
         }
 
-        public async Task<string> GetDefaultNewPasswordNotification(bool requireChangePassword)
+        public async Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data)
         {
             var defaultSettings = await _defaultSettings.GetSetting();
-            return requireChangePassword ? defaultSettings.TemporaryPasswordNotification : defaultSettings.NewPasswordNotification;
+            var emailMessage = await _emailTemplateService.GetEmailMessage(defaultSettings.AccountApprovalNotification, locale, data);
+
+            if (emailMessage == null)
+                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
+            else
+                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
+        }
+
+        public async Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration data)
+        {
+            var emailMessage = await _emailTemplateService.GetEmailMessage(emailType, locale, data);
+
+            if (emailMessage == null)
+                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
+            else
+                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
         }
 
         public async Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification data)
@@ -155,27 +176,6 @@ namespace R10.Web.Areas.Admin.Services
             }
             else
                 return new EmailSenderResult() { ErrorMessage = "User registration notification recipient not found. Unable to send email." };
-        }
-
-        public async Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data)
-        {
-            var defaultSettings = await _defaultSettings.GetSetting();
-            var emailMessage = await _emailTemplateService.GetEmailMessage(defaultSettings.AccountApprovalNotification, locale, data);
-
-            if (emailMessage == null)
-                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
-            else
-                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
-        }
-
-        public async Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration data)
-        {
-            var emailMessage = await _emailTemplateService.GetEmailMessage(emailType, locale, data);
-
-            if (emailMessage == null)
-                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
-            else
-                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
         }
 
         public async Task<RegisterClientResult> RegisterOutlookAddInClient(string email)

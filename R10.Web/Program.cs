@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,27 +19,14 @@ namespace R10.Web
     {
         public static void Main(string[] args)
         {
-
-            Log.Logger = new LoggerConfiguration()
-                        .ReadFrom.Configuration(Configuration)
-                        .CreateLogger();
-            //try
-            //{
-            //    BuildWebHost(args).Run();
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Fatal(ex, "Host terminated unexpectedly");
-            //}
-            //finally
-            //{
-            //    Log.CloseAndFlush();
-            //}
-
-            Log.Information("Starting up");
-
             try
             {
+                Log.Logger = new LoggerConfiguration()
+                            .ReadFrom.Configuration(Configuration)
+                            .CreateLogger();
+
+                Log.Information("Starting up");
+
                 var builder = WebApplication.CreateBuilder(args);
                 var env = builder.Environment;
 
@@ -89,29 +76,12 @@ namespace R10.Web
             }
         }
 
-        //public static IWebHost BuildWebHost(string[] args) =>
-        //    WebHost.CreateDefaultBuilder(args)
-        //       // .UseKestrel(options => options.AddServerHeader = false)
-        //        .UseIISIntegration()
-        //        .UseSerilog()
-        //        .UseStartup<Startup>()
-        //        .Build();
-
-        //public static IConfiguration Configuration { get; } = 
-        //    new ConfigurationBuilder()
-        //           .SetBasePath(Directory.GetCurrentDirectory())
-        //           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        //           .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
-        //           //.AddEnvironmentVariables() //auto added
-        //           .Build();
-
         public static IConfiguration Configuration {
             get {
                 var builder = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
                  .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                  .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true);
-                //.AddEnvironmentVariables() //auto added
 
                 string? keyVaultEndpoint = Environment.GetEnvironmentVariable("KV_ENDPOINT");
                 if (!string.IsNullOrEmpty(keyVaultEndpoint))
@@ -121,12 +91,6 @@ namespace R10.Web
                 }
                 return builder.Build();
             }
-        } 
-          
-
-
-
-
-
+        }
     }
 }

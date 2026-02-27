@@ -5,7 +5,7 @@
     var addMode = Model.DocId == 0;
 
 
-    var systemName = QuickEmailHelper.GetSystem(Model.SystemType);
+    var systemName = SystemTypeHelper.GetSystem(Model.SystemType);
     var zoomUrl = @Url.Action("ZoomDocument", "DocViewer", new { fileType = ImageHelper.CPiSavedFileType.DocMgt });
     var thumbnailUrl = @Url.Content("~/FileViewer/GetDocMgtThumbnail?system=" + systemName) + "&thumbnailFile=" + Uri.EscapeDataString(Model.ThumbFileName)
                                             + "&screenCode=" + Model.ScreenCode + "&key=" + Model.ParentId.ToString();

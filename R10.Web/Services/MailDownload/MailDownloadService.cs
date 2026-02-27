@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.Mail;
 using R10.Web.Extensions;
 using R10.Web.Helpers;
-using R10.Web.Models.MailViewModels;
 using R10.Core.Entities.Documents;
 using Microsoft.Extensions.Options;
 using R10.Core.Identity;
@@ -606,23 +605,9 @@ namespace R10.Web.Services.MailDownload
             return downloadedItemsFolder;
         }
 
-        public async Task<List<MailFolderViewModel>> GetDownloadFolders(string mailbox)
+        public async Task<List<object>> GetDownloadFolders(string mailbox)
         {
-            var graphClient = GetGraphClient(mailbox);
-            var mailFolders = (await graphClient.GetMailFolders()).Where(f => f.DisplayName == MailGraphService.InboxFolder || f.DisplayName == MailGraphService.DownloadedItemsFolder).ToList().Flatten(true);
-            var inboxFolderId = mailFolders.Where(f => f.DisplayName == MailGraphService.InboxFolder).Select(f => f.Id).FirstOrDefault();
-            var defaultDownloadFolderId = mailFolders.Where(f => f.DisplayName == MailGraphService.DownloadedItemsFolder).Select(f => f.Id).FirstOrDefault();
-            var downloadFolders = mailFolders.Where(f => f.DisplayName != MailGraphService.InboxFolder)
-                .Select(f => new MailFolderViewModel()
-                {
-                    Id = f.Id,
-                    DisplayName = f.DisplayName.Trim(),
-                    Padding = f.ParentFolderId == inboxFolderId ? 0 : f.DisplayName.IndexOf(f.DisplayName.TrimStart()),
-                    Icon = (MailGraphService.MailFolderIcons.ContainsKey(f.DisplayName) ? MailGraphService.MailFolderIcons[f.DisplayName] : "fad fa-folder").Replace("fad ", "fal ")
-                })
-                .ToList();
-
-            return downloadFolders;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -784,7 +769,7 @@ namespace R10.Web.Services.MailDownload
         Task<string?> GetDocFileName(string userFileName);
         Task MoveDownloadedMessage(string messageId, string downloadedItemsFolderId, string mailbox);
         Task<MailFolder> GetDownloadedItemsFolder(string mailbox);
-        Task<List<MailFolderViewModel>> GetDownloadFolders(string mailbox);
+        Task<List<object>> GetDownloadFolders(string mailbox);
         Task LogDownloadedMessages(string[] messageId, string documentLink, string mailbox);
 
         GraphServiceClient GetGraphClient(string mailbox);

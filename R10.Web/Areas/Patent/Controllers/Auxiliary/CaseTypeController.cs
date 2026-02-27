@@ -30,22 +30,19 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IViewModelService<PatCaseType> _viewModelService;
         private readonly IEntityService<PatCaseType> _auxService;
         private readonly IStringLocalizer<SharedResource> _localizer;
-        private readonly IReportService _reportService;
 
         private readonly string _dataContainer = "patCaseTypeDetail";
 
         public CaseTypeController(
-            IAuthorizationService authService, 
+            IAuthorizationService authService,
             IViewModelService<PatCaseType> viewModelService,
             IEntityService<PatCaseType> auxService,
-            IStringLocalizer<SharedResource> localizer,
-            IReportService reportService)
+            IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _auxService = auxService;
             _localizer = localizer;
-            _reportService = reportService;
         }
 
         public async Task<IActionResult> Index()
@@ -253,12 +250,8 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel patCaseTypePrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(patCaseTypePrintModel, ReportType.PatCaseTypePrintScreen).Result;
-            }
-
-            return BadRequest("Unhandled error.");
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

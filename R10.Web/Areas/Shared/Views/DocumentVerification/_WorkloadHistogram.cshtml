@@ -195,7 +195,7 @@
                 <button type="button" class="settings-close btn btn-primary float-right"><i class="fa fa-times pr-2"></i>@Localizer["Close"]</button>
             </div>
         </div>       
-        @(Html.Kendo().Chart<R10.Web.Models.DashboardViewModels.StackedChartViewModel>()
+        @(Html.Kendo().Chart<R10.Web.Models.StackedChartViewModel>()
             .Name(widgetId)
             .Title("")
             .Legend(legend => legend

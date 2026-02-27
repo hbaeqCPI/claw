@@ -32,7 +32,7 @@ using R10.Web.MiddleWares;
 using R10.Core.Helpers;
 using System.Linq;
 using Microsoft.AspNetCore.DataProtection;
-using ActiveQueryBuilder.Web.Core;
+// using ActiveQueryBuilder.Web.Core; // Removed during debloat
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
@@ -48,8 +48,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.CookiePolicy;
 using R10.Core.Entities;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using ActiveQueryBuilder.Web.Server.Infrastructure.Providers;
-using R10.Web.Areas.Shared.Services.AQB;
+// using ActiveQueryBuilder.Web.Server.Infrastructure.Providers; // Removed during debloat
 using R10.Web.Areas.Admin.Services;
 using System.Net;
 using OpenIddict.Server;
@@ -114,15 +113,7 @@ namespace R10.Web
             });
 
 
-            #region AQB
-            // Active Query Builder (AQB) requirements
-            //services.AddSession();
             services.AddSingleton(Configuration);
-
-            services.AddScoped<IQueryBuilderProvider, CustomQueryBuilderProvider>();
-            services.AddScoped<ICustomQueryBuilderProvider, CustomQueryBuilderProvider>();
-            services.AddActiveQueryBuilder();
-            #endregion
             services.AddMemoryCache(); // to avoid error in Outlook Add-in
             services.AddEntityFrameworkSqlServer();
             services.AddTransient<ISqlServerConnection, EntityFilterConnection>();
@@ -231,13 +222,12 @@ namespace R10.Web
             services.AddScoped<ICPiUserSettingManager, CPiUserSettingManager>();
             services.AddScoped<INotificationSettingManager, NotificationSettingManager>();
             services.AddScoped<ICPiUserDefaultPageManager, CPiUserDefaultPageManager>();
-            services.AddScoped<IDefaultWidgetManager, DefaultWidgetManager>();
+
             services.AddScoped<ICPiSystemSettingManager, CPiSystemSettingManager>();
             services.AddScoped<ICPiUserGroupManager, CPiUserGroupManager>();
 
             services.AddScoped<INotificationService, NotificationService>();
 
-            services.AddTransient<ILoggerService<ActivityLog>, LoggerService<ActivityLog, ApplicationDbContext>>();
             services.AddScoped<ILoggerService<Log>, LoggerService<Log, ApplicationDbContext>>();
             services.AddScoped<ILoggerService<ApiLog>, LoggerService<ApiLog, ApplicationDbContext>>();
 
@@ -249,6 +239,7 @@ namespace R10.Web
             services.AddTrademark();
             services.AddShared(Configuration);
             services.AddReportScheduler();
+
 
             // Debloat stubs: no-op implementations for removed services still referenced in DI
             services.AddScoped<Interfaces.IInventionViewModelService, Interfaces.NoOpInventionViewModelService>();
@@ -277,9 +268,7 @@ namespace R10.Web
 
             services.AddTransient<IEmailSender, EmailSender>();
             services.Configure<SmtpSettings>(Configuration.GetSection("Smtp"));
-            services.Configure<ReportSettings>(Configuration.GetSection("Report"));
             services.Configure<DocuSignSettings>(Configuration.GetSection("DocuSign"));
-            services.Configure<ActivityLogSettings>(Configuration.GetSection("ActivityLog"));
             services.Configure<GraphSettings>(Configuration.GetSection("Graph"));
             services.Configure<iManageSettings>(Configuration.GetSection("iManage"));
             services.Configure<NetDocumentsSettings>(Configuration.GetSection("NetDocuments"));
@@ -720,11 +709,7 @@ namespace R10.Web
                 return next.Invoke();
             });
 
-            #region AQB
-            // Active Query Builder (AQB) requirements
-            //app.UseSession();
-            app.UseActiveQueryBuilder();
-            #endregion
+            // AQB removed during debloat
 
             // Register GleamTech document viewer (SHOULD come before app.UseStaticFiles)
             app.UseGleamTech();
@@ -802,9 +787,6 @@ namespace R10.Web
                     }
                 });
             }
-
-            if (!string.IsNullOrEmpty(Configuration["ActivityLog:Enabled"]) && bool.Parse(Configuration["ActivityLog:Enabled"]))
-                app.UseMiddleware<ActivityLogMiddleware>();
 
             var options = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
             app.UseRequestLocalization(options.Value);

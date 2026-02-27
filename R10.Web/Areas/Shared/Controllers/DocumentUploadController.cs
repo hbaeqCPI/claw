@@ -232,7 +232,7 @@ namespace R10.Web.Areas.Shared.Controllers
 
                                 if (!job.DoNotMove)
                                 {
-                                    var downloadFolderId = string.IsNullOrEmpty(job.DownloadFolderId) || !downloadFolders.Any(f => f.Id == job.DownloadFolderId) ? downloadedItemsFolder.Id : job.DownloadFolderId;
+                                    var downloadFolderId = string.IsNullOrEmpty(job.DownloadFolderId) || !downloadFolders.Any(f => ((dynamic)f).Id == job.DownloadFolderId) ? downloadedItemsFolder.Id : job.DownloadFolderId;
                                     try
                                     {
                                         await _mailDownloadService.MoveDownloadedMessage(message.Id, downloadFolderId, job.MailboxName);

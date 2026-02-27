@@ -1,4 +1,4 @@
-﻿namespace R10.Web.Areas.Shared.ViewModels.EmailTemplate
+namespace R10.Web.Areas.Shared.ViewModels
 {
     public class TaskSchedulerNotification : EmailContent
     {

@@ -16,7 +16,6 @@ namespace R10.Web.Areas
             string? userId = null;
             int? loginInactiveDays = null;
 
-            CreateMap<ActivityLog, ActivityLogSearchResultViewModel>();
             CreateMap<CPiUser, UserListViewModel>()
                 .ForMember(vm => vm.FullName, domain => domain.MapFrom(d => string.Concat(d.FirstName, " ", d.LastName)))
                 .ForMember(vm => vm.IsSuper, domain => domain.MapFrom(d => d.UserType == CPiUserType.SuperAdministrator))
