@@ -40,7 +40,7 @@ namespace R10.Web.Extensions
                 options.AddPolicy(
                     CPiAuthorizationPolicy.ScheduledTask,
                     policyBuilder => policyBuilder.AddRequirements(
-                        new CPiServiceAccountRequirement(serviceAccount?.UserName, typeof(ScheduledTaskService).Name)));
+                        new CPiServiceAccountRequirement(serviceAccount?.UserName, "ScheduledTaskService")));
 
                 // AMS
                 options.AddPolicy(
@@ -1494,19 +1494,7 @@ namespace R10.Web.Extensions
                         context.User.IsAdmin() ||
                         context.User.HasClaim(c => c.Type == CPiClaimTypes.Mailbox)));
 
-                //Mail policy per mailbox
-                var graph = configuration.GetSection("Graph").Get<GraphSettings>();
-                if (graph != null && graph.Mailboxes != null && graph.Mailboxes.Any())
-                {
-                    foreach(var mailbox in graph.Mailboxes)
-                    {
-                        options.AddPolicy(
-                            SharedAuthorizationPolicy.GetMailboxPolicyName(mailbox.MailboxName), policy =>
-                            policy.RequireAssertion(context =>
-                                context.User.IsAdmin() ||
-                                context.User.HasClaim(c => c.Type == CPiClaimTypes.Mailbox && c.Value == mailbox.MailboxName)));
-                    }
-                }
+                //Mail policy per mailbox - GraphSettings removed in debloat
 
                 //Dashboard access if user has no system roles
                 options.AddPolicy(CPiAuthorizationPolicy.DashboardUser, policy =>

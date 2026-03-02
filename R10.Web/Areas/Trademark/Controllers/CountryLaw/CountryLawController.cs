@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using R10.Core.Interfaces;
+using R10.Core.Interfaces.Shared;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Helpers;
 using R10.Web.Extensions;
@@ -39,6 +40,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         private readonly IParentEntityService<TmkCountry, TmkAreaCountry> _TmkCountryService;
      private readonly IStringLocalizer<CountryLawResource> _localizer;
         private readonly IReportService _reportService;
+        private readonly IWebLinksService _webLinksService;
 
         private readonly string _dataContainer = "countryLawDetailsView";
 
@@ -48,7 +50,8 @@ namespace R10.Web.Areas.Trademark.Controllers
             IViewModelService<TmkCountryLaw> countryLawViewModelService,
             IParentEntityService<TmkCountry, TmkAreaCountry> TmkCountryService,
             IReportService reportService,
-            IStringLocalizer<CountryLawResource> localizer
+            IStringLocalizer<CountryLawResource> localizer,
+            IWebLinksService webLinksService
             )
         {
             _authService = authService;
@@ -57,6 +60,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             _TmkCountryService = TmkCountryService;
           _localizer = localizer;
             _reportService = reportService;
+            _webLinksService = webLinksService;
         }
 
         public async Task<IActionResult> Index()
@@ -559,6 +563,29 @@ namespace R10.Web.Areas.Trademark.Controllers
             var detail = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>().FirstOrDefaultAsync(c => c.CountryLawID == id);
             detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
             return detail;
+        }
+
+        public async Task<IActionResult> WebLinksRead([DataSourceRequest] DataSourceRequest request, int id, int displayChoice = 2)
+        {
+            var webLinks = await _webLinksService.GetWebLinks(id, "tmkcountrylaw", "FormLink", "");
+            if (webLinks != null && displayChoice == 0)
+                webLinks = webLinks.Where(w => w.RecordLink).ToList();
+
+            var result = webLinks != null ? webLinks.ToDataSourceResult(request) : new Kendo.Mvc.UI.DataSourceResult();
+            return Json(result);
+        }
+
+        public async Task<IActionResult> WebLinksUrl(int mainId, int id)
+        {
+            try
+            {
+                var url = await _webLinksService.GetWebLinksUrl(mainId, id, "tmkcountrylaw", "FormLink", "");
+                return Json(new { url });
+            }
+            catch (ArgumentException ex)
+            {
+                return Json(new { url = "", error = ex.Message });
+            }
         }
 
         private async Task<bool> CanAddRecord()

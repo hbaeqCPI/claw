@@ -10,7 +10,6 @@
 @inject ICPiUserPermissionManager PermissionManager
 @inject ISystemSettings<PatSetting> PatSettings
 @inject ISystemSettings<TmkSetting> TmkSettings
-@inject IOptions<GraphSettings> GraphSettings
 @inject IStringLocalizer<AdminResource> Localizer
 @inject IOptions<EPOMailboxSettings> EPOMailboxSettings
 @{
@@ -19,7 +18,6 @@
     var patSettings = await PatSettings.GetSetting();
     var tmkSettings = await TmkSettings.GetSetting();
 
-    var graphSettings = GraphSettings.Value;
     var epoMailboxSettings = EPOMailboxSettings.Value;
 
     var letterRoles = new List<CPiRole>();
@@ -1203,27 +1201,7 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                 </ul>
             </div>
         }
-        @if (Model.UserType.IsInternalUser() && graphSettings.HasMail)
-        {
-            <div class="card">
-                <h5 class="">@Localizer["Mailbox"]</h5>
-                <ul class="list-group pb-2">
-                    @foreach(var mailbox in graphSettings.Mailboxes)
-                    {
-                        var elId = SharedAuthorizationPolicy.GetMailboxPolicyName(mailbox.MailboxName);
-                        <li class="d-flex justify-content-between">
-                            <label for="@elId">@Localizer[mailbox.MailboxName]</label>
-                            <span>
-                                <label class="toggle-switch">
-                                    <input id="@elId" type="checkbox" checked="@Model.Settings.Mailboxes.Contains(mailbox.MailboxName)" class="toggle-option mailbox" data-mailbox="@mailbox.MailboxName">
-                                    <span class="slider round"></span>
-                                </label>
-                            </span>
-                        </li>
-                    }
-                </ul>
-            </div>
-        }
+        @* Mailbox section removed during debloat (GraphSettings no longer available) *@
         @if (Model.IsAdmin)
         {
             <div class="card">

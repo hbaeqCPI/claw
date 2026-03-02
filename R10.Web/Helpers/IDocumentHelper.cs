@@ -1,11 +1,10 @@
-﻿using GleamTech.DocumentUltimate.AspNet.UI;
+using GleamTech.DocumentUltimate.AspNet.UI;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Documents;
 using R10.Web.Areas.Shared.ViewModels;
-using R10.Web.Services.DocumentStorage;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,8 +22,7 @@ namespace R10.Web.Helpers
         bool DeleteEFSLogFile(string docFileName);
         string GetDocumentPath(string docFileName);
         string GetDocumentBasePath();
-        string SaveEmailToMsgFile(MsgEmailModel message, string systemType,DocumentStorageHeader header);
-        int SaveOutlookEmailToMsgFile(MsgEmailModel message, string fileName, DocumentStorageHeader header); 
+        // SaveEmailToMsgFile, SaveOutlookEmailToMsgFile, CreateMsgFile removed (MsgEmailModel/DocumentStorageHeader from deleted DocumentStorage)
 
         DocumentViewer GetDocumentViewerModel(string docFilePath, int width, int height);
         Task LogEmailImageAttachmentFromStream(QELog qeLog, MemoryStream sourceStream, string newFileName, string newThumbNail);
@@ -33,6 +31,5 @@ namespace R10.Web.Helpers
 
         string DataKeyToScreenCode(string dataKey);
         Task<bool> SaveDocumentFromStream(MemoryStream stream, string docFileName, DocFolderHeader docFolder);
-        MsgKit.Email CreateMsgFile(MsgEmailModel message);
     }
 }

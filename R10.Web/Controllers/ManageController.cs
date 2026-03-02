@@ -48,7 +48,6 @@ namespace R10.Web.Controllers
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly ICPiSystemSettingManager _systemSettingManager;
-        private readonly INotificationService _notificationService;
 
         private const string AuthenicatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";        
 
@@ -63,8 +62,7 @@ namespace R10.Web.Controllers
           IOptions<RequestLocalizationOptions> locOptions,
           IStringLocalizer<SharedResource> localizer,
           ISystemSettings<DefaultSetting> settings,
-          ICPiSystemSettingManager systemSettingManager,
-          INotificationService notificationService)
+          ICPiSystemSettingManager systemSettingManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -77,7 +75,6 @@ namespace R10.Web.Controllers
             _localizer = localizer;
             _settings = settings;
             _systemSettingManager = systemSettingManager;
-            _notificationService = notificationService;
         }
 
         private string SidebarTitle => _localizer["My Account"];
@@ -773,44 +770,6 @@ namespace R10.Web.Controllers
             });
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Notifications()
-        {
-            if (User.SSORequired() || User.TwoFactorRequired() || (User.GetUserType() == CPiUserType.Attorney && !((await _settings.GetSetting()).ShowAttorneyNotificationsManager)))
-                return Forbid();
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return BadRequest();
-
-            var model = new UserNotificationSettings();
-            var setting = await _settingManager.GetCPiSetting(CPiSettings.UserNotificationSettings);
-
-            if (setting != null && await Authorize(setting.Policy))
-                model = await _settingManager.GetUserSetting<UserNotificationSettings>(user.Id);
-
-            if (User.IsAdmin() && User.IsCpiUser())
-            {
-                var userSetting = await _settingManager.GetUserSetting(user.Id, typeof(UserNotificationSettings).Name);
-                if (userSetting == null)
-                {
-                    //default setting is true but cpi admins need explicit opt-in
-                    //to prevent email bombing test accounts
-                    model.ReceiveAMSSendToCPIReminder = false;
-                }
-            }
-
-            return View("Index", new SidebarPageViewModel()
-            {
-                Title = SidebarTitle,
-                PageTitle = _localizer["Notifications Manager"],
-                PageId = "Notifications",
-                MainPartialView = "Notifications",
-                MainViewModel = model,
-                SideBarPartialView = SidebarPartialView,
-                SideBarViewModel = ManageNavPages.Notifications
-            });
-        }
 
         [HttpPost]
         public async Task<IActionResult> SaveSetting(string settingName, string setting, bool refresh)
@@ -885,54 +844,6 @@ namespace R10.Web.Controllers
             return Json(authorizedPages.OrderBy(p => p.Name));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> TimeTrackers()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                //throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-                return await UnloadUser();
-            }
-
-            return View("Index", new SidebarPageViewModel()
-            {
-                Title = SidebarTitle,
-                PageTitle = _localizer["Time Trackers"],
-                PageId = "TimeTrackers",
-                MainPartialView = "TimeTrackers",
-                MainViewModel = User.GetUserIdentifier(),
-                SideBarPartialView = SidebarPartialView,
-                SideBarViewModel = ManageNavPages.TimeTrackers
-            });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Alerts()
-        {
-            return View("Index", new SidebarPageViewModel()
-            {
-                Title = SidebarTitle,
-                PageTitle = _localizer["Alerts"],
-                PageId = "Alerts",
-                MainPartialView = "Alerts",
-                MainViewModel = await _notificationService.GetUnreadMessages(User.GetEmail()),
-                SideBarPartialView = SidebarPartialView,
-                SideBarViewModel = ManageNavPages.Alerts
-            });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DismissMessage(int messageId)
-        {
-            await _notificationService.Dismiss(User.GetEmail(), messageId);
-            return Ok();
-        }
-        public async Task<IActionResult> GetMessageCount()
-        {
-            var count = await _notificationService.GetCount(User.GetEmail());
-            return Json(new { count });
-        }
 
         #region Helpers
 

@@ -14,21 +14,18 @@ namespace R10.Web.Services
     {
         private readonly CPiUserManager _userManager;
         private readonly CPiIdentitySettings _cpiSettings;
-        private readonly GraphSettings _graphSettings;
 
-        public CPiSignInManager(CPiUserManager userManager, 
-            IHttpContextAccessor contextAccessor, 
-            IUserClaimsPrincipalFactory<CPiUser> claimsFactory, 
-            IOptions<IdentityOptions> optionsAccessor, 
-            ILogger<CPiSignInManager> logger, 
+        public CPiSignInManager(CPiUserManager userManager,
+            IHttpContextAccessor contextAccessor,
+            IUserClaimsPrincipalFactory<CPiUser> claimsFactory,
+            IOptions<IdentityOptions> optionsAccessor,
+            ILogger<CPiSignInManager> logger,
             IAuthenticationSchemeProvider schemes,
-            IOptions<CPiIdentitySettings> cpiSettings, 
-            IOptions<GraphSettings> graphSettings
+            IOptions<CPiIdentitySettings> cpiSettings
             ) : base(userManager, contextAccessor, claimsFactory, optionsAccessor, logger, schemes, null)
         {
             _userManager = userManager;
             _cpiSettings = cpiSettings.Value;
-            _graphSettings = graphSettings.Value;
         }
 
         private async Task<CPiSignInResult> CheckCPiUserRequirements(string loginProvider, string providerKey)
@@ -173,16 +170,8 @@ namespace R10.Web.Services
 
         public async override Task<IEnumerable<AuthenticationScheme>> GetExternalAuthenticationSchemesAsync()
         {
-            var schemes = await base.GetExternalAuthenticationSchemesAsync();
-            var excludeNames = new List<string>();
-
-            if (!string.IsNullOrEmpty(_graphSettings.Mail?.Authority))
-                excludeNames.Add(_graphSettings.Mail?.ProviderName);
-
-            if (!string.IsNullOrEmpty(_graphSettings.SharePoint?.Authority))
-                excludeNames.Add(_graphSettings.SharePoint?.ProviderName);
-
-            return schemes.Where(s => !excludeNames.Contains(s.Name));        
+            // GraphSettings removed in debloat - no longer filtering out Graph auth schemes
+            return await base.GetExternalAuthenticationSchemesAsync();
         }
     }
 }

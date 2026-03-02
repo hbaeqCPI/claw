@@ -1077,9 +1077,6 @@
     <Content Update="Views\Patent\Index.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>
-    <Content Update="Views\Shared\Components\GridWebLinks\Default.cshtml">
-      <Pack>$(IncludeRazorContentInPack)</Pack>
-    </Content>
     <Content Update="Views\Shared\Components\GridCost\Default.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>

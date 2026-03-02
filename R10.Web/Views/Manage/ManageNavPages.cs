@@ -18,11 +18,5 @@ namespace R10.Web.Views.Manage
         public static string TwoFactorAuthentication => "TwoFactorAuthentication";
 
         public static string Settings => "Settings";
-
-        public static string Notifications => "Notifications";
-
-        public static string TimeTrackers => "TimeTrackers";
-
-        public static string Alerts => "Alerts";
     }
 }

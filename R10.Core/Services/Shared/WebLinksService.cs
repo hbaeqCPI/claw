@@ -75,7 +75,7 @@ namespace R10.Core.Services.Shared
                     }
 
                     if (string.IsNullOrEmpty(numberInfo.Number))
-                        throw new ArgumentException("Web Links search number is missing.");
+                        return null;
 
                     numberInfo.SystemType = WebLinksSystemType.Patent;
                     var trademarkModules = new string[] { "trademark", "tmkcountrylaw" };

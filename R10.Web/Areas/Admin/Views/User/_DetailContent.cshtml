@@ -33,42 +33,13 @@ data-label-cancel="@Localizer["Cancel"]"
         <input type="hidden" name="Password" value="*" />
         <input type="hidden" name="ConfirmPassword" value="*" />   
     }
-    @if(isLoggedInUser)
-    {
-        <input asp-for="Status" class="form-control" hidden />
-        <input asp-for="UserType" class="form-control" hidden />
-    }
+    <input asp-for="Status" class="form-control" hidden />
+    <input asp-for="UserType" class="form-control" hidden />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
             <div class="col-md-6">
                 <div class="form-row">
-                    <div class="col-12">
-                        <div class="form-group float-label">
-                            <label for="@(screen)_Status">@Localizer["Status"]</label>
-                            @(Html.Kendo().DropDownList()
-                                                        .Name("Status")
-                                                        .DataTextField("Text")
-                                                        .DataValueField("Value")
-                                                        .BindTo(Html.GetEnumSelectList<CPiUserStatus>().OrderBy(u => u.Text))
-                                                        .Value((Model.Status).ToString())
-                                                        .HtmlAttributes(new { id = $"{screen}_Status" })
-                                                        .Enable(!isLoggedInUser))
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="form-group float-label">
-                            <label for="@(screen)_UserType">@Localizer["User Type"]</label>
-                            @(Html.Kendo().DropDownList()
-                                                        .Name("UserType")
-                                                        .DataTextField("Text")
-                                                        .DataValueField("Value")
-                                                        .BindTo(Html.GetUserTypeSelectList(User).OrderBy(u => u.Text))
-                                                        .Value((Model.UserType).ToString())
-                                                        .HtmlAttributes(new { id = $"{screen}_UserType" })
-                                                        .Enable(!isLoggedInUser))
-                        </div>
-                    </div>
                     <div class="col-12">
                         <div class="form-group float-label">
                             <label asp-for="Email"></label>
@@ -265,44 +236,13 @@ data-label-cancel="@Localizer["Cancel"]"
     </div>
     @if (!addMode)
     {
-        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
-            <li class="nav-item">
-                <a id="userGroupsTab" href="#userGroupsTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="userGroupsTabContent" title="@Localizer["Groups"]">@Localizer["Groups"]</a>
-            </li>
-            @if (isTimeTrackerOn)
-            {
-                <li class="nav-item">
-                    <a class="nav-link" id="timeTrackersTab" data-toggle="tab" role="tab" aria-controls="timeTrackersTabContent" aria-selected="false" href="#timeTrackersTabContent" title="@Localizer["Time Tracker"]">@Localizer["Time Tracker"]</a>
-                </li>
-            }
-        </ul>
-        <div class="tab-content detail">
-            <div class="tab-pane active show" id="userGroupsTabContent" role="tabpanel" aria-labelledby="userGroupsTab">
-                @await Html.PartialAsync("_GridGroups", Model.Id)
-            </div>
-            @if (isTimeTrackerOn)
-            {
-                <div class="tab-pane" id="timeTrackersTabContent" role="tabpanel" aria-labelledby="timeTrackersTab">
-                    <div class="row">@await Html.PartialAsync("_TimeTrackers", Model.Id)</div>
-                </div>
-            }
-        </div>
         <div class="content-stamp">
             <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
-        </div> 
+        </div>
     }
 </form>
 
 <script>
-    @(ViewBag.ActivePage).editableGrids = [
-        {
-            name: 'userGroups', isDirty: false, filter: { id: "@Model.Id"},
-            afterSubmit: @(ViewBag.ActivePage).updateRecordStamps
-        },
-        {
-            name: 'timeTrackersGrid', isDirty: false, filter: { id: "@Model.Id" },
-            afterSubmit: @(ViewBag.ActivePage).updateRecordStamps
-        }
-    ];
+    @(ViewBag.ActivePage).editableGrids = [];
 </script>
 

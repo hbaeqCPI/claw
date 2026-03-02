@@ -3,7 +3,6 @@ using R10.Core.Entities;
 using R10.Core.Identity;
 using R10.Web.Areas.Admin.ViewModels;
 using R10.Web.Areas.Shared.ViewModels;
-using R10.Web.Services.EmailAddIn;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,5 +40,14 @@ namespace R10.Web.Interfaces
         Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration model);
 
         Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification model);
+    }
+
+    /// <summary>
+    /// Stub for RegisterClientResult (originally in R10.Web.Services.EmailAddIn, removed during debloat)
+    /// </summary>
+    public class RegisterClientResult
+    {
+        public bool Success { get; set; }
+        public Tuple<string, string> ClientIdSecret { get; set; }
     }
 }

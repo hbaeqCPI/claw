@@ -4,8 +4,6 @@ using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Areas.Trademark.ViewModels;
 using R10.Web.Areas.Trademark.ViewModels.CountryLaw;
 using R10.Core;
-using R10.Web.Api.Models;
-
 namespace R10.Web.Areas
 {
     public class AutoMapperTrademarkProfileConfig : Profile
@@ -38,8 +36,12 @@ namespace R10.Web.Areas
                 .ForMember(vm => vm.DesCountryName, domain => domain.MapFrom(d => d.ChildCountry != null ? d.ChildCountry.CountryName : null))
                 .ForMember(vm => vm.GenApp, domain => domain.MapFrom(d => d.GenApp ?? false));
 
-            CreateMap<TmkCountry, CountryData>();
-            CreateMap<TmkCaseType, CaseTypeData>();
+            CreateMap<TmkAreaCountry, CountryAreaViewModel>()
+                .ForMember(vm => vm.Area, domain => domain.MapFrom(d => d.Area != null ? d.Area.Area : null))
+                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null));
+            CreateMap<CountryAreaViewModel, TmkAreaCountry>()
+                .ForMember(m => m.Area, opt => opt.Ignore())
+                .ForMember(m => m.AreaCountry, opt => opt.Ignore());
         }
     }
 }

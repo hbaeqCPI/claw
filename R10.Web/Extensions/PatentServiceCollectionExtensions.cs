@@ -13,7 +13,7 @@ using R10.Web.Services;
 using R10.Core.DTOs;
 // using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Services.Patent;
-using R10.Web.Areas.Shared.Services;
+// using R10.Web.Areas.Shared.Services; // Removed during deep clean
 
 namespace R10.Web.Extensions
 {
@@ -186,8 +186,7 @@ namespace R10.Web.Extensions
             services.AddScoped<IPatCostTrackingImportService, PatCostTrackingImportService>();
             services.AddScoped<IPatCostTrackingImportRepository, PatCostTrackingImportRepository>();
 
-            //notification
-            services.AddScoped<INotificationHub, NotificationHub>();
+            //notification (NotificationHub removed in debloat)
 
             services.AddScoped<IEntityService<PatCountryLawUpdate>, AuxService<PatCountryLawUpdate>>();
 

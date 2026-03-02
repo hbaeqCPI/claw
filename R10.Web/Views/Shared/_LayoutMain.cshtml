@@ -89,72 +89,14 @@
     </script>
 
     <script type="text/javascript">
-        $(document).ready(function () {    
+        $(document).ready(function () {
 
-            $.get("@Url.Action("GetNotifications", "Bulletin", new { Area = "" })")
-                .done((result) => {
-                    const notifications = result;                    
-                    if (notifications.length > 0) {
-                        const siteStatus = $(".site-status").last();
-                        siteStatus.find(".message").text(notifications[0]);
-
-                        for (var i = 1; i < notifications.length; i++) {
-                            const status = siteStatus.clone();
-                            status.find(".message").text(notifications[i]);
-                            $(".site-status").last().after(status);
-                        }
-                        $(".site-status").show();
-                    }
-                });
-
-
-            const globalSearch = $("form.global-search");
-            globalSearch.find(".gen-search-submit").on("click, mousedown", function () {
-                globalSearch[0].submit();
-            });
-
-            globalSearch.floatLabels();
-
-            $("li.global-search-icon").on("click", function () {
-                $(this).hide().promise().done(function () {
-                    $("li.global-search-form").show();
-                    $("li.global-search-form").find("input")[0].focus();
-                });
-            });
-            $("li.global-search-form input").on("blur", function () {
-                $("li.global-search-form").hide().promise().done(function () {
-                    $("li.global-search-icon").show();
-                });
-            })
-
-            $("a.get-help").on("click", function () {
-                const helpUrl = "@Url.Action("Help", "Home", new { Area = "" })";
-                const path = window.location.pathname.split('/');
-                
-                let page = "";
-                for (i = 1; i < path.length; i++) {
-                    page += "/";
-                    page += path[i];
-
-                    if (i === 3) { break; }
-                }
-
-                window.open(`${helpUrl}?page=${encodeURIComponent(page)}`);
-                return false;
-            });
-            
             mailPage.runMailDownloader();
             mailPage.refreshMailCount();
             setInterval(mailPage.refreshMailCount, 60 * 1000);
 
             documentVerificationPage.refreshToDoCount();
             setInterval(documentVerificationPage.refreshToDoCount, 60 * 1000);
-
-            const messageCount = $(".global-message-count");
-            if (messageCount.length > 0) {
-                pageHelper.refreshMessageCount();
-                setInterval(pageHelper.refreshMessageCount, 60 * 1000);
-            }
         });
     </script>
     @RenderSection("Scripts", required: false)

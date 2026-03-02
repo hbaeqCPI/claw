@@ -84,12 +84,7 @@ namespace R10.Web.Filters
                 else
                     errorMsg = graphServiceException.Error.Message;
             }
-            else if (exception is R10.Web.Services.iManage.iManageServiceException)
-            {
-                var iManageServiceException = ((R10.Web.Services.iManage.iManageServiceException)exception);
-                statusCode = (int)iManageServiceException.StatusCode;
-                errorMsg = iManageServiceException.Message;
-            }
+            // iManage exception handling removed in debloat
             else
             {
                 JavaScriptEncoder jsEncoder = JavaScriptEncoder.Default; //mitigate xss 

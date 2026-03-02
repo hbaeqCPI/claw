@@ -17,22 +17,12 @@ using System.Threading.Tasks;
 using R10.Core.Interfaces.Shared;
 using R10.Web.Helpers;
 using R10.Core.Entities.Shared;
-using R10.Web.Areas.Shared.Services;
 using R10.Core.Services.Documents;
 using Microsoft.Extensions.Configuration;
-using R10.Web.Services.DocumentStorage;
 using R10.Core.Entities.Documents;
-using R10.Web.Services.EmailAddIn;
-using R10.Web.Services.DocumentSearch;
 using R10.Core.DTOs;
-using R10.Core.Services.FormExtract;
-using R10.Web.Services.FormExtract;
 using R10.Core.Entities.FormExtract;
 using R10.Core.Entities.MailDownload;
-using R10.Web.Services.MailDownload;
-using R10.Web.Services.SharePoint;
-using R10.Web.Services.iManage;
-using R10.Web.Services.NetDocuments;
 
 namespace R10.Web.Extensions
 {
@@ -163,8 +153,7 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IEntityService<CustomReport>, AuxService<CustomReport>>();
 
-            //delegation
-            services.AddScoped<IDelegationService, DelegationService>();
+            //delegation (DelegationService removed in debloat)
 
             //email setup
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
@@ -184,17 +173,11 @@ namespace R10.Web.Extensions
             services.AddScoped<IDataImportService, DataImportService>();
             services.AddScoped<IDataImportRepository,DataImportRepository>();
 
-            // documents
+            // documents (OutlookService, SignatureService removed in debloat)
             services.AddScoped<IDocumentService, DocumentService>();
-            services.AddScoped<IDocumentViewModelService, DocumentViewModelService>();
-            services.AddScoped<IDocumentsViewModelService, DocumentsViewModelService>();
-            services.AddScoped<IDocumentsAIViewModelService, DocumentsAIViewModelService>();
             services.AddScoped<IAsyncRepository<DocFixedFolder>, EFRepository<DocFixedFolder>>();
-            services.AddScoped<IOutlookService, OutlookService>();
             services.AddScoped<IChildEntityService<DocDocument, DocDocumentTag>, ChildEntityService<DocDocument, DocDocumentTag>>();
             services.AddScoped<IEntityService<DocDocumentTag>, AuxService<DocDocumentTag>>();
-            services.AddScoped<ISignatureService, SignatureService>();
-            services.AddScoped<ISignatureRepository, SignatureRepository>();
 
             //utilities for AMS CPiEARSCommunication web service calls
             services.AddScoped<ICPiEncryption, CPiEncryption>();
@@ -224,29 +207,8 @@ namespace R10.Web.Extensions
             services.AddScoped<IProductImportService, ProductImportService>();
             services.AddScoped<IProductImportRepository, ProductImportRepository>();
 
-            var settings = Configuration.GetSection("DocumentStorage").Get<DocumentStorageSettings>();
-            if (settings.UseFileSystem)
-            {
-                services.AddScoped<IDocumentStorage, FileSystemStorage>();
-                services.AddScoped<IDocumentHelper, DocumentHelper>();
-            }
-            else {
-                services.AddScoped<IDocumentStorage, AzureStorage>();
-                services.AddScoped<IDocumentHelper, AzureDocumentHelper>();
-            }
-            services.AddScoped<AzureStorage, AzureStorage>();
-            services.AddScoped<IDocumentPermission, DocumentPermissionStub>();
+            // DocumentStorage, GlobalSearch, AzureSearch, FormExtract removed in debloat
 
-            // global search (ViewModelService removed in debloat)
-            services.AddScoped<IGlobalSearchService, GlobalSearchService>();
-            services.AddScoped<AzureSearch, AzureSearch>();
-
-            // form recognizer/extraction
-            services.AddScoped<IFormExtractService, FormExtractService>();
-            services.AddScoped<IFormExtractViewModelService, FormExtractViewModelService>();
-            services.AddScoped<AzureFormRecognizer, AzureFormRecognizer>();
-
-            services.AddScoped<IFormIFWViewModelService, FormIFWViewModelService>();
             services.AddScoped<IFormIFWService, FormIFWService>();
             services.AddScoped<IParentEntityService<FormIFWActMap, FormIFWActMapPat>, ParentEntityService<FormIFWActMap, FormIFWActMapPat>>();
             services.AddScoped<IParentEntityService<FormIFWActMap, FormIFWActMapTmk>, ParentEntityService<FormIFWActMap, FormIFWActMapTmk>>();
@@ -271,55 +233,28 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IMyFavoriteService, MyFavoriteService>();
 
-            //Share Point
-            services.AddScoped<ISharePointViewModelService, SharePointViewModelService>();
-            services.AddScoped<ISharePointService, SharePointService>();
+            //SharePoint removed in debloat
 
-            //DocuSign
-            services.AddScoped<IDocuSignService, DocuSignService>();
+            //DocuSign (Service removed in debloat)
             services.AddScoped<IViewModelService<DocuSignAnchor>, ViewModelService<DocuSignAnchor>>();
             services.AddScoped<IParentEntityService<DocuSignAnchor, DocuSignAnchorTab>, ParentEntityService<DocuSignAnchor, DocuSignAnchorTab>>();
 
-            //workflow
-            services.AddScoped<IWorkflowViewModelService, WorkflowViewModelServiceStub>();
+            //workflow (WorkflowViewModelService removed in debloat)
 
-            //Document Verification
-            services.AddScoped<IDocumentVerificationViewModelService, DocumentVerificationViewModelService>();
+            //Document Verification (removed)
             services.AddScoped<IDocumentVerificationRepository, DocumentVerificationRepository>();
 
             //Due date extension
             services.AddScoped<IDueDateExtensionService, DueDateExtensionService>();
 
-            //MS Graph
-            services.AddSingleton<IGraphAuthProvider, GraphAuthProvider>();
-            services.AddSingleton<IGraphServiceClientFactory, GraphServiceClientFactory>();
-
-            //Mailbox
-            services.AddScoped<IMailDownloadService, MailDownloadService>();
-            services.AddScoped<IMailDataMapService, MailDataMapService>();
-
-            //Sharepoint utility
-            services.AddScoped<ISharePointRepository, SharePointRepository>();
-
-            //iManage
-            services.AddScoped<IiManageAuthProvider, iManageAuthProvider>();
-            services.AddScoped<IiManageClientFactory, iManageClientFactory>();
-            services.AddScoped<IiManageViewModelService, iManageViewModelService>();
-
-            //NetDocuments
-            services.AddScoped<INetDocumentsAuthProvider, NetDocumentsAuthProvider>();
-            services.AddScoped<INetDocumentsClientFactory, NetDocumentsClientFactory>();
-            services.AddScoped<INetDocumentsViewModelService, NetDocumentsViewModelService>();
-
-            services.AddScoped<IDocumentImportService, DocumentImportService>();
+            //MS Graph, Mailbox, SharePoint, iManage, NetDocuments removed in debloat
 
             services.AddScoped<ITradeSecretService, TradeSecretService>();
             services.AddScoped<ISoftDocketService, SoftDocketService>();
             services.AddScoped<IDocketRequestService, DocketRequestService>();
 
 
-            //Google Patent
-            services.AddScoped<ICPIGoogleService, CPIGoogleService>();
+            // Google Patent (removed in debloat)
 
             return services;
         }

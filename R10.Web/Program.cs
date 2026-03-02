@@ -32,18 +32,9 @@ namespace R10.Web
 
                 builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
 
-                // Task scheduler
-                builder.Services.AddScoped<ScheduledTaskService>();
-
-                // Background service
-                builder.Services.AddSingleton<BackgroundTaskService>();
+                // Task scheduler and BackgroundTaskService removed in debloat
 
                 var configuration = builder.Configuration;
-                var enabled = configuration["TaskScheduler:Enabled"] ?? "false";
-                if (bool.Parse(enabled))
-                {
-                    builder.Services.AddHostedService(provider => provider.GetRequiredService<BackgroundTaskService>());
-                }
 
                 // Manually create an instance of the Startup class
                 var startup = new Startup(builder.Configuration, env);
@@ -67,6 +58,7 @@ namespace R10.Web
             }
             catch (Exception ex)
             {
+                Console.Error.WriteLine("FATAL STARTUP ERROR: " + ex);
                 Log.Fatal(ex, "Host terminated unexpectedly");
             }
             finally

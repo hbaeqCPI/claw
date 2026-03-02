@@ -56,8 +56,6 @@ using Sustainsys.Saml2.AspNetCore2;
 using WaterTrans.AzureBlobFileProvider;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using R10.Web.Areas.Shared.ViewModels;
-using R10.Web.Services.iManage;
-using R10.Web.Services.NetDocuments;
 
 namespace R10.Web
 {
@@ -82,8 +80,7 @@ namespace R10.Web
             //Trade secret config
             Configuration.SetTradeSecret();
 
-            //Task scheduler config
-            Configuration.SetTaskScheduler();
+            //Task scheduler removed in debloat
         }
 
         public IConfiguration Configuration { get; }
@@ -268,15 +265,11 @@ namespace R10.Web
 
             services.AddTransient<IEmailSender, EmailSender>();
             services.Configure<SmtpSettings>(Configuration.GetSection("Smtp"));
-            services.Configure<DocuSignSettings>(Configuration.GetSection("DocuSign"));
-            services.Configure<GraphSettings>(Configuration.GetSection("Graph"));
-            services.Configure<iManageSettings>(Configuration.GetSection("iManage"));
-            services.Configure<NetDocumentsSettings>(Configuration.GetSection("NetDocuments"));
+            // GraphSettings, iManageSettings, NetDocumentsSettings, GoogleIDSSettings removed in debloat
             services.Configure<CPiIdentitySettings>(Configuration.GetSection("Cpi"));
             services.Configure<ServiceAccount>(Configuration.GetSection("ServiceAccount"));
             services.Configure<EPOMailboxSettings>(Configuration.GetSection("MyEPO:Mailbox"));
             services.Configure<EPOOPSSettings>(Configuration.GetSection("MyEPO:OPS"));
-            services.Configure<GoogleIDSSettings>(Configuration.GetSection("GoogleIDS"));
 
             //globalization
             services.AddDbContext<LocalizationModelContext>(options =>
@@ -577,8 +570,7 @@ namespace R10.Web
             services.AddSingleton<ITempDataProvider, CookieTempDataProvider>(); //default is Session
             services.AddScoped<ExceptionFilter>();
             services.AddScoped<RequestHeaderFilter>();
-            services.AddScoped<SharePointAuthorizationFilter>();
-            services.AddScoped<MailAuthorizationFilter>();
+            // SharePointAuthorizationFilter, MailAuthorizationFilter removed in debloat
 
             IFileProvider physicalProvider = new PhysicalFileProvider(Directory.GetCurrentDirectory());
             services.AddSingleton<IFileProvider>(physicalProvider);

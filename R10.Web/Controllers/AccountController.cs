@@ -30,8 +30,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Newtonsoft.Json;
 using Sustainsys.Saml2.AspNetCore2;
-using R10.Web.Services.iManage;
-using R10.Web.Services.NetDocuments;
 
 namespace R10.Web.Controllers
 {
@@ -55,8 +53,6 @@ namespace R10.Web.Controllers
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
         private readonly IUserAccountService _userAccountService;
         private readonly IStringLocalizer<SharedResource> _localizer;
-        private readonly IiManageAuthProvider _imanageAuthProvider;
-        private readonly INetDocumentsAuthProvider _netDocsAuthProvider;
 
         public AccountController(
             CPiUserManager userManager,
@@ -71,9 +67,7 @@ namespace R10.Web.Controllers
             ICPiExternalLoginManager ssoManager,
             ISystemSettings<DefaultSetting> defaultSettings,
             IUserAccountService userAccountService,
-            IStringLocalizer<SharedResource> localizer,
-            IiManageAuthProvider imanageAuthProvider,
-            INetDocumentsAuthProvider netDocsAuthProvider)
+            IStringLocalizer<SharedResource> localizer)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -88,8 +82,6 @@ namespace R10.Web.Controllers
             _defaultSettings = defaultSettings;
             _userAccountService = userAccountService;
             _localizer = localizer;
-            _imanageAuthProvider = imanageAuthProvider;
-            _netDocsAuthProvider = netDocsAuthProvider;
         }
 
         [TempData]
@@ -521,22 +513,6 @@ namespace R10.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            var settings = await _defaultSettings.GetSetting();
-
-            //clear document storage account tokens
-            switch (settings.DocumentStorage)
-            {
-                //imanage
-                case DocumentStorageOptions.iManage:
-                    await _imanageAuthProvider.Logout();
-                    break;
-
-                //netdocs
-                case DocumentStorageOptions.NetDocuments:
-                    await _netDocsAuthProvider.Logout();
-                    break;
-            }
-
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User {user} logged out.", User.GetEmail());
 

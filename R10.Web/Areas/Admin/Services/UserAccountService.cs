@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
-using R10.Web.Services.EmailAddIn;
 using R10.Core.Entities.Patent;
 using System.Security.Claims;
 using R10.Core.Helpers;
@@ -33,7 +32,6 @@ namespace R10.Web.Areas.Admin.Services
         protected readonly ISystemSettings<DefaultSetting> _defaultSettings;
         protected readonly INotificationSettingManager _settingsManager;
         protected readonly IStringLocalizer<SharedResource> _localizer;
-        protected readonly IOutlookService _outlookService;
         //protected readonly IEntityService<PatInventor> _inventorService;
         protected readonly IPatInventorService _inventorService;
         protected readonly IContactPersonService _contactPersonService;
@@ -48,7 +46,6 @@ namespace R10.Web.Areas.Admin.Services
             ISystemSettings<DefaultSetting> defaultSettings,
             INotificationSettingManager settingsManager,
             IStringLocalizer<SharedResource> localizer,
-            IOutlookService outlookService,
             ClaimsPrincipal user,
             //IEntityService<PatInventor> inventorService,
             IPatInventorService inventorService,
@@ -63,7 +60,6 @@ namespace R10.Web.Areas.Admin.Services
             _defaultSettings = defaultSettings;
             _settingsManager = settingsManager;
             _localizer = localizer;
-            _outlookService = outlookService;
             _user = user;
             _inventorService = inventorService;
             _contactPersonService = contactPersonService;
@@ -178,30 +174,16 @@ namespace R10.Web.Areas.Admin.Services
                 return new EmailSenderResult() { ErrorMessage = "User registration notification recipient not found. Unable to send email." };
         }
 
-        public async Task<RegisterClientResult> RegisterOutlookAddInClient(string email)
+        public Task<RegisterClientResult> RegisterOutlookAddInClient(string email)
         {
-            var clientSecret = GenerateClientSecret();
-            var result = await _outlookService.RegisterOutlookAddInClient(email, clientSecret);
-            return result;
+            // OutlookService removed during debloat
+            return Task.FromResult(new RegisterClientResult());
         }
 
-
-        private string GenerateClientSecret()
+        public Task<bool> DeleteOutlookAddInClient(string clientId)
         {
-            byte[] byteData = new byte[32];
-            string result = "";
-            using(var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(byteData);
-                result = Convert.ToBase64String(byteData);
-            }
-            return result;
-        }
-
-
-        public async Task<bool> DeleteOutlookAddInClient(string clientId)
-        {
-            return await _outlookService.DeleteOutlookAddInClient(clientId);
+            // OutlookService removed during debloat
+            return Task.FromResult(false);
         }
 
         private string GenerateUserCode(CPiUser user, int length)

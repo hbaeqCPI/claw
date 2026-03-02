@@ -5,8 +5,7 @@
 @using Microsoft.Extensions.Configuration;
 @inject ISystemSettings<DefaultSetting> Settings
 @inject IServer Server
-@inject ScheduledTaskService ScheduledTaskService
-@inject BackgroundTaskService BackgroundTaskService
+@* ScheduledTaskService and BackgroundTaskService removed in debloat *@
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Configuration
 @{
@@ -66,13 +65,7 @@
 </ul>
 <p></p>
 
-<h5>Task Scheduler</h5>
-<ul>
-    <li>Background Service: @(BackgroundTaskService.IsRunning ? "Running" : "Stopped")</li>
-    <li>Sheduled Task Service: @(TaskSchedulerSettings.Enabled? "Enabled" : "Disabled")</li>
-    <li>Base URL: @ScheduledTaskService.BaseUrl</li>
-</ul>
-<p></p>
+@* Task Scheduler section removed in debloat *@
 
 <h5>Encryption Key</h5>
 <ul>

@@ -9,11 +9,6 @@
         {                    
             <i class="text-danger small fa fa-lock d-sm" title="Locked out"></i>
         }
-        @if(!Model.IsEnabled && !Model.IsPending)
-        {
-            <i class="text-danger small fa fa-user-slash d-sm" title="@Model.StatusDisplay"></i>
-        }                
-        <span class="badge badge-pill badge-info " title="@Model.UserTypeDisplay">@Model.UserTypeDisplay</span>
     </div>
     <div class='email small'>@Model.Email</div>
 </div>

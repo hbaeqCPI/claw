@@ -12,13 +12,8 @@
 
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
-    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
-
     var countryLabel = Localizer["Country"];
     var countryNameLabel = Localizer["Country Name"];
-    var agentLabel = Localizer[settings.LabelAgent];
-    var agentNameLabel = Localizer[settings.LabelAgentName];
-
     var childViewModel = new CountryLawChildViewModel { Id=Model.CountryLawID, CanDeleteChild=Model.CanDeleteChild, Country=Model.Country,CaseType = Model.CaseType, Permission = detailPagePermission };
 
     var pageId = ViewData["PageId"];
@@ -55,25 +50,6 @@
                 <div class="form-group float-label">
                     <label asp-for="CountryName"></label>
                     <input type="text" id="Country_@(pageId)_Name" class="form-control form-control-sm" readonly="readonly" asp-for="CountryName" />
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group float-label">
-                    <label for="AgentID">@agentLabel</label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="AgentCode" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.AgentWithLink("DefaultAgent", agentLabel, agentNameLabel, Model.DefaultAgent, Model.AgentCode,true, Localizer["City"].ToString(), Localizer["Country"].ToString()))
-                    }
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="AgentName">@agentNameLabel</label>
-                    <input type="text" id="DefaultAgent_@(pageId)_Name" class="form-control form-control-sm" readonly="readonly" asp-for="AgentName" />
                 </div>
             </div>
         </div>
@@ -124,12 +100,6 @@
                 <a class="nav-link" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="false" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
             </li>
         }
-        @if (!detailPagePermission.HasLimitedRead)
-        {
-            <li class="nav-item">
-                <a class="nav-link @(string.IsNullOrEmpty(Model.UserRemarks) ? null : "has-remarks")" id="countryLawDetailUserRemarksTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailUserRemarksTabContent" aria-selected="false" href="#countryLawDetailUserRemarksTabContent">@Localizer["User Remarks"]</a>
-            </li>
-        }
         @if (!addMode && Model.HasDesignatedCountries)
         {
             <li class="nav-item">
@@ -165,16 +135,6 @@
     </div>
         }
 
-        @if (!detailPagePermission.HasLimitedRead)
-        {
-            <div class="tab-pane page-content cpiMainEntry" id="countryLawDetailUserRemarksTabContent" role="tabpanel" aria-labelledby="countryLawDetailUserRemarksTab">
-                <div class="form-row">
-                    <div class="col">
-                        <textarea class="form-control form-control-sm" rows="12" asp-for="UserRemarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
-                    </div>
-                </div>
-            </div>
-        }
         @if (!addMode && Model.HasDesignatedCountries)
         {
             <div class="tab-pane page-content" id="countryLawDetailDesigCountriesTabContent" role="tabpanel" aria-labelledby="countryLawDetailDesigCountriesTab">
@@ -184,7 +144,7 @@
         @if (!addMode)
         {
             <div class="tab-pane page-content" id="countryLawDetailWebLinksTabContent" role="tabpanel" aria-labelledby="countryLawDetailWebLinksTab">
-                @await Component.InvokeAsync("GridWebLinks", new {parentId = id, module = "tmkCountryLaw" })
+                @await Component.InvokeAsync("GridWebLinks", new WebLinksGridOptions { Id = Model.CountryLawID, Module = "tmkcountrylaw", Controller = "CountryLaw" })
             </div>
         }
     </div>

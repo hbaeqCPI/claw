@@ -20,7 +20,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using WordProcessing = DocumentFormat.OpenXml.Wordprocessing;
-using R10.Web.Services.DocumentStorage;
 using System;
 using A = DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
@@ -32,15 +31,12 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Presentation;
 using P = DocumentFormat.OpenXml.Presentation;
 using D = DocumentFormat.OpenXml.Drawing;
-using R10.Web.Services.SharePoint;
 using Microsoft.Extensions.Options;
 using DocumentFormat.OpenXml.Wordprocessing;
-using R10.Web.Services.iManage;
 using R10.Web.Interfaces;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
-using R10.Web.Services.NetDocuments;
 
 namespace R10.Web.Helpers
 {
@@ -48,14 +44,8 @@ namespace R10.Web.Helpers
     {
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly ISystemSettings<DefaultSetting> _settings;
-        private readonly IDocumentStorage _documentStorage;
         private readonly IUserSettingsService _userSettingsService;
         private readonly IHostingEnvironment _hostingEnvironment;
-        private readonly ISharePointService _sharePointService;
-        private readonly GraphSettings _graphSettings;
-        private readonly IiManageClientFactory _iManageClientFactory;
-        private readonly INetDocumentsClientFactory _netDocsClientFactory;
-        private readonly IDocumentsViewModelService _docViewModelService;
         protected readonly IUrlHelper _url;
 
         const string wordBorderColor = "silver";
@@ -65,25 +55,14 @@ namespace R10.Web.Helpers
         public ExportHelper(IStringLocalizer<SharedResource> localizer,
                             ISystemSettings<DefaultSetting> settings,
                             IConfiguration configuration,
-                            IDocumentStorage documentStorage,
                             IUserSettingsService userSettingsService,
                             IHostingEnvironment hostingEnvironment,
-                            ISharePointService sharePointService, IOptions<GraphSettings> graphSettings,
-                            IiManageClientFactory iManageClientFactory,
-                            INetDocumentsClientFactory netDocsClientFactory,
-                            IDocumentsViewModelService docViewModelService,
                             IUrlHelper url)
         {
             _localizer = localizer;
             _settings = settings;
-            _documentStorage = documentStorage;
             _userSettingsService = userSettingsService;
             _hostingEnvironment = hostingEnvironment;
-            _sharePointService = sharePointService;
-            _graphSettings = graphSettings.Value;
-            _iManageClientFactory = iManageClientFactory;
-            _netDocsClientFactory = netDocsClientFactory;
-            _docViewModelService = docViewModelService;
             _url = url;
         }
 
@@ -170,67 +149,7 @@ namespace R10.Web.Helpers
                             string imageFilePath = rootImageFolder + imageFile;
                             var fileStream = new MemoryStream();
 
-                            if (setting.DocumentStorage == DocumentStorageOptions.iManage)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    try
-                                    {
-                                        using (var client = await _iManageClientFactory.GetClient())
-                                        {
-                                            fileStream = await client.GetDocumentAsStream(docFile.DriveItemId);
-                                        }
-                                    }
-                                    catch (Exception)
-                                    {
-                                        //ignore errors
-                                    }
-                                }
-                            }
-                            else
-                            if (setting.DocumentStorage == DocumentStorageOptions.NetDocuments)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    try
-                                    {
-                                        using (var client = await _netDocsClientFactory.GetClient())
-                                        {
-                                            fileStream = await client.GetDocumentAsStream(docFile.DriveItemId);
-                                        }
-                                    }
-                                    catch (Exception)
-                                    {
-                                        //ignore errors
-                                    }
-                                }
-                            }
-                            else if (setting.DocumentStorage == DocumentStorageOptions.SharePoint)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    var graphClient = _sharePointService.GetGraphClient();
-                                    var content = await graphClient.Drives[docFile.DriveItemId].Items[imageFile].Content.Request().GetAsync();
-
-                                    content.CopyTo(fileStream);
-                                    fileStream.Position = 0;
-                                }
-                            }
-                            else
-                            {
-                                fileStream = await _documentStorage.GetFileStream(imageFilePath);
-                            }
-
-                            if (fileStream?.Length > 0)
-                            {
-                                ws.Cell(row + 2, col + 1).Value = "";           // clear image name on cell
-                                var image = ws.AddPicture(fileStream).MoveTo(ws.Cell(row + 2, col + 1));
-                                image.Width = imageSize;
-                                image.Height = imageSize;
-                            }
+                            // DocumentStorage removed in debloat - image export disabled
                         }
                     }
                 }
@@ -357,119 +276,7 @@ namespace R10.Web.Helpers
             {
                 if (!imageRootFolder.EndsWith("/")) imageRootFolder += "/";
 
-                var row = 0;
-                if (setting.DocumentStorage == DocumentStorageOptions.SharePoint)
-                {
-                    var graphClient = _sharePointService.GetGraphClient();
-                    var col = imageColumns.Last();
-                    var driveId = imageColumns.First();
-
-                    foreach (var item in list)
-                    {
-                        var prop = columns[col - 1];
-                        var imageFile = prop.GetValue(item);
-                        if (imageFile != null)
-                        {
-                            var driveIdProp = columns[driveId - 1];
-                            var driveIdVal = driveIdProp.GetValue(item);
-
-                            var stream = await graphClient.Drives[Convert.ToString(driveIdVal)].Items[Convert.ToString(imageFile)].Content.Request().GetAsync();
-                            if (stream != null)
-                            {
-                                using (var memoryStream = new MemoryStream())
-                                {
-                                    stream.CopyTo(memoryStream);
-                                    memoryStream.Position = 0;
-
-                                    //ws.Row(row + 2).Height = imageSize;
-                                    ws.Cell(row + 2, col).Clear();
-                                    var image = ws.AddPicture(memoryStream).MoveTo(ws.Cell(row + 2, col));
-                                    image.Width = imageSize;
-                                    image.Height = imageSize;
-                                }
-
-                            }
-                        }
-                        row++;
-                    }
-                }
-                else if (setting.DocumentStorage == DocumentStorageOptions.iManage ||
-                         setting.DocumentStorage == DocumentStorageOptions.NetDocuments)
-                {
-                    var iManageClient = setting.DocumentStorage == DocumentStorageOptions.iManage? await _iManageClientFactory.GetClient() : null;
-                    var netDocsClient = setting.DocumentStorage == DocumentStorageOptions.NetDocuments ? await _netDocsClientFactory.GetClient() : null;
-                    var col = imageColumns.Last();
-
-                    foreach (var item in list)
-                    {
-                        var prop = columns[col - 1];
-                        var imageFile = prop.GetValue(item)?.ToString();
-                        if (imageFile != null)
-                        {
-                            var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                            if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                            {
-                                try
-                                {
-                                    var memoryStream = new MemoryStream();
-
-                                    if (iManageClient != null) memoryStream = await iManageClient.GetDocumentAsStream(docFile.DriveItemId);
-                                    else if (netDocsClient != null) memoryStream = await netDocsClient.GetDocumentAsStream(docFile.DriveItemId);
-
-                                    if (memoryStream != null)
-                                    {
-                                        memoryStream.Position = 0;
-
-                                        //ws.Row(row + 2).Height = imageSize;
-                                        ws.Cell(row + 2, col).Clear();
-                                        var image = ws.AddPicture(memoryStream).MoveTo(ws.Cell(row + 2, col));
-                                        image.Width = imageSize;
-                                        image.Height = imageSize;
-
-                                        memoryStream.Dispose();
-                                        memoryStream.Close();
-                                    }
-                                }
-                                catch (Exception)
-                                {
-                                    //ignore errors
-                                }
-                            }
-                        }
-                        row++;
-                    }
-                }
-                else
-                {
-                    foreach (var item in list)
-                    {
-                        foreach (int col in imageColumns)
-                        {
-                            var prop = columns[col - 1];
-                            var imageFile = prop.GetValue(item);
-                            if (imageFile != null)
-                            {
-                                var strImageFile = imageFile.ToString();
-                                if (exportableImages.Any(x => strImageFile.ToLower().EndsWith(x)))       // filter image export to avoid error
-                                {
-                                    string imageFilePath = imageRootFolder + strImageFile;
-                                    var stream = await _documentStorage.GetFileStream(imageFilePath);
-                                    if (stream != null)
-                                    {
-                                        //ws.Row(row + 2).Height = imageSize;
-                                        ws.Cell(row + 2, col).Clear();
-                                        var image = ws.AddPicture(stream).MoveTo(ws.Cell(row + 2, col));
-                                        image.Width = imageSize;
-                                        image.Height = imageSize;
-
-                                        imageRowsAndSize.Add(row + 2, imageSize);
-                                    }
-                                }
-                            }
-                        }
-                        row++;
-                    }
-                }
+                // SharePoint, iManage, NetDocuments, DocumentStorage image export removed in debloat
 
 
             }
@@ -717,71 +524,7 @@ namespace R10.Web.Helpers
                             string imageFilePath = rootImageFolder + imageFile;
                             var fileStream = new MemoryStream();
 
-                            if (setting.DocumentStorage == DocumentStorageOptions.iManage)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    try
-                                    {
-                                        using (var client = await _iManageClientFactory.GetClient())
-                                        {
-                                            fileStream = await client.GetDocumentAsStream(docFile.DriveItemId);
-                                        }
-                                    }
-                                    catch (Exception)
-                                    {
-                                        //ignore errors
-                                    }
-                                }
-                            }
-                            else if (setting.DocumentStorage == DocumentStorageOptions.NetDocuments)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    try
-                                    {
-                                        using (var client = await _netDocsClientFactory.GetClient())
-                                        {
-                                            fileStream = await client.GetDocumentAsStream(docFile.DriveItemId);
-                                        }
-                                    }
-                                    catch (Exception)
-                                    {
-                                        //ignore errors
-                                    }
-                                }
-                            }
-                            else if (setting.DocumentStorage == DocumentStorageOptions.SharePoint)
-                            {
-                                var docFile = await _docViewModelService.GetDocFileByDocFileName(imageFile);
-                                if (docFile != null && !string.IsNullOrEmpty(docFile.DriveItemId))
-                                {
-                                    var graphClient = _sharePointService.GetGraphClient();
-                                    var content = await graphClient.Drives[docFile.DriveItemId].Items[imageFile].Content.Request().GetAsync();
-
-                                    content.CopyTo(fileStream);
-                                    fileStream.Position = 0;
-                                }
-                            }
-                            else
-                            {
-                                fileStream = await _documentStorage.GetFileStream(imageFilePath);
-                            }
-
-                            if (fileStream?.Length > 0)
-                            {
-                                fileStream.Position = 0;
-                                ImagePart imagePart = mainDocPart.AddImagePart(ImagePartType.Jpeg);
-                                doc.MainDocumentPart.Document.Save();
-                                imagePart.FeedData(fileStream);
-                                cell.Append(new WordProcessing.Paragraph(new WordProcessing.Run(GetDrawing(mainDocPart.GetIdOfPart(imagePart)))));
-                                cell.Append(new WordProcessing.TableCellProperties(
-                                        new WordProcessing.TableCellWidth { Type = WordProcessing.TableWidthUnitValues.Dxa, Width = "1800" }));
-
-                            }
-                            else
+                            // DocumentStorage removed in debloat - show image name as text instead
                             {
                                 cell.Append(new WordProcessing.Paragraph(new WordProcessing.Run(new WordProcessing.Text(imageFile))));
                                 cell.Append(new WordProcessing.TableCellProperties(

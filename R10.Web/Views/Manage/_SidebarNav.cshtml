@@ -11,13 +11,8 @@
     //hide if 2FA is required but disabled by user
     //or if SSO is required
     var isLocked = User.SSORequired() || User.TwoFactorRequired();
-    var showItem = !isLocked && (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.SystemUser)).Succeeded;
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
-    var user = await UserManager.GetUserAsync(User);    
-    var settings = await Settings.GetSetting();
-    var showNotifications = showItem && (User.GetUserType() != CPiUserType.Attorney || settings.ShowAttorneyNotificationsManager);
-    var isTimeTrackerOn = showItem && settings.IsTimeTrackerOn;
-    var isNotificationOn = showItem && settings.IsNotificationOn;
+    var user = await UserManager.GetUserAsync(User);
 }
 <div class="manage-nav sidebar-nav p-3">
     <ul class="nav nav-pills cpi-nav-vertical flex-column">
@@ -52,31 +47,6 @@
             <li class="nav-item">
                 <a asp-action="Settings" class="nav-link @(Model == ManageNavPages.Settings ? "active" : "")">
                     <span class="fad fa-cog fa-fixed-width"></span>@Localizer["Settings"]
-                </a>
-            </li>
-        }
-        @if (showNotifications) 
-        {
-            <li class="nav-item">
-                <a asp-action="Notifications" class="nav-link @(Model == ManageNavPages.Notifications ? "active" : "")">
-                    <span class="fad fa-bell fa-fixed-width"></span>@Localizer["Notifications Manager"]
-                </a>
-            </li>
-        }
-        @if (isTimeTrackerOn)
-        {
-            <li class="nav-item">
-                <a asp-action="TimeTrackers" class="nav-link @(Model == ManageNavPages.TimeTrackers ? "active" : "")">
-                    <span class="fad fa-clock fa-fixed-width"></span>@Localizer["Time Tracker"]
-                </a>
-            </li>
-        }
-        @if (isNotificationOn)
-        {
-            <li class="nav-item">
-                <a asp-action="Alerts" class="nav-link @(Model == ManageNavPages.Alerts ? "active" : "")">
-                    <span class="fad fa-bell-on fa-fixed-width"></span>@Localizer["Alerts"]
-                    <span class="global-message-count badge badge-pill badge-info"></span>
                 </a>
             </li>
         }

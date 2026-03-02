@@ -25,7 +25,6 @@ using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using R10.Web.Services;
 
@@ -39,7 +38,6 @@ namespace R10.Web.Controllers
         private readonly CPiUserManager _userManager;
         private readonly IStringLocalizer<MenuResource> _localizer;
         private readonly IWebHostEnvironment _env;
-        private readonly IBaseService<Help> _helpService;
         private readonly CPiIdentitySettings _cpiSettings;
         private readonly HashSet<string> _validRoutes;
 
@@ -50,7 +48,6 @@ namespace R10.Web.Controllers
             CPiUserManager userManager,
             IStringLocalizer<MenuResource> localizer,
             IWebHostEnvironment env,
-            IBaseService<Help> helpService,
             IOptions<CPiIdentitySettings> cpiSettings,
             IActionDescriptorCollectionProvider actionProvider)
         {
@@ -60,7 +57,6 @@ namespace R10.Web.Controllers
             _userManager = userManager;
             _localizer = localizer;
             _env = env;
-            _helpService = helpService;
             _cpiSettings = cpiSettings.Value;
             _validRoutes = BuildValidRoutes(actionProvider);
         }
@@ -180,7 +176,7 @@ namespace R10.Web.Controllers
                 }
             }
 
-            return RedirectToAction("Index", "Dashboard");
+            return RedirectToAction("Index");
         }
 
         private async Task<List<MenuItemViewModel>> GetSystemMenuItems(string systemType)
@@ -240,33 +236,5 @@ namespace R10.Web.Controllers
         //    return View();
         //}
 
-        [Authorize]
-        public async Task<IActionResult> Help(string? page)
-        {
-            var clientType = User.GetHelpFolder();
-            var path = $"/index.htm";
-            var help = await _helpService.QueryableList.Where(h => h.Page == page && ((h.ClientType ?? "") == "" || h.ClientType == clientType)).OrderByDescending(h => h.ClientType).FirstOrDefaultAsync();
-
-            if (!string.IsNullOrEmpty(page) && help == null && User.IsSuper())
-            {
-                var userName = User.GetUserName();
-                var now = DateTime.Now;
-                help = new Help()
-                {
-                    ClientType = clientType,
-                    Page = page,
-                    Path = "",
-                    UpdatedBy = userName,
-                    LastUpdate = now,
-                    CreatedBy = userName,
-                    DateCreated = now,
-                };
-                await _helpService.Add(help);
-            }
-            else if (!string.IsNullOrEmpty(help?.Path))
-                path = help.Path;
-
-            return Redirect($"{Request.PathBase}/Help/{clientType}{path}");
-        }
     }
 }

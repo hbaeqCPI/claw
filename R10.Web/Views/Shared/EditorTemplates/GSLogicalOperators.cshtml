@@ -1,6 +1,0 @@
-﻿@model List<LookupDTO>
-@(Html.Kendo().DropDownListFor(m => m)
-      .DataValueField("Value")
-      .DataTextField("Text")
-      .BindTo((System.Collections.IEnumerable)ViewData["logicalOperatorList"])
-)

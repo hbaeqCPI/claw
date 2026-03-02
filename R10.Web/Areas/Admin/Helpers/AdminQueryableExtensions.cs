@@ -14,20 +14,6 @@ namespace R10.Web.Areas.Admin.Helpers
     {
         public static IQueryable<CPiUser> AddCriteria(this IQueryable<CPiUser> cpiUser, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var userStatus = mainSearchFilters.FirstOrDefault(f => f.Property == "UserStatus");
-            if (userStatus != null)
-            {
-                cpiUser = cpiUser.Where(u => u.Status == (CPiUserStatus)int.Parse(userStatus.Value));
-                mainSearchFilters.Remove(userStatus);
-            }
-
-            var userType = mainSearchFilters.FirstOrDefault(f => f.Property == "UserType");
-            if (userType != null)
-            {
-                cpiUser = cpiUser.Where(u => u.UserType == (CPiUserType)int.Parse(userType.Value));
-                mainSearchFilters.Remove(userType);
-            }
-
             var fullName = mainSearchFilters.FirstOrDefault(f => f.Property == "FullName");
             if (fullName != null)
             {
@@ -40,34 +26,6 @@ namespace R10.Web.Areas.Admin.Helpers
             {
                 cpiUser = cpiUser.Where(u => !string.IsNullOrEmpty(u.LastName) && u.LastName.StartsWith(initial.Value));
                 mainSearchFilters.Remove(initial);
-            }
-
-            var systemId = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemId");
-            if (systemId != null)
-            {
-                cpiUser = cpiUser.Where(u => u.CPiUserSystemRoles.Any(usr => EF.Functions.Like(usr.SystemId, systemId.Value)));
-                mainSearchFilters.Remove(systemId);
-            }
-
-            var roleId = mainSearchFilters.FirstOrDefault(f => f.Property == "RoleId");
-            if (roleId != null)
-            {
-                cpiUser = cpiUser.Where(u => u.CPiUserSystemRoles.Any(usr => EF.Functions.Like(usr.RoleId, roleId.Value)));
-                mainSearchFilters.Remove(roleId);
-            }
-
-            var respOffice = mainSearchFilters.FirstOrDefault(f => f.Property == "RespOffice");
-            if (respOffice != null)
-            {
-                cpiUser = cpiUser.Where(u => u.CPiUserSystemRoles.Any(usr => EF.Functions.Like(usr.RespOffice, respOffice.Value)));
-                mainSearchFilters.Remove(respOffice);
-            }
-
-            var group = mainSearchFilters.FirstOrDefault(f => f.Property == "Group");
-            if (group != null)
-            {
-                cpiUser = cpiUser.Where(u => u.CPiUserGroups.Any(g => EF.Functions.Like(g.CPiGroup.Name, group.Value)));
-                mainSearchFilters.Remove(group);
             }
 
             //default to true (restricted)
@@ -165,14 +123,6 @@ namespace R10.Web.Areas.Admin.Helpers
                 menuPage = QueryHelper.BuildCriteria<CPiMenuPage>(menuPage, mainSearchFilters);
 
             return menuPage;
-        }
-
-        public static IQueryable<CPiGroup> AddCriteria(this IQueryable<CPiGroup> cpiGroup, List<QueryFilterViewModel> mainSearchFilters)
-        {
-            if (mainSearchFilters.Any())
-                cpiGroup = QueryHelper.BuildCriteria<CPiGroup>(cpiGroup, mainSearchFilters);
-
-            return cpiGroup;
         }
 
         public static IQueryable<MailDownloadDataMap> AddCriteria(this IQueryable<MailDownloadDataMap> maps, List<QueryFilterViewModel> mainSearchFilters)

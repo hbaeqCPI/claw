@@ -121,10 +121,8 @@ namespace R10.Web.Areas.Admin.Controllers
             }
         }
 
-        public async Task<IActionResult> Index(string status)
+        public async Task<IActionResult> Index()
         {
-            ViewData["Status"] = status; // (int)Enum.Parse(typeof(CPiUserStatus), status);
-
             var model = new PageViewModel()
             {
                 //Page = PageType.Search, //not used
@@ -152,9 +150,9 @@ namespace R10.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult Search(string status)
+        public IActionResult Search()
         {
-            return RedirectToAction("Index", new { status = status});
+            return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
@@ -400,19 +398,6 @@ namespace R10.Web.Areas.Admin.Controllers
 
                 if (((CPiUserType)detail.UserType).IsRegularUser())
                 {
-                    //todo: use tab/subform ??
-                    pageActions.Add(new DetailPageAction()
-                    {
-                        Label = _localizer["Assign Roles"].ToString(),
-                        Class = "cpi-popup assign-roles" + (showPopUp == 1 ? " show" : ""), //call generic popup modal
-                        IconClass = "fal fa-users",
-                        Url = Url.Action("AssignRoles"),
-                        Data = new Dictionary<string, string>(){
-                            { "get-id", detail.PkId.ToString() }, //use get-id instead of passing id in Url route values to easily retrieve pkid when needed
-                            { "no-padding", "true" }
-                        }
-                    });
-
                     pageActions.Add(new DetailPageAction()
                     {
                         Label = _localizer["Set Entity Filter"].ToString(),
@@ -574,8 +559,7 @@ namespace R10.Web.Areas.Admin.Controllers
                             await SendApprovalEmail(user);
                     }
 
-                    var popup = user.UserType.IsRegularUser() && newAccessLevel ? "assign-roles" :
-                                user.UserType.HasLinkedEntity() && (newEmail || newAccessLevel || newStatus) ? "account-settings" : "";
+                    var popup = user.UserType.HasLinkedEntity() && (newEmail || newAccessLevel || newStatus) ? "account-settings" : "";
 
                     return Json(new { id = userDetail.PkId, openPopup = popup});
                 }
@@ -662,8 +646,7 @@ namespace R10.Web.Areas.Admin.Controllers
                     else
                         await LinkUserAccount(user);
 
-                    var popup = user.UserType.IsRegularUser() ? "assign-roles" :
-                                user.UserType.HasLinkedEntity() ? "account-settings" : "";
+                    var popup = user.UserType.HasLinkedEntity() ? "account-settings" : "";
 
                     return Json(new { id = user.PkId, openPopup = popup });
                 }
@@ -921,14 +904,6 @@ namespace R10.Web.Areas.Admin.Controllers
                 return new JsonBadRequest(new { errors = LogErrors(result) });
         }
 
-        public async Task<IActionResult> AssignRoles(int id)
-        {
-            var user = await GetUserDetailViewModel(id);
-            if (user == null || !((CPiUserType)user.UserType).IsRegularUser())
-                return BadRequest(_localizer["Invalid request."].ToString());
-
-            return PartialView("_AssignRoles", user);
-        }
 
         public async Task<IActionResult> SetEntityFilter(int id)
         {

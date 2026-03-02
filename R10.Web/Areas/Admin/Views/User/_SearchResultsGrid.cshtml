@@ -12,26 +12,14 @@
                     columns.Select().HtmlAttributes(new { @class = $"self-#= IsSelf#", id = "#= Id #" }).Visible(false);
                     columns.Bound(u => u.LastName)
                                 .ClientTemplate($"<div class='name'>{Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: PkId#", fromSearch = true }), "LastName")}" +
-                                    "#if (IsSuper) {#" +
-                                    "<i class='text-info small fa fa-user-secret ml-2' title='#:UserTypeDisplay#'></i>" +
-                                    "#}#" +
                                     "#= Inactive ? '<i class=\\'text-danger small fa fa-minus-circle ml-2\\' title=\\'Inactive\\'></i>' : '' # " +
                                     "#= IsLockedOut ? '<i class=\\'text-danger small fa fa-lock ml-2\\' title=\\'Locked out\\'></i>' : '' # " +
-                                    "#if (!IsEnabled && !IsPending) {#" +
-                                    "<i class='text-danger small fa fa-user-slash ml-2' title='#:StatusDisplay#'></i>" +
-                                    "#}#" +
-                                    "#if (IsPending) {#" +
-                                    "<i class='text-danger small fa fa-user-clock ml-2' title='#:StatusDisplay#'></i>" +
-                                    "#}#" +
-                                    "<span class='badge badge-pill badge-dark ml-2 #= !IsEnabled && !IsPending ? ' d-sm-none' : 'd-none' #' title='#:StatusDisplay#'>#:StatusDisplay#</span>" +
-                                    "<span class='badge badge-pill badge-danger ml-2 #= IsPending ? ' d-sm-none' : 'd-none' #' title='#:StatusDisplay#'>#:StatusDisplay#</span></div>" +
+                                    "</div>" +
                                     "<div class='email small d-lg-none'>#: Email #</div>")
                                 .Title(Localizer["Last Name"].ToString());
                     columns.Template("<span class='far fa-ellipsis-h menu show-tooltip' title='Edit #:FullName#'></span>").Visible(false);
                     columns.Bound(u => u.FirstName);
                     columns.Bound(u => u.Email).HtmlAttributes(new { @class = "word-wrap"}).MinScreenWidth(992);
-                    columns.Bound(u => u.UserType).MinScreenWidth(768);
-                    columns.Bound(u => u.Status).MinScreenWidth(576);
                     columns.Bound(u => u.LastLoginDate).Format("{0:dd-MMM-yyyy h:mm tt}").MinScreenWidth(1200);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"], Localizer["Clear Filters"])))
