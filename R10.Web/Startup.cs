@@ -77,10 +77,8 @@ namespace R10.Web
             //Column encryption config
             Configuration.SetColumnEncryption();
 
-            //Trade secret config
-            Configuration.SetTradeSecret();
+            //Trade secret config removed during debloat
 
-            //Task scheduler removed in debloat
         }
 
         public IConfiguration Configuration { get; }
@@ -235,8 +233,6 @@ namespace R10.Web
             services.AddPatent();
             services.AddTrademark();
             services.AddShared(Configuration);
-            services.AddReportScheduler();
-
 
             // Debloat stubs: no-op implementations for removed services still referenced in DI
             services.AddScoped<Interfaces.IInventionViewModelService, Interfaces.NoOpInventionViewModelService>();
@@ -265,7 +261,6 @@ namespace R10.Web
 
             services.AddTransient<IEmailSender, EmailSender>();
             services.Configure<SmtpSettings>(Configuration.GetSection("Smtp"));
-            // GraphSettings, iManageSettings, NetDocumentsSettings, GoogleIDSSettings removed in debloat
             services.Configure<CPiIdentitySettings>(Configuration.GetSection("Cpi"));
             services.Configure<ServiceAccount>(Configuration.GetSection("ServiceAccount"));
             services.Configure<EPOMailboxSettings>(Configuration.GetSection("MyEPO:Mailbox"));
@@ -570,7 +565,6 @@ namespace R10.Web
             services.AddSingleton<ITempDataProvider, CookieTempDataProvider>(); //default is Session
             services.AddScoped<ExceptionFilter>();
             services.AddScoped<RequestHeaderFilter>();
-            // SharePointAuthorizationFilter, MailAuthorizationFilter removed in debloat
 
             IFileProvider physicalProvider = new PhysicalFileProvider(Directory.GetCurrentDirectory());
             services.AddSingleton<IFileProvider>(physicalProvider);
@@ -663,7 +657,6 @@ namespace R10.Web
             // Both virtual and physical paths are allowed (or a Location instance for one of the supported file systems like Amazon S3 and Azure Blob).
             DocumentUltimateWebConfiguration.Current.CacheLocation = Environment.ContentRootPath + @"\UserFiles\Documents\ViewerCache";
         }
-
 
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

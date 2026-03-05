@@ -33,9 +33,8 @@ namespace R10.Core.Entities.Patent
 
         public PatCaseType? PatCaseType { get; set; }
         public PatCountry? PatCountry { get; set; }
-        public Agent? Agent { get; set; }
+//         public Agent? Agent { get; set; } // Removed - Agent entity deleted
         public List<PatCountryDue>? PatCountryDues { get; set; }
-        public List<CountryApplication>? CountryApplications { get; set; }
         public List<PatDesCaseType>? PatDesCaseTypes { get; set; }
     }
     

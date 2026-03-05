@@ -1,7 +1,4 @@
-﻿using R10.Core.DTOs;
-using R10.Core.Entities;
-// using R10.Core.Entities.AMS; // Removed during deep clean
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -26,11 +23,6 @@ namespace R10.Core.Entities.Patent
         public bool ActiveSwitch { get; set; } = true;
 
         public bool CPIAppStatus { get; set; }
-
-        public List<CountryApplication>? CountryApplications { get; set; }
-//         public List<AMSStatusType>? AMSStatusTypes { get; set; } // Removed during deep clean
-//         public List<AMSMain>? AMSMain { get; set; } // Removed during deep clean
-        public List<PatIDSManageDTO>? IDSManageCases { get; set; }
     }
 
 }

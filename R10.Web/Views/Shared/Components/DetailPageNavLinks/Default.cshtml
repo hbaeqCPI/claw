@@ -4,7 +4,8 @@
     var addMode = (bool)ViewBag.AddMode;
 
     var showTradeSecretRequest = Model.ShowTradeSecretRequest;
-    var tsRequest = Model.TradeSecretUserRequest;
+    //var tsRequest = Model.TradeSecretUserRequest; // TradeSecretRequest removed during debloat
+    object tsRequest = null;
 }
 <div class="detail-page-nav">
     <div id="editActionButtons" class="page-header @(addMode ? "":"d-none")">
@@ -85,13 +86,13 @@
                 <a class="nav-link page-nav" href="#" title="View map" role="button" data-url="@Model.MapScreenUrl"><i class="far fa-map-marker pr-2"></i><span>@Localizer["Map"]</span></a>
             }
             @if (showTradeSecretRequest) {
-                @if (tsRequest != null && tsRequest.IsCleared)
+                @if (false /* tsRequest.IsCleared - TradeSecretRequest removed */)
                 {
                         <a class="nav-link page-nav trade-secret ts-cleared" data-revoke-url="@Url.Action("Revoke", "TradeSecret", new { area = "Admin" })" data-locator="@Model.TradeSecretLocator" href="#" title="@Localizer["Trade secret cleared"]" role="button"><i class="far fa-lock-keyhole-open pr-2"></i><span>@Localizer["Trade Secret"]</span></a>
                 }
                 else
                 {
-                        <a class="nav-link page-nav trade-secret ts-view @(tsRequest != null && tsRequest.IsGranted ? "ts-granted" : "")" data-status-url="@Url.Action("GetRequestStatus", "TradeSecret", new { area = "Admin" })" data-locator="@Model.TradeSecretLocator" href="#" title="@Localizer["View trade secret"]" role="button"><i class="far fa-lock-keyhole pr-2"></i><span>@Localizer["Trade Secret"]</span></a>
+                        <a class="nav-link page-nav trade-secret ts-view @(false /* tsRequest.IsGranted - TradeSecretRequest removed */ ? "ts-granted" : "")" data-status-url="@Url.Action("GetRequestStatus", "TradeSecret", new { area = "Admin" })" data-locator="@Model.TradeSecretLocator" href="#" title="@Localizer["View trade secret"]" role="button"><i class="far fa-lock-keyhole pr-2"></i><span>@Localizer["Trade Secret"]</span></a>
                 }
             }
         </nav>

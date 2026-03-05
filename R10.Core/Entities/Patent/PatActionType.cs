@@ -10,7 +10,7 @@ namespace R10.Core.Entities.Patent
     public class PatActionType : PatActionTypeDetail
     {
         public List<PatActionParameter>? ActionParameters { get; set; }
-        public Attorney? Responsible { get; set; }
+//         public Attorney? Responsible { get; set; } // Removed - Attorney entity deleted
         public PatCountry? PatCountry { get; set; }
 
         [NotMapped]

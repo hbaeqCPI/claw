@@ -1,6 +1,6 @@
 ﻿@model PageViewModel
 @inject IStringLocalizer<CountryLawResource> Localizer
-@inject ISystemSettings<TmkSetting> Settings
+@inject ISystemSettings<DefaultSetting> Settings
 @{
     var settings = await Settings.GetSetting();
 }

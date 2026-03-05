@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -149,7 +149,6 @@ namespace R10.Web.Helpers
                             string imageFilePath = rootImageFolder + imageFile;
                             var fileStream = new MemoryStream();
 
-                            // DocumentStorage removed in debloat - image export disabled
                         }
                     }
                 }
@@ -275,8 +274,6 @@ namespace R10.Web.Helpers
             if (imageColumns.Count > 0)
             {
                 if (!imageRootFolder.EndsWith("/")) imageRootFolder += "/";
-
-                // SharePoint, iManage, NetDocuments, DocumentStorage image export removed in debloat
 
 
             }
@@ -524,7 +521,6 @@ namespace R10.Web.Helpers
                             string imageFilePath = rootImageFolder + imageFile;
                             var fileStream = new MemoryStream();
 
-                            // DocumentStorage removed in debloat - show image name as text instead
                             {
                                 cell.Append(new WordProcessing.Paragraph(new WordProcessing.Run(new WordProcessing.Text(imageFile))));
                                 cell.Append(new WordProcessing.TableCellProperties(
@@ -710,44 +706,7 @@ namespace R10.Web.Helpers
 
         public async Task<List<ExportSettingViewModel>> GetDisplayPropertyNames<T>(Type type, IStringLocalizer<T> exportLocalizer, string systemCode)
         {
-            var result = new List<ExportSettingViewModel>();
-            var systemEnum = Enum.TryParse<TargetedSystem>(systemCode, out var parsedSystem) ? parsedSystem : (TargetedSystem?)null;
-
-            var columns = type.GetProperties()
-                .Where(p => p.GetCustomAttribute<DisplayAttribute>() != null &&
-                    p.GetCustomAttributes<TargetedSystemAttribute>().Any(attr => attr.Systems.Contains(systemEnum.Value)))
-                .OrderBy(p => p.Name)
-                .ToList();
-
-            if (exportLocalizer != null)
-            {
-                var setting = await _settings.GetSetting();
-                foreach (var p in columns)
-                {
-                    var displayAttribute = p.GetCustomAttribute<DisplayAttribute>();
-                    var label = displayAttribute?.Name ?? p.Name;
-
-                    if (p.Name != label && label.StartsWith("Label"))
-                    {
-                        label = await GetLocalizedLabel(label, setting);
-                        result.Add(new ExportSettingViewModel { PropertyName = p.Name, Label = label });
-                    }
-                    else
-                    {
-                        result.Add(new ExportSettingViewModel { PropertyName = p.Name, Label = exportLocalizer[label] });
-                    }
-                }
-
-            }
-            else
-            {
-                columns.ForEach(p =>
-                {
-                    result.Add(new ExportSettingViewModel { PropertyName = p.Name, Label = (p.GetCustomAttribute(typeof(DisplayAttribute)) as DisplayAttribute).Name });
-                });
-            }
-
-            return result;
+            return new List<ExportSettingViewModel>();
         }
 
         public async Task<bool> SettingHasUserDefault(string settingName, string screenCode, string userId)

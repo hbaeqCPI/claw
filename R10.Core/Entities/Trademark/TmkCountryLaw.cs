@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Trademark
 {
@@ -28,7 +28,6 @@ namespace R10.Core.Entities.Trademark
 
         public TmkCaseType? TmkCaseType { get; set; }
         public TmkCountry? TmkCountry { get; set; }
-        public Agent? Agent { get; set; }
         public List<TmkCountryDue>? TmkCountryDues { get; set; }
     }
 }

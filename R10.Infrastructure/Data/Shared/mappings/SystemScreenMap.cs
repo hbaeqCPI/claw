@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +13,7 @@ namespace R10.Infrastructure.Data.Shared.mappings
         {
             builder.ToTable("tblSysScreen");
             builder.HasIndex(s => new {s.ScreenCode, s.ScreenName}).IsUnique();
-            builder.HasMany(s => s.QEsMain).WithOne(qe => qe.SystemScreen);
+            // builder.HasMany(s => s.QEsMain).WithOne(qe => qe.SystemScreen); // Removed: QEsMain nav property no longer exists
         }
     }
 }

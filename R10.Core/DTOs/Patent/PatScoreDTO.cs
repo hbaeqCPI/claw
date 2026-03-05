@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
-using R10.Core.Entities;
-using R10.Core.Entities.Patent;
-
 namespace R10.Core.DTOs
 {
     public class PatScoreDTO
@@ -26,7 +23,5 @@ namespace R10.Core.DTOs
         [Key]
         public int AppId { get; set; }
         public double AverageScore { get; set; }
-
-        public CountryApplication CountryApplication { get; set; }
     }
 }

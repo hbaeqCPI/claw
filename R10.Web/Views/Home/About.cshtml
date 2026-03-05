@@ -1,11 +1,10 @@
-﻿@using System.Net;
+@using System.Net;
 @using Microsoft.AspNetCore.Hosting.Server;
 @using Microsoft.AspNetCore.Hosting.Server.Features;
 @using Microsoft.AspNetCore.Hosting;
 @using Microsoft.Extensions.Configuration;
 @inject ISystemSettings<DefaultSetting> Settings
 @inject IServer Server
-@* ScheduledTaskService and BackgroundTaskService removed in debloat *@
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Configuration
 @{
@@ -65,7 +64,6 @@
 </ul>
 <p></p>
 
-@* Task Scheduler section removed in debloat *@
 
 <h5>Encryption Key</h5>
 <ul>

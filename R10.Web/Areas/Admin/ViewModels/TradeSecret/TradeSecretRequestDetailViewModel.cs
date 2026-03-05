@@ -1,4 +1,6 @@
-﻿using R10.Core.Entities.Shared;
+// Entire file commented out - TradeSecretRequest type deleted from R10.Core
+/*
+using R10.Core.Entities.Shared;
 
 namespace R10.Web.Areas.Admin.ViewModels
 {
@@ -8,3 +10,4 @@ namespace R10.Web.Areas.Admin.ViewModels
         public string? DetailUrl { get;set; }
     }
 }
+*/

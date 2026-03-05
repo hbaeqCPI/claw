@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
@@ -170,7 +170,6 @@ namespace R10.Web.Services
 
         public async override Task<IEnumerable<AuthenticationScheme>> GetExternalAuthenticationSchemesAsync()
         {
-            // GraphSettings removed in debloat - no longer filtering out Graph auth schemes
             return await base.GetExternalAuthenticationSchemesAsync();
         }
     }

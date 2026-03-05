@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using R10.Core.Entities;
 using R10.Core.Helpers;
@@ -1494,7 +1494,6 @@ namespace R10.Web.Extensions
                         context.User.IsAdmin() ||
                         context.User.HasClaim(c => c.Type == CPiClaimTypes.Mailbox)));
 
-                //Mail policy per mailbox - GraphSettings removed in debloat
 
                 //Dashboard access if user has no system roles
                 options.AddPolicy(CPiAuthorizationPolicy.DashboardUser, policy =>

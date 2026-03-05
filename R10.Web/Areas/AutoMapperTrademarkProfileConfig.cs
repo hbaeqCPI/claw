@@ -13,20 +13,19 @@ namespace R10.Web.Areas
             CreateMap<TmkActionType, ActionTypeSearchResultViewModel>();
             CreateMap<TmkActionType, ActionTypeViewModel>()
                 .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName))
-                .ForMember(vm => vm.ResponsibleCode, domain => domain.MapFrom(d => d.Responsible != null ? d.Responsible.AttorneyCode : null))
-                .ForMember(vm => vm.ResponsibleName, domain => domain.MapFrom(d => d.Responsible != null ? d.Responsible.AttorneyName : null));
+                .ForMember(vm => vm.ResponsibleCode, domain => domain.Ignore())
+                .ForMember(vm => vm.ResponsibleName, domain => domain.Ignore());
 
             CreateMap<TmkCountryLaw, TmkCountryLawSearchViewModel>()
                 .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName));
 
             CreateMap<TmkCountryLaw, TmkCountryLawDetailViewModel>()
                 .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName))
-                .ForMember(vm => vm.AgentCode, domain => domain.MapFrom(d => d.Agent != null ? d.Agent.AgentCode : null))
-                .ForMember(vm => vm.AgentName, domain => domain.MapFrom(d => d.Agent != null ? d.Agent.AgentName : null))
+                .ForMember(vm => vm.AgentCode, domain => domain.Ignore())
+                .ForMember(vm => vm.AgentName, domain => domain.Ignore())
                 .ForMember(vm => vm.CaseTypeDescription, domain => domain.MapFrom(d => d.TmkCaseType != null ? d.TmkCaseType.Description : null))
                 .ForMember(vm => vm.IsCPiAction, domain => domain.MapFrom(d => d.TmkCountryDues != null && d.TmkCountryDues.Any(cd => cd.CPIAction)))
                 .ForMember(vm => vm.TmkCaseType, opt => opt.Ignore())
-                .ForMember(vm => vm.Agent, opt => opt.Ignore())
                 .ForMember(vm => vm.TmkCountry, opt => opt.Ignore())
                 .ForMember(sm => sm.TmkCountryDues, opt => opt.Ignore());
 

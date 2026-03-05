@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
-using R10.Core.Helpers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -77,14 +76,8 @@ namespace R10.Web.Extensions.TagHelpers
 
         private bool IsTradeSecret()
         {
-            var attribute = For
-                .Metadata
-                .ContainerType?
-                .GetProperty(For.Name)?
-                .GetCustomAttributes(typeof(TradeSecretAttribute), false)
-                .FirstOrDefault();
-
-            return (attribute is TradeSecretAttribute);
+            // TradeSecretAttribute removed during debloat
+            return false;
         }
     }
 }

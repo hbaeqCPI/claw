@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace R10.Core.Entities.Trademark
 {
@@ -46,7 +43,6 @@ namespace R10.Core.Entities.Trademark
         [NotMapped]
         public string? CountryName { get; set; }
 
-        public TmkTrademark? TmkTrademark { get; set; }
         public TmkCountry? Country { get; set; }
 
     }

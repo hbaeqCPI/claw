@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using R10.Core.Entities;
-using R10.Core.Entities.MailDownload;
+//using R10.Core.Entities.MailDownload;
 using R10.Core.Entities.Shared;
 using R10.Core.Identity;
 using R10.Infrastructure.Data;
@@ -53,17 +53,17 @@ namespace R10.Web.Areas
                 }));
             CreateMap<UserGroupsViewModel, CPiUserGroup>()
                 .ForMember(d => d.GroupId, option => option.MapFrom(vm => int.Parse(vm.Group.Id)));
-            CreateMap<MailDownloadDataMap, MailDataMapListViewModel>()
-                .ForMember(vm => vm.AttributeName, domain => domain.MapFrom(d => d.Attribute.Name));
-            CreateMap<MailDownloadDataMap, MailDataMapDetailViewModel>()
-                .ForMember(vm => vm.AttributeName, domain => domain.MapFrom(d => d.Attribute.Name));
+            //CreateMap<MailDownloadDataMap, MailDataMapListViewModel>()
+            //    .ForMember(vm => vm.AttributeName, domain => domain.MapFrom(d => d.Attribute.Name));
+            //CreateMap<MailDownloadDataMap, MailDataMapDetailViewModel>()
+            //    .ForMember(vm => vm.AttributeName, domain => domain.MapFrom(d => d.Attribute.Name));
 
-            CreateMap<TradeSecretRequest, TradeSecretRequestListViewModel>()
-                .ForMember(vm => vm.Email, domain => domain.MapFrom(d => d.CPiUser.Email));
+            //CreateMap<TradeSecretRequest, TradeSecretRequestListViewModel>()
+            //    .ForMember(vm => vm.Email, domain => domain.MapFrom(d => d.CPiUser.Email));
 
-            CreateMap<TradeSecretRequest, TradeSecretRequestDetailViewModel>()
-                .ForMember(vm => vm.Email, domain => domain.MapFrom(d => d.CPiUser.Email));
-            //.ForMember(vm => vm.CPiUser, opt => opt.Ignore());
+            //CreateMap<TradeSecretRequest, TradeSecretRequestDetailViewModel>()
+            //    .ForMember(vm => vm.Email, domain => domain.MapFrom(d => d.CPiUser.Email));
+            ////.ForMember(vm => vm.CPiUser, opt => opt.Ignore());
 
             CreateMap<ScheduledTask, ScheduledTaskListViewModel>();
             CreateMap<ScheduledTask, ScheduledTaskDetailViewModel>()

@@ -20,7 +20,6 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using R10.Web.Extensions;
-using R10.Core.Entities.Trademark;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities;
 using R10.Core.Entities.Shared;
@@ -35,7 +34,6 @@ namespace R10.Web.Services
         private readonly IHttpContextAccessor _context;
         private readonly IWebHostEnvironment _environment;
         private readonly ISystemSettings<PatSetting> _patSettings;
-        private readonly ISystemSettings<TmkSetting> _tmkSettings;
         private readonly ISystemSettings<DefaultSetting> _defaultSettings;
         private readonly CPiIdentitySettings _cpiSettings;
 
@@ -48,7 +46,6 @@ namespace R10.Web.Services
             IHttpContextAccessor context,
             IWebHostEnvironment environment,
             ISystemSettings<PatSetting> patSettings,
-            ISystemSettings<TmkSetting> tmkSettings,
             ISystemSettings<DefaultSetting> defaultSettings,
             IOptions<CPiIdentitySettings> cpiSettings
             ) : base(userManager, roleManager, options)
@@ -59,7 +56,6 @@ namespace R10.Web.Services
             _context = context;
             _environment = environment;
             _patSettings = patSettings;
-            _tmkSettings = tmkSettings;
             _defaultSettings = defaultSettings;
             _cpiSettings = cpiSettings.Value;
         }
@@ -211,26 +207,21 @@ namespace R10.Web.Services
 
             if (systems.Any(s => s.Id == SystemType.Trademark))
             {
-                var tmkSettings = await _tmkSettings.GetSetting();
-
-                if (tmkSettings.IsAuditOn)
+                // TmkSetting removed during debloat - using defaultSettings instead
+                if (defaultSettings.IsAuditOn)
                     modules.Add(CPiModule.TmkAudit);
-                if (tmkSettings.IsDeDocketOn)
+                if (defaultSettings.IsDeDocketOn)
                     modules.Add(CPiModule.TmkDeDocket);
-                if (tmkSettings.IsPortfolioOnboardingOn)
+                if (defaultSettings.IsPortfolioOnboardingOn)
                     modules.Add(CPiModule.TmkPortfolioOnboarding);
-                if (tmkSettings.IsTLOn)
-                    modules.Add(CPiModule.TrademarkLinks);
-                if (tmkSettings.IsCustomReportON)
+                if (defaultSettings.IsCustomReportON)
                     modules.Add(CPiModule.TmkCustomReport);
-                if (tmkSettings.IsProductsOn)
+                if (defaultSettings.IsProductsOn)
                     modules.Add(CPiModule.TmkProducts);
-                if (tmkSettings.IsShowCustomFieldOn && !modules.Any(m => m == CPiModule.CustomField))
+                if (defaultSettings.IsShowCustomFieldOn && !modules.Any(m => m == CPiModule.CustomField))
                     modules.Add(CPiModule.CustomField);
-                if (tmkSettings.IsDocumentVerificationOn)
+                if (defaultSettings.IsDocumentVerificationOn)
                     modules.Add(CPiModule.TmkDocumentVerification);
-                if (tmkSettings.IsCostEstimatorOn)
-                    modules.Add(CPiModule.TmkCostEstimator);
             }
 
             if (systems.Any(s => s.Id == SystemType.IDS))

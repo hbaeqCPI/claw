@@ -1,12 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using R10.Core.DTOs;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.Patent;
-using R10.Core.Entities.Trademark;
-// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
-// using R10.Core.Entities.DMS; // Removed during deep clean
-// using R10.Core.Entities.PatClearance; // Removed during deep clean
-// using R10.Core.Entities.Clearance; // Removed during deep clean
 using R10.Core.Entities.Shared;
 using R10.Core.Interfaces;
 using R10.Core.Helpers;
@@ -18,52 +12,37 @@ using System.Security.Claims;
 using R10.Core.Identity;
 using R10.Core.Entities;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using R10.Core.Interfaces.Patent;
 using R10.Core.Services.Shared;
 using System.Reflection.Metadata.Ecma335;
 using Newtonsoft.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.Data.SqlClient.Server;
-using R10.Core.Entities.GlobalSearch;
-using R10.Core.Interfaces.Shared;
 
 namespace R10.Core.Services.Documents
 {
     public class DocumentService : IDocumentService
     {
         private readonly IApplicationDbContext _repository;
-        private readonly ISystemSettings<DefaultSetting> _settings;        
+        private readonly ISystemSettings<DefaultSetting> _settings;
         private readonly ICPiUserSettingManager _userSettingManager;
         private readonly ClaimsPrincipal _user;
-        private readonly ICountryApplicationService _applicationService;
-        private readonly ITmkTrademarkService _trademarkService;
-//         private readonly IGMMatterService _matterService; // Removed during deep clean
         private readonly ILoggerService<Log> _errorLogger;
-        private readonly ITradeSecretService _tradeSecretService;
 
         private const string _defaultFolderName = "Incoming Email";
 
         public DocumentService(
             IApplicationDbContext repository,
-            ISystemSettings<DefaultSetting> settings,            
+            ISystemSettings<DefaultSetting> settings,
             ICPiUserSettingManager userSettingManager,
             ClaimsPrincipal user,
-            ICountryApplicationService applicationService,
-            ITmkTrademarkService trademarkService,
-//             IGMMatterService matterService, // Removed during deep clean
-            ILoggerService<Log> errorLogger,
-            ITradeSecretService tradeSecretService
+            ILoggerService<Log> errorLogger
             )
         {
             _repository = repository;
-            _settings = settings;            
+            _settings = settings;
             _userSettingManager = userSettingManager;
             _user = user;
-            _applicationService = applicationService;
-            _trademarkService = trademarkService;
-            // _matterService = matterService; // Removed during deep clean
             _errorLogger = errorLogger;
-            _tradeSecretService = tradeSecretService;
         }
 
         public IQueryable<DocSystem> DocSystems => _repository.DocSystems.AsNoTracking();
@@ -79,15 +58,12 @@ namespace R10.Core.Services.Documents
         public IQueryable<DocFixedFolder> DocFixedFolders => _repository.DocFixedFolders.AsNoTracking();
         public IQueryable<SharePointFileSignature> SharePointFileSignatures => _repository.SharePointFileSignatures.AsNoTracking();
         public IQueryable<DocFileSignature> DocFileSignatures => _repository.DocFileSignatures.AsNoTracking();
-        public IQueryable<EFSLog> EFSLogs => _repository.EFSLogs.AsNoTracking();
-        public IQueryable<LetterLog> LetterLogs => _repository.LetterLogs.AsNoTracking();
         public IQueryable<DocFileSignatureRecipient> DocFileSignatureRecipients => _repository.DocFileSignatureRecipients.AsNoTracking();
 
         public IQueryable<DocVerification> DocVerifications => _repository.DocVerifications.AsNoTracking();
         public IQueryable<DocResponsibleDocketing> DocRespDocketings => _repository.DocRespDocketings.AsNoTracking();
         public IQueryable<DocResponsibleReporting> DocRespReportings => _repository.DocRespReportings.AsNoTracking();
         public IQueryable<DocQuickEmailLog> DocQuickEmailLogs => _repository.DocQuickEmailLogs.AsNoTracking();
-        public IQueryable<PatEPODocumentCombined> PatEPODocumentCombineds => _repository.PatEPODocumentCombineds.AsNoTracking();
 
 
         public async Task<bool> IsUserRestrictedFromPrivateDocuments()
@@ -470,32 +446,7 @@ namespace R10.Core.Services.Documents
                         gmActIds.Add(docVerification.ActId ?? 0);
                 }
 
-                if (patActIds.Count > 0)
-                {
-                    var patActions = await _repository.PatActionDues.Where(a => patActIds.Contains(a.ActId)).ToListAsync();
-                    if (patActions.Count > 0)
-                    {
-                        patActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
-                    }
-                }
-                if (tmkActIds.Count > 0)
-                {
-                    var tmkActions = await _repository.TmkActionDues.Where(a => tmkActIds.Contains(a.ActId)).ToListAsync();
-                    if (tmkActions.Count > 0)
-                    {
-                        tmkActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
-                    }
-                }
-                // Removed during deep clean - GeneralMatter module removed
-                // if (gmActIds.Count > 0)
-                // {
-                //     var gmActions = await _repository.GMActionsDue.Where(a => gmActIds.Contains(a.ActId)).ToListAsync();
-                //     if (gmActions.Count > 0)
-                //     {
-                //         gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
-                //     }
-                // }
-
+                // PatActionDues and TmkActionDues DbSets removed - verification clearing handled elsewhere
                 _repository.DocVerifications.AddRange(docVerifications);
                 await _repository.SaveChangesAsync();
             }
@@ -592,34 +543,7 @@ namespace R10.Core.Services.Documents
             //Reset if "Check Docket" (CheckDocket) is not checked on tbl_ActionDue
             if (addedActIds.Count > 0) resetActIds.RemoveAll(d => addedActIds.Contains(d ?? 0));
 
-            if (resetActIds.Count > 0 && !string.IsNullOrEmpty(systemType))
-            {
-                if (systemType.ToLower() == "p")
-                {
-                    var patActions = await _repository.PatActionDues.Where(a => resetActIds.Contains(a.ActId) && !a.CheckDocket).ToListAsync();
-                    if (patActions.Count > 0)
-                    {
-                        patActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });                        
-                    }
-                }
-                else if (systemType.ToLower() == "t")
-                {
-                    var tmkActions = await _repository.TmkActionDues.Where(a => resetActIds.Contains(a.ActId) && !a.CheckDocket).ToListAsync();
-                    if (tmkActions.Count > 0)
-                    {
-                        tmkActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });                        
-                    }
-                }
-                // Removed during deep clean - GeneralMatter module removed
-                // else if (systemType.ToLower() == "g")
-                // {
-                //     var gmActions = await _repository.GMActionsDue.Where(a => resetActIds.Contains(a.ActId) && !a.CheckDocket).ToListAsync();
-                //     if (gmActions.Count > 0)
-                //     {
-                //         gmActions.ForEach(a => { a.DateVerified = null; a.VerifiedBy = null; a.VerifierId = null; });
-                //     }
-                // }
-            }
+            // PatActionDues and TmkActionDues DbSets removed - verification clearing handled elsewhere
 
             await _repository.SaveChangesAsync();         
 
@@ -635,50 +559,8 @@ namespace R10.Core.Services.Documents
         /// <returns></returns>
         public async Task UpdateVerificationActionVerify(List<string> keyIds, DateTime? verifiedDate, string? userName)
         {
-            var patActions = new List<PatActionDue>();
-            var tmkActions = new List<TmkActionDue>();
-//             var gmActions = new List<GMActionDue>(); // Removed during deep clean
-            foreach (var item in keyIds)
-            {
-                var keyArr = item.Split("|");
-                var systemType = keyArr[0];
-                var actId = keyArr[1];
-                var keyId = 0;
-                var temp = int.TryParse(actId, out keyId);
-
-                //Update DateVerified, VerifiedBy, and VerifierId in tbl_ActionDue
-                if (systemType.ToLower() == "p")
-                {
-                    patActions.AddRange(await _repository.PatActionDues.Where(d => d.ActId == keyId).ToListAsync());
-                }
-                if (systemType.ToLower() == "t")
-                {
-                    tmkActions.AddRange(await _repository.TmkActionDues.Where(d => d.ActId == keyId).ToListAsync());
-                }
-                // Removed during deep clean - GeneralMatter module removed
-                // if (systemType.ToLower() == "g")
-                // {
-                //     gmActions.AddRange(await _repository.GMActionsDue.Where(d => d.ActId == keyId).ToListAsync());
-                // }
-            }
-            var userId = _user.GetUserIdentifier();
-
-            if (patActions.Count > 0)
-            {
-                patActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
-                await _repository.SaveChangesAsync();                
-            }
-            if (tmkActions.Count > 0)
-            {
-                tmkActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
-                await _repository.SaveChangesAsync();
-            }
-            // Removed during deep clean - GeneralMatter module removed
-            // if (gmActions.Count > 0)
-            // {
-            //     gmActions.ForEach(a => { a.DateVerified = verifiedDate; a.VerifiedBy = userName; a.VerifierId = userId; });
-            //     await _repository.SaveChangesAsync();
-            // }
+            // PatActionDues and TmkActionDues DbSets removed - verification action verify is no longer handled here
+            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -767,35 +649,9 @@ namespace R10.Core.Services.Documents
 
         private async Task<int> GenerateAction(string systemType, int parentId, int actionTypeId, DateTime baseDate)
         {
-            int newActId = 0;
-
-            if (systemType.ToLower() == "p")
-            {
-                await _applicationService.GenerateWorkflowAction(parentId, actionTypeId, baseDate);                        
-                var patActionType = await _repository.PatActionTypes.AsNoTracking().Where(d => d.ActionTypeID == actionTypeId).FirstOrDefaultAsync();                        
-                if (patActionType == null) return newActId;
-
-                newActId = await _repository.PatActionDues.AsNoTracking().Where(d => d.ActionType == patActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync();                 
-            }
-            else if (systemType.ToLower() == "t")
-            {
-                await _trademarkService.GenerateWorkflowAction(parentId, actionTypeId, baseDate);
-                var tmkActionType = await _repository.TmkActionTypes.AsNoTracking().Where(d => d.ActionTypeID == actionTypeId).FirstOrDefaultAsync();                        
-                if (tmkActionType == null) return newActId;
-
-                newActId = await _repository.TmkActionDues.AsNoTracking().Where(d => d.ActionType == tmkActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync(); 
-            }
-            // Removed during deep clean - GeneralMatter module removed
-            // else if (systemType.ToLower() == "g")
-            // {
-            //     await _matterService.GenerateWorkflowAction(parentId, actionTypeId, baseDate);
-            //     var gmActionType = await _repository.GMActionTypes.AsNoTracking().Where(d => d.ActionTypeID == actionTypeId).FirstOrDefaultAsync();
-            //     if (gmActionType == null) return newActId;
-            //
-            //     newActId = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActionType == gmActionType.ActionType && d.BaseDate.Date == baseDate.Date).Select(d => d.ActId).FirstOrDefaultAsync();
-            // }
-
-            return newActId;
+            // Workflow action generation removed during debloat (ICountryApplicationService/ITmkTrademarkService deleted)
+            await Task.CompletedTask;
+            return 0;
         }
 
         public async Task MarkVerificationNewActionAsProcessed(int actId, int docId)
@@ -889,11 +745,6 @@ namespace R10.Core.Services.Documents
                 _repository.DocFileSignatures.Add(newDocFileSignature);
                 await _repository.SaveChangesAsync();
                 
-                // Removed during deep clean - DMS/Disclosure module removed
-                // if (isDMSInventorSignature)
-                // {
-                //     await _repository.Disclosures.Where(d => d.DMSId == dataKeyValue).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newDocFileSignature.SignatureFileId));
-                // }
             }
         }
 
@@ -928,11 +779,6 @@ namespace R10.Core.Services.Documents
             _repository.SharePointFileSignatures.Add(newSharePointFileSignature);
             await _repository.SaveChangesAsync();
 
-            // Removed during deep clean - DMS/Disclosure module removed
-            // if (isDMSInventorSignature)
-            // {
-            //     await _repository.Disclosures.Where(d => d.DMSId == parentId).ExecuteUpdateAsync(d => d.SetProperty(p => p.SignatureFileId, p => newSharePointFileSignature.SignatureFileId));
-            // }
         }
 
 
@@ -943,18 +789,6 @@ namespace R10.Core.Services.Documents
         public async Task SetEnvelopeIdForSharePointFile(string itemId, string envelopeId)
         {
             await _repository.SharePointFileSignatures.Where(f => f.DriveItemId==itemId).ExecuteUpdateAsync(f => f.SetProperty(p => p.EnvelopeId, p => envelopeId));
-        }
-        public async Task SetEnvelopeIdForLetterFile(int letLogId, string envelopeId)
-        {
-            await _repository.LetterLogs.Where(f => f.LetLogId == letLogId).ExecuteUpdateAsync(f =>
-              f.SetProperty(p => p.EnvelopeId, p => envelopeId)
-               .SetProperty(p => p.SentToDocuSign, true));
-        }
-        public async Task SetEnvelopeIdForEFSFile(int efsLogId, string envelopeId)
-        {
-            await _repository.EFSLogs.Where(f => f.EfsLogId==efsLogId).ExecuteUpdateAsync(f =>
-              f.SetProperty(p => p.EnvelopeId, p => envelopeId)
-               .SetProperty(p => p.SentToDocuSign, true));
         }
         public async Task MarkSignedDoc(int sourcefileId, int signedFileId)
         {
@@ -971,58 +805,6 @@ namespace R10.Core.Services.Documents
         }
         public async Task DeleteSharePointForSignature(string driveItemId) {
             await _repository.SharePointFileSignatures.Where(f => f.DriveItemId == driveItemId).ExecuteDeleteAsync();
-        }
-
-        public async Task MarkSignedLetter(int sourceLetLogId,string newLetterFile,string itemId, string userName)
-        {
-            var origLog = await _repository.LetterLogs.FirstOrDefaultAsync(l => l.LetLogId == sourceLetLogId);
-            if (origLog != null)
-            {
-                origLog.SignatureCompleted = true;
-                origLog.SignedFileName = newLetterFile;
-                origLog.SignedDocDriveItemId = itemId;
-
-                var clone = await _repository.LetterLogs.Include(l => l.LetterLogDetails).AsNoTracking().FirstOrDefaultAsync(l => l.LetLogId == sourceLetLogId);
-                clone.LetLogId = 0;
-                clone.LetFile = newLetterFile;
-                clone.GenDate = DateTime.Now;
-                clone.GenBy = userName;
-                clone.ItemId = itemId;
-                clone.SentToDocuSign = false;
-                clone.SignatureCompleted = false;
-
-                foreach (var item in clone.LetterLogDetails) { 
-                    item.LetLogId = 0;
-                    item.LogDtlId = 0;
-                }
-                await _repository.LetterLogs.AddAsync(clone);
-                await _repository.SaveChangesAsync();
-                await _repository.LetterLogs.Where(l => l.LetLogId == origLog.LetLogId).ExecuteUpdateAsync(p => p.SetProperty(x => x.SignedLetLogId, x => clone.LetLogId));
-
-            }
-        }
-
-        public async Task MarkSignedEFSLog(int sourceEfsLogId, string newEfsFile, string itemId, string userName)
-        {
-            var origLog = await _repository.EFSLogs.FirstOrDefaultAsync(l => l.EfsLogId == sourceEfsLogId);
-            if (origLog != null)
-            {
-                origLog.SignatureCompleted = true;
-                origLog.SignedFileName = newEfsFile;
-                origLog.SignedDocDriveItemId = itemId;
-
-                var clone = await _repository.EFSLogs.AsNoTracking().FirstOrDefaultAsync(l => l.EfsLogId == sourceEfsLogId);
-                clone.EfsLogId = 0;
-                clone.EfsFile = newEfsFile;
-                clone.GenDate = DateTime.Now;
-                clone.GenBy = userName;
-                clone.ItemId = itemId;
-                clone.SentToDocuSign = false;
-                clone.SignatureCompleted = false;
-                await _repository.EFSLogs.AddAsync(clone);
-                await _repository.SaveChangesAsync();
-                await _repository.EFSLogs.Where(l => l.EfsLogId == origLog.EfsLogId).ExecuteUpdateAsync(p => p.SetProperty(x => x.SignedEfsLogId, x => clone.EfsLogId));
-            }
         }
 
         public async Task AddSignatureRecipients(List<DocFileSignatureRecipient> recipients, string envelopeId)
@@ -1044,18 +826,6 @@ namespace R10.Core.Services.Documents
         public async Task UpdateFileSignatureStatus(string envelopeId, string status)
         {            
             await _repository.DocFileSignatures.Where(d => d.EnvelopeId == envelopeId)
-                .ExecuteUpdateAsync(f => f.SetProperty(p => p.EnvelopeStatus, status));
-        }
-
-        public async Task UpdateLetSignatureStatus(string envelopeId, string status)
-        {
-            await _repository.LetterLogs.Where(d => d.EnvelopeId == envelopeId)
-                .ExecuteUpdateAsync(f => f.SetProperty(p => p.EnvelopeStatus, status));
-        }
-
-        public async Task UpdateEFSSignatureStatus(string envelopeId, string status)
-        {
-            await _repository.EFSLogs.Where(d => d.EnvelopeId == envelopeId)
                 .ExecuteUpdateAsync(f => f.SetProperty(p => p.EnvelopeStatus, status));
         }
 
@@ -1237,126 +1007,33 @@ namespace R10.Core.Services.Documents
 
         private async Task UpdatePatentParentStamp(DocFolder folder)
         {
-            BaseEntity mainRecord = null;
-            switch (folder.ScreenCode.ToUpper())
-            {
-                case "INV":
-                    mainRecord = await _repository.Inventions.FirstOrDefaultAsync(r => r.InvId == folder.DataKeyValue);
-                    break;
-
-                case "CA":
-                    mainRecord = await _repository.CountryApplications.FirstOrDefaultAsync(r => r.AppId == folder.DataKeyValue);
-                    break;
-
-                case "ACT":
-                    mainRecord = await _repository.PatActionDues.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
-                    break;
-
-                case "ACTINV":
-                    mainRecord = await _repository.PatActionDueInvs.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
-                    break;
-
-                case "COST":
-                    mainRecord = await _repository.PatCostTracks.FirstOrDefaultAsync(r => r.CostTrackId == folder.DataKeyValue);
-                    break;
-
-                case "COSTINV":
-                    mainRecord = await _repository.PatCostTrackInvs.FirstOrDefaultAsync(r => r.CostTrackInvId == folder.DataKeyValue);
-                    break;
-            }
-            if (mainRecord != null)
-            {
-                UpdateStamp(folder.UpdatedBy, mainRecord);
-            }
+            // Patent entity DbSets (Inventions, CountryApplications, PatActionDues, PatCostTracks, etc.) removed
+            await Task.CompletedTask;
         }
 
         private async Task UpdateTrademarkParentStamp(DocFolder folder)
         {
-            BaseEntity mainRecord = null;
-            switch (folder.ScreenCode.ToUpper())
-            {
-                case "TMK":
-                    mainRecord = await _repository.TmkTrademarks.FirstOrDefaultAsync(r => r.TmkId == folder.DataKeyValue);
-                    break;
-
-                case "ACT":
-                    mainRecord = await _repository.TmkActionDues.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
-                    break;
-
-                case "COST":
-                    mainRecord = await _repository.TmkCostTracks.FirstOrDefaultAsync(r => r.CostTrackId == folder.DataKeyValue);
-                    break;
-            }
-            if (mainRecord != null)
-            {
-                UpdateStamp(folder.UpdatedBy, mainRecord);
-            }
+            // Trademark entity DbSets (TmkTrademarks, TmkActionDues, TmkCostTracks) removed
+            await Task.CompletedTask;
         }
 
-        // Removed during deep clean - GeneralMatter module removed
         private async Task UpdateGeneralMatterParentStamp(DocFolder folder)
         {
-            // BaseEntity mainRecord = null;
-            // switch (folder.ScreenCode.ToUpper())
-            // {
-            //     case "GM":
-            //         mainRecord = await _repository.GMMatters.FirstOrDefaultAsync(r => r.MatId == folder.DataKeyValue);
-            //         break;
-            //
-            //     case "ACT":
-            //         mainRecord = await _repository.GMActionsDue.FirstOrDefaultAsync(r => r.ActId == folder.DataKeyValue);
-            //         break;
-            //
-            //     case "COST":
-            //         mainRecord = await _repository.GMCostTracks.FirstOrDefaultAsync(r => r.CostTrackId == folder.DataKeyValue);
-            //         break;
-            // }
-            // if (mainRecord != null)
-            // {
-            //     UpdateStamp(folder.UpdatedBy, mainRecord);
-            // }
             await Task.CompletedTask;
         }
 
-        // Removed during deep clean - DMS/Disclosure module removed
         private async Task UpdateDMSParentStamp(DocFolder folder)
         {
-            // if (folder.ScreenCode.ToUpper() == "DMS")
-            // {
-            //     var mainRecord = await _repository.Disclosures.FirstOrDefaultAsync(r => r.DMSId == folder.DataKeyValue);
-            //     if (mainRecord != null)
-            //     {
-            //         UpdateStamp(folder.UpdatedBy, mainRecord);
-            //     }
-            // }
             await Task.CompletedTask;
         }
 
-        // Removed during deep clean - PatClearance module removed
         private async Task UpdatePatClearanceParentStamp(DocFolder folder)
         {
-            // if (folder.ScreenCode.ToUpper() == "PAC")
-            // {
-            //     var mainRecord = await _repository.PacClearances.FirstOrDefaultAsync(r => r.PacId == folder.DataKeyValue);
-            //     if (mainRecord != null)
-            //     {
-            //         UpdateStamp(folder.UpdatedBy, mainRecord);
-            //     }
-            // }
             await Task.CompletedTask;
         }
 
-        // Removed during deep clean - TmkClearance module removed
         private async Task UpdateTmkSearchParentStamp(DocFolder folder)
         {
-            // if (folder.ScreenCode.ToUpper() == "TMC")
-            // {
-            //     var mainRecord = await _repository.TmcClearances.FirstOrDefaultAsync(r => r.TmcId == folder.DataKeyValue);
-            //     if (mainRecord != null)
-            //     {
-            //         UpdateStamp(folder.UpdatedBy, mainRecord);
-            //     }
-            // }
             await Task.CompletedTask;
         }
 
@@ -1368,376 +1045,14 @@ namespace R10.Core.Services.Documents
 
         private async Task SyncChildToDesignatedRecords(DocFolder folder)
         {
-            var screenCode = folder.ScreenCode?.ToUpper();
-            if (screenCode == "CA")
-            {
-                var app = await _repository.CountryApplications.AsNoTracking().FirstOrDefaultAsync(r => r.AppId == folder.DataKeyValue);
-                if (app != null)
-                    await _applicationService.SyncChildToDesignatedApplications(app.AppId, app.Country, app.CaseType ?? "", folder.UpdatedBy ?? "", typeof(DocFolder));
-            }
-            else if (screenCode == "TMK")
-            {
-                var tmk = await _repository.TmkTrademarks.AsNoTracking().FirstOrDefaultAsync(r => r.TmkId == folder.DataKeyValue);
-                if (tmk != null)
-                    await _trademarkService.SyncChildToDesignatedTrademarks(tmk, new TmkTrademarkModifiedFields(), typeof(DocFolder));
-            }
+            // Designation sync removed during debloat (ICountryApplicationService/ITmkTrademarkService deleted)
+            await Task.CompletedTask;
         }
 
         #endregion
 
-        #region Outlook Email
-        public async Task<int> LogOutlookEmail(string userEmail, string systemType, string screenCode, DocFile docFile, DocOutlook docOutlook, KeyTextDTO[] selectedCases, KeyTextDTO[] selectedCasesPaths)
-        {
-            // save to docmgt 
-            var docMgtCases = await SaveOutlookToDocMgt(userEmail, systemType, screenCode, docFile, selectedCases, selectedCasesPaths);
-
-            // add to Outlook log tables
-            var cpiEmailId = await LogOutLookLinks(docFile.CreatedBy, systemType, docOutlook, docMgtCases);
-
-            return cpiEmailId;
-        }
-
-        private async Task<OutlookLinkedCases> SaveOutlookToDocMgt(string userEmail, string systemType, string screenCode, DocFile docFile, KeyTextDTO[] selectedCases, KeyTextDTO[] selectedCasesPaths)
-        {
-            // note: email file created/saved in controller; docFile record created in controller
-            var userName = docFile.CreatedBy;
-            var docName = docFile.UserFileName.Substring(0, docFile.UserFileName.Length - 4);
-            var docTypeId = await GetDocTypeIdFromFileName("x.msg");
-
-
-            // then, save to docmgt tree of each cases in selectedCases; create folders if necessary
-            // get docmgt folder info; add, if not yet existing
-            var settings = await _settings.GetSetting();
-            //var folderName = settings.EmailDocumentFolder;
-            //if (folderName == null) folderName = _defaultFolderName;
-
-            // create document for message for each cases
-            var processedCases = new OutlookLinkedCases
-            {
-                FileId = docFile.FileId,
-                DataKeyValue = new List<OutlookProcessedCases>()
-            };
-
-            string strDocIds = "";      // (2021-dec-02) retro-fix on null FileId for multiple cases saving; can't change the EFCore structure (n:n on DocDocument:DocFile) now since so many other logic affected
-                                        // OutlookToCPi changed rel from 1:1 to n:n
-
-            /*select dummy folder(top level folder in Add-in), save to default folder ("Incoming Email")
-              //if no folder selected, save to default folder ("Incoming Email")
-              //if default folder not created, create one then save
-            */
-            foreach (var selCase in selectedCases)
-            {
-                var key = selCase.key.Split("|");
-                var dataKey = key[0];
-                var dataKeyValue = int.Parse(key[1]);
-
-                var folderName = string.IsNullOrEmpty(settings.EmailDocumentFolder) ? _defaultFolderName : settings.EmailDocumentFolder;
-                int? folderId = 0;
-
-                if (selectedCasesPaths.Length > 0)
-                {
-                    var idTextDTO = selectedCasesPaths.Where(p => p.key == selCase.key).FirstOrDefault();
-                    string folderIdText = idTextDTO == null ? "0" : idTextDTO.text;
-                    //convert folderId to integer
-                    try
-                    {
-                        folderId = Int32.Parse(folderIdText);
-                    }
-                    catch (FormatException e)
-                    {
-                        await _errorLogger.Add(new Log { Message = e.Message });
-                    }
-
-                    //if (string.IsNullOrEmpty(folderName) || folderName == selCase.text)
-                    //{
-                    //    folderName = settings.EmailDocumentFolder;
-                    //    if (folderName == null) folderName = _defaultFolderName;
-                    //}
-                }
-                //check if default folder ("Incoming email") is created
-                if (folderId == 0)
-                {
-                    folderName = settings.EmailDocumentFolder;
-                    if (folderName == null) folderName = _defaultFolderName;
-                    folderId = await DocFolders.Where(f => f.FolderName == folderName && f.DataKey == dataKey && f.DataKeyValue == dataKeyValue)
-                                    .Select(f => f.FolderId).FirstOrDefaultAsync();
-                }
-
-                //int? folderId = await DocFolders.Where(f => f.FolderName == folderName && f.DataKey == dataKey && f.DataKeyValue == dataKeyValue)
-                //                        .Select(f => f.FolderId).FirstOrDefaultAsync();
-
-                // create folder, if case does not have it yet
-                if (folderId == 0)
-                {
-                    folderId = await CreateFolder(folderName, userEmail, systemType, dataKey, dataKeyValue, screenCode, userName);
-                }
-
-                var docDocument = new DocDocument
-                {
-                    FolderId = folderId ?? 0,
-                    Author = userName,
-                    DocName = docName,
-                    DocTypeId = docTypeId,
-                    FileId = docFile.FileId,
-                    IsPrivate = false,
-                    CreatedBy = userName,
-                    UpdatedBy = userName,
-                    DateCreated = DateTime.Now,
-                    LastUpdate = DateTime.Now
-                };
-                var newDocument = await AddDocument(docDocument);
-                processedCases.DataKeyValue.Add(new OutlookProcessedCases { DataKey = dataKey, DataKeyValue = dataKeyValue, DocId = newDocument.DocId });
-                strDocIds += "," + newDocument.DocId;
-            }
-
-            // (2021-dec-02) retro-fix on null FileId for multiple cases saving; can't change the EFCore structure (n:n on DocDocument:DocFile) now since so many other logic affected
-            // OutlookToCPi changed rel from 1:1 to n:n
-            if (strDocIds.Length > 0)
-            {
-                strDocIds = strDocIds.Substring(1);
-                await FixDocId(strDocIds, docFile.FileId);
-            }
-
-            // save the database changes; docFile.filesize was updated in OutlookController but was not saved
-            var modifiedFile = _repository.DocFiles.Attach(docFile);
-            modifiedFile.Property(f => f.FileSize).IsModified = true;       // note: value updated in controller above
-            await _repository.SaveChangesAsync();
-
-            return processedCases;
-        }
-
-        private async Task<int?> CreateFolder(string folderName, string userEmail, string systemType, string dataKey, int dataKeyValue, string screenCode, string userName)
-        {
-            var docFolder = new DocFolder
-            {
-                Author = userEmail,
-                SystemType = systemType,
-                DataKey = dataKey,
-                DataKeyValue = dataKeyValue,
-                FolderName = folderName,
-                ScreenCode = screenCode,
-                ParentFolderId = 0,
-                IsPrivate = false,
-                CreatedBy = userName,
-                UpdatedBy = userName,
-                DateCreated = DateTime.Now,
-                LastUpdate = DateTime.Now
-            };
-            var newFolder = await AddFolder(docFolder);
-            int? folderId = newFolder.FolderId;
-            return folderId;
-        }
-
-        private async Task FixDocId(string docIds, int fileId)
-        {
-            var sql = $"Update tblDocDocument Set FileId = {fileId.ToString()} Where DocId In ({docIds}) And FileId Is Null;";
-            await _repository.Database.ExecuteSqlRawAsync(sql);
-        }
-
-        private async Task<int> LogOutLookLinks(string userName, string systemType, DocOutlook docOutlook, OutlookLinkedCases docMgtCases)
-        {
-            // docOutlook was filled in OutlookController; supply missing data here
-
-            var dateNow = DateTime.Now;
-            //var cpiEmailId = docOutlook.CPiEmailId;
-
-            // Outlook ItemId is an unreliable key because it changes every time the message is moved to a different folder
-            // Assign unique CPi email id, if Outlook CPiEmailId is null
-            if (docOutlook.CPiEmailId == 0)
-            {
-                var docOutlookId = new DocOutlookId();
-                docOutlookId.CreatedBy = userName;
-                docOutlookId.DateCreated = dateNow;
-                _repository.DocOutlookIds.Add(docOutlookId);
-                await _repository.SaveChangesAsync();
-
-                docOutlook.CPiEmailId = docOutlookId.CPiEmailId;
-            }
-
-
-            docOutlook.FileId = docMgtCases.FileId;
-            docOutlook.CreatedBy = userName;
-            _repository.DocOutlook.Add(docOutlook);
-            await _repository.SaveChangesAsync();           // save docOutlook, the EmailId is needed for Outlook case links below
-
-            foreach (var docCase in docMgtCases.DataKeyValue)
-            {
-                var caseLink = new DocOutlookCaseLink
-                {
-                    EmailId = docOutlook.EmailId,
-                    SystemType = systemType,
-                    DataKey = docCase.DataKey,
-                    DataKeyValue = docCase.DataKeyValue,
-                    DocId = docCase.DocId,
-                    CreatedBy = userName,
-                    DateCreated = dateNow
-                };
-
-                _repository.DocOutlookCaseLinks.Add(caseLink);
-            }
-            await _repository.SaveChangesAsync();
-
-            return docOutlook.CPiEmailId;
-        }
-
-        public async Task<CaseLogDTO[]> GetOulookCaseLogByEmailId(int? cpiEmailId)
-        {
-            var idParam = new SqlParameter("Id", cpiEmailId ?? 0) { Direction = ParameterDirection.Input };
-            var result = await _repository.CaseLogDTO.FromSqlRaw("Exec dbo.procDoc_OutlookLogCases @Id", idParam).ToArrayAsync();
-
-            return result;
-        }
-
-        #endregion
 
         #region Gmail Email
-        public async Task<OutlookLinkedCases> SaveGmailEmail(string contentRootPath, string userEmail, string systemType, string screenCode, string selectedCases, string gmailMsgId, string msgSubject, string encodedMsg)
-        {
-            // initialize            
-            var userName = userEmail.Split("@")[0];
-
-            var docName = msgSubject;
-            var docTypeId = await GetDocTypeIdFromFileName("x.eml");
-
-            // first, save file info to db; the file name is needed by MsgKit
-            var docFile = new DocFile
-            {
-                FileExt = "eml",
-                UserFileName = docName,
-                FileSize = 0,
-                IsImage = false,
-                CreatedBy = userName,
-                DateCreated = DateTime.Now,
-                UpdatedBy = userName,
-                LastUpdate = DateTime.Now
-            };
-            var newFile = await AddDocFile(docFile);
-
-            // save email to physical file
-            var settings = await _settings.GetSetting();
-            //var docFilePath = settings.EmailSavePath;
-            var docFilePath = Path.Combine(contentRootPath, @"UserFiles\Searchable\Documents");
-
-            if (!docFilePath.EndsWith(@"\")) docFilePath += @"\";
-            docFilePath += newFile.DocFileName;
-
-            // second, create .eml file from base64 encoded and save to docFilePath            
-            try
-            {
-                var decodedBytes = Convert.FromBase64String(encodedMsg);
-                using (FileStream stream = new FileStream(docFilePath, FileMode.Create))
-                {
-                    stream.Write(decodedBytes, 0, decodedBytes.Length);
-                }
-                newFile.FileSize = decodedBytes.Length;
-            }
-            catch (Exception ex)
-            {
-                var error = ex.Message;
-                throw new Exception();
-            }
-
-            // then, save to docmgt tree of each cases in selectedCases; create folders if necessary
-            // get docmgt folder info; add, if not yet existing
-            var folderName = settings.EmailDocumentFolder;
-            if (folderName == null) folderName = _defaultFolderName;
-
-            // create document for message for each cases
-            var docFileId = newFile.FileId;
-
-            var processedCases = new OutlookLinkedCases
-            {
-                FileId = docFileId,
-                DataKeyValue = new List<OutlookProcessedCases>()
-            };
-
-            foreach (var selCase in selectedCases.Split(","))
-            {
-                var key = selCase.Split("|");
-                var dataKey = key[0];
-                var dataKeyValue = Int32.Parse(key[1]);
-
-                int? folderId = await DocFolders.Where(f => f.FolderName == folderName && f.DataKey == dataKey && f.DataKeyValue == dataKeyValue)
-                                        .Select(f => f.FolderId).FirstOrDefaultAsync();
-                if (folderId == 0)
-                {
-                    var docFolder = new DocFolder
-                    {
-                        Author = userEmail,
-                        SystemType = systemType,
-                        DataKey = dataKey,
-                        DataKeyValue = dataKeyValue,
-                        FolderName = folderName,
-                        ParentFolderId = 0,
-                        IsPrivate = false,
-                        CreatedBy = userName,
-                        UpdatedBy = userName,
-                        DateCreated = DateTime.Now,
-                        LastUpdate = DateTime.Now,
-                        ScreenCode = screenCode
-                    };
-                    var newFolder = await AddFolder(docFolder);
-                    folderId = newFolder.FolderId;
-                }
-
-
-                var docDocument = new DocDocument
-                {
-                    FolderId = folderId ?? 0,
-                    Author = userName,
-                    DocName = docName,
-                    DocTypeId = docTypeId,
-                    FileId = docFileId,
-                    IsPrivate = false,
-                    CreatedBy = userName,
-                    UpdatedBy = userName,
-                    DateCreated = DateTime.Now,
-                    LastUpdate = DateTime.Now,                    
-                    Source = DocumentSourceType.Manual
-                };
-                var newDocument = await AddDocument(docDocument);
-
-                processedCases.DataKeyValue.Add(new OutlookProcessedCases { DataKey = dataKey, DataKeyValue = dataKeyValue, DocId = newDocument.DocId });
-            }
-
-            // save the database changes
-            // update filesize in tblDocFile
-            var modifiedFile = _repository.DocFiles.Attach(docFile);
-            modifiedFile.Property(f => f.FileSize).IsModified = true;       // note: value update above
-
-            await _repository.SaveChangesAsync();
-
-            //Log linked cases            
-            try
-            {                
-                var logs = processedCases.DataKeyValue.Select(d => new DocGmailCaseLink()
-                {
-                    EmailId = gmailMsgId,
-                    SystemType = systemType,
-                    DataKey = d.DataKey,
-                    DataKeyValue = d.DataKeyValue,
-                    DocId = d.DocId,
-                    CreatedBy = userName,
-                    DateCreated = DateTime.Now
-                }).ToList();
-                await LogGmailEmail(logs);
-
-                return processedCases;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception();
-            }
-        }
-
-        public async Task<CaseLogDTO[]> GetGmailCaseLogByEmailId(string gmailMsgId)
-        {
-            //var idParam = new SqlParameter("Id", gmailMsgId) { Direction = ParameterDirection.Input };
-            //var result = await _repository.CaseLogDTO.FromSqlRaw("Exec dbo.procDoc_GmailLogCases @Id", idParam).ToArrayAsync();
-            var result = await _repository.CaseLogDTO.FromSqlInterpolated($"procDoc_GmailLogCases @Id={gmailMsgId}").AsNoTracking().ToArrayAsync();
-            return result;
-        }
-
         public async Task LogGmailEmail(List<DocGmailCaseLink> links)
         {
             if (links.Count > 0)
@@ -1746,7 +1061,6 @@ namespace R10.Core.Services.Documents
                 await _repository.SaveChangesAsync();
             }
         }
-
         #endregion
 
         #region Responsible Docketing
@@ -2088,86 +1402,8 @@ namespace R10.Core.Services.Documents
         
         public async Task<string?> GetParentDocumentLink(string documentLink)
         {
-            var settings = await _settings.GetSetting();
-            var documentLinkArray = documentLink.Split("|");
-            var systemType = documentLinkArray[0]?.ToUpper();
-            var screenCode = documentLinkArray[1];
-            var dataKey = documentLinkArray[2]?.ToLower();
-            var dataKeyValue = int.Parse(documentLinkArray[3] ?? "0");
-            var parentKey = "";
-            var parentKeyValue = 0;
-
-            if (dataKeyValue <= 0)
-                return string.Empty;
-
-            if (systemType == "P" && dataKey == "actid")
-            {
-                //get country application
-                screenCode = "CA";
-                parentKey = "AppId";
-                parentKeyValue = await _repository.PatActionDues.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.AppId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "P" && dataKey == "costtrackid")
-            {
-                //get country application
-                screenCode = "CA";
-                parentKey = "AppId";
-                parentKeyValue = await _repository.PatCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.AppId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "P" && dataKey == "actinvid")
-            {
-                //get invention
-                screenCode = "Inv";
-                parentKey = "InvId";
-                parentKeyValue = await _repository.PatActionDueInvs.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.InvId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "P" && dataKey == "costtrackinvid")
-            {
-                //get invention
-                screenCode = "Inv";
-                parentKey = "InvId";
-                parentKeyValue = await _repository.PatCostTrackInvs.AsNoTracking().Where(d => d.CostTrackInvId == dataKeyValue).Select(d => d.InvId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "P" && dataKey == "appid" && !settings.IsCountryApplicationDocumentRoot)
-            {
-                //get invention
-                screenCode = "Inv";
-                parentKey = "InvId";
-                parentKeyValue = await _repository.CountryApplications.AsNoTracking().Where(d => d.AppId == dataKeyValue).Select(d => d.InvId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "T" && dataKey == "actid")
-            {
-                //get trademark
-                screenCode = "Tmk";
-                parentKey = "TmkId";
-                parentKeyValue = await _repository.TmkActionDues.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.TmkId).FirstOrDefaultAsync();
-            }
-            else if (systemType == "T" && dataKey == "costtrackid")
-            {
-                //get trademark
-                screenCode = "Tmk";
-                parentKey = "TmkId";
-                parentKeyValue = await _repository.TmkCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.TmkId).FirstOrDefaultAsync();
-            }
-            // Removed during deep clean - GeneralMatter module removed
-            // else if (systemType == "G" && dataKey == "actid")
-            // {
-            //     //get general matters
-            //     screenCode = "GM";
-            //     parentKey = "MatId";
-            //     parentKeyValue = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
-            // }
-            // else if (systemType == "G" && dataKey == "costtrackid")
-            // {
-            //     //get general matters
-            //     screenCode = "GM";
-            //     parentKey = "MatId";
-            //     parentKeyValue = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.MatId).FirstOrDefaultAsync();
-            // }
-
-            if (parentKeyValue > 0)
-                return $"{systemType}|{screenCode}|{parentKey}|{parentKeyValue}";
-
+            // All parent lookup DbSets (PatActionDues, PatCostTracks, PatActionDueInvs, PatCostTrackInvs, CountryApplications, TmkActionDues, TmkCostTracks) removed
+            await Task.CompletedTask;
             return string.Empty;
         }
 
@@ -2175,81 +1411,17 @@ namespace R10.Core.Services.Documents
         public async Task<string> GenerateFolderName(string documentLink)
         {
             var documentLinkArray = documentLink.Split("|");
-            var systemType = documentLinkArray[0]?.ToUpper();
-            var dataKey = documentLinkArray[2]?.ToLower();
-            var dataKeyValue = int.Parse(documentLinkArray[3] ?? "0");
-            var folderName = "";
 
-            if (dataKeyValue <= 0)
-                return string.Empty;
-
-            if (systemType == "P" && dataKey == "invid")
-                folderName = await _repository.Inventions.AsNoTracking().Where(d => d.InvId == dataKeyValue).Select(d => d.CaseNumber).FirstOrDefaultAsync();
-            else if (systemType == "P" && dataKey == "appid")
-                folderName = await _repository.CountryApplications.AsNoTracking().Where(d => d.AppId == dataKeyValue).Select(d => $"{d.CaseNumber} - {d.Country}" + (string.IsNullOrEmpty(d.SubCase) ? "" : $" - {d.SubCase}")).FirstOrDefaultAsync();
-            else if (systemType == "P" && dataKey == "actid")
-                folderName = await _repository.PatActionDues.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
-            else if (systemType == "P" && dataKey == "costtrackid")
-                folderName = await _repository.PatCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
-            else if (systemType == "P" && dataKey == "actinvid")
-                folderName = await _repository.PatActionDueInvs.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
-            else if (systemType == "P" && dataKey == "costtrackinvid")
-                folderName = await _repository.PatCostTrackInvs.AsNoTracking().Where(d => d.CostTrackInvId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
-
-            else if (systemType == "T" && dataKey == "tmkid")
-                folderName = await _repository.TmkTrademarks.AsNoTracking().Where(d => d.TmkId == dataKeyValue).Select(d => $"{d.CaseNumber} - {d.Country}" + (string.IsNullOrEmpty(d.SubCase) ? "" : $" - {d.SubCase}")).FirstOrDefaultAsync();
-            else if (systemType == "T" && dataKey == "actid")
-                folderName = await _repository.TmkActionDues.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
-            else if (systemType == "T" && dataKey == "costtrackid")
-                folderName = await _repository.TmkCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
-
-            // Removed during deep clean - GeneralMatter module removed
-            // else if (systemType == "G" && dataKey == "matid")
-            //     folderName = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => d.CaseNumber).FirstOrDefaultAsync();
-            // else if (systemType == "G" && dataKey == "actid")
-            //     folderName = await _repository.GMActionsDue.AsNoTracking().Where(d => d.ActId == dataKeyValue).Select(d => d.ActionType).FirstOrDefaultAsync();
-            // else if (systemType == "G" && dataKey == "costtrackid")
-            //     folderName = await _repository.GMCostTracks.AsNoTracking().Where(d => d.CostTrackId == dataKeyValue).Select(d => d.CostType).FirstOrDefaultAsync();
-
-            return folderName ?? $"{documentLinkArray[2]}.{documentLinkArray[3]}";
+            // All entity DbSets (Inventions, CountryApplications, PatActionDues, PatCostTracks, etc.) removed
+            // Return fallback folder name
+            await Task.CompletedTask;
+            return $"{documentLinkArray[2]}.{documentLinkArray[3]}";
         }
 
         public async Task<(string? ClientCode, string? ClientName, string? MatterNumber)> GetClientMatter(string documentLink)
         {
-            var documentLinkArray = documentLink.Split("|");
-            var systemType = documentLinkArray[0]?.ToUpper();
-            var dataKey = documentLinkArray[2]?.ToLower();
-            var dataKeyValue = int.Parse(documentLinkArray[3] ?? "0");
-
-            if (dataKeyValue > 0)
-            {
-                if (systemType == "P" && dataKey == "invid")
-                {
-                    var inv = await _repository.Inventions.AsNoTracking().Where(d => d.InvId == dataKeyValue).Select(d => new { d.CaseNumber, d.InvMatterNumber, d.Client.ClientCode, d.Client.ClientName }).FirstOrDefaultAsync();
-                    if (inv != null)
-                        return (inv.ClientCode, inv.ClientName, inv.InvMatterNumber ?? inv.CaseNumber);
-                }
-                else if (systemType == "P" && dataKey == "appid")
-                {
-                    var inv = await _repository.CountryApplications.AsNoTracking().Where(d => d.AppId == dataKeyValue).Select(d => new { d.CaseNumber, d.Invention.InvMatterNumber, d.Invention.Client.ClientCode, d.Invention.Client.ClientName }).FirstOrDefaultAsync();
-                    if (inv != null)
-                        return (inv.ClientCode, inv.ClientName, inv.InvMatterNumber ?? inv.CaseNumber);
-                }
-                else if (systemType == "T" && dataKey == "tmkid")
-                {
-                    var tmk = await _repository.TmkTrademarks.AsNoTracking().Where(d => d.TmkId == dataKeyValue).Select(d => new { d.CaseNumber, d.MatterNumber, d.Client.ClientCode, d.Client.ClientName }).FirstOrDefaultAsync();
-                    if (tmk != null)
-                        return (tmk.ClientCode, tmk.ClientName, tmk.MatterNumber ?? tmk.CaseNumber);
-                }
-                // Removed during deep clean - GeneralMatter module removed
-                // else if (systemType == "G" && dataKey == "matid")
-                // {
-                //     var gm = await _repository.GMMatters.AsNoTracking().Where(d => d.MatId == dataKeyValue).Select(d => new { d.CaseNumber, d.MatterNumber, d.Client.ClientCode, d.Client.ClientName }).FirstOrDefaultAsync();
-                //     if (gm != null)
-                //         return (gm.ClientCode, gm.ClientName, gm.MatterNumber ?? gm.CaseNumber);
-                // }
-            }
-
+            // All entity DbSets (Inventions, CountryApplications, TmkTrademarks) removed
+            await Task.CompletedTask;
             return ("", "", "");
         }
 
@@ -2264,140 +1436,5 @@ namespace R10.Core.Services.Documents
             await _repository.SaveChangesAsync();
         }
 
-        #region Trade Secret
-        public async Task LogDocTradeSecretActivityByDocId(int docid)
-        {
-            var docDocument = await _repository.DocDocuments.AsNoTracking().Where(d => d.DocId == docid).FirstOrDefaultAsync();
-            await LogDocTradeSecretActivityByFileId(docDocument?.FileId ?? 0);
-        }
-
-        public async Task LogDocTradeSecretActivityByFileId(int fileId)
-        {
-            var docFolder = await _repository.DocFolders.AsNoTracking().Where(f => f.DocDocuments.Any(d => d.FileId == fileId)).FirstOrDefaultAsync();
-            var tsReqLocator = await GetDocTradeSecretRequestLocator(docFolder?.DataKey, docFolder?.DataKeyValue);
-            if (!string.IsNullOrEmpty(tsReqLocator))
-            {
-                var tsRequest = await _tradeSecretService.GetUserRequest(tsReqLocator);
-                var requestId = (tsRequest != null && tsRequest.IsCleared) ? tsRequest.RequestId : 0;
-                await _tradeSecretService.LogActivity(GetDocTradeSecretSource(docFolder?.DataKey), TradeSecretScreen.DocFile, fileId, TradeSecretActivityCode.Download, requestId);
-
-                if (!(tsRequest?.IsCleared ?? false))
-                    throw new UnauthorizedAccessException();
-            }
-        }
-
-        public async Task LogDocTradeSecretActivityByFileIds(List<int> fileIds)
-        {
-            var docFolder = await _repository.DocFolders.AsNoTracking().Where(f => f.DocDocuments.Any(d => d.FileId == fileIds.FirstOrDefault())).FirstOrDefaultAsync();
-            var tsReqLocator = await GetDocTradeSecretRequestLocator(docFolder?.DataKey, docFolder?.DataKeyValue);
-            if (!string.IsNullOrEmpty(tsReqLocator))
-            {
-                var tsRequest = await _tradeSecretService.GetUserRequest(tsReqLocator);
-                var requestId = (tsRequest != null && tsRequest.IsCleared) ? tsRequest.RequestId : 0;
-
-                foreach (var fileId in fileIds)
-                {
-                    await _tradeSecretService.LogActivity(GetDocTradeSecretSource(docFolder?.DataKey), TradeSecretScreen.DocFile, fileId, TradeSecretActivityCode.Download, requestId);
-                }
-
-                if (!(tsRequest?.IsCleared ?? false))
-                    throw new UnauthorizedAccessException();
-            }
-        }
-
-        public async Task LogDocTradeSecretActivityByFileName(string fileName)
-        {
-            await LogDocTradeSecretActivityByFileId(GetFileId(fileName));
-        }
-
-        public async Task LogDocTradeSecretActivityByFileNames(List<string?> fileNames)
-        {
-            var fileIds = fileNames.Select(f => GetFileId(f ?? "0")).ToList();
-            await LogDocTradeSecretActivityByFileIds(fileIds);
-        }
-
-        public async Task LogDocTradeSecretActivityByDriveItemId(string driveItemId)
-        {
-            var docFile = await _repository.DocFiles.AsNoTracking().Where(d => d.DriveItemId == driveItemId).FirstOrDefaultAsync();
-            await LogDocTradeSecretActivityByFileId(docFile?.FileId ?? 0);
-        }
-
-        public async Task LogDocTradeSecretActivityByDriveItemIds(List<string?> driveItemIds)
-        {
-            var docFolder = await _repository.DocFolders.AsNoTracking().Where(f => f.DocDocuments.Any(d => d.DocFile.DriveItemId == driveItemIds.FirstOrDefault())).FirstOrDefaultAsync();
-            var tsReqLocator = await GetDocTradeSecretRequestLocator(docFolder?.DataKey, docFolder?.DataKeyValue);
-            if (!string.IsNullOrEmpty(tsReqLocator))
-            {
-                var tsRequest = await _tradeSecretService.GetUserRequest(tsReqLocator);
-                var requestId = (tsRequest != null && tsRequest.IsCleared) ? tsRequest.RequestId : 0;
-
-                foreach (var driveItemId in driveItemIds)
-                {
-                    var docFile = await _repository.DocFiles.AsNoTracking().Where(d => d.DriveItemId == driveItemId).FirstOrDefaultAsync();
-                    await _tradeSecretService.LogActivity(GetDocTradeSecretSource(docFolder?.DataKey), TradeSecretScreen.DocFile, docFile?.FileId ?? 0, TradeSecretActivityCode.Download, requestId);
-                }
-
-                if (!(tsRequest?.IsCleared ?? false))
-                    throw new UnauthorizedAccessException();
-            }
-        }
-
-        /// <summary>
-        /// Create trade secret request locator
-        /// Return null if record is not trade secret
-        /// </summary>
-        /// <param name="parentKeyName"></param>
-        /// <param name="parentKeyId"></param>
-        /// <returns></returns>
-        private async Task<string?> GetDocTradeSecretRequestLocator(string? parentKeyName, int? parentKeyId)
-        {
-            if (string.IsNullOrEmpty(parentKeyName))
-                return null;
-
-            switch (parentKeyName.ToLower())
-            {
-                case "invid":
-                    var invention = await _repository.Inventions.AsNoTracking().Where(i => (i.IsTradeSecret ?? false) && i.InvId == parentKeyId).FirstOrDefaultAsync();
-                    if (invention != null)
-                        return _tradeSecretService.CreateLocator(TradeSecretScreen.Invention, invention.InvId);
-                    break;
-                case "appid":
-                    var application = await _repository.CountryApplications.AsNoTracking().Where(ca => (ca.Invention.IsTradeSecret ?? false) && ca.AppId == parentKeyId).FirstOrDefaultAsync();
-                    if (application != null)
-                        return _tradeSecretService.CreateLocator(TradeSecretScreen.Invention, application.InvId);
-                    break;
-                // Removed during deep clean - DMS/Disclosure module removed
-                // case "dmsid":
-                //     var disclosure = await _repository.Disclosures.AsNoTracking().Where(d => (d.IsTradeSecret ?? false) && d.DMSId == parentKeyId).FirstOrDefaultAsync();
-                //     if (disclosure != null)
-                //         return _tradeSecretService.CreateLocator(TradeSecretScreen.DMSDisclosure, disclosure.DMSId);
-                //     break;
-            }
-
-            return null;
-        }
-
-        private string GetDocTradeSecretSource(string? dataKey)
-        {
-            switch (dataKey?.ToLower())
-            {
-                case "invid":
-                    return TradeSecretScreen.InventionDocuments;
-                case "appid":
-                    return TradeSecretScreen.CountryApplicationDocuments;
-                case "dmsid":
-                    return TradeSecretScreen.DisclosureDocuments;
-            }
-
-            return string.Empty;
-        }
-
-        private int GetFileId(string fileName)
-        {
-            var fileId = 0;
-            int.TryParse(Path.GetFileNameWithoutExtension(fileName)?.Replace("_thumb", "", StringComparison.OrdinalIgnoreCase), out fileId);
-            return fileId;
-        }
-        #endregion
     }
 }

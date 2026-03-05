@@ -46,7 +46,7 @@ namespace R10.Web.Controllers
         private readonly ILogger _logger;
         private readonly CPiIdentitySettings _cpiSettings;
         private readonly ICPiSystemSettingManager _systemSettingManager;
-        private readonly IEmailTemplateService _emailTemplateService;
+        //private readonly IEmailTemplateService _emailTemplateService;
         private readonly IConfiguration _configuration;
         private readonly JavaScriptEncoder _jsEncoder;
         private readonly ICPiExternalLoginManager _ssoManager;
@@ -61,7 +61,7 @@ namespace R10.Web.Controllers
             ILogger<AccountController> logger,
             IOptions<CPiIdentitySettings> cpiSettings,
             ICPiSystemSettingManager systemSettingManager,
-            IEmailTemplateService emailTemplateService,
+            //IEmailTemplateService emailTemplateService,
             IConfiguration configuration,
             JavaScriptEncoder jsEncoder,
             ICPiExternalLoginManager ssoManager,
@@ -75,7 +75,7 @@ namespace R10.Web.Controllers
             _logger = logger;
             _cpiSettings = cpiSettings.Value;
             _systemSettingManager = systemSettingManager;
-            _emailTemplateService = emailTemplateService;
+            //_emailTemplateService = emailTemplateService;
             _configuration = configuration;
             _jsEncoder = jsEncoder;
             _ssoManager = ssoManager;
@@ -1037,20 +1037,8 @@ namespace R10.Web.Controllers
                         // Send reset password link
                         //result = await SendResetPasswordLinkAsync(user);
 
-                        var defaultSettings = await _defaultSettings.GetSetting();
-                        var emailMessage = await _emailTemplateService.GetEmailMessage(defaultSettings.ResetPasswordLinkNotification, user.Locale,
-                            new UserAccountEmail()
-                            {
-                                FirstName = user.FirstName,
-                                LastName = user.LastName,
-                                Email = user.Email,
-                                CallToAction = "Reset Password",
-                                CallToActionUrl = await ResetPasswordLink(user),
-                                LogoUrl = Url.CPiLogoLink(Request.Scheme)
-                        });
-
-                        if (emailMessage != null)
-                            result = await _emailSender.SendEmailAsync(user.Email, emailMessage.Subject, emailMessage.Body);
+                        // EmailTemplateService removed during debloat
+                        result = new EmailSenderResult() { ErrorMessage = "Email template service not available." };
 
                     }
 

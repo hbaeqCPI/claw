@@ -7,18 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageActMap.cs" />
-    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageCostMap.cs" />
-    <Compile Remove="Data\GeneralMatter\mappings\GMMatterImageMap.cs" />
-    <Compile Remove="Data\Patent\mappings\PatImageActMap.cs" />
-    <Compile Remove="Data\Patent\mappings\PatImageAppMap.cs" />
-    <Compile Remove="Data\Patent\mappings\PatImageCostMap.cs" />
-    <Compile Remove="Data\Patent\mappings\PatImageInvMap.cs" />
-    <Compile Remove="Data\Trademark\mappings\TmkImageActMap.cs" />
-    <Compile Remove="Data\Trademark\mappings\TmkImageCostMap.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 namespace R10.Web.Areas
 {
@@ -6,7 +6,6 @@ namespace R10.Web.Areas
     {
         public AutoMapperSharedProfileConfig()
         {
-            // All shared mappings removed in debloat
         }
     }
 }

@@ -9,7 +9,6 @@ using R10.Core.Entities;
 using System.Transactions;
 using R10.Core.Exceptions;
 using R10.Core.Entities.Patent;
-using R10.Core.Entities.ReportScheduler;
 using R10.Core.Identity;
 
 namespace R10.Core.Services
@@ -199,25 +198,8 @@ namespace R10.Core.Services
             return list;
         }
 
-        public async Task<List<LookupDescDTO>> GetDedocketInstructions()
-        {
-            var list = await _repository.DeDocketInstructions.Where(d => d.InUse).Select(d => new LookupDescDTO { Value = d.InstructionId.ToString(), Text = d.Instruction }).ToListAsync();
-            return list;
-        }
-
         public async Task<List<LookupDescDTO>> GetCostTypes()
         {
-            var list = await _repository.PatCostTypes.Select(c => new LookupDescDTO { Value = c.CostTypeID.ToString(), Text = c.CostType}).ToListAsync();
-            return list;
-        }
-
-        public async Task<List<LookupDescDTO>> GetQETemplates(string screenType) {
-            var screen = await _repository.SystemScreens.Where(s => s.SystemType == "P" && s.FeatureType == "QE" && s.ScreenName == screenType).FirstOrDefaultAsync();
-            if (screen != null) {
-                var list = await _repository.QEMains.Where(qe=> qe.InUse && qe.ScreenId==screen.ScreenId)
-                           .Select(t => new LookupDescDTO { Value = t.QESetupID.ToString(), Text = t.TemplateName }).ToListAsync();
-                return list;
-            }
             return new List<LookupDescDTO>();
         }
 

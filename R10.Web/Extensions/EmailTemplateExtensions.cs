@@ -1,3 +1,5 @@
+// Entire file commented out - IEmailTemplateService and EmailMessage types deleted from R10.Core
+/*
 using R10.Core.Entities;
 using R10.Core.Interfaces;
 using R10.Web.Areas.Shared.ViewModels;
@@ -37,3 +39,4 @@ namespace R10.Core.Interfaces
         }
     }
 }
+*/

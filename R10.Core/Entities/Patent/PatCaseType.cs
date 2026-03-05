@@ -1,5 +1,4 @@
 ﻿using R10.Core.Entities;
-// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -23,15 +22,9 @@ namespace R10.Core.Entities.Patent
 
         public bool? LockPatRecord { get; set; }
 
-        public List<PatPriority>? CaseTypePriorities { get; set; }
         public List<PatCountryLaw>? CaseTypeCountryLaws { get; set; }
-
-        public List<CountryApplication>? CaseTypeCountryApplication { get; set; }
 
         public List<PatDesCaseType>? ParentPatDesCaseTypes { get; set; }
         public List<PatDesCaseType>? ChildPatDesCaseTypes { get; set; }
-
-        public List<PatCECountrySetup>? CaseTypeCECountrySetups { get; set; }
-//         public List<FFReminderSetup>? FFReminderSetups { get; set; } // Removed during deep clean
     }
 }

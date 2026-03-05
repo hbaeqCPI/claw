@@ -1,5 +1,4 @@
-﻿using R10.Core.Entities.GlobalSearch;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Documents
 {
@@ -11,7 +10,5 @@ namespace R10.Core.Entities.Documents
         public string? FieldLabel { get; set; }
         public bool IsEnabled { get; set; }
         public int EntryOrder { get; set; }
-
-        public GSField GSField { get; set; }
     }
 }

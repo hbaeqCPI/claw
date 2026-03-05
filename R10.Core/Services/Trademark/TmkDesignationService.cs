@@ -1,4 +1,5 @@
 ﻿using R10.Core.DTOs;
+using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
 using R10.Core.Interfaces;
 using System;
@@ -12,11 +13,11 @@ namespace R10.Core.Services
     public class TmkDesignationService : ITmkDesignationService             // , BaseService
     {
         public readonly ITmkDesignationRepository _designationRepository;
-        private readonly ISystemSettings<TmkSetting> _settings;
+        private readonly ISystemSettings<DefaultSetting> _settings;
         //private readonly ClaimsPrincipal _user;
 
         public TmkDesignationService(ITmkDesignationRepository designationRepository,
-                                     ISystemSettings<TmkSetting> settings)
+                                     ISystemSettings<DefaultSetting> settings)
         {
             _designationRepository = designationRepository;
             _settings = settings;
@@ -25,9 +26,8 @@ namespace R10.Core.Services
 
         public async Task<object[]> GetSelectableDesignatedCountries(string country, string caseType, int tmkId)
         {
-            var settings = await _settings.GetSetting();
-            var countries = settings.CountriesThatAllowMultipleDesignation;
-            if (countries.Contains($"|{country}|"))
+            var countries = await _settings.GetValue<string>("TMS", "Countries_That_Allow_Multiple_Designation");
+            if (!string.IsNullOrEmpty(countries) && countries.Contains($"|{country}|"))
                 return await _designationRepository.GetSelectableDesignatedCountriesMultiple(country, caseType);
             else
               return await _designationRepository.GetSelectableDesignatedCountries(country, caseType, tmkId);

@@ -1,6 +1,4 @@
 ﻿using R10.Core.Entities.Documents;
-using R10.Core.Entities.FormExtract;
-using R10.Core.Entities.GlobalSearch;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -27,7 +25,5 @@ namespace R10.Core.Identity
         public List<CPiUserTypeSystemRole>? UserTypeSystemRoles { get; set; }
         public List<CPiSSOClaimSystemRole>? SSOClaimSystemRoles { get; set; }
         public List<DocSystem>? DocSystems { get; set; }
-        public List<FormSystem>? FormSystems { get; set; }
-        public List<GSSystem>? GSSystems { get; set; }
     }
 }

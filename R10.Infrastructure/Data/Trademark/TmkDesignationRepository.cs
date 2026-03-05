@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities.Trademark;
 using R10.Core.Interfaces;
 using System.Data;
@@ -90,47 +90,31 @@ namespace R10.Infrastructure.Data.Trademark
             return await _dbContext.TmkDesignatedCountries.Where(d => d.TmkId == tmkId).OrderBy(d=> d.Country).ThenBy(d=> d.GenSubCase).AsNoTracking().ToListAsync();
         }
 
-        public async Task DesignatedCountriesUpdate(int tmkId, string userName, IEnumerable<TmkDesignatedCountry> updatedDesignatedCountries, 
+        public async Task DesignatedCountriesUpdate(int tmkId, string userName, IEnumerable<TmkDesignatedCountry> updatedDesignatedCountries,
                                 IEnumerable<TmkDesignatedCountry> newDesignatedCountries, IEnumerable<TmkDesignatedCountry> deletedDesignatedCountries)
         {
-
-            var trademark = _dbContext.TmkTrademarks.FirstOrDefault(t => t.TmkId == tmkId);
-            if (trademark != null)
+            foreach (var item in deletedDesignatedCountries)
             {
-                trademark.UpdatedBy = userName;
-                trademark.LastUpdate = DateTime.Now;
-
-                foreach (var item in deletedDesignatedCountries)
-                {
-                    _dbContext.Set<TmkDesignatedCountry>().Remove(item);
-                }
-
-                foreach (var item in updatedDesignatedCountries)
-                {
-                    item.GenSubCase = item.GenSubCase ?? "";
-                    _dbContext.Entry(item).State = EntityState.Modified;
-                }
-
-                foreach (var item in newDesignatedCountries)
-                {
-                    item.GenCaseNumber = trademark.CaseNumber;
-                    item.GenSubCase = item.GenSubCase ?? "";
-                    _dbContext.Add(item);
-                }
-                await _dbContext.SaveChangesAsync();
+                _dbContext.Set<TmkDesignatedCountry>().Remove(item);
             }
+
+            foreach (var item in updatedDesignatedCountries)
+            {
+                item.GenSubCase = item.GenSubCase ?? "";
+                _dbContext.Entry(item).State = EntityState.Modified;
+            }
+
+            foreach (var item in newDesignatedCountries)
+            {
+                item.GenSubCase = item.GenSubCase ?? "";
+                _dbContext.Add(item);
+            }
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task DesignatedCountriesDelete(TmkDesignatedCountry deletedDesignatedCountry)
         {
             _dbContext.Set<TmkDesignatedCountry>().Remove(deletedDesignatedCountry);
-            var trademark = await _dbContext.TmkTrademarks.FirstOrDefaultAsync(t => t.TmkId == deletedDesignatedCountry.TmkId);
-            if (trademark != null)
-            {
-                trademark.UpdatedBy = deletedDesignatedCountry.UpdatedBy;
-                trademark.LastUpdate = DateTime.Now;
-            }
-
             await _dbContext.SaveChangesAsync();
         }
     }

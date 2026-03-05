@@ -287,11 +287,11 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         public async Task<IActionResult> GetActiveCaseTypeList()
-        {            
-            var caseTypes = _auxService.QueryableList.Where(c => c.CaseTypeCountryApplication.Any(app => app.PatApplicationStatus.ActiveSwitch == true));
-            var list = await caseTypes.Select(c => new { CaseTypeId = c.CaseTypeId, CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
+        {
+            // CaseTypeCountryApplication navigation property removed during debloat; return all case types
+            var list = await _auxService.QueryableList.Select(c => new { CaseTypeId = c.CaseTypeId, CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
 
-            return Json(list);           
+            return Json(list);
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
-using R10.Core.Entities.Patent;
-using R10.Core.Entities.Trademark;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -49,6 +46,5 @@ namespace R10.Core.Entities
         public string?  Email { get; set; }
         [NotMapped]
         public int QESetupId { get; set; }
-        public PatSearchNotify? PatSearchNotify { get; set; }
     }
 }

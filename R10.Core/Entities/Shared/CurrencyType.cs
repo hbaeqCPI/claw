@@ -1,8 +1,3 @@
-﻿// using R10.Core.Entities.AMS; // Removed during deep clean
-// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
-using R10.Core.Entities.Patent;
-using R10.Core.Entities.Trademark;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities
@@ -54,28 +49,7 @@ namespace R10.Core.Entities
         public DateTime? DKK_ExRateLastUpdate { get; set; }
 
         public bool CPICurrencyType { get; set; }
-
-
-        public List<TmkCostTrack>? CurrencyTmkCostTracks { get; set; }
-        public List<PatCostTrack>? CurrencyPatCostTracks { get; set; }
-//         public List<GMCostTrack>? CurrencyGMCostTracks { get; set; } // Removed during deep clean
-        public List<PatTaxBase>? CurrencyPatTaxBases { get; set; }
-
-        public List<PatCECountrySetup>? CurrencyPatCECountrySetups { get; set; }
-        public List<PatCECountryCostChild>? CurrencyPatCECountryCostChilds { get; set; }
-        public List<PatCEAnnuitySetup>? CurrencyPatCEAnnuitySetups { get; set; }
-
-        public List<TmkCECountrySetup>? CurrencyTmkCECountrySetups { get; set; }
-        public List<TmkCECountryCostChild>? CurrencyTmkCECountryCostChilds { get; set; }
-        public List<TmkCEFeeDetail>? CurrencyTmkCEFeeDetails { get; set; }
-
-//         public List<AMSProjection>? AMSProjections { get; set; } // Removed during deep clean
-
-        public List<PatCostTrackInv>? CurrencyPatCostTrackInvs { get; set; }
-
-        public List<AgentCEFee>? CurrencyAgentCEFees { get; set; }
     }
 
-    
-}
 
+}

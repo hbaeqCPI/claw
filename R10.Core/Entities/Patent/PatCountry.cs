@@ -1,6 +1,4 @@
-﻿// using R10.Core.Entities.AMS; // Removed during deep clean
-// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -39,52 +37,14 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Currency Type")]
         public string? CurrencyType { get; set; }
 
-        public List<Client>? CountryClients { get; set; }
-        public List<Agent>? CountryAgents { get; set; }
-        public List<Owner>? CountryOwners { get; set; }
-        public List<Attorney>? CountryAttorneys { get; set; }
-        public List<ContactPerson>? CountryContactPersons { get; set; }
-        public List<PatInventor>? CountryInventors { get; set; }
-        public List<PatInventor>? CitizenshipInventors { get; set; }
-
-
-        public List<Client>? POCountryClients { get; set; }
-        public List<Agent>? POCountryAgents { get; set; }
-        public List<Owner>? POCountryOwners { get; set; }
-        public List<Attorney>? POCountryAttorneys { get; set; }
-        public List<PatInventor>? POCountryInventors { get; set; }
-
-        public List<PatPriority>? CountryPriorities { get; set; }
         public List<PatAreaCountry>? PatCountryAreas { get; set; }
         public List<PatActionType>? PatActionTypes { get; set; }
 
-        public List<CountryApplication>? CountryApplications { get; set; }
-        public List<PatActionDue>? PatActionsDue { get; set; }
         public List<PatCountryLaw>? PatCountryLaws { get; set; }
 
         public List<PatDesCaseType>? ParentPatDesCaseTypes { get; set; }
         public List<PatDesCaseType>? ChildPatDesCaseTypes { get; set; }
 
-        public List<PatCostTrack>? PatCostTrackings { get; set; }
         public List<PatDesignatedCountry>? PatDesignatedCountries { get; set; }
-
-        public List<PatTaxBase>? PatTaxBases { get; set; }
-
-        public List<ClientDesignatedCountry>? ClientDesignatedCountries { get; set; }
-
-//         public List<AMSMain>? AMSMain { get; set; } // Removed during deep clean
-//         public List<AMSVATRate>? AMSVATRate { get; set; } // Removed during deep clean
-
-//         public List<FFDueCountry>? FFDueDesCountry { get; set; } // Removed during deep clean
-//         public List<FFReminderSetup>? FFReminderSetups { get; set; } // Removed during deep clean
-
-        public List<PatInventorAwardCriteria>? PatInventorAwardCriterias { get; set; }
-        
-        public List<PatBudgetManagement>? PatBudgetManagements { get; set; }
-
-        public List<PatCECountrySetup>? PatCECountrySetups { get; set; }
-
-        public List<PatCEAnnuitySetup>? PatCEAnnuitySetups { get; set; }
-        public List<PatCostEstimatorCountry>? PatCostEstimatorCountries { get; set; }
     }
 }

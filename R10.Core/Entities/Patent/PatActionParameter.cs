@@ -31,8 +31,6 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Indicator")]
         public string? Indicator { get; set; }
 
-        [Display(Name = "Indicator")]
-        public PatIndicator? PatIndicator { get; set; }
         public PatActionType? ActionType { get; set; }
     }
 }

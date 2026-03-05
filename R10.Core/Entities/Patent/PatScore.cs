@@ -19,7 +19,6 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Remarks")]
         public string? Remarks { get; set; }
 
-        public CountryApplication? CountryApplication{ get; set; }
         public PatScoreCategory? ScoreCategory { get; set; }
     }
 }

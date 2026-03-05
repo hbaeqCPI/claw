@@ -1,10 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Trademark
 {
     public class TmkConflict : TmkConflictDetail
     {
-        public TmkTrademark? TmkTrademark { get; set; }
         public TmkConflictStatus? TmkConflictStatus { get; set; }
         public TmkCountry? TmkCountry { get; set; }
     }
@@ -64,6 +63,5 @@ namespace R10.Core.Entities.Trademark
         public string? Remarks { get; set; }
 
         public int? AgentId { get; set; }
-        public Agent? Agent { get; set; }
     }
 }

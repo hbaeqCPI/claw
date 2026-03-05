@@ -1,7 +1,7 @@
 ﻿@using Microsoft.EntityFrameworkCore;
 @using R10.Core.Interfaces;
 @using R10.Core.Entities.Patent;
-@using R10.Core.Entities.Trademark;
+@using R10.Core.Entities.Shared;
 @using Microsoft.Extensions.Options;
 @using R10.Web.Services;
 @using R10.Web.Security;
@@ -9,14 +9,14 @@
 @inject CPiUserManager UserManager
 @inject ICPiUserPermissionManager PermissionManager
 @inject ISystemSettings<PatSetting> PatSettings
-@inject ISystemSettings<TmkSetting> TmkSettings
+@inject ISystemSettings<DefaultSetting> DefaultSettings
 @inject IStringLocalizer<AdminResource> Localizer
 @inject IOptions<EPOMailboxSettings> EPOMailboxSettings
 @{
     //todo: toggle ExportControl based on Patent role
 
     var patSettings = await PatSettings.GetSetting();
-    var tmkSettings = await TmkSettings.GetSetting();
+    var defaultSettings = await DefaultSettings.GetSetting();
 
     var epoMailboxSettings = EPOMailboxSettings.Value;
 
@@ -53,7 +53,7 @@
     workflowRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.Workflow.Contains(r.Id.ToLower())).ToListAsync());
 
     var showPatentCostEstimator = (Model.UserType == CPiUserType.ContactPerson && patSettings.IsCostEstimatorOn);
-    var showTrademarkCostEstimator = (Model.UserType == CPiUserType.ContactPerson && tmkSettings.IsCostEstimatorOn);
+    var showTrademarkCostEstimator = false; // TmkSetting.IsCostEstimatorOn removed during debloat
 
     var costEstimatorRoles = new List<CPiRole>();
     costEstimatorRoles.Add(new CPiRole() { Id = "", Name = "" });
@@ -88,9 +88,9 @@
     var showPatTradeSecretSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanHaveTSClearance.Contains(Model.UserType);
     var showPatTradeSecretReportsSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanAccessTSReports.Contains(Model.UserType);
 
-    var isSoftDocketOn = patSettings.IsSoftDocketOn || tmkSettings.IsSoftDocketOn;
+    var isSoftDocketOn = patSettings.IsSoftDocketOn || defaultSettings.IsSoftDocketOn;
 
-    var isRequestDocketOn = patSettings.IsDocketRequestOn || tmkSettings.IsDocketRequestOn;
+    var isRequestDocketOn = patSettings.IsDocketRequestOn || defaultSettings.IsDocketRequestOn;
 
 }
 
@@ -1011,7 +1011,7 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             </span>
                         </li>
                     }
-                    @if (Model.HasTrademark && tmkSettings.IsSoftDocketOn)
+                    @if (Model.HasTrademark && defaultSettings.IsSoftDocketOn)
                     {
                         <li class="d-flex justify-content-between soft-docket">
                             <label for="SoftDocketTrademark" class="toggle-label">@Localizer[$"Allow Trademark Soft Docket"]</label>
@@ -1044,7 +1044,7 @@ data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings"
                             </span>
                         </li>
                     }
-                    @if (Model.HasTrademark && tmkSettings.IsDocketRequestOn)
+                    @if (Model.HasTrademark && defaultSettings.IsDocketRequestOn)
                     {
                         <li class="d-flex justify-content-between request-docket">
                             <label for="RequestDocketTrademark" class="toggle-label">@Localizer[$"Allow Trademark Docket Request"]</label>

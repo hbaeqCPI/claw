@@ -1,5 +1,4 @@
-﻿using R10.Core.Entities.Patent;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Documents
 {
@@ -9,8 +8,7 @@ namespace R10.Core.Entities.Documents
         public DocFile? DocFile { get; set; }
         public DocFolder? DocFolder { get; set; }
         public List<DocDocumentTag>? DocDocumentTags { get; set; }
-        public List<DocVerification>? DocVerifications { get; set; }        
-        public List<PatEPODocumentCombined>? PatEPODocumentCombineds { get; set; }
+        public List<DocVerification>? DocVerifications { get; set; }
         public List<DocResponsibleDocketing>? DocResponsibleDocketings { get; set; }
         public List<DocResponsibleReporting>? DocResponsibleReportings { get; set; }
         public List<DocResponsibleLog>? DocResponsibleLogs { get; set; }

@@ -4,7 +4,7 @@ using R10.Web.Helpers;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using R10.Core.Entities.MailDownload;
+//using R10.Core.Entities.MailDownload;
 using R10.Core.Helpers;
 using R10.Core.Entities.Shared;
 
@@ -125,7 +125,7 @@ namespace R10.Web.Areas.Admin.Helpers
             return menuPage;
         }
 
-        public static IQueryable<MailDownloadDataMap> AddCriteria(this IQueryable<MailDownloadDataMap> maps, List<QueryFilterViewModel> mainSearchFilters)
+        /*public static IQueryable<MailDownloadDataMap> AddCriteria(this IQueryable<MailDownloadDataMap> maps, List<QueryFilterViewModel> mainSearchFilters)
         {
             var mapName = mainSearchFilters.FirstOrDefault(f => f.Property == "AttributeName");
             if (mapName != null)
@@ -145,9 +145,9 @@ namespace R10.Web.Areas.Admin.Helpers
                 maps = QueryHelper.BuildCriteria<MailDownloadDataMap>(maps, mainSearchFilters);
 
             return maps;
-        }
+        }*/
 
-        public static IQueryable<TradeSecretRequest> AddCriteria(this IQueryable<TradeSecretRequest> tradeSecretRequest, List<QueryFilterViewModel> mainSearchFilters)
+        /*public static IQueryable<TradeSecretRequest> AddCriteria(this IQueryable<TradeSecretRequest> tradeSecretRequest, List<QueryFilterViewModel> mainSearchFilters)
         {
             //hide expired by default
             var showExpired = mainSearchFilters.FirstOrDefault(f => f.Property == "ShowExpired");
@@ -165,7 +165,7 @@ namespace R10.Web.Areas.Admin.Helpers
                 tradeSecretRequest = QueryHelper.BuildCriteria<TradeSecretRequest>(tradeSecretRequest, mainSearchFilters);
 
             return tradeSecretRequest;
-        }
+        }*/
 
         public static IQueryable<ScheduledTask> AddCriteria(this IQueryable<ScheduledTask> tasks, List<QueryFilterViewModel> mainSearchFilters)
         {

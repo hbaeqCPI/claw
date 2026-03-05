@@ -1,0 +1,60 @@
+@model WebLinksGridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var gridName = $"webLinksGrid_{Model.Id}";
+    var webLinksOptionsName = $"webLinksOptions_{Model.Id}";
+}
+
+<div class="weblinks" data-init="1">
+    <div class="form-row mb-2">
+        <div class="col-md-3">
+            <label class="mr-2">@Localizer["Display"]</label>
+            @(Html.Kendo().DropDownList()
+                .Name(webLinksOptionsName)
+                .HtmlAttributes(new { @class = "weblinks-option", style = "width:200px" })
+                .DataTextField("Text")
+                .DataValueField("Value")
+                .BindTo(new List<SelectListItem> {
+                    new SelectListItem { Text = Localizer["Record Links"].Value, Value = "0" },
+                    new SelectListItem { Text = Localizer["All Links"].Value, Value = "1" }
+                })
+                .Events(e => e.Change($"function(e) {{ var grid = $('#{gridName}').data('kendoGrid'); if (grid) grid.dataSource.read(); }}"))
+            )
+        </div>
+    </div>
+    @(Html.Kendo().Grid<WebLinksDTO>()
+        .Name(gridName)
+        .AutoBind(false)
+        .HtmlAttributes(new { @class = "webLinksGrid kendo-Grid" })
+        .Columns(columns =>
+        {
+            columns.Bound(w => w.MainCode).Title(Localizer["Main Code"].Value).Width(120);
+            columns.Bound(w => w.Description).Title(Localizer["Description"].Value);
+            columns.Bound(w => w.Country).Title(Localizer["Country"].Value).Width(100);
+            columns.Bound(w => w.Remarks).Title(Localizer["Remarks"].Value);
+            columns.Command(command =>
+            {
+                command.Custom("Navigate")
+                    .Click($"function(e) {{ e.preventDefault(); var dataItem = this.dataItem($(e.currentTarget).closest('tr')); $.get('{Url.Action("WebLinksUrl", Model.Controller)}', {{ mainId: dataItem.MainId, id: {Model.Id} }}, function(result) {{ if (result.error) {{ alert(result.error); }} else if (result.url) {{ window.open(result.url, '_blank'); }} else {{ alert('{Localizer["This web link requires a search number that is not available for this record."].Value}'); }} }}); }}")
+                    .IconClass("k-icon fal fa-external-link")
+                    .Text($"<span class='grid-action-label'>{Localizer["Navigate"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+            }).Width(100);
+        })
+        .Sortable(sort => sort.AllowUnsort(false))
+        .Pageable()
+        .DataSource(dataSource => dataSource
+            .Ajax()
+            .PageSize(settings.SubFormPageSize)
+            .ServerOperation(false)
+            .Read(read => read.Action("WebLinksRead", Model.Controller)
+                .Data($"function() {{ var ddl = $('#{webLinksOptionsName}').data('kendoDropDownList'); var displayChoice = ddl ? ddl.value() : 2; return {{ id: {Model.Id}, displayChoice: displayChoice }}; }}"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+        )
+    )
+</div>

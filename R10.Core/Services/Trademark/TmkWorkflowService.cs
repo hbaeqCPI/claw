@@ -199,27 +199,8 @@ namespace R10.Core.Services
             return list;
         }
 
-        public async Task<List<LookupDescDTO>> GetDedocketInstructions()
-        {
-            var list = await _repository.DeDocketInstructions.Where(d => d.InUse).Select(d => new LookupDescDTO { Value = d.InstructionId.ToString(), Text = d.Instruction }).ToListAsync();
-            return list;
-        }
-
         public async Task<List<LookupDescDTO>> GetCostTypes()
         {
-            var list = await _repository.TmkCostTypes.Select(c => new LookupDescDTO { Value = c.CostTypeId.ToString(), Text = c.CostType }).ToListAsync();
-            return list;
-        }
-
-        public async Task<List<LookupDescDTO>> GetQETemplates(string screenType)
-        {
-            var screen = await _repository.SystemScreens.Where(s => s.SystemType == "T" && s.FeatureType == "QE" && s.ScreenName == screenType).FirstOrDefaultAsync();
-            if (screen != null)
-            {
-                var list = await _repository.QEMains.Where(qe => qe.InUse && qe.ScreenId == screen.ScreenId)
-                           .Select(t => new LookupDescDTO { Value = t.QESetupID.ToString(), Text = t.TemplateName }).ToListAsync();
-                return list;
-            }
             return new List<LookupDescDTO>();
         }
 

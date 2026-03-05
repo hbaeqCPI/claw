@@ -48,7 +48,6 @@ namespace R10.Core.Entities.Patent
         [NotMapped]
         public string? CountryName { get; set; }
 
-        public CountryApplication? CountryApplication { get; set; }
         public PatCountry? Country { get; set; }
 
     }

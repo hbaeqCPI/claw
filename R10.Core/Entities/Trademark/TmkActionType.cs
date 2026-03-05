@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,7 +7,6 @@ namespace R10.Core.Entities.Trademark
     public class TmkActionType : TmkActionTypeDetail
     {
         public List<TmkActionParameter>? ActionParameters { get; set; }
-        public Attorney? Responsible { get; set; }
         public TmkCountry? TmkCountry { get; set; }
 
         [NotMapped]

@@ -128,15 +128,6 @@ namespace Microsoft.AspNetCore.Mvc
 
         public static string? GetTradeSecretDetailLink(this IUrlHelper urlHelper, string? screenId, int recId, string? scheme = "")
         {
-            var action = string.IsNullOrEmpty(scheme) ? "DetailLink" : "Detail";
-
-            if (screenId == TradeSecretScreen.Invention)
-                return urlHelper.Action(action, "Invention", new { area = "Patent", id = recId }, scheme);
-            else if (screenId == TradeSecretScreen.CountryApplication)
-                return urlHelper.Action(action, "CountryApplication", new { area = "Patent", id = recId }, scheme);
-            if (screenId == TradeSecretScreen.DMSDisclosure)
-                return urlHelper.Action(action, "Disclosure", new { area = "DMS", id = recId }, scheme);
-
             return "";
         }
 

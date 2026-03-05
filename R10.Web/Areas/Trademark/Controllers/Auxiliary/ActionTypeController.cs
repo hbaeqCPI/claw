@@ -36,26 +36,20 @@ namespace R10.Web.Areas.Trademark.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<TmkActionType> _viewModelService;
         private readonly IParentEntityService<TmkActionType, TmkActionParameter> _actionTypeService;
-        private readonly IActionDueService<TmkActionDue, TmkDueDate> _actionDueService;
         private readonly IStringLocalizer<SharedResource> _localizer;
-        private readonly IReportService _reportService;
 
         private readonly string _dataContainer = "tmkActionTypeDetail";
 
         public ActionTypeController(
-            IAuthorizationService authService, 
+            IAuthorizationService authService,
             IViewModelService<TmkActionType> viewModelService,
             IParentEntityService<TmkActionType, TmkActionParameter> actionTypeService,
-            IActionDueService<TmkActionDue, TmkDueDate> actionDueService,
-            IStringLocalizer<SharedResource> localizer,
-            IReportService reportService)
+            IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _actionTypeService = actionTypeService;
-            _actionDueService = actionDueService;
             _localizer = localizer;
-            _reportService = reportService;
         }
 
         public async Task<IActionResult> Index()
@@ -159,12 +153,8 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel tmkActionTypePrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(tmkActionTypePrintModel, ReportType.TmkActionTypePrintScreen).Result;
-            }
-
-            return BadRequest("Unhandled error.");
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.ActionTypeModify)]
@@ -442,9 +432,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             //exlude actiontypes without country if same actiontype with country exists to avoid duplicates
             //keep select in each iqueryable for efficiency vs having select after union
             var hasCountry = actionTypes.Where(a => a.Country == country)
-                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = a.Responsible.AttorneyCode, ResponsibleName = a.Responsible.AttorneyName, IsOfficeAction = a.IsOfficeAction });
+                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = (string?)null, ResponsibleName = (string?)null, IsOfficeAction = a.IsOfficeAction });
             var noCountry = actionTypes.Where(a => string.IsNullOrEmpty(a.Country) && !hasCountry.Any(c => c.ActionType == a.ActionType))
-                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = a.Responsible.AttorneyCode, ResponsibleName = a.Responsible.AttorneyName, IsOfficeAction = a.IsOfficeAction });
+                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = (string?)null, ResponsibleName = (string?)null, IsOfficeAction = a.IsOfficeAction });
 
             return Json(await hasCountry.Union(noCountry).OrderBy(a => a.ActionType).ToListAsync());
         }
@@ -506,31 +496,6 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
         }
 
-        #region Retroactive Action Generation
-        public async Task<IActionResult> ActionDueCompute(int actionTypeId, int actParamId = 0)
-        {
-            var vm = new ActionDueRetroParam();
-
-            if (actParamId == 0)
-            {
-                vm = await _actionTypeService.QueryableList.ProjectTo<ActionDueRetroParam>()
-                .FirstOrDefaultAsync(d => d.ActionTypeID == actionTypeId);
-            }
-            else
-            {
-                vm = await _actionTypeService.ChildService.QueryableList.ProjectTo<ActionDueRetroParam>()
-                .FirstOrDefaultAsync(d => d.ActParamId == actParamId);
-            }
-            return PartialView("_ActionDueCompute", vm);
-        }
-
-        [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.FullModify)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateActionDues([FromBody] ActionDueRetroParam criteria)
-        {
-            await _actionDueService.RetroGenerateActionDues(criteria);
-            return Ok();
-        }
-        #endregion
+        // Retroactive Action Generation removed during debloat
     }
 }

@@ -25,9 +25,9 @@ namespace R10.Web.Helpers
         // SaveEmailToMsgFile, SaveOutlookEmailToMsgFile, CreateMsgFile removed (MsgEmailModel/DocumentStorageHeader from deleted DocumentStorage)
 
         DocumentViewer GetDocumentViewerModel(string docFilePath, int width, int height);
-        Task LogEmailImageAttachmentFromStream(QELog qeLog, MemoryStream sourceStream, string newFileName, string newThumbNail);
-        Task LogEmailImageAttachment(QELog qeLog, string sourceFile, string newFileName,string newThumbNail);
-        Task LogEmailUploadedAttachment(QELog qeLog, IFormFile file, string fileName, string thumbNail);
+        //Task LogEmailImageAttachmentFromStream(QELog qeLog, MemoryStream sourceStream, string newFileName, string newThumbNail);
+        //Task LogEmailImageAttachment(QELog qeLog, string sourceFile, string newFileName,string newThumbNail);
+        //Task LogEmailUploadedAttachment(QELog qeLog, IFormFile file, string fileName, string thumbNail);
 
         string DataKeyToScreenCode(string dataKey);
         Task<bool> SaveDocumentFromStream(MemoryStream stream, string docFileName, DocFolderHeader docFolder);

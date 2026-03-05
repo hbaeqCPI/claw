@@ -13,7 +13,17 @@
       "Bash(xargs -I {} basename {})",
       "Bash(taskkill //F //PID 74932)",
       "Bash(taskkill //F //IM iisexpress.exe)",
-      "Bash(find \"D:/Projects/Claw/Claw-Claude/R10.Web\" -type f -name \"*.cs\" -exec grep -l \"IGlobalSearchViewModelService\\\\|ICustomReportViewModelService\\\\|IDOCXViewModelService\\\\|ILetterViewModelService\" {} ;)"
+      "Bash(find \"D:/Projects/Claw/Claw-Claude/R10.Web\" -type f -name \"*.cs\" -exec grep -l \"IGlobalSearchViewModelService\\\\|ICustomReportViewModelService\\\\|IDOCXViewModelService\\\\|ILetterViewModelService\" {} ;)",
+      "Bash(python -c \":*)",
+      "Bash(for file in LetterMainMap.cs LetterCategoryMap.cs LetterDataSourceMap.cs LetterRecordSourceMap.cs LetterRecordSourceFilterMap.cs LetterRecordSourceFilterUserMap.cs LetterEntitySettingsMap.cs LetterUserDataMap.cs LetterCustomFieldMap.cs LetterSubCategoryMap.cs LetterTagMap.cs DOCXMainMap.cs DOCXCategoryMap.cs DOCXDataSourceMap.cs DOCXRecordSourceMap.cs DOCXRecordSourceFilterMap.cs DOCXRecordSourceFilterUserMap.cs DOCXUserDataMap.cs DOCXUSPTOHeaderMap.cs DOCXUSPTOHeaderKeywordMap.cs DataQueryMainMap.cs DataQueryAllowedFunctionMap.cs DataQueryCategoryMap.cs DataQueryTagMap.cs)",
+      "Bash(do if find . -name \"$file\" -type f)",
+      "Bash(then)",
+      "Bash(echo \"EXISTS: $file\")",
+      "Bash(else)",
+      "Bash(echo \"MISSING: $file\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for file in TradeSecretRequestMap.cs TradeSecretActivityMap.cs TradeSecretAuditLogMap.cs EmailTemplateMap.cs EmailTypeMap.cs EmailSetupMap.cs EmailDataModelMap.cs DataImportHistoryMap.cs DataImportTypeMap.cs DataImportMappingMap.cs DataImportTypeColumnMap.cs DataImportErrorMap.cs MailDownloadLogMap.cs MailDownloadLogDetailMap.cs MailDownloadRuleMap.cs MailDownloadRuleConditionMap.cs MailDownloadRuleResponsibleMap.cs MailDownloadActionMap.cs MailDownloadActionFilterMap.cs MailDownloadDataMapMap.cs MailDownloadDataMapPatternMap.cs MailDownloadDataAttributeMap.cs)"
     ]
   }
 }

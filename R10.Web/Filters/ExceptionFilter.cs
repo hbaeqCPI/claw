@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -84,7 +84,6 @@ namespace R10.Web.Filters
                 else
                     errorMsg = graphServiceException.Error.Message;
             }
-            // iManage exception handling removed in debloat
             else
             {
                 JavaScriptEncoder jsEncoder = JavaScriptEncoder.Default; //mitigate xss 

@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-// using R10.Core.Entities.DMS; // Removed during deep clean
-// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
+using Microsoft.EntityFrameworkCore;
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
@@ -91,5 +89,4 @@ namespace R10.Core.Services.Shared
 
     }
 }
-
 

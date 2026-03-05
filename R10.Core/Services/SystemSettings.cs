@@ -1,9 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-// using R10.Core.Entities.AMS; // Removed during deep clean
-// using R10.Core.Entities.Clearance; // Removed during deep clean
-// using R10.Core.Entities.DMS; // Removed during deep clean
-// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
 using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Entities.Trademark;
@@ -12,9 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-// using R10.Core.Entities.RMS; // Removed during deep clean
-// using R10.Core.Entities.PatClearance; // Removed during deep clean
-// using R10.Core.Entities.ForeignFiling; // Removed during deep clean
 using System.Globalization;
 
 namespace R10.Core.Services
@@ -209,10 +202,9 @@ namespace R10.Core.Services
             if (_setting.GetType() == typeof(PatSetting))
                 return "PMS";
 
-            if (_setting.GetType() == typeof(TmkSetting))
+            if (_setting.GetType().Name == "TmkSetting" || _setting.GetType() == typeof(DefaultSetting))
                 return "TMS";
 
-            // Removed during deep clean - deleted module setting types
             // if (_setting.GetType() == typeof(GMSetting))
             //     return "GMS";
 

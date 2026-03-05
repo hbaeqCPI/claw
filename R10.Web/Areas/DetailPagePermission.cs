@@ -55,7 +55,7 @@ namespace R10.Web
 
         public bool IsTradeSecret { get; set; }
         public string? TradeSecretLocator { get; set; }
-        public TradeSecretRequest? TradeSecretUserRequest { get; set; }
+        //public TradeSecretRequest? TradeSecretUserRequest { get; set; }
         public bool ShowTradeSecretSwitch { get; set; }
         public bool ShowTradeSecretRequest { get; set; }
         public bool CanEditTradeSecret { get; set; }    //edit trade secret fields

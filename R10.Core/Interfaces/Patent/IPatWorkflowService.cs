@@ -27,9 +27,7 @@ namespace R10.Core.Interfaces
         IQueryable<PatWorkflowActionParameter> PatWorkflowActionParameters { get; }
         IQueryable<CPiRespOffice> CPiRespOffices { get; }
         Task <List<LookupDescDTO>> GetActionTypes();
-        Task<List<LookupDescDTO>> GetDedocketInstructions();
         Task<List<LookupDescDTO>> GetCostTypes();
-        Task<List<LookupDescDTO>> GetQETemplates(string screenType);
         IQueryable<SystemScreen> GetSystemScreens(string systemType);
 
         Task SaveWorkflowActionAttachmentFilter(int actId, string filter,string userName);

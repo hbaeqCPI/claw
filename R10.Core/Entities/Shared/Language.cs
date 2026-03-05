@@ -1,8 +1,3 @@
-﻿// using R10.Core.Entities.DMS; // Removed during deep clean
-// using R10.Core.Entities.GeneralMatter; // Removed during deep clean
-using R10.Core.Entities.Patent;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 
@@ -27,16 +22,5 @@ namespace R10.Core.Entities
         [StringLength(255)]
         [Display(Name = "Description")]
         public string? Description { get; set; }
-
-        public List<PatAbstract>? LanguagePatAbstracts { get; set; }
-//         public List<DMSAbstract>? LanguageDMSAbstracts { get; set; } // Removed during deep clean
-        public List<QEMain>? LanguageQEMains { get; set; }
-        public List<Agent>? LanguageAgents { get; set; }
-        public List<Client>? LanguageClients { get; set; }
-        public List<Attorney>? LanguageAttorneys { get; set; }
-        public List<Owner>? LanguageOwners { get; set; }
-        public List<ContactPerson>? LanguageContacts { get; set; }
-//         public List<GMOtherParty>? LanguageOtherParties { get; set; } // Removed during deep clean
-        public List<EmailSetup>? EmailSetups { get; set; }
     }
 }

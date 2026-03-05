@@ -1,7 +1,6 @@
 ﻿using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Documents;
-using R10.Core.Entities.Patent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -24,14 +23,11 @@ namespace R10.Core.Interfaces
         IQueryable<DocFixedFolder> DocFixedFolders { get; }
         IQueryable<SharePointFileSignature> SharePointFileSignatures { get; }
         IQueryable<DocFileSignature> DocFileSignatures { get; }
-        IQueryable<EFSLog> EFSLogs { get; }
-        IQueryable<LetterLog> LetterLogs { get; }
         IQueryable<DocFileSignatureRecipient> DocFileSignatureRecipients { get; }
         IQueryable<DocVerification> DocVerifications { get; }
         IQueryable<DocResponsibleDocketing> DocRespDocketings { get; }
         IQueryable<DocResponsibleReporting> DocRespReportings { get; }
         IQueryable<DocQuickEmailLog> DocQuickEmailLogs { get; }
-        IQueryable<PatEPODocumentCombined> PatEPODocumentCombineds { get; }
 
         Task<bool> IsUserRestrictedFromPrivateDocuments();
         Task<int> AddFileToFileHandler(string fileName, string userName,string? driveItemId="");
@@ -121,18 +117,12 @@ namespace R10.Core.Interfaces
         Task MarkSharePointFileForSignature(string driveItemId, string docLibrary, string docLibraryFolder, string recKey, string screenCode, int qeSetupId,string fileName,DateTime? docDate, int parentId, string systemTypeCode, string? roleLink, bool isDMSInventorSignature = false);
         Task SetEnvelopeId(int fileId, string envelopeId);
         Task SetEnvelopeIdForSharePointFile(string itemId, string envelopeId);
-        Task SetEnvelopeIdForLetterFile(int letLogId, string envelopeId);
-        Task SetEnvelopeIdForEFSFile(int efsLogId, string envelopeId);
         Task MarkSignedDoc(int sourcefileId, int signedFileId);
         Task MarkSignedDocForSharePoint(string sourceDriveItemId, string signedDriveItemId,string fileName);
         Task DeleteSharePointForSignature(string driveItemId);
-        Task MarkSignedLetter(int sourceLetLogId, string newLetterFile, string itemId, string userName);
-        Task MarkSignedEFSLog(int sourceEfsLogId, string newEfsFile, string itemId, string userName);
         Task AddSignatureRecipients(List<DocFileSignatureRecipient> recipients, string envelopeId);
         Task UpdateSharePointSignatureStatus(string envelopeId, string status);
         Task UpdateFileSignatureStatus(string envelopeId, string status);
-        Task UpdateLetSignatureStatus(string envelopeId, string status);
-        Task UpdateEFSSignatureStatus(string envelopeId, string status);
         Task UpdateSignatureRecipientStatus(string envelopeId, List<DocuSignRecipientUpdateDTO> recipientDTOs);
         #endregion
 
@@ -147,16 +137,7 @@ namespace R10.Core.Interfaces
 
         #endregion
 
-        #region Outlook Email
-        Task<int> LogOutlookEmail(string userEmail, string systemType, string screenCode, DocFile docFile, DocOutlook docOutlook, KeyTextDTO[] selectedCases, KeyTextDTO[] selectedCasesPaths);
-        Task<CaseLogDTO[]> GetOulookCaseLogByEmailId(int? cpiEmailId);
-        #endregion
-
         #region Gmail Email
-        Task<OutlookLinkedCases> SaveGmailEmail(string contentRootPath, string userEmail, string systemType, string screenCode, string selectedCases, string gmailMsgId, string msgSubject, string encodedMsg);
-
-        Task<CaseLogDTO[]> GetGmailCaseLogByEmailId(string gmailMsgId);
-
         Task LogGmailEmail(List<DocGmailCaseLink> links);
         #endregion
 
@@ -196,13 +177,13 @@ namespace R10.Core.Interfaces
         Task AddDocQuickEmailLogs(List<DocQuickEmailLog> docQuickEmailLogs);
 
         #region Trade Secret
-        Task LogDocTradeSecretActivityByDocId(int docid);
-        Task LogDocTradeSecretActivityByFileId(int fileId);
-        Task LogDocTradeSecretActivityByFileIds(List<int> fileIds);
-        Task LogDocTradeSecretActivityByFileName(string fileName);
-        Task LogDocTradeSecretActivityByFileNames(List<string?> fileNames);
-        Task LogDocTradeSecretActivityByDriveItemId(string driveItemId);
-        Task LogDocTradeSecretActivityByDriveItemIds(List<string?> driveItemIds);
+        //         Task LogDocTradeSecretActivityByDocId(int docid);
+        //         Task LogDocTradeSecretActivityByFileId(int fileId);
+        //         Task LogDocTradeSecretActivityByFileIds(List<int> fileIds);
+        //         Task LogDocTradeSecretActivityByFileName(string fileName);
+        //         Task LogDocTradeSecretActivityByFileNames(List<string?> fileNames);
+        //         Task LogDocTradeSecretActivityByDriveItemId(string driveItemId);
+        //         Task LogDocTradeSecretActivityByDriveItemIds(List<string?> driveItemIds);
         #endregion
     }
 }

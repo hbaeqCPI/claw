@@ -296,8 +296,8 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> GetActiveCaseTypeList()
         {
-            var caseTypes = _auxService.QueryableList.Where(c => c.CaseTypeTrademark.Any(tmk => tmk.TmkTrademarkStatus.ActiveSwitch == true));
-            var list = await caseTypes.Select(c => new { CaseTypeId = c.CaseTypeId, CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
+            // CaseTypeTrademark navigation property removed during debloat; return all case types
+            var list = await _auxService.QueryableList.Select(c => new { CaseTypeId = c.CaseTypeId, CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
 
             return Json(list);
         }

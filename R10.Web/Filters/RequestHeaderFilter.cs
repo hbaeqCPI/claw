@@ -17,11 +17,11 @@ namespace R10.Web.Filters
     //https://r9/api/endpoint?t={tokenId}&type=XML
     public class RequestHeaderFilter : Attribute, IAsyncAuthorizationFilter
     {
-        protected readonly IReportParameterService _reportParametersService;
+        //protected readonly IReportParameterService _reportParametersService;
 
-        public RequestHeaderFilter(IReportParameterService reportParametersService)
+        public RequestHeaderFilter(/*IReportParameterService reportParametersService*/)
         {
-            _reportParametersService = reportParametersService;
+            //_reportParametersService = reportParametersService;
         }
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -41,11 +41,12 @@ namespace R10.Web.Filters
                 tokenId = token;
 
             //retrieve auth token from saved params using tokenId
-            if (!string.IsNullOrEmpty(tokenId))
-            {
-                token = await _reportParametersService.GetParameter<string>(tokenId);
-                await _reportParametersService.DeleteParameter(tokenId);
-            }
+            // IReportParameterService removed during debloat
+            //if (!string.IsNullOrEmpty(tokenId))
+            //{
+            //    token = await _reportParametersService.GetParameter<string>(tokenId);
+            //    await _reportParametersService.DeleteParameter(tokenId);
+            //}
 
             if (string.IsNullOrEmpty(context.HttpContext.Request.Headers["Authorization"]) && !string.IsNullOrEmpty(token))
                 context.HttpContext.Request.Headers["Authorization"] = $"Bearer {token}";

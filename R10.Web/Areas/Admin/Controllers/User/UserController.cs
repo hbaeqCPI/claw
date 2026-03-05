@@ -1,4 +1,4 @@
-using Kendo.Mvc.Extensions;
+﻿using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using R10.Core;
 using R10.Core.Entities;
-using R10.Core.Entities.Patent;
 using R10.Core.Exceptions;
 using R10.Core.Helpers;
 using R10.Core.Identity;
@@ -46,10 +45,6 @@ namespace R10.Web.Areas.Admin.Controllers
         private readonly ICPiUserPermissionManager _permissionManager;
         private readonly CPiIdentitySettings _cpiSettings;
         private readonly ICPiUserSettingManager _settingManager;
-        //private readonly IEntityService<PatInventor> _inventorService;
-        private readonly IPatInventorService _inventorService;
-        private readonly IContactPersonService _contactPersonService;
-        private readonly IAttorneyService _attorneyService;
         private readonly IUserAccountService _userAccountService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly ILogger _logger;
@@ -64,10 +59,6 @@ namespace R10.Web.Areas.Admin.Controllers
             ICPiUserPermissionManager permissionManager,
             IOptions<CPiIdentitySettings> cpiSettings,
             ICPiUserSettingManager settingManager,
-            //IEntityService<PatInventor> inventorService,
-            IPatInventorService inventorService,
-            IContactPersonService contactPersonService,
-            IAttorneyService attorneyService,
             IUserAccountService userAccountService,
             IStringLocalizer<SharedResource> localizer,
             ILogger<UserController> logger,
@@ -81,9 +72,6 @@ namespace R10.Web.Areas.Admin.Controllers
             _cpiSettings = cpiSettings.Value;
             _loginInactiveDays = _cpiSettings.SignIn.InactiveDays;
             _settingManager = settingManager;
-            _inventorService = inventorService;
-            _contactPersonService = contactPersonService;
-            _attorneyService = attorneyService;
             _userAccountService = userAccountService;
             _localizer = localizer;
             _logger = logger;
@@ -1159,7 +1147,8 @@ namespace R10.Web.Areas.Admin.Controllers
             return PartialView("Index", sidebarModel);
         }
 
-        [HttpGet]
+        // ContactPersonService removed during debloat
+        /*[HttpGet]
         public async Task<IActionResult> AddContact(int id)
         {
             if (!Request.IsAjax())
@@ -1179,31 +1168,17 @@ namespace R10.Web.Areas.Admin.Controllers
             detail.Email = contactPerson.EMail ?? "";
 
             return AddUser(detail);
-        }
+        }*/
 
+        // PatInventorService removed during debloat
         [HttpGet]
-        public async Task<IActionResult> AddInventor(int id)
+        public IActionResult AddInventor(int id)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
-
-            var inventor = await _inventorService.GetByIdAsync(id);
-            if (inventor == null)
-                return new RecordDoesNotExistResult();
-
-            var detail = new UserDetailViewModel();
-            detail.UserType = (int)CPiUserType.Inventor;
-            detail.Status = (int)CPiUserStatus.Approved;
-            detail.EntityFilterType = (int)CPiEntityType.Inventor;
-            detail.EntityId = inventor.InventorID;
-            detail.FirstName = inventor.FirstName ?? "";
-            detail.LastName = inventor.LastName ?? "";
-            detail.Email = inventor.EMail ?? "";
-
-            return AddUser(detail);
+            return BadRequest("Inventor service is not available.");
         }
 
-        [HttpGet]
+        // AttorneyService removed during debloat
+        /*[HttpGet]
         public async Task<IActionResult> AddAttorney(int id)
         {
             if (!Request.IsAjax())
@@ -1224,7 +1199,7 @@ namespace R10.Web.Areas.Admin.Controllers
             detail.Email = attorney.EMail ?? "";
 
             return AddUser(detail);
-        }
+        }*/
 
         private async Task<bool> DeleteOutlookClientRegistration(CPiUser user)
         {

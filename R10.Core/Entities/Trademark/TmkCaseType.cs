@@ -1,5 +1,3 @@
-﻿using R10.Core.Entities.Patent;
-// using R10.Core.Entities.RMS; // Removed during deep clean
 using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Trademark
@@ -21,12 +19,7 @@ namespace R10.Core.Entities.Trademark
 
         public List<TmkCountryLaw>? CaseTypeCountryLaws { get; set; }
 
-        public List<TmkTrademark>? CaseTypeTrademark { get; set; }
-
         public List<TmkDesCaseType>? ParentTmkDesCaseTypes { get; set; }
         public List<TmkDesCaseType>? ChildTmkDesCaseTypes { get; set; }
-//         public List<RMSReminderSetup>? RMSReminderSetups { get; set; } // Removed during deep clean
-
-        public List<TmkCECountrySetup>? CaseTypeCECountrySetups { get; set; }
     }
 }

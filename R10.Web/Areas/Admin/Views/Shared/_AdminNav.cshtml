@@ -1,0 +1,11 @@
+@model string
+@inject IStringLocalizer<AdminResource> Localizer
+<div class="manage-nav sidebar-nav p-3">
+    <ul class="nav nav-pills cpi-nav-vertical flex-column">
+        <li class="nav-item">
+            <a asp-controller="User" asp-action="Index" class="nav-link @(Model == AdminNavPages.Users ? "active" : "")">
+                <span class="fad fa-user-friends fa-fixed-width"></span>@Localizer["Users"]
+            </a>
+        </li>
+    </ul>
+</div>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,7 +25,6 @@ using R10.Web.Interfaces;
 using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
 using R10.Web.Services;
-// using R10.Core.Entities.AMS; // Removed during deep clean
 using R10.Core;
 
 using R10.Web.Areas;
@@ -38,7 +37,6 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<PatActionType> _viewModelService;
         private readonly IParentEntityService<PatActionType,PatActionParameter> _actionTypeService;
-        private readonly IActionDueService<PatActionDue, PatDueDate> _actionDueService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "patActionTypeDetail";
@@ -47,13 +45,11 @@ namespace R10.Web.Areas.Patent.Controllers
             IAuthorizationService authService,
             IViewModelService<PatActionType> viewModelService,
             IParentEntityService<PatActionType, PatActionParameter> actionTypeService,
-            IActionDueService<PatActionDue, PatDueDate> actionDueService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _actionTypeService = actionTypeService;
-            _actionDueService = actionDueService;
             _localizer = localizer;
         }
 
@@ -449,9 +445,9 @@ namespace R10.Web.Areas.Patent.Controllers
             //exlude actiontypes without country if same actiontype with country exists to avoid duplicates
             //keep select in each iqueryable for efficiency vs having select after union
             var hasCountry = actionTypes.Where(a => a.Country == country)
-                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = a.Responsible.AttorneyCode, ResponsibleName = a.Responsible.AttorneyName, IsOfficeAction = a.IsOfficeAction });
+                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = (string?)null, ResponsibleName = (string?)null, IsOfficeAction = a.IsOfficeAction });
             var noCountry = actionTypes.Where(a => string.IsNullOrEmpty(a.Country) && !hasCountry.Any(c => c.ActionType == a.ActionType))
-                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = a.Responsible.AttorneyCode, ResponsibleName = a.Responsible.AttorneyName, IsOfficeAction = a.IsOfficeAction });
+                                .Select(a => new { ActionTypeID = a.ActionTypeID, ActionType = a.ActionType, ResponsibleID = a.ResponsibleID, ResponsibleCode = (string?)null, ResponsibleName = (string?)null, IsOfficeAction = a.IsOfficeAction });
 
             return Json(await hasCountry.Union(noCountry).OrderBy(a => a.ActionType).ToListAsync());
         }
@@ -510,31 +506,6 @@ namespace R10.Web.Areas.Patent.Controllers
             }
         }
 
-        #region Retroactive Action Generation
-        public async Task<IActionResult> ActionDueCompute(int actionTypeId, int actParamId = 0)
-        {
-            var vm = new ActionDueRetroParam();
-
-            if (actParamId == 0)
-            {
-                vm = await _actionTypeService.QueryableList.ProjectTo<ActionDueRetroParam>()
-                .FirstOrDefaultAsync(d => d.ActionTypeID == actionTypeId);
-            }
-            else
-            {
-                vm = await _actionTypeService.ChildService.QueryableList.ProjectTo<ActionDueRetroParam>()
-                .FirstOrDefaultAsync(d => d.ActParamId == actParamId);
-            }
-            return PartialView("_ActionDueCompute", vm);
-        }
-
-        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.FullModify)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateActionDues([FromBody] ActionDueRetroParam criteria)
-        {
-            await _actionDueService.RetroGenerateActionDues(criteria);
-            return Ok();
-        }
-        #endregion
+        // Retroactive Action Generation removed during debloat
     }
 }

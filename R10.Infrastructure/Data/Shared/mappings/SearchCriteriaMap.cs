@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using R10.Core.Entities;
 using R10.Core.Entities.Patent;
@@ -19,7 +19,7 @@ namespace R10.Infrastructure.Data.Shared.mappings
         public void Configure(EntityTypeBuilder<SearchCriteriaDetail> builder)
         {
             builder.ToTable("tblPubCriteria_Dtl");
-            builder.HasOne(c => c.PatSearchNotify).WithOne(n => n.SearchCriteriaDetail).HasForeignKey<PatSearchNotify>(n => n.CritDtlId);
+            // builder.HasOne(c => c.PatSearchNotify).WithOne(n => n.SearchCriteriaDetail).HasForeignKey<PatSearchNotify>(n => n.CritDtlId); // Removed: PatSearchNotify nav property no longer exists
 
         }
     }

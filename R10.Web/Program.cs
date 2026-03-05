@@ -32,7 +32,6 @@ namespace R10.Web
 
                 builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
 
-                // Task scheduler and BackgroundTaskService removed in debloat
 
                 var configuration = builder.Configuration;
 

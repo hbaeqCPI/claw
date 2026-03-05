@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
@@ -7,7 +7,6 @@ using R10.Core;
 using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Entities.Identity;
-using R10.Core.Entities.Patent;
 using R10.Core.Entities.Shared;
 using R10.Core.Exceptions;
 using R10.Core.Helpers;
@@ -51,64 +50,10 @@ namespace R10.Web.Services
 
             switch (entityType)
             {
-                case CPiEntityType.Client:
-                    entities = _cpiDbContext.GetRepository<Client>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like(e.ClientCode, (entity ?? "")) || EF.Functions.Like(e.ClientName, (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.ClientID))).Select(e => new EntityFilterDTO ()
-                    {
-                        Id = e.ClientID,
-                        Code = e.ClientCode,
-                        Name = e.ClientName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Agent:
-                    entities = _cpiDbContext.GetRepository<Agent>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like(e.AgentCode, (entity ?? "")) || EF.Functions.Like(e.AgentName, (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.AgentID))).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.AgentID,
-                        Code = e.AgentCode,
-                        Name = e.AgentName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Owner:
-                    entities = _cpiDbContext.GetRepository<Owner>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like(e.OwnerCode, (entity ?? "")) || EF.Functions.Like(e.OwnerName, (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.OwnerID))).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.OwnerID,
-                        Code = e.OwnerCode,
-                        Name = e.OwnerName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Attorney:
-                    entities = _cpiDbContext.GetRepository<Attorney>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like(e.AttorneyCode, (entity ?? "")) || EF.Functions.Like(e.AttorneyName, (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.AttorneyID))).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.AttorneyID,
-                        Code = e.AttorneyCode,
-                        Name = e.AttorneyName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
 
                 case CPiEntityType.Inventor:
-                    entities = _cpiDbContext.GetRepository<PatInventor>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like((e.Inventor ?? ""), (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.InventorID))).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.InventorID,
-                        Code = "",
-                        Name = e.Inventor,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Name);
-                    break;
-
-                case CPiEntityType.ContactPerson:
-                    entities = _cpiDbContext.GetRepository<ContactPerson>().QueryableList.Where(e => ((entity ?? "") == "" || EF.Functions.Like(e.Contact, (entity ?? "")) || EF.Functions.Like(e.ContactName, (entity ?? ""))) && !(userEntityFilters.Any(ef => ef.EntityId == e.ContactID))).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.ContactID,
-                        Code = e.Contact,
-                        Name = e.ContactName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
+                    // PatInventor entity removed during debloat
+                    entities = (new List<EntityFilterDTO>()).AsQueryable();
                     break;
             }
 
@@ -126,64 +71,10 @@ namespace R10.Web.Services
 
             switch (entityType)
             {
-                case CPiEntityType.Client:
-                    entities = _cpiDbContext.GetRepository<Client>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.ClientID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.ClientID,
-                        Code = e.ClientCode,
-                        Name = e.ClientName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Agent:
-                    entities = _cpiDbContext.GetRepository<Agent>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.AgentID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.AgentID,
-                        Code = e.AgentCode,
-                        Name = e.AgentName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Owner:
-                    entities = _cpiDbContext.GetRepository<Owner>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.OwnerID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.OwnerID,
-                        Code = e.OwnerCode,
-                        Name = e.OwnerName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
-
-                case CPiEntityType.Attorney:
-                    entities = _cpiDbContext.GetRepository<Attorney>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.AttorneyID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.AttorneyID,
-                        Code = e.AttorneyCode,
-                        Name = e.AttorneyName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
-                    break;
 
                 case CPiEntityType.Inventor:
-                    entities = _cpiDbContext.GetRepository<PatInventor>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.InventorID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.InventorID,
-                        Code = "",
-                        Name = e.Inventor,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Name);
-                    break;
-
-                case CPiEntityType.ContactPerson:
-                    entities = _cpiDbContext.GetRepository<ContactPerson>().QueryableList.Where(e => userEntityFilters.Any(ef => ef.EntityId == e.ContactID)).Select(e => new EntityFilterDTO()
-                    {
-                        Id = e.ContactID,
-                        Code = e.Contact,
-                        Name = e.ContactName,
-                        Email = e.EMail
-                    }).OrderBy(s => s.Code);
+                    // PatInventor entity removed during debloat
+                    entities = (new List<EntityFilterDTO>()).AsQueryable();
                     break;
             }
 
