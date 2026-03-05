@@ -1,0 +1,54 @@
+@model PatIndicator
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.IndicatorId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord;
+    bool isReadOnly = !fullModify;
+}
+
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="IndicatorId" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Indicator"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Indicator" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Indicator"></span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row mt-4">
+            <div class="col-sm-4 col-md-3 col-lg-2">
+                <div class="form-group float-label">
+                    <label asp-for="CPIIndicator"></label>
+                    @(Html.Kendo().Switch().Name("CPIIndicator").Checked(Model.CPIIndicator).Enabled(!isReadOnly))
+                </div>
+            </div>
+            <div class="col-sm-4 col-md-3 col-lg-2">
+                <div class="form-group float-label">
+                    <label asp-for="FFIndicator"></label>
+                    @(Html.Kendo().Switch().Name("FFIndicator").Checked(Model.FFIndicator).Enabled(!isReadOnly))
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>

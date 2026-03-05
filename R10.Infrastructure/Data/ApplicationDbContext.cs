@@ -71,6 +71,7 @@ namespace R10.Infrastructure.Data
         public DbSet<PatAverageScoreDTO> PatAverageScoreDTO { get; set; }
 
         public DbSet<PatCountryLawUpdate> PatCountryLawUpdate { get; set; }
+        public DbSet<PatIndicator> PatIndicators { get; set; }
 
         #endregion
 
@@ -98,6 +99,7 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkWorkflowAction> TmkWorkflowActions { get; set; }
         public DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
         public DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
+        public DbSet<TmkIndicator> TmkIndicators { get; set; }
 
         #endregion
 
@@ -273,6 +275,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatScoreMap());
             builder.ApplyConfiguration(new PatScoreDTOMap());
             builder.ApplyConfiguration(new PatAverageScoreDTOMap());
+            builder.ApplyConfiguration(new PatIndicatorMap());
 
             #endregion
 
@@ -295,6 +298,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkWorkflowMap());
             builder.ApplyConfiguration(new TmkWorkflowActionMap());
             builder.ApplyConfiguration(new TmkWorkflowActionParameterMap());
+            builder.ApplyConfiguration(new TmkIndicatorMap());
 
             #endregion
 

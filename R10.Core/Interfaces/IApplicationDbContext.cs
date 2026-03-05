@@ -45,6 +45,7 @@ namespace R10.Core.Interfaces
         DbSet<PatScore> PatScores { get; set; }
         DbSet<PatScoreDTO> PatScoreDTO { get; set; }
         DbSet<PatAverageScoreDTO> PatAverageScoreDTO { get; set; }
+        DbSet<PatIndicator> PatIndicators { get; set; }
         #endregion
 
         #region Trademark
@@ -67,6 +68,7 @@ namespace R10.Core.Interfaces
         DbSet<TmkWorkflow> TmkWorkflows { get; set; }
         DbSet<TmkWorkflowAction> TmkWorkflowActions { get; set; }
         DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
+        DbSet<TmkIndicator> TmkIndicators { get; set; }
         DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         #endregion
 

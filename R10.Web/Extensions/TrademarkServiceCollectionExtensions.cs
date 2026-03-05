@@ -47,6 +47,10 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IEntityService<TmkCountryLawUpdate>, AuxService<TmkCountryLawUpdate>>();
 
+            //indicator
+            services.AddScoped<IViewModelService<TmkIndicator>, ViewModelService<TmkIndicator>>();
+            services.AddScoped<IEntityService<TmkIndicator>, AuxService<TmkIndicator>>();
+
             return services;
         }
     }

@@ -54,6 +54,10 @@ namespace R10.Web.Extensions
             services.AddScoped<IViewModelService<PatScoreCategory>, ViewModelService<PatScoreCategory>>();
             services.AddScoped<IEntityService<PatScoreCategory>, AuxService<PatScoreCategory>>();
 
+            //indicator
+            services.AddScoped<IViewModelService<PatIndicator>, ViewModelService<PatIndicator>>();
+            services.AddScoped<IEntityService<PatIndicator>, AuxService<PatIndicator>>();
+
             return services;
         }
     }

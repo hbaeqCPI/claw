@@ -85,7 +85,7 @@ namespace R10.Infrastructure.Data
         {
             bool setSessionState = this.DbConnection.State != ConnectionState.Open;
             var opened = base.Open(errorsExpected);
-            if (setSessionState)
+            if (setSessionState && _contextAccessor?.HttpContext?.User?.Identity?.Name != null)
             {
                 SetSessionInfo();
             }
