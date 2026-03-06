@@ -31,6 +31,10 @@ namespace R10.Core.Entities.Patent
         [StringLength(20)]
         public string? LabelTaxSched { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Systems")]
+        public string? Systems { get; set; }
+
         public PatCaseType? PatCaseType { get; set; }
         public PatCountry? PatCountry { get; set; }
 //         public Agent? Agent { get; set; } // Removed - Agent entity deleted

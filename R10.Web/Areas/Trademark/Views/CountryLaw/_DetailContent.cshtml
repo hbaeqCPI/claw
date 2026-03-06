@@ -1,7 +1,9 @@
-﻿@model TmkCountryLawDetailViewModel
+﻿@using Microsoft.EntityFrameworkCore
+@model TmkCountryLawDetailViewModel
 @inject ISystemSettings<DefaultSetting> Settings
 @inject IStringLocalizer<CountryLawResource> Localizer
 @inject ICountryLookupViewModelService CountryLookupService
+@inject IEntityService<AppSystem> SystemService
 @{
     var settings = await Settings.GetSetting();
 
@@ -18,6 +20,11 @@
 
     var pageId = ViewData["PageId"];
     var saveAction = detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" : fullModify ? "Save" : "";
+
+    var allSystems = await SystemService.QueryableList.OrderBy(s => s.SystemName).ToListAsync();
+    var selectedSystems = string.IsNullOrEmpty(Model.Systems)
+        ? new HashSet<string>()
+        : new HashSet<string>(Model.Systems.Split("; "));
 }
 
 <form cpi-detail-form action="@saveAction">
@@ -86,6 +93,63 @@
         </div>
         @*<div class="form-row">
         </div>*@
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="mb-1">@Localizer["Systems"]</label>
+                    <input type="hidden" name="Systems" id="SystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 d-flex flex-wrap">
+                        @foreach (var system in allSystems)
+                        {
+                            var isChecked = selectedSystems.Contains(system.SystemName);
+                            var cbId = "sys_" + system.SystemName;
+                            <div class="custom-control custom-checkbox mr-3 mb-1">
+                                <input type="checkbox" class="custom-control-input system-checkbox"
+                                       id="@cbId" value="@system.SystemName"
+                                       @(isChecked ? "checked" : "")
+                                       @(isReadOnly ? "disabled" : "") />
+                                <label class="custom-control-label" for="@cbId">
+                                    @system.SystemName <span class="text-muted small">(@system.SystemType)</span>
+                                </label>
+                            </div>
+                        }
+                        @if (!isReadOnly)
+                        {
+                            <div class="custom-control custom-checkbox mr-3 mb-1 border-left pl-3">
+                                <input type="checkbox" class="custom-control-input" id="toggleAllSystems"
+                                       @(selectedSystems.Count == allSystems.Count && allSystems.Count > 0 ? "checked" : "") />
+                                <label class="custom-control-label font-weight-bold" for="toggleAllSystems">@Localizer["All"]</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (!isReadOnly)
+        {
+            <script>
+                (function () {
+                    var $form = $("[cpi-detail-form]");
+                    function updateSystemsHidden() {
+                        var selected = [];
+                        $(".system-checkbox:checked").each(function () { selected.push($(this).val()); });
+                        $("#SystemsHidden").val(selected.join("; "));
+                        $form.trigger("markDirty");
+                    }
+                    $(".system-checkbox").on("change", function () {
+                        updateSystemsHidden();
+                        var total = $(".system-checkbox").length;
+                        var checked = $(".system-checkbox:checked").length;
+                        $("#toggleAllSystems").prop("checked", checked === total);
+                    });
+                    $("#toggleAllSystems").on("change", function () {
+                        var selectAll = $(this).is(":checked");
+                        $(".system-checkbox").prop("checked", selectAll);
+                        updateSystemsHidden();
+                    });
+                })();
+            </script>
+        }
     </div>
     <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" id="tmkCountryLaw-tab" role="tablist">
         @if (!addMode)

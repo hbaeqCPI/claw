@@ -26,6 +26,10 @@ namespace R10.Core.Entities.Trademark
 
         public string? UserRemarks { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Systems")]
+        public string? Systems { get; set; }
+
         public TmkCaseType? TmkCaseType { get; set; }
         public TmkCountry? TmkCountry { get; set; }
         public List<TmkCountryDue>? TmkCountryDues { get; set; }

@@ -86,6 +86,10 @@ namespace R10.Web.Extensions
             //Help
             services.AddScoped<IBaseService<Help>, BaseService<Help>>();
 
+            //system
+            services.AddScoped<IViewModelService<AppSystem>, ViewModelService<AppSystem>>();
+            services.AddScoped<IEntityService<AppSystem>, AuxService<AppSystem>>();
+
             //Document Verification
             services.AddScoped<IDocumentVerificationRepository, DocumentVerificationRepository>();
 

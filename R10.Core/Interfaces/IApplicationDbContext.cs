@@ -72,6 +72,10 @@ namespace R10.Core.Interfaces
         DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         #endregion
 
+        #region Shared
+        DbSet<AppSystem> AppSystems { get; set; }
+        #endregion
+
         #region Images
         DbSet<ImageType> ImageTypes { get; set; }
         #endregion

@@ -658,6 +658,13 @@ namespace R10.Web.Areas.Patent.Controllers
                 mainSearchFilters.Remove(countryName);
             }
 
+            var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+            if (systemName != null)
+            {
+                countryLaws = countryLaws.Where(c => c.Systems != null && EF.Functions.Like(c.Systems, "%" + systemName.Value + "%"));
+                mainSearchFilters.Remove(systemName);
+            }
+
             return countryLaws;
         }
 

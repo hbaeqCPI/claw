@@ -1,0 +1,21 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+<div class="tab-content search page-content">
+    <div class="tab-pane show active" id="cpiSystemSearchMainTabContent" aria-labelledby="cpiSystemSearchMainTab" role="tabpanel">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="SystemName">@Localizer["System Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="SystemType">@Localizer["System Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemType" })
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

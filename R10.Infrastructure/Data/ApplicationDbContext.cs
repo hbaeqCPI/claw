@@ -8,6 +8,7 @@ using R10.Core.Entities.Trademark;
 using R10.Core.Identity;
 using R10.Core.Interfaces;
 using R10.Infrastructure.Data.Documents.mappings;
+using R10.Infrastructure.Data.mappings;
 using R10.Infrastructure.Data.Patent.mappings;
 using R10.Infrastructure.Data.Shared.mappings;
 using R10.Infrastructure.Data.Trademark.mappings;
@@ -101,6 +102,10 @@ namespace R10.Infrastructure.Data
         public DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         public DbSet<TmkIndicator> TmkIndicators { get; set; }
 
+        #endregion
+
+        #region Shared
+        public DbSet<AppSystem> AppSystems { get; set; }
         #endregion
 
         #region Images
@@ -300,6 +305,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkWorkflowActionParameterMap());
             builder.ApplyConfiguration(new TmkIndicatorMap());
 
+            #endregion
+
+            #region Shared
+            builder.ApplyConfiguration(new AppSystemMap());
             #endregion
 
             #region Security & System Logs
