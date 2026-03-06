@@ -32,15 +32,21 @@
         </div>
         <div class="form-row mt-4">
             <div class="col-sm-4 col-md-3 col-lg-2">
-                <div class="form-group float-label">
-                    <label asp-for="CPIIndicator"></label>
-                    @(Html.Kendo().Switch().Name("CPIIndicator").Checked(Model.CPIIndicator).Enabled(!isReadOnly))
+                <div class="form-group d-flex">
+                    <label class="toggle-switch">
+                        <input id="CPIIndicator" name="CPIIndicator" type="checkbox" checked="@Model.CPIIndicator" disabled="@isReadOnly" />
+                        <span class="slider round"></span>
+                    </label>
+                    <label for="CPIIndicator" class="ml-2">@SharedLocalizer["CPI Indicator"]</label>
                 </div>
             </div>
             <div class="col-sm-4 col-md-3 col-lg-2">
-                <div class="form-group float-label">
-                    <label asp-for="FFIndicator"></label>
-                    @(Html.Kendo().Switch().Name("FFIndicator").Checked(Model.FFIndicator).Enabled(!isReadOnly))
+                <div class="form-group d-flex">
+                    <label class="toggle-switch">
+                        <input id="FFIndicator" name="FFIndicator" type="checkbox" checked="@Model.FFIndicator" disabled="@isReadOnly" />
+                        <span class="slider round"></span>
+                    </label>
+                    <label for="FFIndicator" class="ml-2">@SharedLocalizer["Foreign Filing Indicator"]</label>
                 </div>
             </div>
         </div>
