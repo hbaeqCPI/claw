@@ -12,84 +12,101 @@
     </div>
 
     <div class="row pt-2">
-        <div class="col-lg-6 col-md-6 mb-4">
-            <div class="card h-100 shadow-sm border-0">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-3">
                         <span class="fad fa-file-certificate fa-2x text-primary mr-3"></span>
                         <h4 class="card-title mb-0">@MenuLocalizer["Patent"]</h4>
                     </div>
-                    <p class="card-text text-muted mb-3">@Localizer["Manage patent country laws, countries, and case types."]</p>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Patent" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Patent" asp-controller="Indicator" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-tachometer-alt fa-fw mr-2 text-muted"></i>@Localizer["Indicator"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]
-                            </a>
-                        </li>
-                    </ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Manage"]</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Auxiliary"]</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a asp-area="Patent" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Patent" asp-controller="Indicator" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-tachometer-alt fa-fw mr-2 text-muted"></i>@Localizer["Indicator"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 col-md-6 mb-4">
-            <div class="card h-100 shadow-sm border-0">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-3">
                         <span class="fad fa-trademark fa-2x text-primary mr-3"></span>
                         <h4 class="card-title mb-0">@MenuLocalizer["Trademark"]</h4>
                     </div>
-                    <p class="card-text text-muted mb-3">@Localizer["Manage trademark country laws, countries, and case types."]</p>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Trademark" asp-controller="Indicator" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-tachometer-alt fa-fw mr-2 text-muted"></i>@Localizer["Indicator"]
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]
-                            </a>
-                        </li>
-                    </ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Manage"]</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-globe fa-fw mr-2 text-muted"></i>@Localizer["Country Law"]
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Auxiliary"]</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-flag fa-fw mr-2 text-muted"></i>@Localizer["Country"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-briefcase fa-fw mr-2 text-muted"></i>@Localizer["Case Type"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Trademark" asp-controller="Indicator" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-tachometer-alt fa-fw mr-2 text-muted"></i>@Localizer["Indicator"]
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
