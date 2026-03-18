@@ -1,0 +1,220 @@
+@using R10.Core.Entities.Trademark
+@model TmkCountryDue
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.CDueId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var screen = ViewData["PageId"];
+
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="CDueId" />
+    <input type="hidden" asp-for="CountryLawID" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country))
+                        <span asp-validation-for="Country"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="CaseType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="CaseType"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="ActionType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ActionType" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="ActionType"></span>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label asp-for="ActionDue"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ActionDue" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="ActionDue"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="BasedOn"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="BasedOn" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "BasedOn", defaultValue = Model.BasedOn })
+                        <span asp-validation-for="BasedOn"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Indicator"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Indicator" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox",
+                                 new
+                                 {
+                                     name = "Indicator",
+                                     action = "GetPicklistData",
+                                     controller = "Indicator",
+                                     textProperty = "Indicator",
+                                     defaultValue = Model.Indicator
+                                 })
+                        <span asp-validation-for="Indicator"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label asp-for="Yr"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Yr" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>().Name("Yr").Format("0").Value(Model.Yr).HtmlAttributes(new { style = "width: 100%" }))
+                        <span asp-validation-for="Yr"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label asp-for="Mo"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Mo" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>().Name("Mo").Format("0").Value(Model.Mo).HtmlAttributes(new { style = "width: 100%" }))
+                        <span asp-validation-for="Mo"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group float-label">
+                    <label asp-for="Dy"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Dy" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>().Name("Dy").Format("0").Value(Model.Dy).HtmlAttributes(new { style = "width: 100%" }))
+                        <span asp-validation-for="Dy"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Recurring"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" value="@(((R10.Core.Entities.Trademark.RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())" disabled />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().ComboBox()
+                            .Name("Recurring")
+                            .Text(((R10.Core.Entities.Trademark.RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())
+                            .Value(Model.Recurring.ToString())
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(Html.GetEnumSelectList<R10.Core.Entities.Trademark.RecurringOption>().OrderBy(o => o.Text))
+                            .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                            .HtmlAttributes(new { style = "width: 100%", id = $"Recurring_{screen}" })
+                            )
+                        <span asp-validation-for="Recurring"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffBasedOn"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="EffBasedOn" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "EffBasedOn", defaultValue = Model.EffBasedOn })
+                        <span asp-validation-for="EffBasedOn"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffStartDate"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" value="@Model.EffStartDate?.ToString("d")" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
+                        <span asp-validation-for="EffStartDate"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffEndDate"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" value="@Model.EffEndDate?.ToString("d")" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
+                        <span asp-validation-for="EffEndDate"></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>

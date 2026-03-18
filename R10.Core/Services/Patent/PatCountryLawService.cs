@@ -99,11 +99,20 @@ namespace R10.Core.Services
             if (added.Any())
                 _repository.Set<T>().AddRange(added);
 
-            if (deleted.Any()) 
+            if (deleted.Any())
                 _repository.Set<T>().RemoveRange(deleted);
 
             UpdateParentStamps(parentId, country, caseType,userName, tStamp);
             await _repository.SaveChangesAsync();
+        }
+
+        public async Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity
+        {
+            if (entities.Any())
+            {
+                _repository.Set<T>().AddRange(entities);
+                await _repository.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<PatCountryDue> deleted) 

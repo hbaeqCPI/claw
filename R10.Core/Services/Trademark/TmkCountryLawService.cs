@@ -71,6 +71,15 @@ namespace R10.Core.Services
             await _repository.SaveChangesAsync();
         }
 
+        public async Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity
+        {
+            if (entities.Any())
+            {
+                _repository.Set<T>().AddRange(entities);
+                await _repository.SaveChangesAsync();
+            }
+        }
+
         public async Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<TmkCountryDue> deleted)
         {
             if (deleted.Any())

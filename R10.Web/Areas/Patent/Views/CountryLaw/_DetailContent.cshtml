@@ -14,6 +14,7 @@
 
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
     var countryLabel = Localizer["Country"];
     var countryNameLabel = Localizer["Country Name"];
     var childViewModel = new CountryLawChildViewModel { Id=Model.CountryLawID, CanDeleteChild=Model.CanDeleteChild, Country=Model.Country,CaseType = Model.CaseType, Permission = detailPagePermission };
@@ -29,6 +30,11 @@
 
 <form cpi-detail-form action="@saveAction">
     <input type="hidden" asp-for="CountryLawID" />
+    <input type="hidden" name="CopyOptions" value="@(ViewBag.CopyOptions ?? "")" />
+    @if (addMode && !string.IsNullOrEmpty(Model.Remarks))
+    {
+        <input type="hidden" asp-for="Remarks" />
+    }
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
     <div class="page-content  detail cpiMainEntry">
         <div class="form-row">
@@ -201,7 +207,7 @@
         </div>*@
         <div class="form-row">
             <div class="col">
-                <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly=true></textarea>
+                <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
             </div>
         </div>
     </div>

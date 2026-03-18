@@ -1,0 +1,74 @@
+@model TmkArea
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.AreaID;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="AreaID" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Area"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Area" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Area"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="tmkAreaDetailCountryTab" href="#tmkAreaDetailCountryTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="tmkAreaDetailCountryTabContent" title="@Localizer["Countries"]">@Localizer["Countries"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="tmkAreaDetailCountryTabContent" role="tabpanel" aria-labelledby="tmkAreaDetailCountryTab">
+                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentId = Model.AreaID, Area = "Trademark" })
+            </div>
+        </div>
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    tmkAreaPage.editableGrids = [
+            {
+            title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.AreaID'},
+            afterSubmit: tmkAreaPage.updateRecordStamps
+            }
+    ];
+
+    $(document).ready(() => {
+        const countriesGrid = $("#countriesGrid");
+        countriesGrid.on("click", ".countryLink", (e) => {
+            e.stopPropagation();
+
+            let url = $(e.target).data("url");
+            const row = $(e.target).closest("tr");
+            const dataItem = countriesGrid.data("kendoGrid").dataItem(row);
+            const linkUrl = url.replace("actualValue", dataItem.Country);
+            pageHelper.openLink(linkUrl, false);
+        });
+    })
+</script>

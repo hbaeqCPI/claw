@@ -19,6 +19,7 @@ using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
 using R10.Web.Services;
 
+using Newtonsoft.Json;
 using R10.Web.Areas;
 
 namespace R10.Web.Areas.Trademark.Controllers
@@ -108,15 +109,14 @@ namespace R10.Web.Areas.Trademark.Controllers
                 viewModel.AddTrademarkAuxiliarySecurityPolicies();
                 await viewModel.ApplyDetailPagePermission(User, _authService);
 
-                //hide copy and email buttons
-                viewModel.CanCopyRecord = false;
                 viewModel.CanEmail = false;
 
                 this.AddDefaultNavigationUrls(viewModel);
 
                 viewModel.Container = _dataContainer;
 
-                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id }); // $"{viewModel.EditScreenUrl}/{id}";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
+                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
             return viewModel;
@@ -188,6 +188,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (page.Detail == null)
                 return RedirectToAction("Index");
 
+            if (TempData["CopyOptions"] != null)
+                await ExtractCopyParams(page);
+
             TmkCaseType detail = page.Detail;
             PageViewModel model = new PageViewModel()
             {
@@ -199,6 +202,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Data = detail,
                 FromSearch = fromSearch
             };
+            ModelState.Clear();
 
             return PartialView("Index", model);
         }
@@ -235,6 +239,46 @@ namespace R10.Web.Areas.Trademark.Controllers
             await _auxService.Delete(entity);
 
             return Ok();
+        }
+
+        [HttpGet()]
+        public async Task<IActionResult> Copy(int id)
+        {
+            var entity = await GetById(id);
+            if (entity == null) return new RecordDoesNotExistResult();
+
+            var viewModel = new CaseTypeCopyViewModel
+            {
+                OriginalCaseType = entity.CaseType,
+                CaseType = entity.CaseType
+            };
+            return PartialView("_Copy", viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditCopied([FromBody] CaseTypeCopyViewModel copy)
+        {
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            TempData["CopyOptions"] = JsonConvert.SerializeObject(copy);
+            return RedirectToAction("Add");
+        }
+
+        private async Task ExtractCopyParams(DetailPageViewModel<TmkCaseType> page)
+        {
+            var copyOptionsString = TempData["CopyOptions"].ToString();
+            ViewBag.CopyOptions = copyOptionsString;
+            var copyOptions = JsonConvert.DeserializeObject<CaseTypeCopyViewModel>(copyOptionsString);
+            if (copyOptions != null)
+            {
+                var source = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.CaseType == copyOptions.OriginalCaseType);
+                if (source != null)
+                {
+                    page.Detail = source;
+                    page.Detail.CaseTypeId = 0;
+                    page.Detail.CaseType = copyOptions.CaseType;
+                }
+            }
         }
 
         private async Task<TmkCaseType> GetById(int id)

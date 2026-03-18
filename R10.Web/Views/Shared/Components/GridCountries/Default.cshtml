@@ -1,0 +1,80 @@
+@model GridOptions
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var pageName = ViewBag.ActivePage;
+
+    var countryLinkUrl = Url.Action("DetailLink", "Country", new
+    {
+        Area = Model.Area,
+        id = "actualValue"
+    });
+    var countryTemplate = $"<span class='pr-3'>#=kendo.htmlEncode(Country)#</span><i class='fal fa-search-plus btn-link countryLink' data-url='{countryLinkUrl}' title='{Localizer["Open Country Screen"]}'></i>";
+}
+
+@(Html.Kendo().Grid<CountryAreaViewModel>()
+            .Name("countriesGrid")
+            .Columns(columns =>
+            {
+                columns.Bound(ca => ca.Country)
+                                        .Width(400)
+                                        .ClientTemplate(countryTemplate)
+                                        .Editable($"{pageName}.isGridColumnEditable")
+                                        .EditorViewData(new { id = "CountriesGrid_Country", area = Model.Area })
+                                        .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+                columns.Bound(ca => ca.CountryLookup.CountryName)
+                    .HtmlAttributes(new { @class = "d-none d-sm-table-cell name-field" })
+                    .HeaderHtmlAttributes(new { @class = "d-none d-sm-table-cell" });
+                columns.Command(command =>
+                {
+                    if (detailPagePermission.CanDeleteRecord)
+                        command.Custom("Delete")
+                                .Click("function(e) {" + pageName + ".deleteGridRow(e,this)}")
+                                .IconClass("k-icon fal fa-trash-alt")
+                                .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                                .HtmlAttributes(new { @class = "grid-action" });
+                }).Width(10);
+            })
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single))
+            .ToolBar(toolbar =>
+            {
+                if (detailPagePermission.CanAddRecord)
+                {
+                    toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+                }
+                if (detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                {
+                    toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+                    toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+                }
+
+            })
+            .Editable(editable => editable.Enabled(detailPagePermission.CanEditRecord && !detailPagePermission.CanEditRemarksOnly)
+                        .Mode(GridEditMode.InCell).
+                        ConfirmDelete(@Localizer["Are you sure you want to delete this record?"]).DisplayDeleteConfirmation(false))
+            .Sortable(sort => sort.AllowUnsort(false))
+            .Pageable(page => page.Responsive(false).PageSizes(settings.SubFormPageSizeOptions))
+            .DataSource(dataSource => dataSource
+            .Ajax()
+            .Batch(true)
+            .PageSize(settings.SubFormPageSize)
+            .ServerOperation(false)
+            .Model(model =>
+            {
+                model.Id(ca => ca.AreaCtryId);
+                model.Field(ca => ca.CountryLookup).DefaultValue(new CountryLookupViewModel { CountryID = 0, Country = "", CountryName = "" });
+                model.Field(ca => ca.CountryLookup.CountryName).Editable(false);
+            })
+            .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentId}'}}"))
+            .Update(update => update.Action("CountriesUpdate", "Area"))
+            .Destroy(destroy => destroy.Action("CountryDelete", "Area"))
+            .Events(events =>
+            {
+                events.Error("pageHelper.onGridError");
+            })
+            )
+.HtmlAttributes(new { @class = "kendo-Grid" })
+)

@@ -61,6 +61,7 @@ namespace R10.Infrastructure.Data
         public DbSet<PatApplicationStatus> ApplicationStatuses { get; set; }
         public DbSet<PatDesignationDTO> PatDesignationDTO { get; set; }
         public DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
+        public DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
 
         public DbSet<PatWorkflow> PatWorkflows { get; set; }
         public DbSet<PatWorkflowAction> PatWorkflowActions { get; set; }
@@ -86,6 +87,7 @@ namespace R10.Infrastructure.Data
 
         public DbSet<TmkCaseType> TmkCaseTypes { get; set; }
         public DbSet<TmkDesCaseType> TmkDesCaseTypes { get; set; }
+        public DbSet<TmkDesCaseTypeFields> TmkDesCaseTypeFields { get; set; }
         public DbSet<TmkConflictStatus> TmkConflictStatuses { get; set; }
         public DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         public DbSet<TmkCountryDue> TmkCountryDues { get; set; }
@@ -101,6 +103,7 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
         public DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         public DbSet<TmkIndicator> TmkIndicators { get; set; }
+        public DbSet<TmkStandardGood> TmkStandardGoods { get; set; }
 
         #endregion
 
@@ -267,6 +270,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatCaseTypeMap());
             builder.ApplyConfiguration(new PatApplicationStatusMap());
             builder.ApplyConfiguration(new PatDesCaseTypeMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeFieldsMap());
             builder.ApplyConfiguration(new PatDesignatedCountryMap());
             builder.ApplyConfiguration(new PatActionTypeMap());
             builder.ApplyConfiguration(new PatActionParameterMap());
@@ -291,6 +295,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkAreaCountryMap());
             builder.ApplyConfiguration(new TmkCaseTypeMap());
             builder.ApplyConfiguration(new TmkDesCaseTypeMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeFieldsMap());
             builder.ApplyConfiguration(new TmkConflictStatusMap());
             builder.ApplyConfiguration(new TmkCountryLawMap());
             builder.ApplyConfiguration(new TmkCountryDueMap());
@@ -304,6 +309,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkWorkflowActionMap());
             builder.ApplyConfiguration(new TmkWorkflowActionParameterMap());
             builder.ApplyConfiguration(new TmkIndicatorMap());
+            builder.ApplyConfiguration(new TmkStandardGoodMap());
 
             #endregion
 

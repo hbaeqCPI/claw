@@ -1,0 +1,31 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<TmkStandardGood>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Class).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: ClassId#", fromSearch = true }), "Class")).Width(150);
+                    columns.Bound(m => m.ClassType).Width(200);
+                    columns.Bound(m => m.StandardGoods);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("StandardGoodList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "StandardGood")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("tmkStandardGoodPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("tmkStandardGoodPage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "StandardGood")
+                .Data("tmkStandardGoodPage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Class))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

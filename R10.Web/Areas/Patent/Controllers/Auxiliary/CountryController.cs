@@ -22,6 +22,7 @@ using R10.Web.Interfaces;
 using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
 
+using Newtonsoft.Json;
 using R10.Web.Areas;
 
 namespace R10.Web.Areas.Patent.Controllers
@@ -180,6 +181,9 @@ namespace R10.Web.Areas.Patent.Controllers
             if (page.Detail == null)
                 return RedirectToAction("Index");
 
+            if (TempData["CopyOptions"] != null)
+                await ExtractCopyParams(page);
+
             var detail = page.Detail;
 
             if (!string.IsNullOrEmpty(id))
@@ -197,6 +201,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 Data = detail,
                 FromSearch = fromSearch
             };
+            ModelState.Clear();
 
             return PartialView("Index", model);
         }
@@ -257,13 +262,12 @@ namespace R10.Web.Areas.Patent.Controllers
                 viewModel.AddPatentAuxiliarySecurityPolicies();
                 await viewModel.ApplyDetailPagePermission(User, _authService);
 
-                //hide copy and email buttons
-                viewModel.CanCopyRecord = false;
                 viewModel.CanEmail = false;
 
                 this.AddDefaultNavigationUrls(viewModel);
 
                 viewModel.EditScreenUrl = $"{viewModel.EditScreenUrl}/{id}";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
                 viewModel.Container = _dataContainer;
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
@@ -344,6 +348,45 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> GetCountryCurrencyList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_patCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName", "CurrencyType" }, requiredRelation);
+        }
+
+        [HttpGet()]
+        public async Task<IActionResult> Copy(int id)
+        {
+            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            if (entity == null) return new RecordDoesNotExistResult();
+            var viewModel = new CountryCopyViewModel
+            {
+                OriginalCountry = entity.Country,
+                Country = entity.Country
+            };
+            return PartialView("_Copy", viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditCopied([FromBody] CountryCopyViewModel copy)
+        {
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            TempData["CopyOptions"] = JsonConvert.SerializeObject(copy);
+            return RedirectToAction("Add");
+        }
+
+        private async Task ExtractCopyParams(DetailPageViewModel<PatCountry> page)
+        {
+            var copyOptionsString = TempData["CopyOptions"].ToString();
+            ViewBag.CopyOptions = copyOptionsString;
+            var copyOptions = JsonConvert.DeserializeObject<CountryCopyViewModel>(copyOptionsString);
+            if (copyOptions != null)
+            {
+                var source = await _patCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == copyOptions.OriginalCountry);
+                if (source != null)
+                {
+                    page.Detail = source;
+                    page.Detail.CountryID = 0;
+                    page.Detail.Country = copyOptions.Country;
+                }
+            }
         }
 
         [HttpGet()]

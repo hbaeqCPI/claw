@@ -1,0 +1,30 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<TmkArea>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Area).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: AreaID#", fromSearch = true }), "Area")).Width(200);
+                    columns.Bound(m => m.Description);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("AreaList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Area")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("tmkAreaPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("tmkAreaPage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "Area")
+                .Data("tmkAreaPage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Area))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

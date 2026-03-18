@@ -1,0 +1,35 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<PatCountryExp>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Country).Width(100);
+                    columns.Bound(m => m.CaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CExpId#", fromSearch = true }), "CaseType")).Width(100);
+                    columns.Bound(m => m.Type).Width(150);
+                    columns.Bound(m => m.BasedOn).Width(150);
+                    columns.Bound(m => m.Yr).Width(80);
+                    columns.Bound(m => m.Mo).Width(80);
+                    columns.Bound(m => m.Dy).Width(80);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("CountryExpList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "CountryExp")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("patCountryExpPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("patCountryExpPage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "CountryExp")
+                .Data("patCountryExpPage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Country))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

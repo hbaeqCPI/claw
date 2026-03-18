@@ -35,9 +35,14 @@ namespace R10.Web.Areas
                 .ForMember(vm => vm.DesCountryName, domain => domain.MapFrom(d => d.ChildCountry != null ? d.ChildCountry.CountryName : null))
                 .ForMember(vm => vm.GenApp, domain => domain.MapFrom(d => d.GenApp ?? false));
 
+            CreateMap<TmkStandardGood, TmkStandardGoodListViewModel>()
+                .ForMember(d => d.ClassDesc, o => o.MapFrom(s => s.Class + " - " + s.ClassType));
+
+            CreateMap<TmkCountry, CountryLookupViewModel>();
             CreateMap<TmkAreaCountry, CountryAreaViewModel>()
                 .ForMember(vm => vm.Area, domain => domain.MapFrom(d => d.Area != null ? d.Area.Area : null))
-                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null));
+                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null))
+                .ForMember(vm => vm.CountryLookup, domain => domain.MapFrom(d => d.AreaCountry));
             CreateMap<CountryAreaViewModel, TmkAreaCountry>()
                 .ForMember(m => m.Area, opt => opt.Ignore())
                 .ForMember(m => m.AreaCountry, opt => opt.Ignore());

@@ -17,6 +17,11 @@ namespace R10.Infrastructure.Data.Patent.mappings
             builder.Property(i => i.IndicatorId).UseIdentityColumn();
             builder.Property(i => i.IndicatorId).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
             builder.HasIndex(i => i.Indicator).IsUnique();
+
+            builder.HasMany(i => i.ActionParameters)
+                .WithOne()
+                .HasForeignKey(p => p.Indicator)
+                .HasPrincipalKey(i => i.Indicator);
         }
     }
 }

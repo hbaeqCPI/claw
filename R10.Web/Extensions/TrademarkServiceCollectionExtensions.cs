@@ -44,8 +44,20 @@ namespace R10.Web.Extensions
             services.AddScoped<IParentEntityService<TmkActionType, TmkActionParameter>, ParentEntityService<TmkActionType, TmkActionParameter>>();
 
             services.AddScoped<IBaseService<TmkDesCaseType>, BaseService<TmkDesCaseType>>();
+            services.AddScoped<IViewModelService<TmkDesCaseType>, ViewModelService<TmkDesCaseType>>();
+            services.AddScoped<IEntityService<TmkDesCaseType>, AuxService<TmkDesCaseType>>();
+
+            services.AddScoped<IViewModelService<TmkCountryDue>, ViewModelService<TmkCountryDue>>();
+            services.AddScoped<IEntityService<TmkCountryDue>, AuxService<TmkCountryDue>>();
+
+            services.AddScoped<IViewModelService<TmkDesCaseTypeFields>, ViewModelService<TmkDesCaseTypeFields>>();
+            services.AddScoped<IEntityService<TmkDesCaseTypeFields>, AuxService<TmkDesCaseTypeFields>>();
 
             services.AddScoped<IEntityService<TmkCountryLawUpdate>, AuxService<TmkCountryLawUpdate>>();
+
+            //standard goods
+            services.AddScoped<IViewModelService<TmkStandardGood>, ViewModelService<TmkStandardGood>>();
+            services.AddScoped<IEntityService<TmkStandardGood>, AuxService<TmkStandardGood>>();
 
             //indicator
             services.AddScoped<IViewModelService<TmkIndicator>, ViewModelService<TmkIndicator>>();

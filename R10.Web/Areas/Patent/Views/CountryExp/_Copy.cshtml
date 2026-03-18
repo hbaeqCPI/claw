@@ -1,0 +1,105 @@
+@model CountryExpCopyViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+
+<div class="modal fade" id="patCountryExpCopyDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" asp-action="EditCopied">
+                <div class="modal-header py-1">
+                    <h4 class="modal-title">@Localizer["Copy Country Expiration"]</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="container-fluid">
+                        <input type="hidden" asp-for="CExpId" />
+                        <div class="row">
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Country" class="required"></label>
+                                    <input asp-for="Country" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Country"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="CaseType" class="required"></label>
+                                    <input asp-for="CaseType" class="form-control form-control-sm" />
+                                    <span asp-validation-for="CaseType"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Type"></label>
+                                    <input asp-for="Type" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Type"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="BasedOn"></label>
+                                    <input asp-for="BasedOn" class="form-control form-control-sm" />
+                                    <span asp-validation-for="BasedOn"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Yr"></label>
+                                    <input asp-for="Yr" type="number" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="col-md-4 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Mo"></label>
+                                    <input asp-for="Mo" type="number" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="col-md-4 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Dy"></label>
+                                    <input asp-for="Dy" type="number" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffBasedOn"></label>
+                                    <input asp-for="EffBasedOn" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffStartDate"></label>
+                                    <input asp-for="EffStartDate" type="date" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="col-md-6 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="EffEndDate"></label>
+                                    <input asp-for="EffEndDate" type="date" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-undo-alt pr-2"></i>@Localizer["Cancel"]</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-check pr-2"></i>@Localizer["Copy"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        patCountryExpPage.showCopyScreen();
+    });
+</script>

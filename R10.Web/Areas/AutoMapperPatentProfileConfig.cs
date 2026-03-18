@@ -39,9 +39,11 @@ namespace R10.Web.Areas
                 .ForMember(vm => vm.GenApp, domain => domain.MapFrom(d => d.GenApp ?? false))
                 .ForMember(vm => vm.PatCountryLaw, opt => opt.Ignore());
 
+            CreateMap<PatCountry, CountryLookupViewModel>();
             CreateMap<PatAreaCountry, CountryAreaViewModel>()
                 .ForMember(vm => vm.Area, domain => domain.MapFrom(d => d.Area != null ? d.Area.Area : null))
-                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null));
+                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null))
+                .ForMember(vm => vm.CountryLookup, domain => domain.MapFrom(d => d.AreaCountry));
             CreateMap<CountryAreaViewModel, PatAreaCountry>()
                 .ForMember(m => m.Area, opt => opt.Ignore())
                 .ForMember(m => m.AreaCountry, opt => opt.Ignore());

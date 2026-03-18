@@ -375,6 +375,13 @@
                 }
             });
 
+            //track changes in tab content textareas (e.g., Law Highlights Remarks)
+            plugin.on("input", ".tab-pane textarea", function () {
+                if ($(this).data("nosave") === undefined) {
+                    markDirty();
+                }
+            });
+
             //for checkboxes on ie/edge
             plugin.on("change", ".cpiMainEntry input[type='checkbox']", function () {
                 markDirty();

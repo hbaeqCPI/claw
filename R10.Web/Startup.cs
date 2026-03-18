@@ -212,6 +212,8 @@ namespace R10.Web
             services.AddScoped<ICPiMenuItemManager, CPiMenuItemManager>();
             services.AddScoped<ICPiMenuPageManager, CPiMenuPageManager>();
 
+            services.AddHostedService<R10.Web.Services.Menu.AuxiliaryMenuSeeder>();
+
             services.AddScoped<ILocalizationRecordsManager, LocalizationRecordsManager>();
 
             services.AddScoped<ICPiUserSettingManager, CPiUserSettingManager>();

@@ -34,6 +34,7 @@ namespace R10.Core.Interfaces
         DbSet<PatActionParameter> PatActionParameters { get; set; }
         DbSet<PatApplicationStatus> ApplicationStatuses { get; set; }
         DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
+        DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
 
         DbSet<PatCountryLawUpdate> PatCountryLawUpdate { get; set; }
 
@@ -55,6 +56,7 @@ namespace R10.Core.Interfaces
 
         DbSet<TmkCaseType> TmkCaseTypes { get; set; }
         DbSet<TmkDesCaseType> TmkDesCaseTypes { get; set; }
+        DbSet<TmkDesCaseTypeFields> TmkDesCaseTypeFields { get; set; }
         DbSet<TmkConflictStatus> TmkConflictStatuses { get; set; }
         DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         DbSet<TmkCountryDue> TmkCountryDues { get; set; }
@@ -70,6 +72,7 @@ namespace R10.Core.Interfaces
         DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
         DbSet<TmkIndicator> TmkIndicators { get; set; }
         DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
+        DbSet<TmkStandardGood> TmkStandardGoods { get; set; }
         #endregion
 
         #region Shared

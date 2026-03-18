@@ -9,7 +9,7 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatCountryLaw> builder)
         {
             builder.ToTable("tblPatCountryLaw");
-            builder.HasIndex(c => new { c.Country, c.CaseType }).IsUnique();
+            // Unique constraint removed: duplicates allowed if Systems differ (overlap check done in code)
             builder.HasMany(c => c.PatCountryDues).WithOne(d => d.PatCountryLaw)
                 .HasPrincipalKey(c => c.CountryLawID).HasForeignKey(d => d.CountryLawID);
             builder.HasOne(c => c.PatCaseType).WithMany(ct => ct.CaseTypeCountryLaws)

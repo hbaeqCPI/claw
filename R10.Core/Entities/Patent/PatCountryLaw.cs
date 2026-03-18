@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Patent
 {
     public class PatCountryLaw: BaseEntity
     {
+        [NotMapped]
+        public string? CopyOptions { get; set; }
+
         [Key]
         public int CountryLawID { get; set; }
 

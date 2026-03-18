@@ -27,6 +27,7 @@ using R10.Web.Areas.Trademark.ViewModels.CountryLaw;
 using R10.Core.Helpers;
 using R10.Web.Services;
 
+using Newtonsoft.Json;
 using R10.Web.Areas;
 
 namespace R10.Web.Areas.Trademark.Controllers
@@ -208,6 +209,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (page.Detail == null)
                 return RedirectToAction("Index");
 
+            if (TempData["CopyOptions"] != null)
+                await ExtractCopyParams(page);
+
             var detail = page.Detail;
             PageViewModel model = new PageViewModel()
             {
@@ -219,6 +223,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Data = detail,
                 FromSearch = fromSearch
             };
+            ModelState.Clear();
 
             return PartialView("Index", model);
         }
@@ -259,18 +264,100 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (ModelState.IsValid)
             {
+                var overlapError = await CheckSystemsOverlap(countryLaw);
+                if (overlapError != null)
+                    return BadRequest(overlapError);
+
                 UpdateEntityStamps(countryLaw, countryLaw.CountryLawID);
 
                 if (countryLaw.CountryLawID > 0)
                     await _countryLawService.UpdateCountryLaw(countryLaw);
                 else
+                {
                     await _countryLawService.AddCountryLaw(countryLaw);
+                    if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
+                        await CopyChildData(countryLaw);
+                }
 
                 return Json(countryLaw.CountryLawID);
             }
             else
             {
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
+            }
+        }
+
+        private async Task<string> CheckSystemsOverlap(TmkCountryLaw countryLaw)
+        {
+            var existing = await _countryLawService.TmkCountryLaws.AsNoTracking()
+                .Where(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType && c.CountryLawID != countryLaw.CountryLawID)
+                .Select(c => new { c.Systems })
+                .ToListAsync();
+
+            if (!existing.Any()) return null;
+
+            var newSystems = ParseSystems(countryLaw.Systems);
+
+            foreach (var ex in existing)
+            {
+                var existingSystems = ParseSystems(ex.Systems);
+                var overlap = newSystems.Intersect(existingSystems).ToList();
+                if (overlap.Any())
+                    return $"System(s) '{string.Join(", ", overlap)}' already assigned to another Country Law record for {countryLaw.Country}/{countryLaw.CaseType}.";
+            }
+
+            return null;
+        }
+
+        private static HashSet<string> ParseSystems(string systems)
+        {
+            if (string.IsNullOrWhiteSpace(systems))
+                return new HashSet<string>();
+            return new HashSet<string>(systems.Split("; ", StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private async Task CopyChildData(TmkCountryLaw newCountryLaw)
+        {
+            var copyOptions = JsonConvert.DeserializeObject<CountryLawCopyViewModel>(newCountryLaw.CopyOptions);
+            if (copyOptions == null) return;
+
+            var userName = User.GetUserName();
+            var now = DateTime.Now;
+
+            if (copyOptions.CopyLawActions)
+            {
+                var sourceDues = await _countryLawService.GetCountryDues(copyOptions.CountryLawID);
+                foreach (var due in sourceDues)
+                {
+                    due.CDueId = 0;
+                    due.CountryLawID = newCountryLaw.CountryLawID;
+                    due.Country = newCountryLaw.Country;
+                    due.CaseType = newCountryLaw.CaseType;
+                    due.CPIAction = false;
+                    due.CPIPermanentID = 0;
+                    due.CreatedBy = userName;
+                    due.UpdatedBy = userName;
+                    due.DateCreated = now;
+                    due.LastUpdate = now;
+                }
+                await _countryLawService.AddChildren(sourceDues);
+            }
+
+            if (copyOptions.CopyDesignatedCountries)
+            {
+                var sourceDesCaseTypes = await _countryLawService.TmkDesCaseTypes.AsNoTracking()
+                    .Where(d => d.IntlCode == copyOptions.Country && d.CaseType == copyOptions.CaseType).ToListAsync();
+                foreach (var des in sourceDesCaseTypes)
+                {
+                    des.DesCaseTypeID = 0;
+                    des.IntlCode = newCountryLaw.Country;
+                    des.CaseType = newCountryLaw.CaseType;
+                    des.CreatedBy = userName;
+                    des.UpdatedBy = userName;
+                    des.DateCreated = now;
+                    des.LastUpdate = now;
+                }
+                await _countryLawService.AddChildren(sourceDesCaseTypes);
             }
         }
 
@@ -542,8 +629,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 viewModel.AddTrademarkCountryLawSecurityPolicies();
                 await viewModel.ApplyDetailPagePermission(User, _authService);
 
-                //hide copy and email buttons
-                viewModel.CanCopyRecord = false;
                 viewModel.CanEmail = false;
                 viewModel.Detail.CanDeleteChild = viewModel.CanDeleteRecord;
                 viewModel.CanDeleteRecord = viewModel.CanDeleteRecord && !viewModel.Detail.IsCPiAction;
@@ -553,6 +638,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 viewModel.Container = _dataContainer;
 
                 viewModel.EditScreenUrl = Url.Action("Detail", new { id = id });
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
                 viewModel.SearchScreenUrl = Url.Action("Index");
             }
             return viewModel;
@@ -585,6 +671,51 @@ namespace R10.Web.Areas.Trademark.Controllers
             catch (ArgumentException ex)
             {
                 return Json(new { url = "", error = ex.Message });
+            }
+        }
+
+        [HttpGet()]
+        public async Task<IActionResult> Copy(int id)
+        {
+            var entity = await _countryLawService.TmkCountryLaws.FirstOrDefaultAsync(c => c.CountryLawID == id);
+            if (entity == null) return new RecordDoesNotExistResult();
+            var viewModel = new CountryLawCopyViewModel
+            {
+                CountryLawID = entity.CountryLawID,
+                Country = entity.Country,
+                CaseType = entity.CaseType,
+                CopyRemarks = true,
+                CopyLawActions = true,
+                CopyDesignatedCountries = true
+            };
+            return PartialView("_Copy", viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditCopied([FromBody] CountryLawCopyViewModel copy)
+        {
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            TempData["CopyOptions"] = JsonConvert.SerializeObject(copy);
+            return RedirectToAction("Add");
+        }
+
+        private async Task ExtractCopyParams(DetailPageViewModel<TmkCountryLawDetailViewModel> page)
+        {
+            var copyOptionsString = TempData["CopyOptions"].ToString();
+            ViewBag.CopyOptions = copyOptionsString;
+            var copyOptions = JsonConvert.DeserializeObject<CountryLawCopyViewModel>(copyOptionsString);
+            if (copyOptions != null)
+            {
+                var source = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>().FirstOrDefaultAsync(c => c.CountryLawID == copyOptions.CountryLawID);
+                if (source != null)
+                {
+                    page.Detail = source;
+                    page.Detail.CountryLawID = 0;
+                    page.Detail.Country = copyOptions.Country;
+                    page.Detail.CaseType = copyOptions.CaseType;
+                    page.Detail.Remarks = copyOptions.CopyRemarks ? source.Remarks : "";
+                }
             }
         }
 

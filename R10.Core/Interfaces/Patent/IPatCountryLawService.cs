@@ -18,6 +18,7 @@ namespace R10.Core.Interfaces
         Task DeleteCountryLaw(PatCountryLaw countryLaw);
         Task<bool> HasDesignatedCountries(string country, string caseType);
         Task UpdateChild<T>(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : BaseEntity;
+        Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity;
         Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<PatCountryDue> deleted);
 
         //not needed

@@ -39,6 +39,17 @@ namespace R10.Web.Extensions
             services.AddScoped<IEntityService<PatCaseType>, AuxService<PatCaseType>>();
 
             services.AddScoped<IBaseService<PatDesCaseType>, BaseService<PatDesCaseType>>();
+            services.AddScoped<IViewModelService<PatDesCaseType>, ViewModelService<PatDesCaseType>>();
+            services.AddScoped<IEntityService<PatDesCaseType>, AuxService<PatDesCaseType>>();
+
+            services.AddScoped<IViewModelService<PatCountryDue>, ViewModelService<PatCountryDue>>();
+            services.AddScoped<IEntityService<PatCountryDue>, AuxService<PatCountryDue>>();
+
+            services.AddScoped<IViewModelService<PatCountryExp>, ViewModelService<PatCountryExp>>();
+            services.AddScoped<IEntityService<PatCountryExp>, AuxService<PatCountryExp>>();
+
+            services.AddScoped<IViewModelService<PatDesCaseTypeFields>, ViewModelService<PatDesCaseTypeFields>>();
+            services.AddScoped<IEntityService<PatDesCaseTypeFields>, AuxService<PatDesCaseTypeFields>>();
 
             //settings
             services.AddScoped<ISystemSettings<PatSetting>, SystemSettings<PatSetting>>();

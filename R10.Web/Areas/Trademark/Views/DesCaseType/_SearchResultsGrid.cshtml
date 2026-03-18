@@ -1,0 +1,40 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<TmkDesCaseType>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: DesCaseTypeID#", fromSearch = true }), "IntlCode")).Width(150);
+                    columns.Bound(m => m.CaseType).Width(150);
+                    columns.Bound(m => m.DesCountry).Width(150);
+                    columns.Bound(m => m.DesCaseType).Width(150);
+                    columns.Bound(m => m.DefaultCaseType).ClientTemplate("<i class='align-items-center small fa fal #: DefaultCaseType ? \"fa-check\" : \"\"#'></i>")
+                        .HtmlAttributes(new { @class = "text-center" })
+                        .HeaderHtmlAttributes(new { style = "text-align: center" })
+                        .Width(120);
+                    columns.Bound(m => m.GenApp).ClientTemplate("<i class='align-items-center small fa fal #: GenApp ? \"fa-check\" : \"\"#'></i>")
+                        .HtmlAttributes(new { @class = "text-center" })
+                        .HeaderHtmlAttributes(new { style = "text-align: center" })
+                        .Width(120);
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("DesCaseTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseType")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("tmkDesCaseTypePage.searchResultGridError"))
+                .Events(events => events.RequestEnd("tmkDesCaseTypePage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "DesCaseType")
+                .Data("tmkDesCaseTypePage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.IntlCode))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

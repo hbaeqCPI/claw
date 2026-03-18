@@ -1,9 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Trademark
 {
     public class TmkCountryLaw : BaseEntity
     {
+        [NotMapped]
+        public string? CopyOptions { get; set; }
+
         [Key]
         public int CountryLawID { get; set; }
 
