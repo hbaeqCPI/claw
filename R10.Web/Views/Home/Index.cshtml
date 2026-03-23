@@ -78,11 +78,6 @@
                                         <i class="fal fa-list-alt fa-fw mr-2 text-muted"></i>@Localizer["Des Case Type Fields"]
                                     </a>
                                 </li>
-                                <li class="mb-2">
-                                    <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
-                                        <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]
-                                    </a>
-                                </li>
                             </ul>
                         </div>
                     </div>
@@ -156,6 +151,34 @@
                                         <i class="fal fa-tags fa-fw mr-2 text-muted"></i>@Localizer["Standard Good"]
                                     </a>
                                 </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fad fa-rocket-launch fa-2x text-primary mr-3"></span>
+                        <h4 class="card-title mb-0">@Localizer["Releases"]</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Manage"]</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a asp-area="Releases" asp-controller="Release" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
+                                        <i class="fal fa-box fa-fw mr-2 text-muted"></i>@Localizer["Releases"]
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small mb-2">@Localizer["Auxiliary"]</h6>
+                            <ul class="list-unstyled">
                                 <li class="mb-2">
                                     <a asp-area="Shared" asp-controller="System" asp-action="Index" class="d-flex align-items-center text-decoration-none home-link">
                                         <i class="fal fa-server fa-fw mr-2 text-muted"></i>@Localizer["Systems"]

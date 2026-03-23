@@ -75,6 +75,10 @@ namespace R10.Core.Interfaces
         DbSet<TmkStandardGood> TmkStandardGoods { get; set; }
         #endregion
 
+        #region Releases
+        DbSet<Release> Releases { get; set; }
+        #endregion
+
         #region Shared
         DbSet<AppSystem> AppSystems { get; set; }
         #endregion

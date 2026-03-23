@@ -234,6 +234,7 @@ namespace R10.Web
             services.AddAdmin();
             services.AddPatent();
             services.AddTrademark();
+            services.AddRelease();
             services.AddShared(Configuration);
 
             // Debloat stubs: no-op implementations for removed services still referenced in DI

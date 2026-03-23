@@ -77,6 +77,9 @@ namespace R10.Web.Services.Menu
                 changed |= await SeedAuxiliaryCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, patentTop.Id, "Patent", patentItems, cancellationToken);
                 changed |= await SeedAuxiliaryCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop.Id, "Trademark", trademarkItems, cancellationToken);
 
+                // Seed "Releases" top-level tab (after Trademark, before Administration)
+                changed |= await SeedReleasesTopLevel(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop, cancellationToken);
+
                 if (changed)
                 {
                     _logger.LogInformation("AuxiliaryMenuSeeder: Menu items seeded. Restart or wait for cache expiration to see changes.");
@@ -184,6 +187,99 @@ namespace R10.Web.Services.Menu
                     _logger.LogInformation("AuxiliaryMenuSeeder: Created menu item '{Title}' under {Area}/Auxiliary.", title, areaName);
                     changed = true;
                 }
+            }
+
+            return changed;
+        }
+
+        private async Task<bool> SeedReleasesTopLevel(
+            ICPiDbContext db,
+            IRepository<CPiMenuItem> menuItemRepo,
+            IRepository<CPiMenuPage> menuPageRepo,
+            List<CPiMenuItem> allItems,
+            List<CPiMenuPage> allPages,
+            CPiMenuItem trademarkTop,
+            CancellationToken cancellationToken)
+        {
+            bool changed = false;
+
+            // Find or create the "Releases" top-level menu item
+            var releasesTop = allItems.FirstOrDefault(m => m.ParentId == "" && m.Title == "Releases");
+            if (releasesTop == null)
+            {
+                releasesTop = new CPiMenuItem
+                {
+                    Id = "Releases",
+                    ParentId = "",
+                    Title = "Releases",
+                    SortOrder = trademarkTop.SortOrder + 1,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(releasesTop);
+                await db.SaveChangesAsync();
+                allItems.Add(releasesTop);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Releases' top-level menu item.");
+                changed = true;
+            }
+
+            // Find or create "Manage" subcategory
+            var manageCategory = allItems.FirstOrDefault(m => m.ParentId == releasesTop.Id && m.Title == "Manage");
+            if (manageCategory == null)
+            {
+                manageCategory = new CPiMenuItem
+                {
+                    ParentId = releasesTop.Id,
+                    Title = "Manage",
+                    SortOrder = 10,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(manageCategory);
+                await db.SaveChangesAsync();
+                allItems.Add(manageCategory);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Manage' category under Releases.");
+                changed = true;
+            }
+
+            // Find or create the "Release" page
+            var routeOptions = "{\"area\":\"Releases\"}";
+            var releasePage = allPages.FirstOrDefault(p => p.Controller == "Release" && p.RouteOptions == routeOptions);
+            if (releasePage == null)
+            {
+                releasePage = new CPiMenuPage
+                {
+                    Name = "Releases",
+                    Controller = "Release",
+                    Action = "Index",
+                    RouteOptions = routeOptions,
+                    Policy = "*"
+                };
+                menuPageRepo.Add(releasePage);
+                await db.SaveChangesAsync();
+                allPages.Add(releasePage);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Releases' page.");
+                changed = true;
+            }
+
+            // Find or create the "Release" leaf menu item
+            var releaseLeaf = allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && m.PageId == releasePage.Id);
+            if (releaseLeaf == null)
+            {
+                releaseLeaf = new CPiMenuItem
+                {
+                    ParentId = manageCategory.Id,
+                    Title = "Releases",
+                    PageId = releasePage.Id,
+                    SortOrder = 10,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(releaseLeaf);
+                await db.SaveChangesAsync();
+                allItems.Add(releaseLeaf);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Releases' menu item under Releases/Manage.");
+                changed = true;
             }
 
             return changed;

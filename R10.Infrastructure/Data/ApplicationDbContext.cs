@@ -107,6 +107,10 @@ namespace R10.Infrastructure.Data
 
         #endregion
 
+        #region Releases
+        public DbSet<R10.Core.Entities.Release> Releases { get; set; }
+        #endregion
+
         #region Shared
         public DbSet<AppSystem> AppSystems { get; set; }
         #endregion
@@ -311,6 +315,10 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkIndicatorMap());
             builder.ApplyConfiguration(new TmkStandardGoodMap());
 
+            #endregion
+
+            #region Releases
+            builder.ApplyConfiguration(new R10.Infrastructure.Data.Release.mappings.ReleaseMap());
             #endregion
 
             #region Shared

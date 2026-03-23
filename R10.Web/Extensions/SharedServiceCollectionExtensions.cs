@@ -65,6 +65,7 @@ namespace R10.Web.Extensions
 
             // documents
             services.AddScoped<IDocumentService, DocumentService>();
+            services.AddScoped<IDocumentHelper, DocumentHelper>();
             services.AddScoped<IAsyncRepository<DocFixedFolder>, EFRepository<DocFixedFolder>>();
             services.AddScoped<IChildEntityService<DocDocument, DocDocumentTag>, ChildEntityService<DocDocument, DocDocumentTag>>();
             services.AddScoped<IEntityService<DocDocumentTag>, AuxService<DocDocumentTag>>();

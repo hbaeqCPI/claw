@@ -284,6 +284,13 @@ namespace R10.Web.Extensions
             viewModel.DeletePolicy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete;
             viewModel.LimitedReadPolicy = TrademarkAuthorizationPolicy.AuxiliaryLimited;
         }
+        public static void AddReleaseAuxiliarySecurityPolicies<T>(this T viewModel) where T : DetailPagePermission
+        {
+            viewModel.FullModifyPolicy = ReleaseAuthorizationPolicy.AuxiliaryModify;
+            viewModel.RemarksOnlyModifyPolicy = ReleaseAuthorizationPolicy.AuxiliaryRemarksOnly;
+            viewModel.DeletePolicy = ReleaseAuthorizationPolicy.AuxiliaryCanDelete;
+            viewModel.LimitedReadPolicy = ReleaseAuthorizationPolicy.AuxiliaryLimited;
+        }
         public static void AddGeneralmatterAuxiliarySecurityPolicies<T>(this T viewModel) where T : DetailPagePermission
         {
             viewModel.FullModifyPolicy = GeneralMatterAuthorizationPolicy.AuxiliaryModify;

@@ -793,6 +793,26 @@ namespace R10.Web.Extensions
                     policyBuilder => policyBuilder.AddRequirements(
                         new CPiPermissionRequirement(SystemType.ForeignFiling, CPiPermissions.AuxiliaryCanDelete, SystemStatusType.Active)));
 
+                // Release (standalone module — any authenticated user can access)
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.CanAccessMainMenu,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.CanAccessAuxiliary,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.AuxiliaryModify,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.AuxiliaryRemarksOnly,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.AuxiliaryLimited,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+                options.AddPolicy(
+                    ReleaseAuthorizationPolicy.AuxiliaryCanDelete,
+                    policyBuilder => policyBuilder.RequireAuthenticatedUser());
+
                 // Country Law
                 options.AddPolicy(
                     PatentAuthorizationPolicy.CanAccessCountryLaw,
