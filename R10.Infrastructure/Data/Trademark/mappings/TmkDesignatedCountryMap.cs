@@ -9,8 +9,8 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkDesignatedCountry> builder)
         {
             builder.ToTable("tblTmkDesignatedCountry");
-            builder.HasOne(h => h.Country).WithMany(c => c.TmkDesignatedCountries).HasPrincipalKey(c => c.Country)
-                .HasForeignKey(h => h.DesCountry);
+            // builder.HasOne(h => h.Country).WithMany().HasPrincipalKey(c => c.Country)
+            //     .HasForeignKey(h => h.DesCountry); // Removed: Country nav property no longer exists
         }
     }
 }

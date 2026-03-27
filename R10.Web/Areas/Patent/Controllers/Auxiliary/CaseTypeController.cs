@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using R10.Core.Entities.Patent;
+using R10.Core.Helpers;
 using R10.Core.Interfaces;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Extensions;
@@ -88,17 +89,17 @@ namespace R10.Web.Areas.Patent.Controllers
             if (ModelState.IsValid)
             {
                 var patCaseTypes = _viewModelService.AddCriteria(mainSearchFilters);
-                var result = await _viewModelService.CreateViewModelForGrid(request, patCaseTypes,"CaseType", "CaseTypeId");
+                var result = await _viewModelService.CreateViewModelForGrid(request, patCaseTypes,"CaseType", "CaseType");
                 return Json(result);
             }
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task<DetailPageViewModel<PatCaseType>> PrepareEditScreen(int id)
+        private async Task<DetailPageViewModel<PatCaseType>> PrepareEditScreen(string id)
         {
             var viewModel = new DetailPageViewModel<PatCaseType>
             {
-                Detail = await GetById(id)
+                Detail = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id)
             };
 
             if (viewModel.Detail != null)
@@ -119,7 +120,7 @@ namespace R10.Web.Areas.Patent.Controllers
             return viewModel;
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false)
+        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false)
         {
             var page = await PrepareEditScreen(id);
             if (page.Detail == null)
@@ -136,7 +137,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Case Type Detail"].ToString(),
-                RecordId = detail.CaseTypeId,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 PagePermission = page,
                 Data = detail
@@ -194,7 +194,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Case Type"].ToString(),
-                RecordId = detail.CaseTypeId,
                 PagePermission = page,
                 Data = detail,
                 FromSearch = fromSearch
@@ -210,14 +209,21 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(caseType, caseType.CaseTypeId);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+                caseType.UserID = userName;
+                caseType.LastUpdate = now;
 
-                if (caseType.CaseTypeId > 0)
+                var existing = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.CaseType == caseType.CaseType);
+                if (existing != null)
                     await _auxService.Update(caseType);
                 else
+                {
+                    caseType.DateCreated = now;
                     await _auxService.Add(caseType);
+                }
 
-                return Json(caseType.CaseTypeId);
+                return Json(caseType.CaseType);
             }
             else
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -225,23 +231,22 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(string id)
         {
-            var entity = await GetById(id);
+            var entity = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _auxService.Delete(entity);
 
             return Ok();
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
+        public async Task<IActionResult> Copy(string id)
         {
-            var entity = await GetById(id);
+            var entity = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id);
             if (entity == null) return new RecordDoesNotExistResult();
 
             var viewModel = new CaseTypeCopyViewModel
@@ -272,15 +277,9 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (source != null)
                 {
                     page.Detail = source;
-                    page.Detail.CaseTypeId = 0;
                     page.Detail.CaseType = copyOptions.CaseType;
                 }
             }
-        }
-
-        private async Task<PatCaseType> GetById(int id)
-        {
-            return await _auxService.QueryableList.SingleOrDefaultAsync((c => c.CaseTypeId == id));
         }
 
         [HttpGet]
@@ -305,12 +304,12 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetCaseTypeList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_auxService.QueryableList, request, property, text, filterType, new string[] { "CaseTypeId", "CaseType", "Description" }, requiredRelation);
+            return await GetPicklistData(_auxService.QueryableList, request, property, text, filterType, new string[] { "CaseType", "Description" }, requiredRelation);
         }
 
         public async Task<IActionResult> GetCaseTypeByCountry(string country)
         {
-            var caseTypes = _auxService.QueryableList.Where(c => c.CaseTypeCountryLaws.Any(cl => cl.Country == country));
+            var caseTypes = _auxService.QueryableList;
             var list = await caseTypes.Select(c => new { CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
             return Json(list);
         }
@@ -324,7 +323,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (entity == null)
                     return new RecordDoesNotExistResult();
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.CaseTypeId, singleRecord = true, fromSearch = true });
+                    return RedirectToAction(nameof(Detail), new { id = entity.CaseType, singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });
@@ -332,8 +331,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetActiveCaseTypeList()
         {
-            // CaseTypeCountryApplication navigation property removed during debloat; return all case types
-            var list = await _auxService.QueryableList.Select(c => new { CaseTypeId = c.CaseTypeId, CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
+            var list = await _auxService.QueryableList.Select(c => new { CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
 
             return Json(list);
         }

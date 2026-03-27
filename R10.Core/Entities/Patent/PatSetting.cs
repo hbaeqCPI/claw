@@ -127,6 +127,13 @@ namespace R10.Core.Entities.Patent
         public string? MyEPODownloadDateFrom { get; set; }
 
         public bool IsIDSAutoStandardOn { get; set; }
+        public string? EPOOPSAuthServer { get; set; }
+        public string? EPOIDSBiblioUrl { get; set; }
+        public string? EPOIDSDocUrl { get; set; }
+        public string? EPOIDSMainUrl { get; set; }
+        public string? EPOIDSNonEnglishCountries { get; set; }
+        
+
 
     }
 }

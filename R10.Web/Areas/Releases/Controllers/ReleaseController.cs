@@ -264,14 +264,13 @@ namespace R10.Web.Areas.Releases.Controllers
 
         [HttpPost, Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _entityService.GetByIdAsync(id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _entityService.Delete(entity);
 
             return Ok();
@@ -283,7 +282,7 @@ namespace R10.Web.Areas.Releases.Controllers
             if (release == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = release.CreatedBy, dateCreated = release.DateCreated, updatedBy = release.UpdatedBy, lastUpdate = release.LastUpdate, tStamp = release.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = release.CreatedBy, dateCreated = release.DateCreated, updatedBy = release.UpdatedBy, lastUpdate = release.LastUpdate });
         }
 
         #region Documents

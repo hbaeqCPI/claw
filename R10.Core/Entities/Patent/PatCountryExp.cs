@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Patent
 {
-    public class PatCountryExp: BaseEntity
+    public class PatCountryExp
     {
         [Key]
         public int CExpId { get; set; }
-
-        public int CountryLawID { get; set; }
 
         [Required]
         [StringLength(5)]
@@ -24,7 +20,7 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Type")]
         public string? Type { get; set; }
 
-        [StringLength(15)]
+        [StringLength(12)]
         [Display(Name = "Based On")]
         public string? BasedOn { get; set; }
 
@@ -49,7 +45,5 @@ namespace R10.Core.Entities.Patent
 
         [NotMapped]
         public byte[]? ParentTStamp { get; set; }
-       
     }
-    
 }

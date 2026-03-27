@@ -21,11 +21,5 @@ namespace R10.Core.Entities
 
         [Display(Name = "Last Update")]
         public DateTime? LastUpdate { get; set; }
-
-        [Column(TypeName = "timestamp")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        [MaxLength(8)]
-        [ConcurrencyCheck]
-        public byte[]? tStamp { get; set; }
     }
 }

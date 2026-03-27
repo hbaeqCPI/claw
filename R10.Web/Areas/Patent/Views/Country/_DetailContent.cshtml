@@ -1,8 +1,8 @@
-﻿@model PatCountry
+@model PatCountry
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    var id = Model.CountryID;
-    var addMode = id == 0;
+    var id = Model.Country;
+    var addMode = string.IsNullOrEmpty(id);
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord;
@@ -10,9 +10,7 @@
 }
 
 <form cpi-detail-form action="Save">
-    <input type="hidden" asp-for="CountryID" />
-    <input type="hidden" asp-for="Latitude" />
-    <input type="hidden" asp-for="Longitude" />
+    <input type="hidden" asp-for="Country" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -41,28 +39,10 @@
             </div>
             <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2 order-sm-3 order-lg-last">
                 <div class="form-group float-label">
-                    <label asp-for="CurrencyType"></label>
-                    @if (isReadOnly)
-                    {
-                        <div class="d-flex">
-                            <input type="text" class="form-control form-control-sm" asp-for="CurrencyType" disabled />
-                            <i cpi-button-link url="@Url.Action("DetailLink", "CurrencyType", new { area = "shared", id = Model.CurrencyType })"></i>
-                        </div>
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CurrencyWithLink("CurrencyType", SharedLocalizer["Currency Type"], SharedLocalizer["Description"], Model.CurrencyType))
-                        <span asp-validation-for="CurrencyType"></span>
-                    }
-                </div>
-            </div>
-        </div>
-        <div class="form-row mt-4">
-            <div class="col-sm-12 col-md-4 col-lg-3 col-xl-2">
-                <div class="form-group float-label">
-                    <label asp-for="LabelTaxSched"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="LabelTaxSched" asp-is-readonly="@isReadOnly" />
-                    <span asp-validation-for="LabelTaxSched"></span>
+                    <div class="custom-control custom-checkbox">
+                        <input class="custom-control-input" type="checkbox" asp-for="CountryPaidThruCPI" disabled="@isReadOnly" />
+                        <label asp-for="CountryPaidThruCPI" class="custom-control-label"></label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -80,7 +60,7 @@
             </div>
         </div>
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate" t-stamp="null"></vc:record-stamps>
         </div>
     }
 </form>
@@ -107,4 +87,3 @@
         });
     })
 </script>
-

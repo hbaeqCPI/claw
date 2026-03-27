@@ -4,8 +4,12 @@ namespace R10.Web.Areas.Shared.ViewModels
 {
     public class CountryLawCopyViewModel
     {
-        public int CountryLawID { get; set; }
+        // Source record identifiers (hidden, not editable)
+        public string? SourceCountry { get; set; }
+        public string? SourceCaseType { get; set; }
+        public string? SourceSystems { get; set; }
 
+        // New record values (editable by user)
         [Display(Name = "Country")]
         [StringLength(5)]
         [Required]
@@ -15,6 +19,8 @@ namespace R10.Web.Areas.Shared.ViewModels
         [StringLength(3)]
         [Required]
         public string CaseType { get; set; }
+
+        public string? Systems { get; set; }
 
         [Display(Name = "Law Highlights")]
         public bool CopyRemarks { get; set; }

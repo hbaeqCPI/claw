@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,12 +13,10 @@ using R10.Core.Interfaces;
 using R10.Web.Extensions;
 using R10.Web.Extensions.ActionResults;
 using R10.Web.Helpers;
-using R10.Web.Interfaces;
 using R10.Web.Models;
-using R10.Web.Models.PageViewModels;
 using R10.Web.Areas.Shared.ViewModels;
+using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
-using R10.Web.Services;
 
 using Newtonsoft.Json;
 using R10.Web.Areas;
@@ -27,21 +27,17 @@ namespace R10.Web.Areas.Trademark.Controllers
     public class DesCaseTypeFieldsController : BaseController
     {
         private readonly IAuthorizationService _authService;
-        private readonly IViewModelService<TmkDesCaseTypeFields> _viewModelService;
-        private readonly IEntityService<TmkDesCaseTypeFields> _auxService;
+        private readonly IApplicationDbContext _repository;
         private readonly IStringLocalizer<SharedResource> _localizer;
-
         private readonly string _dataContainer = "tmkDesCaseTypeFieldsDetail";
 
         public DesCaseTypeFieldsController(
             IAuthorizationService authService,
-            IViewModelService<TmkDesCaseTypeFields> viewModelService,
-            IEntityService<TmkDesCaseTypeFields> auxService,
+            IApplicationDbContext repository,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
-            _viewModelService = viewModelService;
-            _auxService = auxService;
+            _repository = repository;
             _localizer = localizer;
         }
 
@@ -82,46 +78,16 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
+        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request)
         {
-            if (ModelState.IsValid)
-            {
-                var fields = _viewModelService.AddCriteria(mainSearchFilters);
-                var result = await _viewModelService.CreateViewModelForGrid(request, fields, "DesCaseType", "KeyID");
-                return Json(result);
-            }
-            return new JsonBadRequest(new { errors = ModelState.Errors() });
-        }
-
-        private async Task<DetailPageViewModel<TmkDesCaseTypeFields>> PrepareEditScreen(int id)
-        {
-            var viewModel = new DetailPageViewModel<TmkDesCaseTypeFields>
-            {
-                Detail = await GetById(id)
-            };
-
-            if (viewModel.Detail != null)
-            {
-                viewModel.AddTrademarkAuxiliarySecurityPolicies();
-                await viewModel.ApplyDetailPagePermission(User, _authService);
-
-                viewModel.CanEmail = false;
-
-                this.AddDefaultNavigationUrls(viewModel);
-
-                viewModel.Container = _dataContainer;
-
-                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
-                viewModel.SearchScreenUrl = this.Url.Action("Index");
-            }
-            return viewModel;
+            var data = await _repository.TmkDesCaseTypeFields.AsNoTracking().ToListAsync();
+            return Json(data.ToDataSourceResult(request));
         }
 
         public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false)
         {
-            var page = await PrepareEditScreen(id);
-            if (page.Detail == null)
+            var items = await _repository.TmkDesCaseTypeFields.AsNoTracking().ToListAsync();
+            if (id < 0 || id >= items.Count)
             {
                 if (Request.IsAjax())
                     return new RecordDoesNotExistResult();
@@ -129,15 +95,14 @@ namespace R10.Web.Areas.Trademark.Controllers
                     return RedirectToAction("Index");
             }
 
-            TmkDesCaseTypeFields detail = page.Detail;
+            var detail = items[id];
             PageViewModel model = new PageViewModel()
             {
                 Page = PageType.Detail,
-                PageId = page.Container,
+                PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Detail"].ToString(),
-                RecordId = detail.KeyID,
+                RecordId = id,
                 SingleRecord = singleRecord || !Request.IsAjax(),
-                PagePermission = page,
                 Data = detail
             };
 
@@ -159,44 +124,18 @@ namespace R10.Web.Areas.Trademark.Controllers
             return File(fileContents, contentType, fileName);
         }
 
-        private async Task<DetailPageViewModel<TmkDesCaseTypeFields>> PrepareAddScreen()
-        {
-            var viewModel = new DetailPageViewModel<TmkDesCaseTypeFields>
-            {
-                Detail = new TmkDesCaseTypeFields()
-            };
-
-            viewModel.AddTrademarkAuxiliarySecurityPolicies();
-            await viewModel.ApplyDetailPagePermission(User, _authService);
-
-            this.AddDefaultNavigationUrls(viewModel);
-            viewModel.Container = _dataContainer;
-            return viewModel;
-        }
-
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
-        public async Task<IActionResult> Add(bool fromSearch = false)
+        public IActionResult Add(bool fromSearch = false)
         {
             if (!Request.IsAjax())
                 return RedirectToAction("Index");
 
-            var page = await PrepareAddScreen();
-            if (page.Detail == null)
-                return RedirectToAction("Index");
-
-            if (TempData["CopyOptions"] != null)
-                await ExtractCopyParams(page);
-
-            TmkDesCaseTypeFields detail = page.Detail;
-            PageViewModel model = new PageViewModel()
+            var model = new PageViewModel()
             {
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
-                PageId = page.Container,
+                PageId = _dataContainer,
                 Title = _localizer["New Des Case Type Fields"].ToString(),
-                RecordId = detail.KeyID,
-                PagePermission = page,
-                Data = detail,
-                FromSearch = fromSearch
+                Data = new TmkDesCaseTypeFields()
             };
             ModelState.Clear();
 
@@ -205,115 +144,36 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save([FromBody] TmkDesCaseTypeFields desCaseTypeFields)
+        public async Task<IActionResult> Save([FromBody] TmkDesCaseTypeFields entity)
         {
-            if (ModelState.IsValid)
-            {
-                UpdateEntityStamps(desCaseTypeFields, desCaseTypeFields.KeyID);
-
-                if (desCaseTypeFields.KeyID > 0)
-                    await _auxService.Update(desCaseTypeFields);
-                else
-                    await _auxService.Add(desCaseTypeFields);
-
-                return Json(desCaseTypeFields.KeyID);
-            }
-            else
+            if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
+
+            _repository.Set<TmkDesCaseTypeFields>().Add(entity);
+            await _repository.SaveChangesAsync();
+            return Json(0);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete([FromBody] TmkDesCaseTypeFields entity)
         {
-            var entity = await GetById(id);
-
-            if (entity == null)
-                return new RecordDoesNotExistResult();
-
-            entity.tStamp = Convert.FromBase64String(tStamp);
-            await _auxService.Delete(entity);
-
+            _repository.Set<TmkDesCaseTypeFields>().Remove(entity);
+            await _repository.SaveChangesAsync();
             return Ok();
         }
 
-        private async Task<TmkDesCaseTypeFields> GetById(int id)
-        {
-            return await _auxService.QueryableList.SingleOrDefaultAsync((c => c.KeyID == id));
-        }
-
-        [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
-        {
-            var entity = await GetById(id);
-            if (entity == null) return new RecordDoesNotExistResult();
-            var viewModel = new DesCaseTypeFieldsCopyViewModel
-            {
-                KeyID = entity.KeyID,
-                DesCaseType = entity.DesCaseType
-            };
-            return PartialView("_Copy", viewModel);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult EditCopied([FromBody] DesCaseTypeFieldsCopyViewModel copy)
-        {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
-            TempData["CopyOptions"] = JsonConvert.SerializeObject(copy);
-            return RedirectToAction("Add");
-        }
-
-        private async Task ExtractCopyParams(DetailPageViewModel<TmkDesCaseTypeFields> page)
-        {
-            var copyOptionsString = TempData["CopyOptions"].ToString();
-            ViewBag.CopyOptions = copyOptionsString;
-            var copyOptions = JsonConvert.DeserializeObject<DesCaseTypeFieldsCopyViewModel>(copyOptionsString);
-            if (copyOptions != null)
-            {
-                var source = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.KeyID == copyOptions.KeyID);
-                if (source != null)
-                {
-                    page.Detail = source;
-                    page.Detail.KeyID = 0;
-                    page.Detail.DesCaseType = copyOptions.DesCaseType;
-                }
-            }
-        }
-
         [HttpGet]
-        public IActionResult Print()
+        public IActionResult DetailLink(int? id)
         {
-            ViewBag.Url = Url.Action("Print");
-            ViewBag.DownloadName = "Des Case Type Fields Print Screen";
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult Print([FromBody] PrintViewModel printModel)
-        {
-            // ReportService removed during debloat
-            return BadRequest("Report service is not available.");
+            return id > 0
+                ? RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true })
+                : RedirectToAction(nameof(Add), new { fromSearch = true });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_auxService.QueryableList, request, property, text, filterType, requiredRelation);
-        }
-
-        [HttpGet()]
-        public async Task<IActionResult> DetailLink(string id)
-        {
-            if (!string.IsNullOrEmpty(id))
-            {
-                var entity = await _viewModelService.GetEntityByCode("DesCaseType", id);
-                if (entity == null)
-                    return new RecordDoesNotExistResult();
-                else
-                    return RedirectToAction(nameof(Detail), new { id = entity.KeyID, singleRecord = true, fromSearch = true });
-            }
-            else
-                return RedirectToAction(nameof(Add), new { fromSearch = true });
+            return await GetPicklistData(_repository.TmkDesCaseTypeFields.AsQueryable(), request, property, text, filterType, requiredRelation);
         }
     }
 }

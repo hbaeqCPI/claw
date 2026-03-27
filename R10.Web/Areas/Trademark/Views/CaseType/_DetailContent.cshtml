@@ -1,8 +1,8 @@
-﻿@model TmkCaseType
+@model TmkCaseType
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var id = Model.CaseTypeId;
-    var addMode = id == 0;
+    var id = Model.CaseType;
+    var addMode = string.IsNullOrEmpty(id);
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
@@ -11,7 +11,6 @@
 
 }
 <form cpi-detail-form action="Save">
-    <input type="hidden" asp-for="CaseTypeId" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -38,7 +37,7 @@
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate"></vc:record-stamps>
         </div>
     }
 </form>

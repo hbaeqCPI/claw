@@ -1,4 +1,4 @@
-﻿using R10.Core.DTOs;
+using R10.Core.DTOs;
 using R10.Core.Entities;
 using R10.Core.Identity;
 using System;
@@ -16,17 +16,17 @@ namespace R10.Core.Interfaces
         Task UpdateCountryLaw(TmkCountryLaw countryLaw);
         Task UpdateCountryLawRemarks(TmkCountryLaw countryLaw);
         Task DeleteCountryLaw(TmkCountryLaw countryLaw);
-        Task UpdateChild<T>(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : BaseEntity;
-        Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity;
-        Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<TmkCountryDue> deleted);
-
         Task<bool> HasDesignatedCountries(string country, string caseType);
+        Task UpdateChild<T>(string country, string caseType, string userName, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : class;
+        Task AddChildren<T>(IEnumerable<T> entities) where T : class;
+        Task DeleteCountryDue(string country, string caseType, string userName, IEnumerable<TmkCountryDue> deleted);
+
         List<LookupDTO> GetBasedOnList();
         List<LookupDTO> GetRecurringOptions();
-        string GetRecurringDesc(short? value);
+        string GetRecurringDesc(float value);
         Task<List<LookupDTO>> GetFollowupList(string country);
 
-        Task<List<TmkCountryDue>> GetCountryDues(int countryLawId);
+        Task<List<TmkCountryDue>> GetCountryDues(string country, string caseType);
         Task<TmkCountryDue> GetCountryDue(int cDueId);
         Task<List<LookupDTO>> GetActionDues();
         Task<List<LookupDTO>> GetActionTypes();

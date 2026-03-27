@@ -130,6 +130,13 @@ namespace R10.Web
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetService<ApplicationDbContext>());
 
+            services.AddDbContext<WebUpdatesDbContext>(options => {
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), sqlServerOptions =>
+                {
+                    sqlServerOptions.CommandTimeout(900);
+                });
+            });
+
             services.AddDbContext<CPiUserDbContext>(options => {
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
 
@@ -556,6 +563,7 @@ namespace R10.Web
                 {
                     options.JsonSerializerOptions.PropertyNamingPolicy = null;
                     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                    options.JsonSerializerOptions.Converters.Add(new R10.Web.Helpers.NullableDateTimeConverter());
                 })
                 .AddDataAnnotationsLocalization()
                 .AddViewLocalization()

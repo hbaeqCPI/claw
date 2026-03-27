@@ -4,7 +4,7 @@ namespace R10.Web.Areas.Shared.ViewModels
 {
     public class AreaCopyViewModel
     {
-        public int AreaID { get; set; }
+        public string OriginalArea { get; set; }
 
         [Display(Name = "New Area")]
         [StringLength(10)]

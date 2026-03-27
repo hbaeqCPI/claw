@@ -168,14 +168,13 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _indicatorService.QueryableList.FirstOrDefaultAsync(c => c.IndicatorId == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _indicatorService.Delete(entity);
 
             return Ok();
@@ -208,7 +207,7 @@ namespace R10.Web.Areas.Patent.Controllers
             if (patIndicator == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = patIndicator.CreatedBy, dateCreated = patIndicator.DateCreated, updatedBy = patIndicator.UpdatedBy, lastUpdate = patIndicator.LastUpdate, tStamp = patIndicator.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = patIndicator.CreatedBy, dateCreated = patIndicator.DateCreated, updatedBy = patIndicator.UpdatedBy, lastUpdate = patIndicator.LastUpdate });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

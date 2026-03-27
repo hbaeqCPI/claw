@@ -1,10 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using R10.Core.Entities;
 using R10.Core.Entities.Patent;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace R10.Infrastructure.Data.Patent.mappings
 {
@@ -13,7 +9,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatAreaCountry> builder)
         {
             builder.ToTable("tblPatAreaCountry");
-            builder.HasIndex(a => new {a.AreaID,a.Country}).IsUnique();
+            builder.HasNoKey();
+            builder.Ignore(e => e.Area);
         }
     }
 }

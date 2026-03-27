@@ -72,7 +72,7 @@ namespace R10.Infrastructure.Data.Trademark
         {
             //await _dbContext.Database.ExecuteSqlRawAsync($"Update d Set d.GenApp=0 From tblTmkDesignatedCountry d Inner Join tblTmkTrademark tmk on d.GenCaseNumber=tmk.CaseNumber and d.DesCountry=tmk.Country and d.GenSubCase=tmk.Subcase Where d.TmkId ={tmkId}");
             return await _dbContext.TmkDesignatedCountries.Where(d => d.TmkId == tmkId && d.GenApp)
-                .AsNoTracking().Select(d => new TmkDesignatedCountry { DesCountry = d.DesCountry, CountryName = d.Country.CountryName, GenSubCase=d.GenSubCase, GenTmkId = d.GenTmkId }).ToListAsync();
+                .AsNoTracking().Select(d => new TmkDesignatedCountry { DesCountry = d.DesCountry, CountryName = d.CountryName, GenSubCase=d.GenSubCase, GenTmkId = d.GenTmkId }).ToListAsync();
         }
 
         public async Task GenerateTrademarks(int parentTmkId, string desCountries, string updatedBy)
@@ -87,7 +87,7 @@ namespace R10.Infrastructure.Data.Trademark
 
         public async Task<List<TmkDesignatedCountry>> GetDesignatedCountries(int tmkId)
         {
-            return await _dbContext.TmkDesignatedCountries.Where(d => d.TmkId == tmkId).OrderBy(d=> d.Country).ThenBy(d=> d.GenSubCase).AsNoTracking().ToListAsync();
+            return await _dbContext.TmkDesignatedCountries.Where(d => d.TmkId == tmkId).OrderBy(d=> d.DesCountry).ThenBy(d=> d.GenSubCase).AsNoTracking().ToListAsync();
         }
 
         public async Task DesignatedCountriesUpdate(int tmkId, string userName, IEnumerable<TmkDesignatedCountry> updatedDesignatedCountries,

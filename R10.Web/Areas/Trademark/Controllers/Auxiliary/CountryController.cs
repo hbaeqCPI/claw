@@ -21,7 +21,6 @@ using R10.Web.Helpers;
 using R10.Web.Interfaces;
 using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
-using R10.Core.Entities.Patent;
 
 using Newtonsoft.Json;
 using R10.Web.Areas;
@@ -33,26 +32,23 @@ namespace R10.Web.Areas.Trademark.Controllers
     {
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<TmkCountry> _viewModelService;
-        private readonly IParentEntityService<TmkCountry, TmkAreaCountry> _tmkCountryService;
+        private readonly IEntityService<TmkCountry> _tmkCountryService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IMapper _mapper;
-        private readonly IReportService _reportService;
-        private readonly IEntityService<TmkCountry> _auxService;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "tmkCountryDetail";
 
-        public CountryController(IAuthorizationService authService, IViewModelService<TmkCountry> viewModelService, IParentEntityService<TmkCountry, TmkAreaCountry> TmkCountryService,
+        public CountryController(IAuthorizationService authService, IViewModelService<TmkCountry> viewModelService, IEntityService<TmkCountry> TmkCountryService,
             IStringLocalizer<SharedResource> localizer,
-            IReportService reportService,
-            IMapper mapper, IEntityService<TmkCountry> auxService)
+            IMapper mapper, IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _tmkCountryService = TmkCountryService;
             _localizer = localizer;
-            _reportService = reportService;
             _mapper = mapper;
-            _auxService = auxService;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -105,15 +101,10 @@ namespace R10.Web.Areas.Trademark.Controllers
                         tmkCountries = tmkCountries.Where(w => w.TmkCountryAreas.Any(a => EF.Functions.Like(a.Area.Area, area.Value)));
                         mainSearchFilters.Remove(area);
                     }
-                    var singleClass = mainSearchFilters.FirstOrDefault(f => f.Property == "SingleClassApplication");
-                    if (singleClass != null && singleClass.Value=="false") {
-                        tmkCountries = tmkCountries.Where(w => w.SingleClassApplication== null || !(bool)w.SingleClassApplication);
-                        mainSearchFilters.Remove(singleClass);
-                    }
                 }
                 tmkCountries = _viewModelService.AddCriteria(tmkCountries, mainSearchFilters);
 
-                var result = await _viewModelService.CreateViewModelForGrid(request, tmkCountries, "Country", "CountryID");
+                var result = await _viewModelService.CreateViewModelForGrid(request, tmkCountries, "Country", "Country");
                 return Json(result);
             }
             return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -126,7 +117,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             return File(fileContents, contentType, fileName);
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
             var page = await PrepareEditScreen(id);
             if (page.Detail == null)
@@ -143,7 +134,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Country Detail"].ToString(),
-                RecordId = detail.CountryID,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -172,12 +162,8 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel tmkCountryPrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(tmkCountryPrintModel, ReportType.TmkCountryPrintScreen).Result;
-            }
-
-            return BadRequest("Unhandled error.");
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
@@ -203,7 +189,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Country"].ToString(),
-                RecordId = detail.CountryID,
                 //SingleRecord = singleRecord || !Request.IsAjax(),
                 //ActiveTab = tab,
                 PagePermission = page,
@@ -217,14 +202,13 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(string id)
         {
-            var entity = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            var entity = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _tmkCountryService.Delete(entity);
 
             return Ok();
@@ -232,19 +216,25 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save([FromBody] TmkCountry TmkCountry)
+        public async Task<IActionResult> Save([FromBody] TmkCountry tmkCountry)
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(TmkCountry, TmkCountry.CountryID);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+                tmkCountry.UserID = userName;
+                tmkCountry.LastUpdate = now;
 
-                if (TmkCountry.CountryID > 0)
-                    await _auxService.Update(TmkCountry);
-                    //await _tmkCountryService.Update(TmkCountry); //issue when you update the country code
+                var existing = await _tmkCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == tmkCountry.Country);
+                if (existing != null)
+                    await _tmkCountryService.Update(tmkCountry);
                 else
-                    await _tmkCountryService.Add(TmkCountry);
+                {
+                    tmkCountry.DateCreated = now;
+                    await _tmkCountryService.Add(tmkCountry);
+                }
 
-                return Json(TmkCountry.CountryID);
+                return Json(tmkCountry.Country);
             }
             else
             {
@@ -252,19 +242,19 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
         }
 
-        public async Task<IActionResult> GetRecordStamps(int id)
+        public async Task<IActionResult> GetRecordStamps(string id)
         {
-            var TmkCountry = await _tmkCountryService.GetByIdAsync(id);
-            if (TmkCountry == null)
+            var tmkCountry = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
+            if (tmkCountry == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = TmkCountry.CreatedBy, dateCreated = TmkCountry.DateCreated, updatedBy = TmkCountry.UpdatedBy, lastUpdate = TmkCountry.LastUpdate, tStamp = TmkCountry.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = tmkCountry.UserID, dateCreated = tmkCountry.DateCreated, updatedBy = tmkCountry.UserID, lastUpdate = tmkCountry.LastUpdate });
         }
 
-        private async Task<DetailPageViewModel<TmkCountry>> PrepareEditScreen(int id)
+        private async Task<DetailPageViewModel<TmkCountry>> PrepareEditScreen(string id)
         {
             var viewModel = new DetailPageViewModel<TmkCountry>();
-            viewModel.Detail = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            viewModel.Detail = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
 
             if (viewModel.Detail != null)
             {
@@ -297,9 +287,9 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
+        public async Task<IActionResult> Copy(string id)
         {
-            var entity = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            var entity = await _tmkCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new CountryCopyViewModel
             {
@@ -329,7 +319,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 if (source != null)
                 {
                     page.Detail = source;
-                    page.Detail.CountryID = 0;
                     page.Detail.Country = copyOptions.Country;
                 }
             }
@@ -337,7 +326,7 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> AreasRead([DataSourceRequest] DataSourceRequest request, string country)
         {
-            var result = (await _tmkCountryService.ChildService.QueryableList.Where(ca => ca.Country == country).OrderBy(o => o.Area.Area).ProjectTo<CountryAreaViewModel>().ToListAsync()).ToDataSourceResult(request);
+            var result = (await _repository.TmkAreasCountries.AsNoTracking().Where(ca => ca.Country == country).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -357,11 +346,13 @@ namespace R10.Web.Areas.Trademark.Controllers
                 if (!ModelState.IsValid)
                     return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-                await _tmkCountryService.ChildService.Update(country, User.GetUserName(),
-                    _mapper.Map<List<TmkAreaCountry>>(updated),
-                    _mapper.Map<List<TmkAreaCountry>>(added),
-                    _mapper.Map<List<TmkAreaCountry>>(deleted)
-                    );
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(added))
+                    _repository.TmkAreasCountries.Add(item);
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(updated))
+                    _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(deleted))
+                    _repository.TmkAreasCountries.Remove(item);
+                await _repository.SaveChangesAsync();
                 var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
                 _localizer["Area has been saved successfully."].ToString() :
                 _localizer["Areas have been saved successfully"].ToString();
@@ -375,7 +366,8 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (deleted.AreaCtryId > 0)
             {
-                await _tmkCountryService.ChildService.Update(deleted.Country, User.GetUserName(), new List<TmkAreaCountry>(), new List<TmkAreaCountry>(), new List<TmkAreaCountry>() { _mapper.Map<TmkAreaCountry>(deleted) });
+                _repository.TmkAreasCountries.Remove(_mapper.Map<TmkAreaCountry>(deleted));
+                await _repository.SaveChangesAsync();
                 return Ok(new { success = _localizer["Area has been deleted successfully."].ToString() });
             }
             return Ok();
@@ -389,13 +381,11 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> GetCountryList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_tmkCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName" }, requiredRelation);
-            //requiredRelation won't work if already projected to viewmodel
-            //return await GetPicklistData(_tmkCountryService.QueryableList.ProjectTo<CountryLookupViewModel>(), request, property, text, filterType, requiredRelation, false);
         }
 
         public async Task<IActionResult> GetCountryCurrencyList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_tmkCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName", "CurrencyType" }, requiredRelation);
+            return await GetPicklistData(_tmkCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName" }, requiredRelation);
         }
 
         [HttpGet()]
@@ -407,7 +397,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 if (entity == null)
                     return RedirectToAction(nameof(Add), new { id = id, fromSearch = true });
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.CountryID, singleRecord = true, fromSearch = true });
+                    return RedirectToAction(nameof(Detail), new { id = entity.Country, singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });

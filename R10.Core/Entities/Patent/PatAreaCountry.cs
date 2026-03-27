@@ -5,19 +5,14 @@ using System.Text;
 
 namespace R10.Core.Entities.Patent
 {
-    public class PatAreaCountry: BaseEntity
+    public class PatAreaCountry
     {
-        [Key]
-        public int AreaCtryId { get; set; }
-
-        [Required]
-        public string Country { get; set; }
-
-        [Required]
-        public int AreaID { get; set; }
-
-        public PatCountry? AreaCountry { get; set; }
+        [StringLength(10)]
+        [Required, Display(Name = "Area")]
         public PatArea? Area { get; set; }
 
+        [StringLength(5)]
+        [Required, Display(Name = "Country")]
+        public string? Country { get; set; }
     }
 }

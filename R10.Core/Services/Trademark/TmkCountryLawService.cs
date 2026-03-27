@@ -40,7 +40,7 @@ namespace R10.Core.Services
         {
             var entity = _repository.TmkCountryLaws.Attach(countryLaw);
             entity.Property(c => c.UserRemarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
+            entity.Property(c => c.UserID).IsModified = true;
             entity.Property(c => c.LastUpdate).IsModified = true;
             await _repository.SaveChangesAsync();
         }
@@ -56,7 +56,7 @@ namespace R10.Core.Services
             return await TmkDesCaseTypes.AnyAsync(d => d.IntlCode == country && d.CaseType == caseType);
         }
 
-        public async Task UpdateChild<T>(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : BaseEntity
+        public async Task UpdateChild<T>(string country, string caseType, string userName, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : class
         {
             if (updated.Any())
                 _repository.Set<T>().UpdateRange(updated);
@@ -67,11 +67,11 @@ namespace R10.Core.Services
             if (deleted.Any())
                 _repository.Set<T>().RemoveRange(deleted);
 
-            UpdateParentStamps(parentId, country, caseType, userName, tStamp);
+            UpdateParentStamps(country, caseType, userName);
             await _repository.SaveChangesAsync();
         }
 
-        public async Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity
+        public async Task AddChildren<T>(IEnumerable<T> entities) where T : class
         {
             if (entities.Any())
             {
@@ -80,7 +80,7 @@ namespace R10.Core.Services
             }
         }
 
-        public async Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<TmkCountryDue> deleted)
+        public async Task DeleteCountryDue(string country, string caseType, string userName, IEnumerable<TmkCountryDue> deleted)
         {
             if (deleted.Any())
             {
@@ -88,7 +88,7 @@ namespace R10.Core.Services
                 if (followUpAction != null)
                     _repository.TmkActionTypes.Remove(followUpAction);
 
-                await UpdateChild(parentId, country, caseType, userName, tStamp, new List<TmkCountryDue>(), new List<TmkCountryDue>(), deleted);
+                await UpdateChild(country, caseType, userName, new List<TmkCountryDue>(), new List<TmkCountryDue>(), deleted);
             }
         }
 
@@ -110,15 +110,15 @@ namespace R10.Core.Services
 
         #region CountryDue
 
-        public async Task<List<TmkCountryDue>> GetCountryDues(int countryLawId)
+        public async Task<List<TmkCountryDue>> GetCountryDues(string country, string caseType)
         {
-            return await _repository.TmkCountryDues.Where(c => c.CountryLawID == countryLawId).AsNoTracking().ToListAsync();
+            return await _repository.TmkCountryDues.Where(c => c.Country == country && c.CaseType == caseType).AsNoTracking().ToListAsync();
         }
 
         public async Task<TmkCountryDue> GetCountryDue(int cDueId)
         {
             var countryDue = await _repository.TmkCountryDues.Where(c => c.CDueId == cDueId)
-                                              .AsNoTracking().Include(c => c.TmkCountryLaw).FirstOrDefaultAsync();
+                                              .AsNoTracking().FirstOrDefaultAsync();
             var followUpAction = await _repository.TmkActionTypes.FirstOrDefaultAsync(a => a.CDueId == cDueId);
             if (followUpAction != null)
             {
@@ -130,7 +130,6 @@ namespace R10.Core.Services
             {
                 countryDue.RecurringDesc = GetRecurringDesc(countryDue.Recurring);
             }
-            countryDue.ParentTStamp = countryDue.TmkCountryLaw.tStamp;
             return countryDue;
         }
 
@@ -157,22 +156,9 @@ namespace R10.Core.Services
                 {
                     _repository.TmkCountryDues.Add(countryDue);
                     countryDue.OldFollowupAction = ""; //maybe from copy
-
-                    // if (!string.IsNullOrEmpty(countryDue.ActionType) &&
-                    //        await _repository.RMSInstrxTypeAction.AsNoTracking().AnyAsync(a => a.ActionType == countryDue.ActionType) &&
-                    //     (!(await _repository.RMSReminderSetup.AsNoTracking().AnyAsync(r => r.Country == countryDue.Country && r.CaseType == countryDue.CaseType && r.ActionType == countryDue.ActionType && string.IsNullOrEmpty(r.ActionDue)))))
-                    // {
-                    //     _repository.RMSReminderSetup.Add(new RMSReminderSetup()
-                    //     {
-                    //         Country = countryDue.Country,
-                    //         CaseType = countryDue.CaseType,
-                    //         ActionType = countryDue.ActionType,
-                    //         ActionDue = ""
-                    //     });
-                    // }
                 }
 
-                UpdateParentStamps(countryDue.CountryLawID, countryDue.Country, countryDue.CaseType, countryDue.UpdatedBy, countryDue.ParentTStamp);
+                UpdateParentStamps(countryDue.Country, countryDue.CaseType, countryDue.UserID);
                 await _repository.SaveChangesAsync(); //we need to get the CDueId
 
                 if (countryDue.FollowupAction != countryDue.OldFollowupAction)
@@ -196,8 +182,8 @@ namespace R10.Core.Services
                             addFollowUp.Country = countryDue.Country;
                             addFollowUp.CDueId = countryDue.CDueId;
                             addFollowUp.FollowUpGen = -1;
-                            addFollowUp.CreatedBy = countryDue.UpdatedBy;
-                            addFollowUp.UpdatedBy = countryDue.UpdatedBy;
+                            addFollowUp.CreatedBy = countryDue.UserID;
+                            addFollowUp.UpdatedBy = countryDue.UserID;
                             addFollowUp.DateCreated = countryDue.LastUpdate;
                             addFollowUp.LastUpdate = countryDue.LastUpdate;
                             _repository.TmkActionTypes.Add(addFollowUp);
@@ -245,7 +231,7 @@ namespace R10.Core.Services
             return list;
         }
 
-        public string GetRecurringDesc(short? value)
+        public string GetRecurringDesc(float value)
         {
             var option = GetRecurringOptions().FirstOrDefault(o => o.Value == value.ToString());
             return option?.Text;
@@ -298,11 +284,11 @@ namespace R10.Core.Services
         public IQueryable<TmkCountryDue> TmkCountryDues => _repository.TmkCountryDues;
         public IQueryable<TmkDesCaseType> TmkDesCaseTypes => _repository.TmkDesCaseTypes.AsNoTracking();
 
-        protected void UpdateParentStamps(int countryLawId, string country, string caseType, string userName, byte[] tStamp)
+        protected void UpdateParentStamps(string country, string caseType, string userName)
         {
-            var countryLaw = new TmkCountryLaw() { CountryLawID = countryLawId, Country = country, CaseType = caseType, UpdatedBy = userName, LastUpdate = DateTime.Now, tStamp = tStamp };
+            var countryLaw = new TmkCountryLaw() { Country = country, CaseType = caseType, UserID = userName, LastUpdate = DateTime.Now };
             var entity = _repository.TmkCountryLaws.Attach(countryLaw);
-            entity.Property(c => c.UpdatedBy).IsModified = true;
+            entity.Property(c => c.UserID).IsModified = true;
             entity.Property(c => c.LastUpdate).IsModified = true;
         }
     }

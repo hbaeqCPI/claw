@@ -9,8 +9,7 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkDesCaseTypeFields> builder)
         {
             builder.ToTable("tblTmkDesCaseTypeFields");
-            builder.HasKey(d => d.KeyID);
-            builder.Property(d => d.KeyID).HasColumnName("keyID");
+            builder.HasNoKey();
         }
     }
 }

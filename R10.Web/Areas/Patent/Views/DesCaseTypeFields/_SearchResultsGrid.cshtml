@@ -9,13 +9,9 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.DesCaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: KeyID#", fromSearch = true }), "DesCaseType")).Width(200);
+                    columns.Bound(m => m.DesCaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: DesCaseType#", fromSearch = true }), "DesCaseType")).Width(200);
                     columns.Bound(m => m.FromField);
                     columns.Bound(m => m.ToField);
-                    columns.Bound(m => m.InUse).ClientTemplate("<i class='align-items-center small fa fal #: InUse ? 'fa-check' : ''#'></i>")
-                        .HtmlAttributes(new { @class = "text-center" })
-                        .HeaderHtmlAttributes(new { @class = "d-flex justify-content-center align-items-center" })
-                        .Width(100);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
                 .AutoBind(false)

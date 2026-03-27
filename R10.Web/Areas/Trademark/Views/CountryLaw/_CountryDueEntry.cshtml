@@ -1,4 +1,4 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using System.Reflection
 @model TmkCountryDue
 @inject ISystemSettings<DefaultSetting> Settings
@@ -38,19 +38,13 @@
                 </div>
                 <div class="modal-body py-1">
                     <div class="container-fluid">
-                        <input type="hidden" asp-for="CountryLawID" />
                         <input type="hidden" asp-for="CDueId" value="@Model.CDueId" /> @* because of weird behavior (copy, non zero value)*@
                         @*<input type="hidden" asp-for="CPIAction" />*@
                         <input type="hidden" asp-for="Country" />
                         <input type="hidden" asp-for="CaseType" />
                         <input type="hidden" asp-for="OldFollowupAction" />
-                        <input type="hidden" asp-for="ParentTStamp" />
                         <input type="checkbox" asp-for="CPIAction" class="d-none" />
 
-                        @if (Model.CDueId > 0)
-                        {
-                            <input type="hidden" name="tStamp" value="@Convert.ToBase64String(Model.tStamp)" />
-                        }
                         <div class="row">
                             <div class="col-12 col-md-6">
                                 @if (Model.CPIAction)
@@ -287,7 +281,7 @@
                 @if (Model.CDueId > 0)
                 {
                     <div class="content-stamp">
-                        <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+                        <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate" t-stamp="null"></vc:record-stamps>
                     </div>
                 }
                 <div class="modal-footer">
@@ -298,9 +292,3 @@
         </div>
     </div>
 </div>
-
-
-
-
-
-

@@ -209,8 +209,6 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(entity, entity.CExpId);
-
                 if (entity.CExpId > 0)
                     await _auxService.Update(entity);
                 else
@@ -224,14 +222,13 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await GetById(id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _auxService.Delete(entity);
 
             return Ok();
@@ -261,7 +258,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 BasedOn = entity.BasedOn,
                 Yr = entity.Yr,
                 Mo = entity.Mo,
-                Dy = entity.Dy,
                 EffBasedOn = entity.EffBasedOn,
                 EffStartDate = entity.EffStartDate,
                 EffEndDate = entity.EffEndDate
@@ -296,7 +292,6 @@ namespace R10.Web.Areas.Patent.Controllers
                     page.Detail.BasedOn = copyOptions.BasedOn;
                     page.Detail.Yr = copyOptions.Yr;
                     page.Detail.Mo = copyOptions.Mo;
-                    page.Detail.Dy = copyOptions.Dy;
                     page.Detail.EffBasedOn = copyOptions.EffBasedOn;
                     page.Detail.EffStartDate = copyOptions.EffStartDate;
                     page.Detail.EffEndDate = copyOptions.EffEndDate;

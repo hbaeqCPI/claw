@@ -4,18 +4,12 @@ namespace R10.Core.Entities.Trademark
 {
     public class TmkAreaCountry : BaseEntity
     {
-        [Key]
-        public int AreaCtryId { get; set; }
-
-        [Required]
-        public string? Country { get; set; }
-
-        [Required]
-        public int AreaID { get; set; }
-
-        public TmkCountry? AreaCountry { get; set; }
-
+        [StringLength(10)]
+        [Required, Display(Name = "Area")]
         public TmkArea? Area { get; set; }
 
+        [StringLength(5)]
+        [Required, Display(Name = "Country")]
+        public string? Country { get; set; }
     }
 }

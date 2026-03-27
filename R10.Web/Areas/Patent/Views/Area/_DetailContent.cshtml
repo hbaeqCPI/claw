@@ -1,8 +1,8 @@
 @model PatArea
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var id = Model.AreaID;
-    var addMode = id == 0;
+    var id = Model.Area;
+    var addMode = string.IsNullOrEmpty(id);
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
@@ -10,7 +10,6 @@
     bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
 }
 <form cpi-detail-form action="Save">
-    <input type="hidden" asp-for="AreaID" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -42,11 +41,11 @@
         </ul>
         <div class="tab-content detail">
             <div class="tab-pane active show" id="patAreaDetailCountryTabContent" role="tabpanel" aria-labelledby="patAreaDetailCountryTab">
-                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentId = Model.AreaID, Area = "Patent" })
+                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentCode = Model.Area, Area = "Patent" })
             </div>
         </div>
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate"></vc:record-stamps>
         </div>
     }
 </form>
@@ -54,7 +53,7 @@
 <script>
     patAreaPage.editableGrids = [
             {
-            title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.AreaID'},
+            title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.Area'},
             afterSubmit: patAreaPage.updateRecordStamps
             }
     ];

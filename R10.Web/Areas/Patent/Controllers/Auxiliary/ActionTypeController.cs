@@ -36,7 +36,7 @@ namespace R10.Web.Areas.Patent.Controllers
     {
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<PatActionType> _viewModelService;
-        private readonly IParentEntityService<PatActionType,PatActionParameter> _actionTypeService;
+        private readonly IEntityService<PatActionType> _actionTypeService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "patActionTypeDetail";
@@ -44,7 +44,7 @@ namespace R10.Web.Areas.Patent.Controllers
         public ActionTypeController(
             IAuthorizationService authService,
             IViewModelService<PatActionType> viewModelService,
-            IParentEntityService<PatActionType, PatActionParameter> actionTypeService,
+            IEntityService<PatActionType> actionTypeService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
@@ -192,14 +192,13 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _actionTypeService.GetByIdAsync(id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _actionTypeService.Delete(entity);
 
             return Ok();
@@ -217,23 +216,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (patActionType.ActionTypeID > 0)
                     await _actionTypeService.Update(patActionType);
                 else {
-                    if (!string.IsNullOrEmpty(patActionType.CopyOptions))
-                    {
-                        var copyOptions = JsonConvert.DeserializeObject<ActionTypeCopyViewModel>(patActionType.CopyOptions);
-                        if (copyOptions.CopyParameters) {
-                            var parameters = await _actionTypeService.ChildService.QueryableList.AsNoTracking().Where(p => p.ActionTypeID == copyOptions.ActionTypeId).ToListAsync();
-                            parameters.Each(p=> {
-                                p.ActionTypeID = 0;
-                                p.ActParamId = 0;
-                                p.CreatedBy = patActionType.CreatedBy;
-                                p.UpdatedBy = patActionType.UpdatedBy;
-                                p.DateCreated = patActionType.DateCreated;
-                                p.LastUpdate = patActionType.LastUpdate;
-                            });
-                            patActionType.ActionParameters = new List<PatActionParameter>();
-                            patActionType.ActionParameters.AddRange(parameters);
-                        }
-                    }
                     await _actionTypeService.Add(patActionType);
                 }
                     
@@ -261,7 +243,7 @@ namespace R10.Web.Areas.Patent.Controllers
             if (patActionType == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = patActionType.CreatedBy, dateCreated = patActionType.DateCreated, updatedBy = patActionType.UpdatedBy, lastUpdate = patActionType.LastUpdate, tStamp = patActionType.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = patActionType.CreatedBy, dateCreated = patActionType.DateCreated, updatedBy = patActionType.UpdatedBy, lastUpdate = patActionType.LastUpdate });
         }
 
         [HttpGet()]
@@ -372,48 +354,6 @@ namespace R10.Web.Areas.Patent.Controllers
         //    var list = Enum.GetValues(typeof(FollowUpOption)).Cast<FollowUpOption>().Select(value => new { Value = (int)value, Text = value.GetDisplayName() }).ToList();
         //    return Json(list);
         //}
-
-        public async Task<IActionResult> ActionParametersRead([DataSourceRequest] DataSourceRequest request, int actionTypeId)
-        {
-            var result = (await _actionTypeService.ChildService.QueryableList.Where(p => p.ActionTypeID == actionTypeId).ToListAsync()).ToDataSourceResult(request);
-            return Json(result);
-        }
-
-        [Authorize(Policy = PatentAuthorizationPolicy.ActionTypeModify)]
-        public async Task<IActionResult> ActionParametersUpdate(int actionTypeId, 
-            [Bind(Prefix = "updated")]IEnumerable<PatActionParameter> updated,
-            [Bind(Prefix = "new")]IEnumerable<PatActionParameter> added, 
-            [Bind(Prefix = "deleted")]IEnumerable<PatActionParameter> deleted)
-        {
-            //no delete validation
-            var canDelete = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.ActionTypeCanDelete)).Succeeded;
-            if (deleted.Any() && !canDelete)
-                return Forbid("Not authorized.");
-
-            if (updated.Any() || added.Any() || deleted.Any())
-            {
-                if (!ModelState.IsValid)
-                    return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-                await _actionTypeService.ChildService.Update(actionTypeId, User.GetUserName(), updated, added, deleted);
-                var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
-                _localizer["Action Parameter has been saved successfully."].ToString() :
-                _localizer["Action Parameters have been saved successfully"].ToString();
-                return Ok(new { success = success });
-            }
-            return Ok();
-        }
-
-        [Authorize(Policy = PatentAuthorizationPolicy.ActionTypeCanDelete)]
-        public async Task<IActionResult> ActionParametersDelete([Bind(Prefix = "deleted")] PatActionParameter deleted)
-        {
-            if (deleted.ActParamId > 0)
-            {
-                await _actionTypeService.ChildService.Update(deleted.ActionTypeID, User.GetUserName(), new List<PatActionParameter>(), new List<PatActionParameter>(), new List<PatActionParameter>() { deleted });
-                return Ok(new { success = _localizer["Action Parameter has been deleted successfully."].ToString() });
-            }
-            return Ok();
-        }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {

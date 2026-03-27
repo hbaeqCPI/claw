@@ -14,7 +14,8 @@
 }
 <form cpi-detail-form action="Save">
     <input type="hidden" asp-for="CDueId" />
-    <input type="hidden" asp-for="CountryLawID" />
+    <input type="hidden" asp-for="Country" />
+    <input type="hidden" asp-for="CaseType" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -145,13 +146,13 @@
                     <label asp-for="Recurring"></label>
                     @if (isReadOnly)
                     {
-                        <input type="text" class="form-control form-control-sm" value="@(((RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())" disabled />
+                        <input type="text" class="form-control form-control-sm" value="@(((RecurringOption)Model.Recurring).GetDisplayName())" disabled />
                     }
                     else
                     {
                         @(Html.Kendo().ComboBox()
                             .Name("Recurring")
-                            .Text(((RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())
+                            .Text(((RecurringOption)Model.Recurring).GetDisplayName())
                             .Value(Model.Recurring.ToString())
                             .DataTextField("Text")
                             .DataValueField("Value")
@@ -213,7 +214,7 @@
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate" t-stamp="null"></vc:record-stamps>
         </div>
     }
 </form>

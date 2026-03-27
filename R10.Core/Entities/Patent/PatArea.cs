@@ -1,26 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Patent
 {
 
-    public class PatArea:BaseEntity
+    public class PatArea: ClawBaseEntity
     {
-    
-        [Key]
-        public int AreaID { get; set; }
-
-        [Required]
         [StringLength(10)]
-        [Display(Name = "Area")]
-        public string Area { get; set; }
+        [Required, Display(Name = "Area")]
+        public string? Area { get; set; }
 
         [StringLength(255)]
         [Display(Name = "Description")]
         public string? Description { get; set; }
-        
+
         public List <PatAreaCountry>? PatAreaCountries { get; set; }
     }
 }

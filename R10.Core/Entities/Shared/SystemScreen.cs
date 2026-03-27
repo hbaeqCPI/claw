@@ -1,11 +1,9 @@
-﻿using R10.Core.Entities.Patent;
-using R10.Core.Entities.Trademark;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace R10.Core.Entities 
+namespace R10.Core.Entities
 {
     public class SystemScreen : BaseEntity
     {
@@ -27,8 +25,5 @@ namespace R10.Core.Entities
         public string?  ScreenName { get; set; }
 
         public bool? eSignature { get; set; }
-
-        public List<PatWorkflow>? PatWorkflows { get; set; }
-        public List<TmkWorkflow>? TmkWorkflows { get; set; }
     }
 }

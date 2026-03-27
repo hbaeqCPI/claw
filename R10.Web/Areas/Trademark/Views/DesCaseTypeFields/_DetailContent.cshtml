@@ -1,17 +1,14 @@
 @model TmkDesCaseTypeFields
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var id = Model.KeyID;
-    var addMode = id == 0;
+    var addMode = string.IsNullOrEmpty(Model.DesCaseType);
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
-    bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
 
 }
 <form cpi-detail-form action="Save">
-    <input type="hidden" asp-for="KeyID" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -42,22 +39,5 @@
                 </div>
             </div>
         </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
-                <div class="form-group">
-                    <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" asp-for="InUse" disabled="@isReadOnly" />
-                        <label class="custom-control-label" asp-for="InUse">@Localizer["In Use"]</label>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
-
-    @if (!addMode)
-    {
-        <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
-        </div>
-    }
 </form>

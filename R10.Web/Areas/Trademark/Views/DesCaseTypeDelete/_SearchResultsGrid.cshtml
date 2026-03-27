@@ -1,0 +1,30 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@using R10.Core.Entities.Trademark
+
+@(Html.Kendo().Grid<TmkDesCaseTypeDelete>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.IntlCode).Width(200);
+        columns.Bound(m => m.CaseType).Width(200);
+        columns.Bound(m => m.DesCountry).Width(200);
+        columns.Bound(m => m.DesCaseType).Width(200);
+        columns.Bound(m => m.Default).Width(80);
+        columns.Bound(m => m.IntlCodeNew).Width(200);
+        columns.Bound(m => m.CaseTypeNew).Width(200);
+        columns.Bound(m => m.DesCountryNew).Width(200);
+        columns.Bound(m => m.DesCaseTypeNew).Width(200);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("DesCaseTypeDeleteList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseTypeDelete")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("tmkDesCaseTypeDeletePage.searchResultGridError"))
+        .Events(events => events.RequestEnd("tmkDesCaseTypeDeletePage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "DesCaseTypeDelete").Data("tmkDesCaseTypeDeletePage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

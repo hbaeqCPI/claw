@@ -168,14 +168,13 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _indicatorService.QueryableList.FirstOrDefaultAsync(c => c.IndicatorId == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _indicatorService.Delete(entity);
 
             return Ok();
@@ -208,7 +207,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (tmkIndicator == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = tmkIndicator.CreatedBy, dateCreated = tmkIndicator.DateCreated, updatedBy = tmkIndicator.UpdatedBy, lastUpdate = tmkIndicator.LastUpdate, tStamp = tmkIndicator.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = tmkIndicator.CreatedBy, dateCreated = tmkIndicator.DateCreated, updatedBy = tmkIndicator.UpdatedBy, lastUpdate = tmkIndicator.LastUpdate });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

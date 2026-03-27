@@ -55,12 +55,12 @@ namespace R10.Web.Areas.Shared.Controllers
 
             if (User.IsInSystem(SystemType.Patent))
             {
-                countryList.AddRange(await _patCountryService.QueryableList.AsNoTracking().Where(d => !string.IsNullOrEmpty(d.Country)).Select(d => new LookupDescDTO() { Text = d.Country, Value = d.CountryName, Description = d.CurrencyType }).ToListAsync());
+                countryList.AddRange(await _patCountryService.QueryableList.AsNoTracking().Where(d => !string.IsNullOrEmpty(d.Country)).Select(d => new LookupDescDTO() { Text = d.Country, Value = d.CountryName, Description = "" }).ToListAsync());
             }
 
             if (User.IsInSystem(SystemType.Trademark))
             {
-                countryList.AddRange(await _tmkCountryService.QueryableList.AsNoTracking().Where(d => !string.IsNullOrEmpty(d.Country)).Select(d => new LookupDescDTO() { Text = d.Country, Value = d.CountryName, Description = d.CurrencyType }).ToListAsync());
+                countryList.AddRange(await _tmkCountryService.QueryableList.AsNoTracking().Where(d => !string.IsNullOrEmpty(d.Country)).Select(d => new LookupDescDTO() { Text = d.Country, Value = d.CountryName, Description = "" }).ToListAsync());
             }
 
             return Json(countryList.DistinctBy(d => new { d.Text, d.Value, d.Description })

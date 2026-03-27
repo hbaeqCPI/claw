@@ -43,7 +43,7 @@ namespace R10.Web.Areas.Shared.ViewModels
         public string? Indicator { get; set; }
 
         [Display(Name = "Recurring")]
-        public short? Recurring { get; set; }
+        public float Recurring { get; set; }
 
         [Display(Name = "Eff Based On")]
         [StringLength(20)]

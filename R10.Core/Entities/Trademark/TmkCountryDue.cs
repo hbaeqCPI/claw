@@ -1,14 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Trademark
 {
-    public class TmkCountryDue: BaseEntity
+    public class TmkCountryDue : ClawBaseEntity
     {
         [Key]
         public int CDueId { get; set; }
-
-        public int CountryLawID { get; set; }
 
         [Required]
         [StringLength(5)]
@@ -18,11 +16,11 @@ namespace R10.Core.Entities.Trademark
         [StringLength(3)]
         public string? CaseType { get; set; }
 
-        [StringLength(60)]
-        [Display(Name="Action Type")]
+        [StringLength(30)]
+        [Display(Name = "Action Type")]
         public string? ActionType { get; set; }
 
-        [StringLength(60)]
+        [StringLength(30)]
         [Required(ErrorMessage = "Action Due is required.")]
         [Display(Name = "Action Due")]
         public string? ActionDue { get; set; }
@@ -41,13 +39,13 @@ namespace R10.Core.Entities.Trademark
         [Display(Name = "Dy")]
         public int Dy { get; set; }
 
-        [Required(ErrorMessage="Indicator field is required.")]
+        [Required(ErrorMessage = "Indicator field is required.")]
         [StringLength(20)]
         [Display(Name = "Indicator")]
         public string? Indicator { get; set; }
 
         [Display(Name = "Recurring")]
-        public short? Recurring { get; set; }
+        public float Recurring { get; set; }
 
         [StringLength(15)]
         [Display(Name = "Effective Period for")]
@@ -65,8 +63,7 @@ namespace R10.Core.Entities.Trademark
         public bool Calculate { get; set; }
 
         public int? CPIPermanentID { get; set; }
-        
-        
+
         [NotMapped]
         [Display(Name = "Follow up Action")]
         public string? FollowupAction { get; set; }
@@ -76,13 +73,6 @@ namespace R10.Core.Entities.Trademark
 
         [NotMapped]
         public string? RecurringDesc { get; set; }
-
-        [NotMapped]
-        public byte[]? ParentTStamp { get; set; }
-
-        public TmkCountryLaw? TmkCountryLaw { get; set; }
-
-
     }
 
     public class BasedOnOption
@@ -104,5 +94,4 @@ namespace R10.Core.Entities.Trademark
         [Display(Name = "Based on Due Date")]
         BasedOnDueDate = -1
     }
-
 }

@@ -1,49 +1,50 @@
-﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Patent
 {
-    public class PatCountryLaw: BaseEntity
+    public class PatCountryLaw : ClawBaseEntity
     {
         [NotMapped]
         public string? CopyOptions { get; set; }
 
-        [Key]
-        public int CountryLawID { get; set; }
+        [NotMapped]
+        public string? OriginalSystems { get; set; }
 
+        [Key]
         [StringLength(5)]
         [Display(Name = "Country")]
         [Required]
-        public string Country { get; set; }
+        public string Country { get; set; } = "";
 
+        [Key]
         [StringLength(3)]
         [Display(Name = "Case Type")]
         [Required]
-        public string CaseType { get; set; }
+        public string CaseType { get; set; } = "";
 
-        [Display(Name="Agent")]
-        public int? DefaultAgent { get; set; }
+        [StringLength(5)]
+        [Display(Name = "Agent")]
+        public string DefaultAgent { get; set; } = "";
 
-        public short AutoGenDesCtry { get; set; }
-        public short AutoUpdtDesPatRecs { get; set; }
+        public string Remarks { get; set; } = "";
+
+        [Display(Name = "Auto Gen Des Ctry")]
+        public bool AutoGenDesCtry { get; set; }
+
+        [Display(Name = "Auto Updt Des Pat Recs")]
+        public bool AutoUpdtDesPatRecs { get; set; }
+
+        [Display(Name = "Calc Exp Before Issue")]
         public bool CalcExpirBeforeIssue { get; set; }
-        public string? Remarks { get; set; }
-        public string? UserRemarks { get; set; }
 
-        [StringLength(20)]
-        public string? LabelTaxSched { get; set; }
+        public string UserRemarks { get; set; } = "";
 
         [StringLength(500)]
         [Display(Name = "Systems")]
-        public string? Systems { get; set; }
+        public string Systems { get; set; } = "";
 
-        public PatCaseType? PatCaseType { get; set; }
-        public PatCountry? PatCountry { get; set; }
-//         public Agent? Agent { get; set; } // Removed - Agent entity deleted
         public List<PatCountryDue>? PatCountryDues { get; set; }
-        public List<PatDesCaseType>? PatDesCaseTypes { get; set; }
     }
-    
 }

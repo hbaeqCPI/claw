@@ -303,7 +303,7 @@ namespace R10.Web.Helpers
                 area = area,
                 action = string.IsNullOrEmpty(action) ? "GetAreaList" : action,
                 textProperty = "Area",
-                valueProperty = defaultValue == -1 ? "Code" : "AreaID",
+                valueProperty = defaultValue == -1 ? "Code" : "Area",
                 defaultValue = defaultValue == -1 ? (defaultText ?? "") : defaultValue == null || defaultValue == 0 ? "" : defaultValue.ToString(),
                 defaultText = string.IsNullOrEmpty(defaultText) ? "" : defaultText,
                 onChange = !string.IsNullOrEmpty(onChange) ? onChange : (displayNameOnSelect ? "function(e) {pageHelper.onComboBoxChangeDisplayName(e,'Description');}" : ""),

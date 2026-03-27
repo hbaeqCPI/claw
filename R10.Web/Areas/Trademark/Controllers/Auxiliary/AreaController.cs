@@ -33,24 +33,27 @@ namespace R10.Web.Areas.Trademark.Controllers
     {
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<TmkArea> _viewModelService;
-        private readonly IParentEntityService<TmkArea, TmkAreaCountry> _areaService;
+        private readonly IEntityService<TmkArea> _areaService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IMapper _mapper;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "tmkAreaDetail";
 
         public AreaController(
             IAuthorizationService authService,
             IViewModelService<TmkArea> viewModelService,
-            IParentEntityService<TmkArea, TmkAreaCountry> areaService,
+            IEntityService<TmkArea> areaService,
             IStringLocalizer<SharedResource> localizer,
-            IMapper mapper)
+            IMapper mapper,
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _areaService = areaService;
             _localizer = localizer;
             _mapper = mapper;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -100,31 +103,30 @@ namespace R10.Web.Areas.Trademark.Controllers
                     var country = mainSearchFilters.FirstOrDefault(f => f.Property == "Country");
                     if (country != null)
                     {
-                        areas = areas.Where(w => w.TmkAreaCountries.Any(a => EF.Functions.Like(a.AreaCountry.Country, country.Value)));
+                        areas = areas.Where(w => w.TmkAreaCountries.Any(a => EF.Functions.Like(a.Country, country.Value)));
                         mainSearchFilters.Remove(country);
                     }
 
                     var countryName = mainSearchFilters.FirstOrDefault(f => f.Property == "CountryName");
                     if (countryName != null)
                     {
-                        areas = areas.Where(w => w.TmkAreaCountries.Any(a => EF.Functions.Like(a.AreaCountry.CountryName, countryName.Value)));
                         mainSearchFilters.Remove(countryName);
                     }
                 }
                 areas = _viewModelService.AddCriteria(areas, mainSearchFilters);
 
-                var result = await _viewModelService.CreateViewModelForGrid(request, areas, "Area", "AreaID");
+                var result = await _viewModelService.CreateViewModelForGrid(request, areas, "Area", "Area");
                 return Json(result);
             }
 
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task<DetailPageViewModel<TmkArea>> PrepareEditScreen(int id)
+        private async Task<DetailPageViewModel<TmkArea>> PrepareEditScreen(string id)
         {
             var viewModel = new DetailPageViewModel<TmkArea>
             {
-                Detail = await _areaService.GetByIdAsync(id)
+                Detail = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id)
             };
 
             if (viewModel.Detail != null)
@@ -145,7 +147,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             return viewModel;
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
             var page = await PrepareEditScreen(id);
             if (page.Detail == null)
@@ -162,7 +164,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Area Detail"].ToString(),
-                RecordId = detail.AreaID,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -221,7 +222,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Area"].ToString(),
-                RecordId = detail.AreaID,
                 PagePermission = page,
                 Data = detail,
                 FromSearch = fromSearch
@@ -237,14 +237,21 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(tmkArea, tmkArea.AreaID);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+                tmkArea.UserID = userName;
+                tmkArea.LastUpdate = now;
 
-                if (tmkArea.AreaID > 0)
+                var existing = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == tmkArea.Area);
+                if (existing != null)
                     await _areaService.Update(tmkArea);
                 else
+                {
+                    tmkArea.DateCreated = now;
                     await _areaService.Add(tmkArea);
+                }
 
-                return Json(tmkArea.AreaID);
+                return Json(tmkArea.Area);
             }
             else
             {
@@ -254,27 +261,26 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(string id)
         {
-            var entity = await _areaService.GetByIdAsync(id);
+            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _areaService.Delete(entity);
 
             return Ok();
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
+        public async Task<IActionResult> Copy(string id)
         {
-            var entity = await _areaService.GetByIdAsync(id);
+            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new AreaCopyViewModel
             {
-                AreaID = entity.AreaID,
+                OriginalArea = entity.Area,
                 Area = entity.Area,
                 CopyCountries = true
             };
@@ -297,30 +303,28 @@ namespace R10.Web.Areas.Trademark.Controllers
             var copyOptions = JsonConvert.DeserializeObject<AreaCopyViewModel>(copyOptionsString);
             if (copyOptions != null)
             {
-                var source = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.AreaID == copyOptions.AreaID);
+                var source = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == copyOptions.OriginalArea);
                 if (source != null)
                 {
                     page.Detail = source;
-                    page.Detail.AreaID = 0;
                     page.Detail.Area = copyOptions.Area;
 
                     if (copyOptions.CopyCountries)
                     {
-                        var countries = await _areaService.ChildService.QueryableList.Where(c => c.AreaID == copyOptions.AreaID).AsNoTracking().ToListAsync();
-                        countries.ForEach(c => { c.AreaCtryId = 0; c.AreaID = 0; });
+                        var countries = await _repository.TmkAreasCountries.Where(c => c.Country != null).AsNoTracking().ToListAsync();
                         page.Detail.TmkAreaCountries = countries;
                     }
                 }
             }
         }
 
-        public async Task<IActionResult> GetRecordStamps(int id)
+        public async Task<IActionResult> GetRecordStamps(string id)
         {
-            var tmkArea = await _areaService.GetByIdAsync(id);
+            var tmkArea = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
             if (tmkArea == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = tmkArea.CreatedBy, dateCreated = tmkArea.DateCreated, updatedBy = tmkArea.UpdatedBy, lastUpdate = tmkArea.LastUpdate, tStamp = tmkArea.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = tmkArea.UserID, dateCreated = tmkArea.DateCreated, updatedBy = tmkArea.UserID, lastUpdate = tmkArea.LastUpdate });
         }
 
         [HttpGet]
@@ -340,14 +344,14 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         #region Countries Child Grid
 
-        public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, int areaId)
+        public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, string areaId)
         {
-            var result = (await _areaService.ChildService.QueryableList.Where(ca => ca.AreaID == areaId).OrderBy(o => o.Country).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
+            var result = (await _repository.TmkAreasCountries.AsNoTracking().Where(ca => ca.Country != null).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
             return Json(result);
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
-        public async Task<IActionResult> CountriesUpdate(int areaId,
+        public async Task<IActionResult> CountriesUpdate(string areaId,
             [Bind(Prefix = "updated")] IEnumerable<CountryAreaViewModel> updated,
             [Bind(Prefix = "new")] IEnumerable<CountryAreaViewModel> added,
             [Bind(Prefix = "deleted")] IEnumerable<CountryAreaViewModel> deleted)
@@ -361,11 +365,13 @@ namespace R10.Web.Areas.Trademark.Controllers
                 if (!ModelState.IsValid)
                     return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-                await _areaService.ChildService.Update(areaId, User.GetUserName(),
-                    _mapper.Map<List<TmkAreaCountry>>(updated),
-                    _mapper.Map<List<TmkAreaCountry>>(added),
-                    _mapper.Map<List<TmkAreaCountry>>(deleted)
-                    );
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(added))
+                    _repository.TmkAreasCountries.Add(item);
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(updated))
+                    _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                foreach (var item in _mapper.Map<List<TmkAreaCountry>>(deleted))
+                    _repository.TmkAreasCountries.Remove(item);
+                await _repository.SaveChangesAsync();
                 var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
                 _localizer["Country has been saved successfully."].ToString() :
                 _localizer["Countries have been saved successfully"].ToString();
@@ -377,9 +383,10 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         public async Task<IActionResult> CountryDelete([Bind(Prefix = "deleted")] CountryAreaViewModel deleted)
         {
-            if (deleted.AreaCtryId > 0)
+            if (!string.IsNullOrEmpty(deleted.Country))
             {
-                await _areaService.ChildService.Update(deleted.AreaID, User.GetUserName(), new List<TmkAreaCountry>(), new List<TmkAreaCountry>(), new List<TmkAreaCountry>() { _mapper.Map<TmkAreaCountry>(deleted) });
+                _repository.TmkAreasCountries.Remove(_mapper.Map<TmkAreaCountry>(deleted));
+                await _repository.SaveChangesAsync();
                 return Ok(new { success = _localizer["Country has been deleted successfully."].ToString() });
             }
             return Ok();
@@ -394,13 +401,13 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> GetAreaList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_areaService.QueryableList, request, property, text, filterType, new string[] { "AreaID", "Area", "Description" }, requiredRelation);
+            return await GetPicklistData(_areaService.QueryableList, request, property, text, filterType, new string[] { "Area", "Description" }, requiredRelation);
         }
 
         [HttpGet]
-        public IActionResult DetailLink(int? id)
+        public IActionResult DetailLink(string id)
         {
-            if (id > 0)
+            if (!string.IsNullOrEmpty(id))
             {
                 return RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true });
             }

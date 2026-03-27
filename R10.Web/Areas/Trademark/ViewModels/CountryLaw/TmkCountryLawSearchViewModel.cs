@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-using R10.Core.Entities.Trademark;
 
 namespace R10.Web.Areas.Trademark.ViewModels.CountryLaw
 {
     public class TmkCountryLawSearchViewModel
     {
-        public int CountryLawID { get; set; }
+        [Display(Name = "Country")]
+        public string? Country { get; set; }
 
         [Display(Name = "Country Name")]
         public string? CountryName { get; set; }
@@ -17,17 +14,16 @@ namespace R10.Web.Areas.Trademark.ViewModels.CountryLaw
         [Display(Name = "Case Type")]
         public string? CaseType { get; set; }
 
-        [Display(Name = "Created By")]
-        public string? CreatedBy { get; set; }
+        [Display(Name = "Systems")]
+        public string? Systems { get; set; }
 
-        [Display(Name = "Updated By")]
-        public string? UpdatedBy { get; set; }
+        [Display(Name = "User ID")]
+        public string? UserID { get; set; }
 
         [Display(Name = "Created On")]
         public DateTime? DateCreated { get; set; }
 
         [Display(Name = "Updated On")]
         public DateTime? LastUpdate { get; set; }
-
     }
 }

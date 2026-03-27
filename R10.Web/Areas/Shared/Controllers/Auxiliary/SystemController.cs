@@ -167,14 +167,13 @@ namespace R10.Web.Areas.Shared.Controllers
 
         [HttpPost, Authorize(Policy = SharedAuthorizationPolicy.CanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _systemService.QueryableList.FirstOrDefaultAsync(c => c.SystemId == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _systemService.Delete(entity);
 
             return Ok();
@@ -207,7 +206,7 @@ namespace R10.Web.Areas.Shared.Controllers
             if (appSystem == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = appSystem.CreatedBy, dateCreated = appSystem.DateCreated, updatedBy = appSystem.UpdatedBy, lastUpdate = appSystem.LastUpdate, tStamp = appSystem.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = appSystem.CreatedBy, dateCreated = appSystem.DateCreated, updatedBy = appSystem.UpdatedBy, lastUpdate = appSystem.LastUpdate });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

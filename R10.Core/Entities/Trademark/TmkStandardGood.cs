@@ -1,13 +1,8 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace R10.Core.Entities.Trademark
 {
-    public class TmkStandardGood : TmkStandardGoodDetail
-    {
-    }
-
-    public class TmkStandardGoodDetail : BaseEntity
+    public class TmkStandardGood : BaseEntity
     {
         [Key]
         public int ClassId { get; set; }

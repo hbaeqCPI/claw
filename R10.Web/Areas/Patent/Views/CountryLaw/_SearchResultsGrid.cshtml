@@ -1,4 +1,4 @@
-﻿@model PageViewModel
+@model PageViewModel
 @inject IStringLocalizer<CountryLawResource> Localizer
 @inject ISystemSettings<PatSetting> Settings
 @{
@@ -10,10 +10,10 @@
                                         .Columns(columns =>
                                         {
                                             columns.Bound(c => c.CountryName)
-                                                .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CountryLawID#", fromSearch = true }), "CountryName"));
+                                                .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { country = "#: Country#", caseType = "#: CaseType#", systems = "#: Systems#", fromSearch = true }), "CountryName"));
                                             columns.Bound(c => c.CaseType);
-                                            columns.Bound(c => c.CreatedBy).Hidden();
-                                            columns.Bound(c => c.UpdatedBy).Hidden();
+                                            columns.Bound(c => c.Systems);
+                                            columns.Bound(c => c.UserID).Hidden();
                                             columns.Bound(c => c.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
                                             columns.Bound(c => c.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
                                         })
@@ -21,8 +21,7 @@
                                         .AutoBind(false)
                                         .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
                                         .Sortable(sort => sort.AllowUnsort(false))
-                                        //.ColumnMenu()
-                                        .Excel(excel => excel.FileName("CountryLawList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Client")))
+                                        .Excel(excel => excel.FileName("CountryLawList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "CountryLaw")))
                                         .DataSource(dataSource => dataSource
                                             .Ajax()
                                             .Events(events => events.Error("patCountryLawPage.searchResultGridError"))

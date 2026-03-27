@@ -1,20 +1,13 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Trademark
 {
-    public class TmkActionType : TmkActionTypeDetail
+    public class TmkActionType : BaseEntity
     {
-        public List<TmkActionParameter>? ActionParameters { get; set; }
-        public TmkCountry? TmkCountry { get; set; }
-
         [NotMapped]
         public string? CopyOptions { get; set; }
-    }
 
-    public class TmkActionTypeDetail : BaseEntity
-    {
         [Key]
         public int ActionTypeID { get; set; }
 

@@ -1,4 +1,4 @@
-﻿@model CountryLawChildViewModel
+@model CountryLawChildViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @{
 
@@ -30,11 +30,6 @@
                                  template = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
                                  headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["CaseType"], Localizer["Description"])
                              }).Width(200);
-
-                         columns.Bound(d => d.DefaultCaseType).ClientTemplate("<i class='fa fal #: DefaultCaseType ? 'fa-check' : ''#'></i>")
-                                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
-                         columns.Bound(d => d.GenApp).ClientTemplate("<i class='fa fal #: GenApp ? 'fa-check' : ''#'></i>")
-                                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
 
                          columns.Command(command =>
                          {
@@ -70,9 +65,7 @@
                          .ServerOperation(false)
                          .Model(model =>
                          {
-                             model.Id(d => d.DesCaseTypeID);
                              model.Field(d => d.DesCountryName).Editable(false);
-                             model.Field(d => d.GenApp).DefaultValue(false);
                          })
                          .Read(create => create.Action("DesCaseTypeRead", "CountryLaw").Data(childLinkParam))
                          .Update(create => create.Action("DesCaseTypeUpdate", "CountryLaw").Data("patCountryLawPage.getKeyFields"))

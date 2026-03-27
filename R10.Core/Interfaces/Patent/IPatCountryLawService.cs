@@ -17,9 +17,9 @@ namespace R10.Core.Interfaces
         Task UpdateCountryLawRemarks(PatCountryLaw countryLaw);
         Task DeleteCountryLaw(PatCountryLaw countryLaw);
         Task<bool> HasDesignatedCountries(string country, string caseType);
-        Task UpdateChild<T>(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : BaseEntity;
-        Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity;
-        Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<PatCountryDue> deleted);
+        Task UpdateChild<T>(string country, string caseType, string userName, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : class;
+        Task AddChildren<T>(IEnumerable<T> entities) where T : class;
+        Task DeleteCountryDue(string country, string caseType, string userName, IEnumerable<PatCountryDue> deleted);
 
         //not needed
         //use BasedOnOption and GetPublicConstantValues type extension
@@ -36,13 +36,13 @@ namespace R10.Core.Interfaces
         //string GetRecurringDesc(short? value);
         Task<List<LookupDTO>> GetFollowupList(string country);
 
-        Task<List<PatCountryDue>> GetCountryDues(int countryLawId);
+        Task<List<PatCountryDue>> GetCountryDues(string country, string caseType);
         Task<PatCountryDue> GetCountryDue(int cDueId);
         Task<List<LookupDTO>> GetActionDues();
         Task<List<LookupDTO>> GetActionTypes();
         Task CountryDueUpdate(PatCountryDue countryDue);
         Task GenerateCountryLawActions(CountryLawRetroParam criteria);
-        Task<List<PatCountryExp>> GetCountryExps(int countryLawId);
+        Task<List<PatCountryExp>> GetCountryExps(string country, string caseType);
 
         IQueryable<PatCountryLaw> PatCountryLaws { get; }
         IQueryable<PatCountryDue> PatCountryDues { get; }

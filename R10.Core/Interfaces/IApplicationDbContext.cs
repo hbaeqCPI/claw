@@ -22,7 +22,6 @@ namespace R10.Core.Interfaces
         #region Patent
         DbSet<PatDesignatedCountry> PatDesignatedCountries { get; set; }
 
-        DbSet<PatDisclosureStatus> PatDisclosureStatuses { get; set; }
         DbSet<PatCountry> PatCountries { get; set; }
         DbSet<PatArea> PatAreas { get; set; }
         DbSet<PatAreaCountry> PatAreasCountries { get; set; }
@@ -31,22 +30,23 @@ namespace R10.Core.Interfaces
         DbSet<PatCountryExp> PatCountryExpirations { get; set; }
         DbSet<PatCaseType> PatCaseTypes { get; set; }
         DbSet<PatActionType> PatActionTypes { get; set; }
-        DbSet<PatActionParameter> PatActionParameters { get; set; }
-        DbSet<PatApplicationStatus> ApplicationStatuses { get; set; }
         DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
         DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
 
         DbSet<PatCountryLawUpdate> PatCountryLawUpdate { get; set; }
 
-        DbSet<PatWorkflow> PatWorkflows { get; set; }
-        DbSet<PatWorkflowAction> PatWorkflowActions { get; set; }
-        DbSet<PatWorkflowActionParameter> PatWorkflowActionParameters { get; set; }
         DbSet<LookupDescDTO> PatActionTypeDTO { get; set; }
-        DbSet<PatScoreCategory> PatScoreCategories { get; set; }
-        DbSet<PatScore> PatScores { get; set; }
-        DbSet<PatScoreDTO> PatScoreDTO { get; set; }
-        DbSet<PatAverageScoreDTO> PatAverageScoreDTO { get; set; }
         DbSet<PatIndicator> PatIndicators { get; set; }
+        DbSet<PatAreaDelete> PatAreaDeletes { get; set; }
+        DbSet<PatAreaCountryDelete> PatAreaCountryDeletes { get; set; }
+        DbSet<PatCountryExpDelete> PatCountryExpDeletes { get; set; }
+        DbSet<PatCountryLawExt> PatCountryLawExts { get; set; }
+        DbSet<PatDesCaseTypeExt> PatDesCaseTypeExts { get; set; }
+        DbSet<PatDesCaseTypeDelete> PatDesCaseTypeDeletes { get; set; }
+        DbSet<PatDesCaseTypeDeleteExt> PatDesCaseTypeDeleteExts { get; set; }
+        DbSet<PatDesCaseTypeFieldsExt> PatDesCaseTypeFieldsExts { get; set; }
+        DbSet<PatDesCaseTypeFieldsDelete> PatDesCaseTypeFieldsDeletes { get; set; }
+        DbSet<PatDesCaseTypeFieldsDeleteExt> PatDesCaseTypeFieldsDeleteExts { get; set; }
         #endregion
 
         #region Trademark
@@ -57,22 +57,23 @@ namespace R10.Core.Interfaces
         DbSet<TmkCaseType> TmkCaseTypes { get; set; }
         DbSet<TmkDesCaseType> TmkDesCaseTypes { get; set; }
         DbSet<TmkDesCaseTypeFields> TmkDesCaseTypeFields { get; set; }
-        DbSet<TmkConflictStatus> TmkConflictStatuses { get; set; }
         DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         DbSet<TmkCountryDue> TmkCountryDues { get; set; }
         DbSet<TmkActionType> TmkActionTypes { get; set; }
-        DbSet<TmkActionParameter> TmkActionParameters { get; set; }
-
-        DbSet<TmkConflict> TmkConflicts { get; set; }
         DbSet<TmkDesignatedCountry> TmkDesignatedCountries { get; set; }
 
         DbSet<TmkCountryLawUpdate> TmkCountryLawUpdate { get; set; }
-        DbSet<TmkWorkflow> TmkWorkflows { get; set; }
-        DbSet<TmkWorkflowAction> TmkWorkflowActions { get; set; }
-        DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
         DbSet<TmkIndicator> TmkIndicators { get; set; }
         DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         DbSet<TmkStandardGood> TmkStandardGoods { get; set; }
+        DbSet<TmkAreaDelete> TmkAreaDeletes { get; set; }
+        DbSet<TmkAreaCountryDelete> TmkAreaCountryDeletes { get; set; }
+        DbSet<TmkDesCaseTypeExt> TmkDesCaseTypeExts { get; set; }
+        DbSet<TmkDesCaseTypeDelete> TmkDesCaseTypeDeletes { get; set; }
+        DbSet<TmkDesCaseTypeDeleteExt> TmkDesCaseTypeDeleteExts { get; set; }
+        DbSet<TmkDesCaseTypeFieldsExt> TmkDesCaseTypeFieldsExts { get; set; }
+        DbSet<TmkDesCaseTypeFieldsDelete> TmkDesCaseTypeFieldsDeletes { get; set; }
+        DbSet<TmkDesCaseTypeFieldsDeleteExt> TmkDesCaseTypeFieldsDeleteExts { get; set; }
         #endregion
 
         #region Releases

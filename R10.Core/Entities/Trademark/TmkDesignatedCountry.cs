@@ -43,7 +43,5 @@ namespace R10.Core.Entities.Trademark
         [NotMapped]
         public string? CountryName { get; set; }
 
-        public TmkCountry? Country { get; set; }
-
     }
 }

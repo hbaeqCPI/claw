@@ -1,0 +1,67 @@
+@model PatAreaDelete
+@using R10.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+
+<form cpi-detail-form action="Save">
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Area"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Area" />
+                    <span asp-validation-for="Area"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Description"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" />
+                    <span asp-validation-for="Description"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="UserID"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="UserID" />
+                    <span asp-validation-for="UserID"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="DateCreated"></label>
+                    @(Html.Kendo().DateTimePicker().Name("DateCreated").Value(Model.DateCreated).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="DateCreated"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="LastUpdate"></label>
+                    @(Html.Kendo().DateTimePicker().Name("LastUpdate").Value(Model.LastUpdate).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="LastUpdate"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="AreaNew"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="AreaNew" />
+                    <span asp-validation-for="AreaNew"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-row mt-3">
+        <div class="col">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
+        </div>
+    </div>
+</form>

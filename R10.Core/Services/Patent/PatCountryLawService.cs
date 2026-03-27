@@ -16,10 +16,10 @@ namespace R10.Core.Services
         private readonly IApplicationDbContext _repository;
         private readonly IPatCountryDueRepository _countryDueRepository;
         private readonly ISystemSettings<PatSetting> _settings;
-        
+
         public PatCountryLawService(IApplicationDbContext repository,
             IPatCountryDueRepository countryDueRepository,
-           ISystemSettings<PatSetting> settings) 
+           ISystemSettings<PatSetting> settings)
         {
             _repository = repository;
             _countryDueRepository = countryDueRepository;
@@ -42,7 +42,7 @@ namespace R10.Core.Services
         {
             var entity = _repository.PatCountryLaws.Attach(countryLaw);
             entity.Property(c => c.UserRemarks).IsModified = true;
-            entity.Property(c => c.UpdatedBy).IsModified = true;
+            entity.Property(c => c.UserID).IsModified = true;
             entity.Property(c => c.LastUpdate).IsModified = true;
             await _repository.SaveChangesAsync();
         }
@@ -91,7 +91,7 @@ namespace R10.Core.Services
             return list;
         }
 
-        public async Task UpdateChild<T>(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : BaseEntity
+        public async Task UpdateChild<T>(string country, string caseType, string userName, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : class
         {
             if (updated.Any())
                 _repository.Set<T>().UpdateRange(updated);
@@ -102,11 +102,11 @@ namespace R10.Core.Services
             if (deleted.Any())
                 _repository.Set<T>().RemoveRange(deleted);
 
-            UpdateParentStamps(parentId, country, caseType,userName, tStamp);
+            UpdateParentStamps(country, caseType, userName);
             await _repository.SaveChangesAsync();
         }
 
-        public async Task AddChildren<T>(IEnumerable<T> entities) where T : BaseEntity
+        public async Task AddChildren<T>(IEnumerable<T> entities) where T : class
         {
             if (entities.Any())
             {
@@ -115,7 +115,7 @@ namespace R10.Core.Services
             }
         }
 
-        public async Task DeleteCountryDue(int parentId, string country, string caseType, string userName, byte[] tStamp, IEnumerable<PatCountryDue> deleted) 
+        public async Task DeleteCountryDue(string country, string caseType, string userName, IEnumerable<PatCountryDue> deleted)
         {
             if (deleted.Any())
             {
@@ -123,21 +123,21 @@ namespace R10.Core.Services
                 if (followUpAction != null)
                     _repository.PatActionTypes.Remove(followUpAction);
 
-                await UpdateChild(parentId, country, caseType, userName, tStamp, new List<PatCountryDue>(), new List<PatCountryDue>(), deleted);
+                await UpdateChild(country, caseType, userName, new List<PatCountryDue>(), new List<PatCountryDue>(), deleted);
             }
         }
 
         #region CountryDue
 
-        public async Task<List<PatCountryDue>> GetCountryDues(int countryLawId)
+        public async Task<List<PatCountryDue>> GetCountryDues(string country, string caseType)
         {
-            return await _repository.PatCountryDues.Where(c => c.CountryLawID == countryLawId).AsNoTracking().ToListAsync();
+            return await _repository.PatCountryDues.Where(c => c.Country == country && c.CaseType == caseType).AsNoTracking().ToListAsync();
         }
 
         public async Task<PatCountryDue> GetCountryDue(int cDueId)
         {
             var countryDue = await _repository.PatCountryDues.Where(c => c.CDueId == cDueId)
-                                              .AsNoTracking().Include(c=>c.PatCountryLaw).FirstOrDefaultAsync();
+                                              .AsNoTracking().FirstOrDefaultAsync();
             var followUpAction = await _repository.PatActionTypes.FirstOrDefaultAsync(a => a.CDueId == cDueId);
             if (followUpAction != null)
             {
@@ -152,7 +152,6 @@ namespace R10.Core.Services
             //{
             //    countryDue.RecurringDesc = GetRecurringDesc(countryDue.Recurring);
             //}
-            countryDue.ParentTStamp = countryDue.PatCountryLaw.tStamp;
             return countryDue;
         }
 
@@ -198,7 +197,7 @@ namespace R10.Core.Services
                 // }
 
 
-                UpdateParentStamps(countryDue.CountryLawID, countryDue.Country, countryDue.CaseType, countryDue.UpdatedBy, countryDue.ParentTStamp);
+                UpdateParentStamps(countryDue.Country, countryDue.CaseType, countryDue.UserID);
                 await _repository.SaveChangesAsync(); //we need to get the CDueId
 
                 if (countryDue.FollowupAction != countryDue.OldFollowupAction)
@@ -222,14 +221,14 @@ namespace R10.Core.Services
                             addFollowUp.Country = countryDue.Country;
                             addFollowUp.CDueId = countryDue.CDueId;
                             addFollowUp.FollowUpGen = -1;
-                            addFollowUp.CreatedBy = countryDue.UpdatedBy;
-                            addFollowUp.UpdatedBy = countryDue.UpdatedBy;
+                            addFollowUp.CreatedBy = countryDue.UserID;
+                            addFollowUp.UpdatedBy = countryDue.UserID;
                             addFollowUp.DateCreated = countryDue.LastUpdate;
                             addFollowUp.LastUpdate = countryDue.LastUpdate;
                             _repository.PatActionTypes.Add(addFollowUp);
                         }
                     }
-                    await _repository.SaveChangesAsync(); 
+                    await _repository.SaveChangesAsync();
                 }
                 scope.Complete();
             }
@@ -299,9 +298,9 @@ namespace R10.Core.Services
         #endregion
 
         #region CountryExp
-        public async Task<List<PatCountryExp>> GetCountryExps(int countryLawId)
+        public async Task<List<PatCountryExp>> GetCountryExps(string country, string caseType)
         {
-            return await _repository.PatCountryExpirations.Where(c => c.CountryLawID == countryLawId).AsNoTracking().ToListAsync();
+            return await _repository.PatCountryExpirations.Where(c => c.Country == country && c.CaseType == caseType).AsNoTracking().ToListAsync();
         }
 
         //public async Task CountryExpsUpdate(int parentId, string userName, byte[] tStamp,
@@ -360,11 +359,11 @@ namespace R10.Core.Services
         public IQueryable<PatCountryDue> PatCountryDues => _repository.PatCountryDues.AsNoTracking();
         public IQueryable<PatDesCaseType> PatDesCaseTypes => _repository.PatDesCaseTypes.AsNoTracking();
 
-        protected void UpdateParentStamps(int countryLawId, string country, string caseType, string userName, byte[] tStamp)
+        protected void UpdateParentStamps(string country, string caseType, string userName)
         {
-            var countryLaw = new PatCountryLaw() { CountryLawID = countryLawId, Country = country, CaseType = caseType, UpdatedBy = userName, LastUpdate = DateTime.Now, tStamp = tStamp };
+            var countryLaw = new PatCountryLaw() { Country = country, CaseType = caseType, UserID = userName, LastUpdate = DateTime.Now };
             var entity = _repository.PatCountryLaws.Attach(countryLaw);
-            entity.Property(c => c.UpdatedBy).IsModified = true;
+            entity.Property(c => c.UserID).IsModified = true;
             entity.Property(c => c.LastUpdate).IsModified = true;
         }
     }

@@ -9,18 +9,10 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: DesCaseTypeID#", fromSearch = true }), "IntlCode")).Width(150);
+                    columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: IntlCode#", fromSearch = true }), "IntlCode")).Width(150);
                     columns.Bound(m => m.CaseType).Width(150);
                     columns.Bound(m => m.DesCountry).Width(150);
                     columns.Bound(m => m.DesCaseType).Width(150);
-                    columns.Bound(m => m.DefaultCaseType).ClientTemplate("<i class='align-items-center small fa fal #: DefaultCaseType ? \"fa-check\" : \"\"#'></i>")
-                        .HtmlAttributes(new { @class = "text-center" })
-                        .HeaderHtmlAttributes(new { style = "text-align: center" })
-                        .Width(120);
-                    columns.Bound(m => m.GenApp).ClientTemplate("<i class='align-items-center small fa fal #: GenApp ? \"fa-check\" : \"\"#'></i>")
-                        .HtmlAttributes(new { @class = "text-center" })
-                        .HeaderHtmlAttributes(new { style = "text-align: center" })
-                        .Width(120);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
                 .AutoBind(false)

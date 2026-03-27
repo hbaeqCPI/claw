@@ -1,0 +1,31 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@using R10.Core.Entities.Trademark
+
+@(Html.Kendo().Grid<TmkDesCaseTypeExt>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.IntlCode).Width(200);
+        columns.Bound(m => m.CaseType).Width(200);
+        columns.Bound(m => m.DesCountry).Width(200);
+        columns.Bound(m => m.DesCaseType).Width(200);
+        columns.Bound(m => m.Default).Width(80);
+        columns.Bound(m => m.GenApp).Width(80);
+        columns.Bound(m => m.CreatedBy).Width(200);
+        columns.Bound(m => m.UpdatedBy).Width(200);
+        columns.Bound(m => m.DateCreated).Format("{0:dd-MMM-yyyy}").Width(150);
+        columns.Bound(m => m.LastUpdate).Format("{0:dd-MMM-yyyy}").Width(150);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("DesCaseTypeExtList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseTypeExt")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("tmkDesCaseTypeExtPage.searchResultGridError"))
+        .Events(events => events.RequestEnd("tmkDesCaseTypeExtPage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "DesCaseTypeExt").Data("tmkDesCaseTypeExtPage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

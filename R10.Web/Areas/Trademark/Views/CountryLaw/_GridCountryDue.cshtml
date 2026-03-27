@@ -3,7 +3,7 @@
 @{
     
     var permission = Model.Permission;
-    var childLinkParam = $"{{parentId: {Model.Id} }}";
+    var childLinkParam = $"{{country: '{Model.Country}', caseType: '{Model.CaseType}' }}";
 }
 
 <div data-countryLawId="@Model.Id" data-country="@Model.Country" data-caseType="@Model.CaseType" data-url-add="@Url.Action("CountryDueAdd", "CountryLaw")"

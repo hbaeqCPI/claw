@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace R10.Core.Entities.Patent
 {
@@ -24,7 +21,5 @@ namespace R10.Core.Entities.Patent
 
         [Display(Name = "Foreign Filing Indicator")]
         public bool FFIndicator { get; set; }
-
-        public List<PatActionParameter>? ActionParameters { get; set; }
     }
 }

@@ -1,15 +1,13 @@
 @model TmkDesCaseType
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var id = Model.DesCaseTypeID;
-    var addMode = id == 0;
+    var addMode = string.IsNullOrEmpty(Model.IntlCode);
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
 }
 <form cpi-detail-form action="Save">
-    <input type="hidden" asp-for="DesCaseTypeID" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -45,50 +43,5 @@
                 </div>
             </div>
         </div>
-        <div class="form-row">
-            <div class="col-2 col-sm-2 col-md-2 col-lg-1 pt-3">
-                @if (isReadOnly)
-                {
-                    @(Html.Kendo().CheckBoxFor(m => m.DefaultCaseType).HtmlAttributes(new { id = "DesCaseType_DefaultCaseType", disabled = "true" }))
-                }
-                else
-                {
-                    @(Html.Kendo().CheckBoxFor(m => m.DefaultCaseType).HtmlAttributes(new { id = "DesCaseType_DefaultCaseType" }))
-                }
-            </div>
-            <div class="col-2 col-sm-2 col-md-2 col-lg-1 pt-3">
-                @if (isReadOnly)
-                {
-                    @(Html.Kendo().CheckBoxFor(m => m.GenApp).HtmlAttributes(new { id = "DesCaseType_GenApp", disabled = "true" }))
-                }
-                else
-                {
-                    @(Html.Kendo().CheckBoxFor(m => m.GenApp).HtmlAttributes(new { id = "DesCaseType_GenApp" }))
-                }
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col-md-4 col-lg-3 col-xl-2">
-                <div class="form-group float-label">
-                    <label for="DesCtryFieldID">@Localizer["Des. Country Field ID"]</label>
-                    @if (isReadOnly)
-                    {
-                        <input type="number" class="form-control form-control-sm" asp-for="DesCtryFieldID" readonly />
-                    }
-                    else
-                    {
-                        @(Html.Kendo().NumericTextBox<int>().Name("DesCtryFieldID").Format("0").Value(Model.DesCtryFieldID ?? 0).HtmlAttributes(new { style = "width: 100%" }))
-                        <span asp-validation-for="DesCtryFieldID"></span>
-                    }
-                </div>
-            </div>
-        </div>
     </div>
-
-    @if (!addMode)
-    {
-        <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
-        </div>
-    }
 </form>

@@ -12,6 +12,7 @@ using R10.Core.Interfaces;
 using R10.Web.Areas.Shared.ViewModels;
 using R10.Web.Extensions;
 using R10.Web.Extensions.ActionResults;
+using R10.Core.Helpers;
 using R10.Web.Helpers;
 using R10.Web.Interfaces;
 using R10.Web.Models;
@@ -209,7 +210,12 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(entity, entity.CDueId);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+                entity.UserID = userName;
+                entity.LastUpdate = now;
+                if (entity.CDueId <= 0)
+                    entity.DateCreated = now;
 
                 if (entity.CDueId > 0)
                     await _auxService.Update(entity);
@@ -224,14 +230,13 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await GetById(id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _auxService.Delete(entity);
 
             return Ok();

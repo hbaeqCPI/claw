@@ -9,8 +9,7 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatDesCaseTypeFields> builder)
         {
             builder.ToTable("tblPatDesCaseTypeFields");
-            builder.HasKey(d => d.KeyID);
-            builder.Property(d => d.KeyID).HasColumnName("keyID");
+            builder.HasNoKey();
         }
     }
 }

@@ -48,7 +48,6 @@ namespace R10.Infrastructure.Data
 
         public DbSet<PatDesignatedCountry> PatDesignatedCountries { get; set; }
 
-        public DbSet<PatDisclosureStatus> PatDisclosureStatuses { get; set; }
         public DbSet<PatCountry> PatCountries { get; set; }
         public DbSet<PatArea> PatAreas { get; set; }
         public DbSet<PatAreaCountry> PatAreasCountries { get; set; }
@@ -57,23 +56,24 @@ namespace R10.Infrastructure.Data
         public DbSet<PatCountryExp> PatCountryExpirations { get; set; }
         public DbSet<PatCaseType> PatCaseTypes { get; set; }
         public DbSet<PatActionType> PatActionTypes { get; set; }
-        public DbSet<PatActionParameter> PatActionParameters { get; set; }
-        public DbSet<PatApplicationStatus> ApplicationStatuses { get; set; }
         public DbSet<PatDesignationDTO> PatDesignationDTO { get; set; }
         public DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
         public DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
 
-        public DbSet<PatWorkflow> PatWorkflows { get; set; }
-        public DbSet<PatWorkflowAction> PatWorkflowActions { get; set; }
-        public DbSet<PatWorkflowActionParameter> PatWorkflowActionParameters { get; set; }
         public DbSet<LookupDescDTO> PatActionTypeDTO { get; set; }
-        public DbSet<PatScoreCategory> PatScoreCategories { get; set; }
-        public DbSet<PatScore> PatScores { get; set; }
-        public DbSet<PatScoreDTO> PatScoreDTO { get; set; }
-        public DbSet<PatAverageScoreDTO> PatAverageScoreDTO { get; set; }
 
         public DbSet<PatCountryLawUpdate> PatCountryLawUpdate { get; set; }
         public DbSet<PatIndicator> PatIndicators { get; set; }
+        public DbSet<PatAreaDelete> PatAreaDeletes { get; set; }
+        public DbSet<PatAreaCountryDelete> PatAreaCountryDeletes { get; set; }
+        public DbSet<PatCountryExpDelete> PatCountryExpDeletes { get; set; }
+        public DbSet<PatCountryLawExt> PatCountryLawExts { get; set; }
+        public DbSet<PatDesCaseTypeExt> PatDesCaseTypeExts { get; set; }
+        public DbSet<PatDesCaseTypeDelete> PatDesCaseTypeDeletes { get; set; }
+        public DbSet<PatDesCaseTypeDeleteExt> PatDesCaseTypeDeleteExts { get; set; }
+        public DbSet<PatDesCaseTypeFieldsExt> PatDesCaseTypeFieldsExts { get; set; }
+        public DbSet<PatDesCaseTypeFieldsDelete> PatDesCaseTypeFieldsDeletes { get; set; }
+        public DbSet<PatDesCaseTypeFieldsDeleteExt> PatDesCaseTypeFieldsDeleteExts { get; set; }
 
         #endregion
 
@@ -88,22 +88,23 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkCaseType> TmkCaseTypes { get; set; }
         public DbSet<TmkDesCaseType> TmkDesCaseTypes { get; set; }
         public DbSet<TmkDesCaseTypeFields> TmkDesCaseTypeFields { get; set; }
-        public DbSet<TmkConflictStatus> TmkConflictStatuses { get; set; }
         public DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         public DbSet<TmkCountryDue> TmkCountryDues { get; set; }
         public DbSet<TmkActionType> TmkActionTypes { get; set; }
-        public DbSet<TmkActionParameter> TmkActionParameters { get; set; }
-
-        public DbSet<TmkConflict> TmkConflicts { get; set; }
         public DbSet<TmkDesignatedCountry> TmkDesignatedCountries { get; set; }
 
         public DbSet<TmkCountryLawUpdate> TmkCountryLawUpdate { get; set; }
-        public DbSet<TmkWorkflow> TmkWorkflows { get; set; }
-        public DbSet<TmkWorkflowAction> TmkWorkflowActions { get; set; }
-        public DbSet<TmkWorkflowActionParameter> TmkWorkflowActionParameters { get; set; }
         public DbSet<LookupDescDTO> TmkActionTypeDTO { get; set; }
         public DbSet<TmkIndicator> TmkIndicators { get; set; }
         public DbSet<TmkStandardGood> TmkStandardGoods { get; set; }
+        public DbSet<TmkAreaDelete> TmkAreaDeletes { get; set; }
+        public DbSet<TmkAreaCountryDelete> TmkAreaCountryDeletes { get; set; }
+        public DbSet<TmkDesCaseTypeExt> TmkDesCaseTypeExts { get; set; }
+        public DbSet<TmkDesCaseTypeDelete> TmkDesCaseTypeDeletes { get; set; }
+        public DbSet<TmkDesCaseTypeDeleteExt> TmkDesCaseTypeDeleteExts { get; set; }
+        public DbSet<TmkDesCaseTypeFieldsExt> TmkDesCaseTypeFieldsExts { get; set; }
+        public DbSet<TmkDesCaseTypeFieldsDelete> TmkDesCaseTypeFieldsDeletes { get; set; }
+        public DbSet<TmkDesCaseTypeFieldsDeleteExt> TmkDesCaseTypeFieldsDeleteExts { get; set; }
 
         #endregion
 
@@ -264,7 +265,7 @@ namespace R10.Infrastructure.Data
 
             #region Patent
             //patent
-            builder.ApplyConfiguration(new PatDisclosureStatusMap());
+            //builder.ApplyConfiguration(new PatDisclosureStatusMap()); // table removed
             builder.ApplyConfiguration(new PatCountryLawMap());
             builder.ApplyConfiguration(new PatCountryDueMap());
             builder.ApplyConfiguration(new PatCountryExpMap());
@@ -272,23 +273,32 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatAreaMap());
             builder.ApplyConfiguration(new PatAreaCountryMap());
             builder.ApplyConfiguration(new PatCaseTypeMap());
-            builder.ApplyConfiguration(new PatApplicationStatusMap());
+            //builder.ApplyConfiguration(new PatApplicationStatusMap()); // table removed
             builder.ApplyConfiguration(new PatDesCaseTypeMap());
             builder.ApplyConfiguration(new PatDesCaseTypeFieldsMap());
-            builder.ApplyConfiguration(new PatDesignatedCountryMap());
+            //builder.ApplyConfiguration(new PatDesignatedCountryMap()); // table removed
             builder.ApplyConfiguration(new PatActionTypeMap());
-            builder.ApplyConfiguration(new PatActionParameterMap());
 
             builder.ApplyConfiguration(new PatCountryLawUpdateMap());
 
-            builder.ApplyConfiguration(new PatWorkflowMap());
-            builder.ApplyConfiguration(new PatWorkflowActionMap());
-            builder.ApplyConfiguration(new PatWorkflowActionParameterMap());
-            builder.ApplyConfiguration(new PatScoreCategoryMap());
-            builder.ApplyConfiguration(new PatScoreMap());
-            builder.ApplyConfiguration(new PatScoreDTOMap());
-            builder.ApplyConfiguration(new PatAverageScoreDTOMap());
+            //builder.ApplyConfiguration(new PatWorkflowMap()); // table removed
+            //builder.ApplyConfiguration(new PatWorkflowActionMap()); // table removed
+            //builder.ApplyConfiguration(new PatWorkflowActionParameterMap()); // table removed
+            //builder.ApplyConfiguration(new PatScoreCategoryMap()); // table removed
+            //builder.ApplyConfiguration(new PatScoreMap()); // table removed
+            //builder.ApplyConfiguration(new PatScoreDTOMap()); // table removed
+            //builder.ApplyConfiguration(new PatAverageScoreDTOMap()); // table removed
             builder.ApplyConfiguration(new PatIndicatorMap());
+            builder.ApplyConfiguration(new PatAreaDeleteMap());
+            builder.ApplyConfiguration(new PatAreaCountryDeleteMap());
+            builder.ApplyConfiguration(new PatCountryExpDeleteMap());
+            builder.ApplyConfiguration(new PatCountryLawExtMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeExtMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeDeleteMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeDeleteExtMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeFieldsExtMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeFieldsDeleteMap());
+            builder.ApplyConfiguration(new PatDesCaseTypeFieldsDeleteExtMap());
 
             #endregion
 
@@ -300,20 +310,27 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkCaseTypeMap());
             builder.ApplyConfiguration(new TmkDesCaseTypeMap());
             builder.ApplyConfiguration(new TmkDesCaseTypeFieldsMap());
-            builder.ApplyConfiguration(new TmkConflictStatusMap());
+            //builder.ApplyConfiguration(new TmkConflictStatusMap()); // table removed
             builder.ApplyConfiguration(new TmkCountryLawMap());
             builder.ApplyConfiguration(new TmkCountryDueMap());
             builder.ApplyConfiguration(new TmkActionTypeMap());
-            builder.ApplyConfiguration(new TmkActionParameterMap());
-            builder.ApplyConfiguration(new TmkConflictMap());
-            builder.ApplyConfiguration(new TmkDesignatedCountryMap());
+            //builder.ApplyConfiguration(new TmkConflictMap()); // table removed
+            //builder.ApplyConfiguration(new TmkDesignatedCountryMap()); // table removed
 
             builder.ApplyConfiguration(new TmkCountryLawUpdateMap());
-            builder.ApplyConfiguration(new TmkWorkflowMap());
-            builder.ApplyConfiguration(new TmkWorkflowActionMap());
-            builder.ApplyConfiguration(new TmkWorkflowActionParameterMap());
+            //builder.ApplyConfiguration(new TmkWorkflowMap()); // table removed
+            //builder.ApplyConfiguration(new TmkWorkflowActionMap()); // table removed
+            //builder.ApplyConfiguration(new TmkWorkflowActionParameterMap()); // table removed
             builder.ApplyConfiguration(new TmkIndicatorMap());
             builder.ApplyConfiguration(new TmkStandardGoodMap());
+            builder.ApplyConfiguration(new TmkAreaDeleteMap());
+            builder.ApplyConfiguration(new TmkAreaCountryDeleteMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeExtMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeDeleteMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeDeleteExtMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeFieldsExtMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeFieldsDeleteMap());
+            builder.ApplyConfiguration(new TmkDesCaseTypeFieldsDeleteExtMap());
 
             #endregion
 

@@ -1,0 +1,103 @@
+@model PatCountryExpDelete
+@using R10.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+
+<form cpi-detail-form action="Save">
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="CExpId"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CExpId" />
+                    <span asp-validation-for="CExpId"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Country" />
+                    <span asp-validation-for="Country"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="CaseType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" />
+                    <span asp-validation-for="CaseType"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Type"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Type" />
+                    <span asp-validation-for="Type"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="BasedOn"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="BasedOn" />
+                    <span asp-validation-for="BasedOn"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Yr"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Yr" />
+                    <span asp-validation-for="Yr"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Mo"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Mo" />
+                    <span asp-validation-for="Mo"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="EffBasedOn"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="EffBasedOn" />
+                    <span asp-validation-for="EffBasedOn"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="EffStartDate"></label>
+                    @(Html.Kendo().DateTimePicker().Name("EffStartDate").Value(Model.EffStartDate).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="EffStartDate"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="EffEndDate"></label>
+                    @(Html.Kendo().DateTimePicker().Name("EffEndDate").Value(Model.EffEndDate).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="EffEndDate"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-row mt-3">
+        <div class="col">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,84 @@
+@model PatDesCaseTypeFieldsExt
+@using R10.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+
+<form cpi-detail-form action="Save">
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="DesCaseType"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" />
+                    <span asp-validation-for="DesCaseType"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="FromField"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="FromField" />
+                    <span asp-validation-for="FromField"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="ToField"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="ToField" />
+                    <span asp-validation-for="ToField"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="k-checkbox" asp-for="InUse">
+                    <label class="k-checkbox-label" asp-for="InUse"></label>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="CreatedBy"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CreatedBy" />
+                    <span asp-validation-for="CreatedBy"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="UpdatedBy"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="UpdatedBy" />
+                    <span asp-validation-for="UpdatedBy"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="DateCreated"></label>
+                    @(Html.Kendo().DateTimePicker().Name("DateCreated").Value(Model.DateCreated).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="DateCreated"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="LastUpdate"></label>
+                    @(Html.Kendo().DateTimePicker().Name("LastUpdate").Value(Model.LastUpdate).Format("dd-MMM-yyyy HH:mm"))
+                    <span asp-validation-for="LastUpdate"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-row mt-3">
+        <div class="col">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
+        </div>
+    </div>
+</form>

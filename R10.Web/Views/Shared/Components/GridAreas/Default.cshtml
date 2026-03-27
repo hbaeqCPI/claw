@@ -22,7 +22,7 @@
             .Name("areasGrid")
             .Columns(columns =>
             {
-                columns.Bound(ca => ca.AreaID)
+                columns.Bound(ca => ca.Area)
                     .Width(400)
                     .ClientTemplate(areaTemplate)
                     .EditorTemplateName("AreaDropdown")
@@ -42,7 +42,7 @@
                     //})
                     .EditorViewData(new { id = "AreasGrid_Area", area = Model.Area })
                     .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
-                columns.Bound(ca => ca.AreaDescription)
+                columns.Bound(ca => ca.Country)
                     .HtmlAttributes(new { @class = "d-none d-sm-table-cell name-field" })
                     .HeaderHtmlAttributes(new { @class = "d-none d-sm-table-cell" });
                 columns.Command(command =>
@@ -84,7 +84,7 @@
             .ServerOperation(false)
             .Model(model =>
             {
-                model.Id(ca => ca.AreaCtryId);
+                model.Id(ca => ca.Area);
                 model.Field(ca => ca.Country).DefaultValue(Model.Country);
                 // model.Field(ca => ca.Area).DefaultValue(new AreaLookupViewModel() { Area = "" });
                 // model.Field(ca => ca.Area.Description).Editable(false);

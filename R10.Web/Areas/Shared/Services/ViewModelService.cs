@@ -55,12 +55,24 @@ namespace R10.Web.Services
             else
                 list = list.OrderBy(ExpressionHelper.GetPropertyExpression<T>(defaultSortOrder));
 
-            var ids = await list.Select(ExpressionHelper.GetIntPropertyExpression<T>(idProperty)).ToArrayAsync();
+            int[] ids;
+            int total;
+            try
+            {
+                ids = await list.Select(ExpressionHelper.GetIntPropertyExpression<T>(idProperty)).ToArrayAsync();
+                total = ids.Length;
+            }
+            catch
+            {
+                // Fallback for non-int key properties (e.g., string keys)
+                total = await list.CountAsync();
+                ids = Array.Empty<int>();
+            }
 
             return  new CPiDataSourceResult()
             {
                 Data = await list.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
-                Total = ids.Length,
+                Total = total,
                 Ids = ids
             };
         }

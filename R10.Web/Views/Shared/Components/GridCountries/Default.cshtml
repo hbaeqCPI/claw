@@ -25,7 +25,7 @@
                                         .Editable($"{pageName}.isGridColumnEditable")
                                         .EditorViewData(new { id = "CountriesGrid_Country", area = Model.Area })
                                         .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
-                columns.Bound(ca => ca.CountryLookup.CountryName)
+                columns.Bound(ca => ca.Country).Title("Country Name")
                     .HtmlAttributes(new { @class = "d-none d-sm-table-cell name-field" })
                     .HeaderHtmlAttributes(new { @class = "d-none d-sm-table-cell" });
                 columns.Command(command =>
@@ -64,11 +64,9 @@
             .ServerOperation(false)
             .Model(model =>
             {
-                model.Id(ca => ca.AreaCtryId);
-                model.Field(ca => ca.CountryLookup).DefaultValue(new CountryLookupViewModel { CountryID = 0, Country = "", CountryName = "" });
-                model.Field(ca => ca.CountryLookup.CountryName).Editable(false);
+                model.Id(ca => ca.Country);
             })
-            .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentId}'}}"))
+            .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
             .Update(update => update.Action("CountriesUpdate", "Area"))
             .Destroy(destroy => destroy.Action("CountryDelete", "Area"))
             .Events(events =>

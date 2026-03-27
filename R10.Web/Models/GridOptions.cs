@@ -8,6 +8,7 @@ namespace R10.Web.Models
     public class GridOptions
     {
         public int ParentId { get; set; }
+        public string ParentCode { get; set; }
         public string Controller { get; set; }
         public string Area { get; set; }
         public DetailPagePermission Permission { get; set; }

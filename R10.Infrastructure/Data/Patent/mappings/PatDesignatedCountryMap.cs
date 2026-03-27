@@ -9,8 +9,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatDesignatedCountry> builder)
         {
             builder.ToTable("tblPatDesignatedCountry");
-            builder.HasOne(h => h.Country).WithMany(c => c.PatDesignatedCountries).HasPrincipalKey(c => c.Country)
-                .HasForeignKey(h => h.DesCountry);
+            // builder.HasOne(h => h.Country).WithMany().HasPrincipalKey(c => c.Country)
+            //     .HasForeignKey(h => h.DesCountry); // Removed: Country nav property no longer exists
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using System.Reflection
 @model PatCountryDue
 @inject ISystemSettings<PatSetting> Settings
@@ -22,7 +22,6 @@
         .ToList();
 
     var labelCanGenerate = Localizer["Generate this Action?"].ToString();
-    var labelMultipleBasedOn = Localizer["If the action is conditional on two legal dates, check this box. This means there is a corresponding action in the law file with a different based on date. When this happens, the system will prompt you to select which action to keep in the application."].ToString();
 
     var basedOnOptions = typeof(BasedOnOption).GetPublicConstantValues<string>().OrderBy(o => o);
     bool copyLawAction = ViewBag.CopyLawAction ?? false;
@@ -41,19 +40,13 @@
                 </div>
                 <div class="modal-body py-1">
                     <div class="container-fluid">
-                        <input type="hidden" asp-for="CountryLawID" />
                         <input type="hidden" asp-for="CDueId" value="@Model.CDueId" /> @* because of weird behavior (copy, non zero value)*@
                         @*<input type="hidden" asp-for="CPIAction" />*@
                         <input type="hidden" asp-for="Country" />
                         <input type="hidden" asp-for="CaseType" />
                         <input type="hidden" asp-for="OldFollowupAction" />
-                        <input type="hidden" asp-for="ParentTStamp" />
                         <input type="checkbox" asp-for="CPIAction" class="d-none" />
 
-                        @if (Model.CDueId > 0)
-                        {
-                            <input type="hidden" name="tStamp" value="@Convert.ToBase64String(Model.tStamp)" />
-                        }
                         <div class="row">
                             <div class="col-12 col-md-6">
                             @if (Model.CPIAction)
@@ -63,11 +56,6 @@
                             </div>
                             <div class="col-12 col-md-6">
                                 @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 pt-2 pb-2">
-                                <span class="k-checkbox-label">@(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn))@labelMultipleBasedOn</span>
                             </div>
                         </div>
                         <div class="row">
@@ -143,18 +131,14 @@
                                     <label asp-for="Recurring"></label>
                                     @if (Model.CPIAction)
                                     {
-                                        @*<input type="text" class="form-control form-control-sm" asp-for="RecurringDesc" readonly />*@
                                         <input type="text" class="form-control form-control-sm" value="@(((RecurringOption)Model.Recurring).GetDisplayName())" disabled />
                                     }
                                     else
                                     {
-                                        @*@await Component.InvokeAsync("ComboBox",
-                                new {name = "Recurring", action = "GetRecurringOptions", controller = "CountryLaw", defaultValue= Model.Recurring.ToString(), defaultText = CountryLawService.GetRecurringDesc(Model.Recurring), valueProperty = "Value", textProperty = "Text"})*@
-
                                         @(Html.Kendo().ComboBox()
                                                         .Name("Recurring")
-                                                        .Text(((RecurringOption)(Model.Recurring ?? 0)).GetDisplayName())
-                                                        .Value((Model.Recurring ?? 0).ToString())
+                                                        .Text(((RecurringOption)Model.Recurring).GetDisplayName())
+                                                        .Value(Model.Recurring.ToString())
                                                         .DataTextField("Text")
                                                         .DataValueField("Value")
                                                         .BindTo(Html.GetEnumSelectList<RecurringOption>())
@@ -320,7 +304,7 @@
                 @if (Model.CDueId > 0)
                 {
                     <div class="content-stamp">
-                        <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+                        <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate" t-stamp="null"></vc:record-stamps>
                     </div>
                 }
                 <div class="modal-footer">
@@ -331,9 +315,3 @@
         </div>
     </div>
 </div>
-
-
-
-
-
-

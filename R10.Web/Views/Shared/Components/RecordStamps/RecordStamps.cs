@@ -14,15 +14,15 @@ namespace R10.Web.Views.Shared.Components.RecordStamps
         {
         }
 
-        public IViewComponentResult Invoke(string createdBy, DateTime? dateCreated, string updatedBy, DateTime? lastUpdate, byte[] tStamp)
+        public IViewComponentResult Invoke(string createdBy, DateTime? dateCreated, string updatedBy, DateTime? lastUpdate, byte[] tStamp = null)
         {
             var model = new RecordStampsEntity
             {
-                CreatedBy = createdBy,                
+                CreatedBy = createdBy,
                 DateCreated = dateCreated,
                 UpdatedBy = updatedBy,
                 LastUpdate = lastUpdate,
-                tStamp = Convert.ToBase64String(tStamp)
+                tStamp = tStamp != null ? Convert.ToBase64String(tStamp) : null
             };
             return View(model);
         }

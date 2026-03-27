@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace R10.Core.Entities.Patent
 {
@@ -47,9 +44,6 @@ namespace R10.Core.Entities.Patent
 
         [NotMapped]
         public string? CountryName { get; set; }
-
-        public PatCountry? Country { get; set; }
-
     }
 }
 

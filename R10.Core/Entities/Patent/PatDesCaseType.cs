@@ -1,25 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace R10.Core.Entities.Patent
 {
-
-    public class PatDesCaseType:BaseEntity
+    public class PatDesCaseType
     {
-        [Key]
-        public int DesCaseTypeID { get; set; }
-        
-        [StringLength(5)]
+        [StringLength(10)]
         public string? IntlCode { get; set; }
 
         [StringLength(3)]
         public string? CaseType { get; set; }
 
         [StringLength(5)]
-        [Display(Name="Country")]
+        [Display(Name = "Country")]
         [Required]
         public string? DesCountry { get; set; }
 
@@ -29,23 +22,10 @@ namespace R10.Core.Entities.Patent
         public string? DesCaseType { get; set; }
 
         [Display(Name = "Default?")]
-        public bool DefaultCaseType { get; set; }
-        public int? DesCtryFieldID { get; set; }
+        [Column("Default")]
+        public bool Default { get; set; }
 
-        [Display(Name = "Generate App?")]
-        public bool? GenApp { get; set; }
-
-        public PatCountry? ParentCountry { get; set; }
-        public PatCountry? ChildCountry { get; set; }
-
-        public PatCaseType? ParentCaseType{ get; set; }
-        public PatCaseType? ChildCaseType { get; set; }
-
-        [NotMapped]
-        public int CountryLawID { get; set; }
         [NotMapped]
         public byte[]? ParentTStamp { get; set; }
-
-        public PatCountryLaw? PatCountryLaw { get; set; }
     }
 }

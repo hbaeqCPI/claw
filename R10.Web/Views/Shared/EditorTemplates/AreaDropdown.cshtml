@@ -1,4 +1,4 @@
-﻿@model int
+﻿@model string
 @inject IStringLocalizer<SharedResource> Localizer
 
 @{
@@ -17,7 +17,7 @@
 
 @(Html.Kendo().DropDownListFor(m => m)
                 .DataTextField("Area")
-                .DataValueField("AreaID")
+                .DataValueField("Area")
                 .AutoBind(true)
                 .AutoWidth(true)
                 .DataSource(source =>

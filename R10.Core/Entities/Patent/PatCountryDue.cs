@@ -1,30 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Patent
 {
-    public class PatCountryDue: BaseEntity
+    public class PatCountryDue : ClawBaseEntity
     {
         [Key]
         public int CDueId { get; set; }
 
-        public int CountryLawID { get; set; }
-
         [Required]
         [StringLength(5)]
-        public string Country { get; set; }
+        public string? Country { get; set; }
 
         [Required]
         [StringLength(3)]
-        public string CaseType { get; set; }
+        public string? CaseType { get; set; }
 
-        [StringLength(60)]
-        [Display(Name="Action Type")]
+        [StringLength(30)]
+        [Display(Name = "Action Type")]
         public string? ActionType { get; set; }
 
-        [StringLength(60)]
+        [StringLength(30)]
         [Required(ErrorMessage = "The Action Due field is required.")]
         [Display(Name = "Action Due")]
         public string? ActionDue { get; set; }
@@ -48,45 +44,32 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Indicator")]
         public string? Indicator { get; set; }
 
-        [Required]
         [Display(Name = "Recurring")]
-        public short? Recurring { get; set; } = 0;
+        public float Recurring { get; set; }
 
         [StringLength(15)]
-        [Display(Name = "Effective Period for")]
+        [Display(Name = "Eff Based On")]
         public string? EffBasedOn { get; set; }
 
-        [Display(Name = "From")]
+        [Display(Name = "Eff Start Date")]
         public DateTime? EffStartDate { get; set; }
 
-        [Display(Name = "To")]
+        [Display(Name = "Eff End Date")]
         public DateTime? EffEndDate { get; set; }
 
         public bool CPIAction { get; set; }
 
-        [Display(Name = "Generate?")]
+        [Display(Name = "Calculate")]
         public bool Calculate { get; set; }
 
         public int? CPIPermanentID { get; set; }
-        
+
         [NotMapped]
         [Display(Name = "Follow up Action")]
         public string? FollowupAction { get; set; }
 
         [NotMapped]
         public string? OldFollowupAction { get; set; }
-
-        //not needed
-        //use RecurringOption enum for Recurring values
-        //use GetDisplayName enum extension to display Recurring description
-        //[NotMapped]
-        //public string? RecurringDesc { get; set; }
-
-        [NotMapped]
-        public byte[]? ParentTStamp { get; set; }
-        
-        public PatCountryLaw? PatCountryLaw { get; set; }
-        public bool MultipleBasedOn { get; set; }
 
     }
 
@@ -110,5 +93,4 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Based on Due Date")]
         BasedOnDueDate = -1
     }
-    
 }

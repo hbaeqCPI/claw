@@ -35,7 +35,7 @@ namespace R10.Web.Areas.Trademark.Controllers
     {
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<TmkActionType> _viewModelService;
-        private readonly IParentEntityService<TmkActionType, TmkActionParameter> _actionTypeService;
+        private readonly IEntityService<TmkActionType> _actionTypeService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "tmkActionTypeDetail";
@@ -43,7 +43,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         public ActionTypeController(
             IAuthorizationService authService,
             IViewModelService<TmkActionType> viewModelService,
-            IParentEntityService<TmkActionType, TmkActionParameter> actionTypeService,
+            IEntityService<TmkActionType> actionTypeService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
@@ -190,14 +190,13 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.ActionTypeCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(int id)
         {
             var entity = await _actionTypeService.GetByIdAsync(id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _actionTypeService.Delete(entity);
 
             return Ok();
@@ -215,24 +214,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 if (tmkActionType.ActionTypeID > 0)
                     await _actionTypeService.Update(tmkActionType);
                 else {
-                    if (!string.IsNullOrEmpty(tmkActionType.CopyOptions))
-                    {
-                        var copyOptions = JsonConvert.DeserializeObject<ActionTypeCopyViewModel>(tmkActionType.CopyOptions);
-                        if (copyOptions.CopyParameters)
-                        {
-                            var parameters = await _actionTypeService.ChildService.QueryableList.AsNoTracking().Where(p => p.ActionTypeID == copyOptions.ActionTypeId).ToListAsync();
-                            parameters.Each(p => {
-                                p.ActionTypeID = 0;
-                                p.ActParamId = 0;
-                                p.CreatedBy = tmkActionType.CreatedBy;
-                                p.UpdatedBy = tmkActionType.UpdatedBy;
-                                p.DateCreated = tmkActionType.DateCreated;
-                                p.LastUpdate = tmkActionType.LastUpdate;
-                            });
-                            tmkActionType.ActionParameters = new List<TmkActionParameter>();
-                            tmkActionType.ActionParameters.AddRange(parameters);
-                        }
-                    }
                     await _actionTypeService.Add(tmkActionType);
                 }
                     
@@ -260,7 +241,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (TmkActionType == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = TmkActionType.CreatedBy, dateCreated = TmkActionType.DateCreated, updatedBy = TmkActionType.UpdatedBy, lastUpdate = TmkActionType.LastUpdate, tStamp = TmkActionType.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = TmkActionType.CreatedBy, dateCreated = TmkActionType.DateCreated, updatedBy = TmkActionType.UpdatedBy, lastUpdate = TmkActionType.LastUpdate });
         }
 
         [HttpGet()]
@@ -351,48 +332,6 @@ namespace R10.Web.Areas.Trademark.Controllers
         //    return Json(list);
         //}
 
-
-        public async Task<IActionResult> ActionParametersRead([DataSourceRequest] DataSourceRequest request, int actionTypeId)
-        {
-            var result = (await _actionTypeService.ChildService.QueryableList.Where(p => p.ActionTypeID == actionTypeId).ToListAsync()).ToDataSourceResult(request);
-            return Json(result);
-        }
-
-        [Authorize(Policy = TrademarkAuthorizationPolicy.ActionTypeModify)]
-        public async Task<IActionResult> ActionParametersUpdate(int actionTypeId, 
-            [Bind(Prefix = "updated")]IEnumerable<TmkActionParameter> updated,
-            [Bind(Prefix = "new")]IEnumerable<TmkActionParameter> added, 
-            [Bind(Prefix = "deleted")]IEnumerable<TmkActionParameter> deleted)
-        {
-            //no delete validation
-            var canDelete = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.ActionTypeCanDelete)).Succeeded;
-            if (deleted.Any() && !canDelete)
-                return Forbid("Not authorized.");
-
-            if (updated.Any() || added.Any() || deleted.Any())
-            {
-                if (!ModelState.IsValid)
-                    return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-                await _actionTypeService.ChildService.Update(actionTypeId, User.GetUserName(), updated, added, deleted);
-                var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
-                _localizer["Action Parameter has been saved successfully."].ToString() :
-                _localizer["Action Parameters have been saved successfully"].ToString();
-                return Ok(new { success = success });
-            }
-            return Ok();
-        }
-
-        [Authorize(Policy = TrademarkAuthorizationPolicy.ActionTypeCanDelete)]
-        public async Task<IActionResult> ActionParametersDelete([Bind(Prefix = "deleted")] TmkActionParameter deleted)
-        {
-            if (deleted.ActParamId > 0)
-            {
-                await _actionTypeService.ChildService.Update(deleted.ActionTypeID, User.GetUserName(), new List<TmkActionParameter>(), new List<TmkActionParameter>(), new List<TmkActionParameter>() { deleted });
-                return Ok(new { success = _localizer["Action Parameter has been deleted successfully."].ToString() });
-            }
-            return Ok();
-        }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {

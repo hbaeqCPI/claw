@@ -106,7 +106,7 @@ namespace R10.Web.ViewComponents
                 Area = area,
                 Action = string.IsNullOrEmpty(action) ? "GetAreaList" : action,
                 DataTextProperty = "Area",
-                DataValueProperty = "AreaID",
+                DataValueProperty = "Area",
                 DefaultValue = defaultValue,
                 HeaderTemplate = ComboBoxHelper.GetHeaderTemplate(areaLabel, areaNameLabel),
                 ItemTemplate = ComboBoxHelper.GetItemTemplate("Area", "Description"),

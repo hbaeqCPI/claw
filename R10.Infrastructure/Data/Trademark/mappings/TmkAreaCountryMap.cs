@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using R10.Core.Entities.Trademark;
 
@@ -9,7 +9,13 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkAreaCountry> builder)
         {
             builder.ToTable("tblTmkAreaCountry");
-            builder.HasIndex(a => new { a.AreaID, a.Country }).IsUnique();
+            builder.HasNoKey();
+            builder.Ignore(e => e.Area);
+
+            builder.Ignore(e => e.CreatedBy);
+            builder.Ignore(e => e.UpdatedBy);
+            builder.Ignore(e => e.DateCreated);
+            builder.Ignore(e => e.LastUpdate);
         }
     }
 }

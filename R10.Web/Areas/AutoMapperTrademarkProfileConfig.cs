@@ -12,40 +12,37 @@ namespace R10.Web.Areas
         {
             CreateMap<TmkActionType, ActionTypeSearchResultViewModel>();
             CreateMap<TmkActionType, ActionTypeViewModel>()
-                .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName))
+                .ForMember(vm => vm.CountryName, domain => domain.Ignore())
                 .ForMember(vm => vm.ResponsibleCode, domain => domain.Ignore())
                 .ForMember(vm => vm.ResponsibleName, domain => domain.Ignore());
 
             CreateMap<TmkCountryLaw, TmkCountryLawSearchViewModel>()
-                .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName));
+                .ForMember(vm => vm.CountryName, domain => domain.Ignore());
 
             CreateMap<TmkCountryLaw, TmkCountryLawDetailViewModel>()
-                .ForMember(vm => vm.CountryName, domain => domain.MapFrom(d => d.TmkCountry.CountryName))
+                .ForMember(vm => vm.CountryName, domain => domain.Ignore())
                 .ForMember(vm => vm.AgentCode, domain => domain.Ignore())
                 .ForMember(vm => vm.AgentName, domain => domain.Ignore())
-                .ForMember(vm => vm.CaseTypeDescription, domain => domain.MapFrom(d => d.TmkCaseType != null ? d.TmkCaseType.Description : null))
-                .ForMember(vm => vm.IsCPiAction, domain => domain.MapFrom(d => d.TmkCountryDues != null && d.TmkCountryDues.Any(cd => cd.CPIAction)))
-                .ForMember(vm => vm.TmkCaseType, opt => opt.Ignore())
-                .ForMember(vm => vm.TmkCountry, opt => opt.Ignore())
+                .ForMember(vm => vm.CaseTypeDescription, domain => domain.Ignore())
+                .ForMember(vm => vm.IsCPiAction, domain => domain.Ignore())
                 .ForMember(sm => sm.TmkCountryDues, opt => opt.Ignore());
 
             CreateMap<TmkCountryDue, CountryLawRetroParam>();
 
             CreateMap<TmkDesCaseType, TmkDesCaseTypeViewModel>()
-                .ForMember(vm => vm.DesCountryName, domain => domain.MapFrom(d => d.ChildCountry != null ? d.ChildCountry.CountryName : null))
-                .ForMember(vm => vm.GenApp, domain => domain.MapFrom(d => d.GenApp ?? false));
+                .ForMember(vm => vm.DesCountryName, domain => domain.Ignore());
 
             CreateMap<TmkStandardGood, TmkStandardGoodListViewModel>()
                 .ForMember(d => d.ClassDesc, o => o.MapFrom(s => s.Class + " - " + s.ClassType));
 
-            CreateMap<TmkCountry, CountryLookupViewModel>();
+            CreateMap<TmkCountry, CountryLookupViewModel>()
+                .ForMember(vm => vm.CountryID, opt => opt.Ignore());
             CreateMap<TmkAreaCountry, CountryAreaViewModel>()
                 .ForMember(vm => vm.Area, domain => domain.MapFrom(d => d.Area != null ? d.Area.Area : null))
                 .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null))
-                .ForMember(vm => vm.CountryLookup, domain => domain.MapFrom(d => d.AreaCountry));
+                .ForMember(vm => vm.CountryLookup, domain => domain.Ignore());
             CreateMap<CountryAreaViewModel, TmkAreaCountry>()
-                .ForMember(m => m.Area, opt => opt.Ignore())
-                .ForMember(m => m.AreaCountry, opt => opt.Ignore());
+                .ForMember(m => m.Area, opt => opt.Ignore());
         }
     }
 }

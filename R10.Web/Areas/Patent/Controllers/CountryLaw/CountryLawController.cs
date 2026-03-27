@@ -38,11 +38,12 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<PatCountryLaw> _countryLawViewModelService;
         private readonly IPatCountryLawService _countryLawService;
-        private readonly IParentEntityService<PatCountry, PatAreaCountry> _patCountryService;
+        private readonly IEntityService<PatCountry> _patCountryService;
         private readonly IStringLocalizer<CountryLawResource> _localizer;
         private readonly ISystemSettings<PatSetting> _settings;
         private readonly IReportService _reportService;
         private readonly IWebLinksService _webLinksService;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "countryLawDetailsView";
 
@@ -50,11 +51,12 @@ namespace R10.Web.Areas.Patent.Controllers
             IAuthorizationService authService,
             IPatCountryLawService countryLawService,
             IViewModelService<PatCountryLaw> countryLawViewModelService,
-            IParentEntityService<PatCountry, PatAreaCountry> patCountryService,
+            IEntityService<PatCountry> patCountryService,
             IStringLocalizer<CountryLawResource> localizer,
             IReportService reportService,
             ISystemSettings<PatSetting> settings,
-            IWebLinksService webLinksService
+            IWebLinksService webLinksService,
+            IApplicationDbContext repository
             )
         {
             _authService = authService;
@@ -65,6 +67,7 @@ namespace R10.Web.Areas.Patent.Controllers
             _settings = settings;
             _reportService = reportService;
             _webLinksService = webLinksService;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -129,11 +132,11 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         [HttpGet()]
-        public IActionResult DetailLink(int? id)
+        public IActionResult DetailLink(string country, string caseType)
         {
-            if (id > 0)
+            if (!string.IsNullOrEmpty(country) && !string.IsNullOrEmpty(caseType))
             {
-                return RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true });
+                return RedirectToAction(nameof(Detail), new { country = country, caseType = caseType, singleRecord = true, fromSearch = true });
             }
             else
             {
@@ -141,19 +144,20 @@ namespace R10.Web.Areas.Patent.Controllers
             }
         }
 
-        public async Task<IActionResult> DetailLinkCountryCaseType(string country, string caseType) {
-            var id = 0;
-            var countryLaw = await _countryLawService.PatCountryLaws.Where(c => c.Country == country && c.CaseType == caseType).FirstOrDefaultAsync();
-            if (countryLaw != null)
-                id = countryLaw.CountryLawID;
-            return RedirectToAction(nameof(DetailLink), new { id = id});
+        public IActionResult DetailLinkCountryCaseType(string country, string caseType) {
+            return RedirectToAction(nameof(DetailLink), new { country = country, caseType = caseType });
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string country, string caseType, string systems = "", bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
-            var page = await PrepareEditScreen(id);
+            if (string.IsNullOrEmpty(country) || string.IsNullOrEmpty(caseType))
+                return RedirectToAction("Index");
+
+            var page = await PrepareEditScreen(country, caseType, systems);
             if (page.Detail == null)
             {
+                if (Request.IsAjax())
+                    return new RecordDoesNotExistResult();
                 return RedirectToAction("Index");
             }
 
@@ -163,7 +167,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Country Law Detail"].ToString(),
-                RecordId = detail.CountryLawID,
+                RecordId = 0,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -219,10 +223,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer[$"New Country Law"].ToString(),
-                RecordId = detail.CountryLawID,
+                RecordId = 0,
                 PagePermission = page,
                 Data = detail,
-                FromSearch = fromSearch
+                FromSearch = fromSearch,
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
@@ -246,9 +251,9 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.CountryLawCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(string country, string caseType, string systems = "")
         {
-            var countryLaw = _countryLawService.PatCountryLaws.FirstOrDefault(c => c.CountryLawID == id && c.tStamp == Convert.FromBase64String(tStamp));
+            var countryLaw = _countryLawService.PatCountryLaws.FirstOrDefault(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (countryLaw != null)
             {
                 await _countryLawService.DeleteCountryLaw(countryLaw);
@@ -256,7 +261,7 @@ namespace R10.Web.Areas.Patent.Controllers
             }
             else
                 return BadRequest(_localizer["Unable to perform operation because the record is no longer on file or has been modified by another user."]);
-            
+
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
@@ -265,56 +270,105 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                var overlapError = await CheckSystemsOverlap(countryLaw);
-                if (overlapError != null)
-                    return BadRequest(overlapError);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
 
-                UpdateEntityStamps(countryLaw, countryLaw.CountryLawID);
+                countryLaw.UserID = userName;
+                countryLaw.LastUpdate = now;
+                countryLaw.DefaultAgent ??= "";
+                countryLaw.Remarks ??= "";
+                countryLaw.UserRemarks ??= "";
+                countryLaw.Systems ??= "";
 
-                if (countryLaw.CountryLawID > 0)
-                    await _countryLawService.UpdateCountryLaw(countryLaw);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(countryLaw.Systems))
+                {
+                    return new JsonBadRequest("At least one system must be selected.");
+                }
+
+                // Deduplicate systems within this record
+                if (!string.IsNullOrEmpty(countryLaw.Systems))
+                {
+                    var systems = countryLaw.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase);
+                    countryLaw.Systems = string.Join(",", systems);
+                }
+
+                var isNewRecord = countryLaw.OriginalSystems == "__NEW__" || countryLaw.OriginalSystems == null;
+                var originalSystemsValue = countryLaw.OriginalSystems == "__EMPTY__" ? "" : (countryLaw.OriginalSystems ?? "");
+
+                // Check no individual system is already used under another row with same Country+CaseType
+                if (!string.IsNullOrEmpty(countryLaw.Systems))
+                {
+                    var selectedSystems = countryLaw.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => s.Trim()).ToList();
+
+                    // Get all systems already assigned to this Country+CaseType across ALL rows
+                    var allRows = await _countryLawService.PatCountryLaws.AsNoTracking()
+                        .Where(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType
+                                    && c.Systems != null && c.Systems != "")
+                        .Select(c => c.Systems)
+                        .ToListAsync();
+
+                    // If editing, exclude the original record's systems from "taken" pool
+                    var takenSystems = allRows
+                        .Where(s => isNewRecord || s != originalSystemsValue)
+                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var overlap = selectedSystems.Where(s => takenSystems.Contains(s)).ToList();
+                    if (overlap.Any())
+                    {
+                        return new JsonBadRequest($"System(s) '{string.Join(", ", overlap)}' already assigned to {countryLaw.Country}/{countryLaw.CaseType}.");
+                    }
+                }
+
+                PatCountryLaw existing = null;
+                if (!isNewRecord)
+                {
+                    existing = await _countryLawService.PatCountryLaws
+                        .FirstOrDefaultAsync(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType && c.Systems == originalSystemsValue);
+                }
+
+                if (existing != null)
+                {
+                    // If systems changed, delete old row and insert new (since Systems is part of key)
+                    if (existing.Systems != countryLaw.Systems)
+                    {
+                        await _countryLawService.DeleteCountryLaw(existing);
+                        countryLaw.DateCreated = existing.DateCreated;
+                        await _countryLawService.AddCountryLaw(countryLaw);
+                    }
+                    else
+                    {
+                        countryLaw.DateCreated = existing.DateCreated;
+                        await _countryLawService.UpdateCountryLaw(countryLaw);
+                    }
+                }
                 else
                 {
+                    // Check for exact duplicate before inserting
+                    var exactDupe = await _countryLawService.PatCountryLaws.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType && c.Systems == countryLaw.Systems);
+                    if (exactDupe != null)
+                    {
+                        return new JsonBadRequest($"A record for {countryLaw.Country}/{countryLaw.CaseType} with these systems already exists.");
+                    }
+
+                    countryLaw.DateCreated = now;
                     await _countryLawService.AddCountryLaw(countryLaw);
                     if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
                         await CopyChildData(countryLaw);
                 }
 
-                return Json(countryLaw.CountryLawID);
+                return Json(new { id = 0, country = countryLaw.Country, caseType = countryLaw.CaseType,
+                    redirectUrl = Url.Action("Detail", new { country = countryLaw.Country, caseType = countryLaw.CaseType, systems = countryLaw.Systems, singleRecord = true }) });
             }
             else
             {
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
             }
-        }
-
-        private async Task<string> CheckSystemsOverlap(PatCountryLaw countryLaw)
-        {
-            var existing = await _countryLawService.PatCountryLaws.AsNoTracking()
-                .Where(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType && c.CountryLawID != countryLaw.CountryLawID)
-                .Select(c => new { c.Systems })
-                .ToListAsync();
-
-            if (!existing.Any()) return null;
-
-            var newSystems = ParseSystems(countryLaw.Systems);
-
-            foreach (var ex in existing)
-            {
-                var existingSystems = ParseSystems(ex.Systems);
-                var overlap = newSystems.Intersect(existingSystems).ToList();
-                if (overlap.Any())
-                    return $"System(s) '{string.Join(", ", overlap)}' already assigned to another Country Law record for {countryLaw.Country}/{countryLaw.CaseType}.";
-            }
-
-            return null;
-        }
-
-        private static HashSet<string> ParseSystems(string systems)
-        {
-            if (string.IsNullOrWhiteSpace(systems))
-                return new HashSet<string>();
-            return new HashSet<string>(systems.Split("; ", StringSplitOptions.RemoveEmptyEntries));
         }
 
         private async Task CopyChildData(PatCountryLaw newCountryLaw)
@@ -323,21 +377,22 @@ namespace R10.Web.Areas.Patent.Controllers
             if (copyOptions == null) return;
 
             var userName = User.GetUserName();
+            var srcCountry = copyOptions.SourceCountry ?? copyOptions.Country;
+            var srcCaseType = copyOptions.SourceCaseType ?? copyOptions.CaseType;
             var now = DateTime.Now;
 
             if (copyOptions.CopyLawActions)
             {
-                var sourceDues = await _countryLawService.GetCountryDues(copyOptions.CountryLawID);
+                var sourceDues = await _countryLawService.GetCountryDues(srcCountry, srcCaseType);
+                var maxDueId = await _countryLawService.PatCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0;
                 foreach (var due in sourceDues)
                 {
-                    due.CDueId = 0;
-                    due.CountryLawID = newCountryLaw.CountryLawID;
+                    due.CDueId = ++maxDueId;
                     due.Country = newCountryLaw.Country;
                     due.CaseType = newCountryLaw.CaseType;
                     due.CPIAction = false;
                     due.CPIPermanentID = 0;
-                    due.CreatedBy = userName;
-                    due.UpdatedBy = userName;
+                    due.UserID = userName;
                     due.DateCreated = now;
                     due.LastUpdate = now;
                 }
@@ -346,17 +401,13 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (copyOptions.CopyExpirationTerms)
             {
-                var sourceExps = await _countryLawService.GetCountryExps(copyOptions.CountryLawID);
+                var sourceExps = await _countryLawService.GetCountryExps(srcCountry, srcCaseType);
+                var maxExpId = await _repository.PatCountryExpirations.MaxAsync(e => (int?)e.CExpId) ?? 0;
                 foreach (var exp in sourceExps)
                 {
-                    exp.CExpId = 0;
-                    exp.CountryLawID = newCountryLaw.CountryLawID;
+                    exp.CExpId = ++maxExpId;
                     exp.Country = newCountryLaw.Country;
                     exp.CaseType = newCountryLaw.CaseType;
-                    exp.CreatedBy = userName;
-                    exp.UpdatedBy = userName;
-                    exp.DateCreated = now;
-                    exp.LastUpdate = now;
                 }
                 await _countryLawService.AddChildren(sourceExps);
             }
@@ -364,16 +415,11 @@ namespace R10.Web.Areas.Patent.Controllers
             if (copyOptions.CopyDesignatedCountries)
             {
                 var sourceDesCaseTypes = await _countryLawService.PatDesCaseTypes.AsNoTracking()
-                    .Where(d => d.IntlCode == copyOptions.Country && d.CaseType == copyOptions.CaseType).ToListAsync();
+                    .Where(d => d.IntlCode == srcCountry && d.CaseType == srcCaseType).ToListAsync();
                 foreach (var des in sourceDesCaseTypes)
                 {
-                    des.DesCaseTypeID = 0;
                     des.IntlCode = newCountryLaw.Country;
                     des.CaseType = newCountryLaw.CaseType;
-                    des.CreatedBy = userName;
-                    des.UpdatedBy = userName;
-                    des.DateCreated = now;
-                    des.LastUpdate = now;
                 }
                 await _countryLawService.AddChildren(sourceDesCaseTypes);
             }
@@ -385,9 +431,11 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(countryLaw, countryLaw.CountryLawID);
+                var userName = User.GetUserName();
+                countryLaw.UserID = userName;
+                countryLaw.LastUpdate = DateTime.Now;
                 await _countryLawService.UpdateCountryLawRemarks(countryLaw);
-                return Json(countryLaw.CountryLawID);
+                return Json(new { country = countryLaw.Country, caseType = countryLaw.CaseType });
             }
             else
             {
@@ -396,13 +444,13 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
 
-        public async Task<IActionResult> GetRecordStamps(int id)
+        public async Task<IActionResult> GetRecordStamps(string country, string caseType)
         {
-            var countryLaw = await GetById(id);
+            var countryLaw = await GetByKey(country, caseType);
             if (countryLaw == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = countryLaw.CreatedBy, dateCreated = countryLaw.DateCreated, updatedBy = countryLaw.UpdatedBy, lastUpdate = countryLaw.LastUpdate, tStamp = countryLaw.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = countryLaw.UserID, dateCreated = countryLaw.DateCreated, updatedBy = countryLaw.UserID, lastUpdate = countryLaw.LastUpdate });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
@@ -412,8 +460,8 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetCountryList(string property, string text, FilterType filterType)
         {
-            var countries = _patCountryService.QueryableList;
-            countries = countries.Where(c => c.PatCountryLaws.Any());
+            var countryLawCountries = _countryLawService.PatCountryLaws.Select(cl => cl.Country).Distinct();
+            var countries = _patCountryService.QueryableList.Where(c => countryLawCountries.Contains(c.Country));
             countries = QueryHelper.BuildCriteria(countries, property, text, filterType);
             var list = await countries.Select(c => new { Country = c.Country, CountryName = c.CountryName }).OrderBy(c => c.Country).ToListAsync();
             return Json(list);
@@ -421,10 +469,20 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetCaseTypeList(string property, string text, FilterType filterType)
         {
-            var caseTypes = _countryLawService.PatCaseTypes.Where(c => c.CaseTypeCountryLaws.Any());
+            var clCaseTypes = _countryLawService.PatCountryLaws.Select(cl => cl.CaseType).Distinct();
+            var caseTypes = _countryLawService.PatCaseTypes.Where(c => clCaseTypes.Contains(c.CaseType));
             caseTypes = QueryHelper.BuildCriteria(caseTypes, property, text, filterType);
             var list = await caseTypes.Select(c => new { CaseType = c.CaseType, Description = c.Description }).OrderBy(c => c.CaseType).ToListAsync();
             return Json(list);
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
         }
 
         //not needed
@@ -441,15 +499,15 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region CountryDue
 
-        public async Task<IActionResult> CountryDueRead([DataSourceRequest] DataSourceRequest request, int parentId)
+        public async Task<IActionResult> CountryDueRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
         {
-            var result = (await _countryLawService.GetCountryDues(parentId)).ToDataSourceResult(request);
+            var result = (await _countryLawService.GetCountryDues(country, caseType)).ToDataSourceResult(request);
             return Json(result);
         }
 
-        public IActionResult CountryDueAdd(int countryLawId, string country, string caseType)
+        public IActionResult CountryDueAdd(string country, string caseType)
         {
-            return PartialView("_CountryDueEntry", new PatCountryDue { CountryLawID = countryLawId, Country = country, CaseType = caseType, Calculate = true});
+            return PartialView("_CountryDueEntry", new PatCountryDue { Country = country, CaseType = caseType, Calculate = true});
         }
 
         public async Task<IActionResult> CountryDueEdit(int cDueId)
@@ -507,9 +565,9 @@ namespace R10.Web.Areas.Patent.Controllers
         //    return Json(result);
         //}
 
-        public IActionResult GetFollowupList(string country)
+        public async Task<IActionResult> GetFollowupList(string country)
         {
-            var result = _countryLawService.GetFollowupList(country);
+            var result = await _countryLawService.GetFollowupList(country);
             return Json(result);
         }
 
@@ -523,19 +581,24 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (string.IsNullOrEmpty(countryDue.ActionType))
                     countryDue.ActionType = countryDue.ActionDue;
 
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+
                 if (countryDue.CPIAction)
                 {
                     var origCountryDue = await _countryLawService.PatCountryDues.AsNoTracking().FirstOrDefaultAsync(c => c.CDueId == countryDue.CDueId);
                     origCountryDue.Calculate = countryDue.Calculate;
                     origCountryDue.FollowupAction = countryDue.FollowupAction;
                     origCountryDue.OldFollowupAction = countryDue.OldFollowupAction;
-                    origCountryDue.ParentTStamp = countryDue.ParentTStamp;
-                    origCountryDue.MultipleBasedOn = countryDue.MultipleBasedOn;
-                    UpdateEntityStamps(origCountryDue, origCountryDue.CDueId);
+                    origCountryDue.UserID = userName;
+                    origCountryDue.LastUpdate = now;
                     await _countryLawService.CountryDueUpdate(origCountryDue);
                 }
                 else {
-                    UpdateEntityStamps(countryDue, countryDue.CDueId);
+                    countryDue.UserID = userName;
+                    countryDue.LastUpdate = now;
+                    if (countryDue.CDueId <= 0)
+                        countryDue.DateCreated = now;
                     await _countryLawService.CountryDueUpdate(countryDue);
                 }
                 return Ok();
@@ -545,7 +608,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
 
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
-        public async Task<IActionResult> CountryDuesUpdate([DataSourceRequest] DataSourceRequest request, int parentId, string country,string caseType, byte[] tStamp, [Bind(Prefix = "updated")]IList<PatCountryDue> updated,
+        public async Task<IActionResult> CountryDuesUpdate([DataSourceRequest] DataSourceRequest request, string country, string caseType, [Bind(Prefix = "updated")]IList<PatCountryDue> updated,
                    [Bind(Prefix = "new")]IList<PatCountryDue> added, [Bind(Prefix = "deleted")]IList<PatCountryDue> deleted)
         {
             //no delete validation
@@ -556,17 +619,20 @@ namespace R10.Web.Areas.Patent.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
+            var userName = User.GetUserName();
+            var now = DateTime.Now;
             foreach (var item in updated)
             {
-                item.PatCountryLaw = null;
-                UpdateEntityStamps(item, item.CDueId);
+                item.UserID = userName;
+                item.LastUpdate = now;
             }
             foreach (var item in added)
             {
-                item.PatCountryLaw = null;
-                UpdateEntityStamps(item, item.CDueId);
+                item.UserID = userName;
+                item.DateCreated = now;
+                item.LastUpdate = now;
             }
-            await _countryLawService.UpdateChild(parentId,country,caseType, User.GetUserName(), tStamp, updated, added, deleted);
+            await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
         }
 
@@ -578,8 +644,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (deleted.CDueId > 0)
             {
-                UpdateEntityStamps(deleted, deleted.CDueId);
-                await _countryLawService.DeleteCountryDue(deleted.CountryLawID, deleted.Country,deleted.CaseType,User.GetUserName(), deleted.ParentTStamp, new List<PatCountryDue>() { deleted });
+                await _countryLawService.DeleteCountryDue(deleted.Country, deleted.CaseType, User.GetUserName(), new List<PatCountryDue>() { deleted });
             }
             return Ok();
         }
@@ -587,14 +652,14 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region CountryExp
 
-        public async Task<IActionResult> CountryExpRead([DataSourceRequest] DataSourceRequest request, int parentId)
+        public async Task<IActionResult> CountryExpRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
         {
-            var result = (await _countryLawService.GetCountryExps(parentId)).ToDataSourceResult(request);
+            var result = (await _countryLawService.GetCountryExps(country, caseType)).ToDataSourceResult(request);
             return Json(result);
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
-        public async Task<IActionResult> CountryExpUpdate([DataSourceRequest] DataSourceRequest request, int parentId, string country, string caseType, byte[] tStamp, [Bind(Prefix = "updated")]IList<PatCountryExp> updated,
+        public async Task<IActionResult> CountryExpUpdate([DataSourceRequest] DataSourceRequest request, string country, string caseType, [Bind(Prefix = "updated")]IList<PatCountryExp> updated,
                    [Bind(Prefix = "new")]IList<PatCountryExp> added, [Bind(Prefix = "deleted")]IList<PatCountryExp> deleted)
         {
             //no delete validation
@@ -605,15 +670,8 @@ namespace R10.Web.Areas.Patent.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-            foreach (var item in updated)
-            {
-                UpdateEntityStamps(item, item.CExpId);
-            }
-            foreach (var item in added)
-            {
-                UpdateEntityStamps(item, item.CExpId);
-            }
-            await _countryLawService.UpdateChild(parentId, country,caseType, User.GetUserName(), tStamp, updated, added, deleted);
+            var userName = User.GetUserName();
+            await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
         }
 
@@ -625,8 +683,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (deleted.CExpId > 0)
             {
-                UpdateEntityStamps(deleted, deleted.CExpId);
-                await _countryLawService.UpdateChild(deleted.CountryLawID, deleted.Country, deleted.CaseType, User.GetUserName(), deleted.ParentTStamp, new List<PatCountryExp>(), new List<PatCountryExp>(), new List<PatCountryExp>() { deleted });
+                await _countryLawService.UpdateChild(deleted.Country, deleted.CaseType, User.GetUserName(), new List<PatCountryExp>(), new List<PatCountryExp>(), new List<PatCountryExp>() { deleted });
             }
             return Ok();
         }
@@ -634,14 +691,27 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region DesCaseType
 
-        public IActionResult DesCaseTypeRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
+        public async Task<IActionResult> DesCaseTypeRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
         {
-            var result = _countryLawService.PatDesCaseTypes.ProjectTo<PatDesCaseTypeViewModel>().Where(d => d.IntlCode == country && d.CaseType == caseType).ToDataSourceResult(request);
-            return Json(result);
+            var desCaseTypes = _countryLawService.PatDesCaseTypes.Where(d => d.IntlCode == country && d.CaseType == caseType);
+            var countries = _patCountryService.QueryableList;
+            var result = await desCaseTypes
+                .GroupJoin(countries, d => d.DesCountry, c => c.Country, (d, cs) => new { d, cs })
+                .SelectMany(x => x.cs.DefaultIfEmpty(), (x, c) => new PatDesCaseTypeViewModel
+                {
+                    IntlCode = x.d.IntlCode,
+                    CaseType = x.d.CaseType,
+                    DesCountry = x.d.DesCountry,
+                    DesCaseType = x.d.DesCaseType,
+                    Default = x.d.Default,
+                    DesCountryName = c != null ? c.CountryName : ""
+                })
+                .ToListAsync();
+            return Json(result.ToDataSourceResult(request));
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
-        public async Task<IActionResult> DesCaseTypeUpdate([DataSourceRequest] DataSourceRequest request, int parentId, string country, string caseType, byte[] tStamp, [Bind(Prefix = "updated")]IList<PatDesCaseType> updated,
+        public async Task<IActionResult> DesCaseTypeUpdate([DataSourceRequest] DataSourceRequest request, string country, string caseType, [Bind(Prefix = "updated")]IList<PatDesCaseType> updated,
                    [Bind(Prefix = "new")]IList<PatDesCaseType> added, [Bind(Prefix = "deleted")]IList<PatDesCaseType> deleted)
         {
             //no delete validation
@@ -652,24 +722,12 @@ namespace R10.Web.Areas.Patent.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-            foreach (var item in updated)
-            {
-                item.ChildCountry = null;
-                item.ChildCaseType = null;
-                item.ParentCaseType = null;
-                item.ParentCountry = null;
-                UpdateEntityStamps(item, item.DesCaseTypeID);
-            }
             foreach (var item in added)
             {
                 item.IntlCode = country;
                 item.CaseType = caseType;
-                item.GenApp = item.GenApp ?? false;
-                item.DesCtryFieldID = 0;
-                item.ChildCountry = null;
-                UpdateEntityStamps(item, item.DesCaseTypeID);
             }
-            await _countryLawService.UpdateChild(parentId,country,caseType, User.GetUserName(), tStamp, updated, added, deleted);
+            await _countryLawService.UpdateChild(country, caseType, User.GetUserName(), updated, added, deleted);
             return Ok();
         }
 
@@ -679,22 +737,18 @@ namespace R10.Web.Areas.Patent.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-            if (deleted.DesCaseTypeID > 0)
-            {
-                UpdateEntityStamps(deleted, deleted.DesCaseTypeID); //for stamping of the header record
-                await _countryLawService.UpdateChild(deleted.CountryLawID, deleted.IntlCode, deleted.CaseType, User.GetUserName(), deleted.ParentTStamp, new List<PatDesCaseType>(), new List<PatDesCaseType>(), new List<PatDesCaseType>() { deleted });
-            }
+            await _countryLawService.UpdateChild(deleted.IntlCode, deleted.CaseType, User.GetUserName(), new List<PatDesCaseType>(), new List<PatDesCaseType>(), new List<PatDesCaseType>() { deleted });
             return Ok();
         }
         #endregion
 
         protected IQueryable<PatCountryLaw> PatCountryLaws => _countryLawService.PatCountryLaws;
 
-        private async Task<DetailPageViewModel<PatCountryLawDetailViewModel>> PrepareEditScreen(int id)
+        private async Task<DetailPageViewModel<PatCountryLawDetailViewModel>> PrepareEditScreen(string country, string caseType, string systems = "")
         {
             var viewModel = new DetailPageViewModel<PatCountryLawDetailViewModel>
             {
-                Detail = await GetById(id)
+                Detail = await GetByKey(country, caseType, systems)
             };
 
             if (viewModel.Detail != null)
@@ -710,23 +764,26 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 viewModel.Container = _dataContainer;
 
-                viewModel.EditScreenUrl = Url.Action("Detail", new { id = id });
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
+                viewModel.EditScreenUrl = Url.Action("Detail", new { country = country, caseType = caseType, systems = systems });
+                viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { country = country, caseType = caseType, systems = systems }) : "";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?country={country}&caseType={caseType}&systems={systems}";
                 viewModel.SearchScreenUrl = Url.Action("Index");
             }
             return viewModel;
         }
 
-        private async Task<PatCountryLawDetailViewModel> GetById(int id)
+        private async Task<PatCountryLawDetailViewModel> GetByKey(string country, string caseType, string systems = "")
         {
-            var detail = await _countryLawService.PatCountryLaws.ProjectTo<PatCountryLawDetailViewModel>().FirstOrDefaultAsync(c => c.CountryLawID == id);
-            detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
+            var detail = await _countryLawService.PatCountryLaws.ProjectTo<PatCountryLawDetailViewModel>()
+                .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
+            if (detail != null)
+                detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
             return detail;
         }
 
-        public async Task<IActionResult> WebLinksRead([DataSourceRequest] DataSourceRequest request, int id, int displayChoice = 2)
+        public async Task<IActionResult> WebLinksRead([DataSourceRequest] DataSourceRequest request, string country, string caseType, int displayChoice = 2)
         {
-            var webLinks = await _webLinksService.GetWebLinks(id, "patcountrylaw", "FormLink", "");
+            var webLinks = await _webLinksService.GetWebLinks(0, "patcountrylaw", "FormLink", "");
             if (webLinks != null && displayChoice == 0)
                 webLinks = webLinks.Where(w => w.RecordLink).ToList();
 
@@ -734,11 +791,11 @@ namespace R10.Web.Areas.Patent.Controllers
             return Json(result);
         }
 
-        public async Task<IActionResult> WebLinksUrl(int mainId, int id)
+        public async Task<IActionResult> WebLinksUrl(string country, string caseType, int id)
         {
             try
             {
-                var url = await _webLinksService.GetWebLinksUrl(mainId, id, "patcountrylaw", "FormLink", "");
+                var url = await _webLinksService.GetWebLinksUrl(0, id, "patcountrylaw", "FormLink", "");
                 return Json(new { url });
             }
             catch (ArgumentException ex)
@@ -748,15 +805,18 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
+        public async Task<IActionResult> Copy(string country, string caseType, string systems = "")
         {
-            var entity = await _countryLawService.PatCountryLaws.FirstOrDefaultAsync(c => c.CountryLawID == id);
+            var entity = await _countryLawService.PatCountryLaws.FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new CountryLawCopyViewModel
             {
-                CountryLawID = entity.CountryLawID,
+                SourceCountry = entity.Country,
+                SourceCaseType = entity.CaseType,
+                SourceSystems = entity.Systems,
                 Country = entity.Country,
                 CaseType = entity.CaseType,
+                Systems = entity.Systems,
                 CopyRemarks = true,
                 CopyLawActions = true,
                 CopyExpirationTerms = true,
@@ -781,14 +841,23 @@ namespace R10.Web.Areas.Patent.Controllers
             var copyOptions = JsonConvert.DeserializeObject<CountryLawCopyViewModel>(copyOptionsString);
             if (copyOptions != null)
             {
-                var source = await _countryLawService.PatCountryLaws.ProjectTo<PatCountryLawDetailViewModel>().FirstOrDefaultAsync(c => c.CountryLawID == copyOptions.CountryLawID);
+                // Find source by original identifiers
+                var srcCountry = copyOptions.SourceCountry ?? copyOptions.Country;
+                var srcCaseType = copyOptions.SourceCaseType ?? copyOptions.CaseType;
+                var srcSystems = copyOptions.SourceSystems ?? copyOptions.Systems ?? "";
+                var source = await _countryLawService.PatCountryLaws.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Country == srcCountry && c.CaseType == srcCaseType && c.Systems == srcSystems);
                 if (source != null)
                 {
-                    page.Detail = source;
-                    page.Detail.CountryLawID = 0;
                     page.Detail.Country = copyOptions.Country;
                     page.Detail.CaseType = copyOptions.CaseType;
+                    page.Detail.Systems = "";
+                    page.Detail.DefaultAgent = source.DefaultAgent;
+                    page.Detail.AutoGenDesCtry = source.AutoGenDesCtry;
+                    page.Detail.AutoUpdtDesPatRecs = source.AutoUpdtDesPatRecs;
+                    page.Detail.CalcExpirBeforeIssue = source.CalcExpirBeforeIssue;
                     page.Detail.Remarks = copyOptions.CopyRemarks ? source.Remarks : "";
+                    page.Detail.UserRemarks = copyOptions.CopyRemarks ? source.UserRemarks : "";
                 }
             }
         }
@@ -803,14 +872,17 @@ namespace R10.Web.Areas.Patent.Controllers
             var countryName = mainSearchFilters.FirstOrDefault(f => f.Property == "CountryName");
             if (countryName != null)
             {
-                countryLaws = countryLaws.Where(c => EF.Functions.Like(c.PatCountry.CountryName, countryName.Value));
+                var matchingCountries = _patCountryService.QueryableList
+                    .Where(pc => EF.Functions.Like(pc.CountryName, countryName.Value))
+                    .Select(pc => pc.Country);
+                countryLaws = countryLaws.Where(c => matchingCountries.Contains(c.Country));
                 mainSearchFilters.Remove(countryName);
             }
 
             var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
             if (systemName != null)
             {
-                countryLaws = countryLaws.Where(c => c.Systems != null && EF.Functions.Like(c.Systems, "%" + systemName.Value + "%"));
+                countryLaws = countryLaws.Where(c => c.Systems != null && EF.Functions.Like(c.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
                 mainSearchFilters.Remove(systemName);
             }
 
@@ -819,20 +891,30 @@ namespace R10.Web.Areas.Patent.Controllers
 
         private async Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<PatCountryLaw> countryLaws)
         {
-            var model = countryLaws.ProjectTo<PatCountryLawSearchViewModel>();
+            var countries = _patCountryService.QueryableList;
+            var model = countryLaws.Join(countries, cl => cl.Country, c => c.Country, (cl, c) => new PatCountryLawSearchViewModel
+            {
+                Country = cl.Country,
+                CountryName = c.CountryName,
+                CaseType = cl.CaseType,
+                Systems = cl.Systems,
+                UserID = cl.UserID,
+                DateCreated = cl.DateCreated,
+                LastUpdate = cl.LastUpdate
+            });
 
             if (request.Sorts != null && request.Sorts.Any())
                 model = model.ApplySorting(request.Sorts);
             else
-                model = model.OrderBy(c => c.CountryName).ThenBy(c => c.CaseType);
+                model = model.OrderBy(c => c.Country).ThenBy(c => c.CaseType);
 
-            var ids = await model.Select(c => c.CountryLawID).ToArrayAsync();
+            var total = await model.CountAsync();
 
             return new CPiDataSourceResult()
             {
                 Data = await model.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
-                Total = ids.Length,
-                Ids = ids
+                Total = total,
+                Ids = new int[0]
             };
         }
     }

@@ -14,9 +14,9 @@ namespace R10.Infrastructure.Data.Patent.mappings
         {
             builder.ToTable("tblPatActionType");
             builder.HasIndex(a => new { a.ActionType, a.Country, a.CDueId }).IsUnique();
-            builder.HasMany(a => a.ActionParameters).WithOne(p => p.ActionType);
+            // builder.HasMany(a => a.ActionParameters).WithOne(p => p.ActionType); // Removed: ActionParameters no longer exists
             // builder.HasOne(a => a.Responsible).WithMany(r => r.AttorneyPatActionTypes).HasForeignKey(a => a.ResponsibleID).HasPrincipalKey(a => a.AttorneyID); // Removed: Responsible (Attorney) nav property no longer exists
-            builder.HasOne(a => a.PatCountry).WithMany(c => c.PatActionTypes).HasForeignKey(a => a.Country).HasPrincipalKey(c=> c.Country);
+            // builder.HasOne(a => a.PatCountry).WithMany().HasForeignKey(a => a.Country).HasPrincipalKey(c=> c.Country); // Removed: PatCountry nav property no longer exists
             //builder.HasMany(a => a.PatCountryDues).WithOne(d => d.PatActionType).HasPrincipalKey(a => a.CDueId)
             //    .HasForeignKey(c => c.CDueId);
         }

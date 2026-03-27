@@ -32,27 +32,27 @@ namespace R10.Web.Areas.Patent.Controllers
     {
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<PatCountry> _viewModelService;
-        private readonly IParentEntityService<PatCountry,PatAreaCountry> _patCountryService;
+        private readonly IEntityService<PatCountry> _patCountryService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IMapper _mapper;
-        private readonly IEntityService<PatCountry> _auxService;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "patCountryDetail";
 
         public CountryController(
             IAuthorizationService authService,
             IViewModelService<PatCountry> viewModelService,
-            IParentEntityService<PatCountry, PatAreaCountry> patCountryService,
+            IEntityService<PatCountry> patCountryService,
             IStringLocalizer<SharedResource> localizer,
             IMapper mapper,
-            IEntityService<PatCountry> auxService)
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _patCountryService = patCountryService;
             _localizer = localizer;
             _mapper = mapper;
-            _auxService = auxService;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -108,7 +108,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 }
                 patCountries = _viewModelService.AddCriteria(patCountries, mainSearchFilters);
 
-                var result = await _viewModelService.CreateViewModelForGrid(request, patCountries,"Country", "CountryID");
+                var result = await _viewModelService.CreateViewModelForGrid(request, patCountries,"Country", "Country");
                 return Json(result);
             }
             return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -121,7 +121,7 @@ namespace R10.Web.Areas.Patent.Controllers
             return File(fileContents, contentType, fileName);
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
             var page = await PrepareEditScreen(id);
             if (page.Detail == null)
@@ -138,7 +138,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Country Detail"].ToString(),
-                RecordId = detail.CountryID,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -194,7 +193,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Country"].ToString(),
-                RecordId = detail.CountryID,
                 //SingleRecord = singleRecord || !Request.IsAjax(),
                 //ActiveTab = tab,
                 PagePermission = page,
@@ -208,14 +206,13 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string tStamp)
+        public async Task<IActionResult> Delete(string id)
         {
-            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
 
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
-            entity.tStamp = Convert.FromBase64String(tStamp);
             await _patCountryService.Delete(entity);
 
             return Ok();
@@ -227,15 +224,21 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                UpdateEntityStamps(patCountry, patCountry.CountryID);
+                var userName = User.GetUserName();
+                var now = DateTime.Now;
+                patCountry.UserID = userName;
+                patCountry.LastUpdate = now;
 
-                if (patCountry.CountryID > 0)
-                    await _auxService.Update(patCountry);
-                    //await _patCountryService.Update(patCountry); //issue when you update the country code
+                var existing = await _patCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == patCountry.Country);
+                if (existing != null)
+                    await _patCountryService.Update(patCountry);
                 else
+                {
+                    patCountry.DateCreated = now;
                     await _patCountryService.Add(patCountry);
+                }
 
-                return Json(patCountry.CountryID);
+                return Json(patCountry.Country);
             }
             else
             {
@@ -243,19 +246,19 @@ namespace R10.Web.Areas.Patent.Controllers
             }
         }
 
-        public async Task<IActionResult> GetRecordStamps(int id)
+        public async Task<IActionResult> GetRecordStamps(string id)
         {
-            var patCountry = await _patCountryService.GetByIdAsync(id);      
+            var patCountry = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
             if (patCountry == null)
                 return new NoRecordFoundResult();
 
-            return ViewComponent("RecordStamps", new { createdBy = patCountry.CreatedBy, dateCreated = patCountry.DateCreated, updatedBy = patCountry.UpdatedBy, lastUpdate = patCountry.LastUpdate, tStamp = patCountry.tStamp });
+            return ViewComponent("RecordStamps", new { createdBy = patCountry.UserID, dateCreated = patCountry.DateCreated, updatedBy = patCountry.UserID, lastUpdate = patCountry.LastUpdate });
         }
 
-        private async Task<DetailPageViewModel<PatCountry>> PrepareEditScreen(int id)
+        private async Task<DetailPageViewModel<PatCountry>> PrepareEditScreen(string id)
         {
             var viewModel = new DetailPageViewModel<PatCountry>();
-            viewModel.Detail = await _patCountryService.QueryableList.FirstOrDefaultAsync(c=>c.CountryID==id);
+            viewModel.Detail = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
 
             if (viewModel.Detail != null)
             {
@@ -289,7 +292,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> AreasRead([DataSourceRequest] DataSourceRequest request, string country)
         {
-            var result = (await _patCountryService.ChildService.QueryableList.Where(ca => ca.Country == country).OrderBy(o => o.Area.Area).ProjectTo<CountryAreaViewModel>().ToListAsync()).ToDataSourceResult(request);
+            var result = (await _repository.PatAreasCountries.AsNoTracking().Where(ca => ca.Country == country).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -309,11 +312,13 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (!ModelState.IsValid)
                     return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-                await _patCountryService.ChildService.Update(country, User.GetUserName(),
-                    _mapper.Map<List<PatAreaCountry>>(updated),
-                    _mapper.Map<List<PatAreaCountry>>(added),
-                    _mapper.Map<List<PatAreaCountry>>(deleted)
-                    );
+                foreach (var item in _mapper.Map<List<PatAreaCountry>>(added))
+                    _repository.PatAreasCountries.Add(item);
+                foreach (var item in _mapper.Map<List<PatAreaCountry>>(updated))
+                    _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                foreach (var item in _mapper.Map<List<PatAreaCountry>>(deleted))
+                    _repository.PatAreasCountries.Remove(item);
+                await _repository.SaveChangesAsync();
                 var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
                 _localizer["Area has been saved successfully."].ToString() :
                 _localizer["Areas have been saved successfully"].ToString();
@@ -327,7 +332,8 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (deleted.AreaCtryId > 0)
             {
-                await _patCountryService.ChildService.Update(deleted.Country, User.GetUserName(), new List<PatAreaCountry>(), new List<PatAreaCountry>(), new List<PatAreaCountry>() { _mapper.Map<PatAreaCountry>(deleted) });
+                _repository.PatAreasCountries.Remove(_mapper.Map<PatAreaCountry>(deleted));
+                await _repository.SaveChangesAsync();
                 return Ok(new { success = _localizer["Area has been deleted successfully."].ToString() });
             }
             return Ok();
@@ -341,19 +347,17 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> GetCountryList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_patCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName" }, requiredRelation);
-            //requiredRelation won't work if already projected to viewmodel
-            //return await GetPicklistData(_patCountryService.QueryableList.ProjectTo<CountryLookupViewModel>(), request, property, text, filterType, requiredRelation, false);
         }
 
         public async Task<IActionResult> GetCountryCurrencyList([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_patCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName", "CurrencyType" }, requiredRelation);
+            return await GetPicklistData(_patCountryService.QueryableList, request, property, text, filterType, new string[] { "Country", "CountryName" }, requiredRelation);
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(int id)
+        public async Task<IActionResult> Copy(string id)
         {
-            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.CountryID == id);
+            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new CountryCopyViewModel
             {
@@ -383,7 +387,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (source != null)
                 {
                     page.Detail = source;
-                    page.Detail.CountryID = 0;
                     page.Detail.Country = copyOptions.Country;
                 }
             }
@@ -398,7 +401,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 if (entity == null)
                     return RedirectToAction(nameof(Add), new { id = id, fromSearch = true });
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.CountryID, singleRecord = true, fromSearch = true });
+                    return RedirectToAction(nameof(Detail), new { id = entity.Country, singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });

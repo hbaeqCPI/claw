@@ -18,13 +18,13 @@ namespace R10.Web.Services
     public class CountryLookupViewModelService : ICountryLookupViewModelService
     {
         private readonly ClaimsPrincipal _claimsPrincipal;
-        private readonly IParentEntityService<PatCountry, PatAreaCountry> _patCountryService;
-        private readonly IParentEntityService<TmkCountry, TmkAreaCountry> _tmkCountryService;
+        private readonly IEntityService<PatCountry> _patCountryService;
+        private readonly IEntityService<TmkCountry> _tmkCountryService;
 
         public CountryLookupViewModelService(
             ClaimsPrincipal claimsPrincipal,
-            IParentEntityService<PatCountry, PatAreaCountry> patCountryService,
-            IParentEntityService<TmkCountry, TmkAreaCountry> tmkCountryService)
+            IEntityService<PatCountry> patCountryService,
+            IEntityService<TmkCountry> tmkCountryService)
         {
             _claimsPrincipal = claimsPrincipal;
             _patCountryService = patCountryService;
@@ -61,7 +61,6 @@ namespace R10.Web.Services
                     case SystemType.Trademark:
                         return _tmkCountryService.QueryableList.Select(c => new CountryLookupViewModel
                         {
-                            CountryID = c.CountryID,
                             Country = c.Country,
                             CountryName = c.CountryName
                         });
@@ -69,7 +68,6 @@ namespace R10.Web.Services
                     default:
                         return _patCountryService.QueryableList.Select(c => new CountryLookupViewModel
                         {
-                            CountryID = c.CountryID,
                             Country = c.Country,
                             CountryName = c.CountryName
                         });
