@@ -1,15 +1,37 @@
 @model PatAreaCountry
 @using R10.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+}
 
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="Area"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="Area" />
-                    <span asp-validation-for="Area"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaCountry", area = "Patent", action = "GetAreaList", defaultValue = Model.Area })
+                        <span asp-validation-for="Area"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -17,15 +39,86 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="Country"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="Country" />
-                    <span asp-validation-for="Country"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "AreaCountry", area = "Patent", action = "GetCountryList", defaultValue = Model.Country })
+                        <span asp-validation-for="Country"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="patACSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patACSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="patACSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#patACSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "AreaCountry")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patACSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#patACSystemsCheckboxes').html(html);
+                                var allCount = $('.patACSystemChk').length;
+                                var checkedCount = $('.patACSystemChk:checked').length;
+                                $('#patACSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.patACSystemChk', function() {
+                                var vals = [];
+                                $('.patACSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#patACSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.patACSystemChk').length;
+                                var checkedCount = $('.patACSystemChk:checked').length;
+                                $('#patACSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#patACSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.patACSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
     </div>
-    <div class="form-row mt-3">
-        <div class="col">
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
-        </div>
-    </div>
+
 </form>
+
+<script>
+    patAreaCountryPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patAreaCountryPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

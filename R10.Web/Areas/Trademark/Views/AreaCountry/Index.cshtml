@@ -7,5 +7,8 @@
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
-<script>if (typeof tmkAreaCountryPage === 'undefined') { var tmkAreaCountryPage = new ActivePage(); }</script>
+<script>
+if (typeof tmkAreaCountryPage === 'undefined') { var tmkAreaCountryPage = new ActivePage(); }
+tmkAreaCountryPage.mainSearchRecordIds = tmkAreaCountryPage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

@@ -6,8 +6,9 @@
     .Name($"{Model.PageId}-Grid")
     .Columns(columns =>
     {
-        columns.Bound(m => m.Area).Width(200);
+        columns.Bound(m => m.Area).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { areaCode = "#: Area#", country = "#: Country#", systems = "#: Systems#", fromSearch = true }), "Area")).Width(200);
         columns.Bound(m => m.Country).Width(200);
+        columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
     .AutoBind(false)
