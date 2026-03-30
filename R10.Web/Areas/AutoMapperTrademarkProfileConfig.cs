@@ -38,11 +38,9 @@ namespace R10.Web.Areas
             CreateMap<TmkCountry, CountryLookupViewModel>()
                 .ForMember(vm => vm.CountryID, opt => opt.Ignore());
             CreateMap<TmkAreaCountry, CountryAreaViewModel>()
-                .ForMember(vm => vm.Area, domain => domain.MapFrom(d => d.Area != null ? d.Area.Area : null))
-                .ForMember(vm => vm.AreaDescription, domain => domain.MapFrom(d => d.Area != null ? d.Area.Description : null))
+                .ForMember(vm => vm.AreaDescription, domain => domain.Ignore())
                 .ForMember(vm => vm.CountryLookup, domain => domain.Ignore());
-            CreateMap<CountryAreaViewModel, TmkAreaCountry>()
-                .ForMember(m => m.Area, opt => opt.Ignore());
+            CreateMap<CountryAreaViewModel, TmkAreaCountry>();
         }
     }
 }

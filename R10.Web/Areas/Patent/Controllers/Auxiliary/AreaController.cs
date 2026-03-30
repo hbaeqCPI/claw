@@ -112,6 +112,13 @@ namespace R10.Web.Areas.Patent.Controllers
                     {
                         mainSearchFilters.Remove(countryName);
                     }
+
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        areas = areas.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
                 }
                 areas = _viewModelService.AddCriteria(areas, mainSearchFilters);
 
@@ -122,11 +129,11 @@ namespace R10.Web.Areas.Patent.Controllers
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task<DetailPageViewModel<PatArea>> PrepareEditScreen(string id)
+        private async Task<DetailPageViewModel<PatArea>> PrepareEditScreen(string id, string systems = "")
         {
             var viewModel = new DetailPageViewModel<PatArea>
             {
-                Detail = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id)
+                Detail = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems)
             };
 
             if (viewModel.Detail != null)
@@ -140,45 +147,54 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 viewModel.Container = _dataContainer;
 
-                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
+                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id, systems = systems });
+                viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { areaCode = id, systems = systems }) : "";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?id={id}&systems={Uri.EscapeDataString(systems)}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
             return viewModel;
         }
 
-        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, string systems = "", bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
-            var page = await PrepareEditScreen(id);
-            if (page.Detail == null)
+            try
             {
+                var page = await PrepareEditScreen(id, systems);
+                if (page.Detail == null)
+                {
+                    if (Request.IsAjax())
+                        return new RecordDoesNotExistResult();
+                    else
+                        return RedirectToAction("Index");
+                }
+
+                var detail = page.Detail;
+                PageViewModel model = new PageViewModel()
+                {
+                    Page = PageType.Detail,
+                    PageId = page.Container,
+                    Title = _localizer["Area Detail"].ToString(),
+                    RecordId = 1, // non-zero sentinel for string-keyed entity
+                    SingleRecord = singleRecord || !Request.IsAjax(),
+                    ActiveTab = tab,
+                    PagePermission = page,
+                    Data = detail
+                };
+
                 if (Request.IsAjax())
-                    return new RecordDoesNotExistResult();
-                else
-                    return RedirectToAction("Index");
+                {
+                    if (!singleRecord && !fromSearch)
+                        model.Page = PageType.DetailContent;
+
+                    return PartialView("Index", model);
+                }
+
+                return View("Index", model);
             }
-
-            var detail = page.Detail;
-            PageViewModel model = new PageViewModel()
+            catch (Exception ex)
             {
-                Page = PageType.Detail,
-                PageId = page.Container,
-                Title = _localizer["Area Detail"].ToString(),
-                SingleRecord = singleRecord || !Request.IsAjax(),
-                ActiveTab = tab,
-                PagePermission = page,
-                Data = detail
-            };
-
-            if (Request.IsAjax())
-            {
-                if (!singleRecord && !fromSearch)
-                    model.Page = PageType.DetailContent;
-
-                return PartialView("Index", model);
+                return Content($"<div class='alert alert-danger'><pre>{ex}</pre></div>", "text/html");
             }
-
-            return View("Index", model);
         }
 
         [HttpPost()]
@@ -206,7 +222,7 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
+            if (!Request.IsAjax() && TempData.Peek("CopyOptions") == null)
                 return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
@@ -222,13 +238,17 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Area"].ToString(),
+                RecordId = 0,
                 PagePermission = page,
                 Data = detail,
-                FromSearch = fromSearch
+                FromSearch = fromSearch,
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            if (Request.IsAjax())
+                return PartialView("Index", model);
+            return View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
@@ -241,17 +261,72 @@ namespace R10.Web.Areas.Patent.Controllers
                 var now = DateTime.Now;
                 patArea.UserID = userName;
                 patArea.LastUpdate = now;
+                patArea.Description ??= "";
+                patArea.Systems ??= "";
 
-                var existing = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == patArea.Area);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(patArea.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems within this record
+                var newSystems = patArea.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                patArea.Systems = string.Join(",", newSystems);
+
+                var isNewRecord = patArea.IsNewRecord || patArea.OriginalSystems == "__NEW__" || patArea.OriginalSystems == null;
+                var originalSystemsValue = patArea.OriginalSystems == "__EMPTY__" ? "" : (patArea.OriginalSystems ?? "");
+
+                // Find existing record on update (match by Area + original systems)
+                PatArea existing = null;
+                if (!isNewRecord)
+                {
+                    existing = await _areaService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Area == patArea.Area && c.Systems == originalSystemsValue);
+                }
+
+                // Check for duplicate systems across other records with the same Area name
+                var allRecords = await _areaService.QueryableList.AsNoTracking()
+                    .Where(c => c.Area == patArea.Area && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
+
+                // Exclude existing record's systems from the check
+                if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                    allRecords.Remove(existing.Systems);
+
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to {patArea.Area}: {string.Join(", ", duplicates)}");
+
                 if (existing != null)
-                    await _areaService.Update(patArea);
+                {
+                    patArea.DateCreated = existing.DateCreated ?? now;
+
+                    // Use raw SQL to avoid EF composite key tracking issues
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblPatArea SET Area=@p0, Description=@p1, Systems=@p2, UserID=@p3, DateCreated=@p4, LastUpdate=@p5
+                          WHERE Area=@p6 AND Systems=@p7",
+                        patArea.Area, patArea.Description ?? "", patArea.Systems, patArea.UserID ?? "",
+                        patArea.DateCreated, patArea.LastUpdate,
+                        existing.Area, existing.Systems ?? "");
+                }
                 else
                 {
                     patArea.DateCreated = now;
-                    await _areaService.Add(patArea);
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblPatArea (Area, Description, Systems, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                        patArea.Area, patArea.Description ?? "", patArea.Systems, patArea.UserID ?? "",
+                        patArea.DateCreated, patArea.LastUpdate);
                 }
 
-                return Json(patArea.Area);
+                return Json(new { id = patArea.Area, redirectUrl = Url.Action("Detail", new { id = patArea.Area, systems = patArea.Systems, singleRecord = true }) });
             }
             else
             {
@@ -261,21 +336,20 @@ namespace R10.Web.Areas.Patent.Controllers
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string areaCode, string systems = "")
         {
-            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatArea WHERE Area=@p0 AND Systems=@p1", areaCode ?? "", systems ?? "");
 
-            if (entity == null)
+            if (count == 0)
                 return new RecordDoesNotExistResult();
-
-            await _areaService.Delete(entity);
 
             return Ok();
         }
 
-        public async Task<IActionResult> GetRecordStamps(string id)
+        public async Task<IActionResult> GetRecordStamps(string id, string systems = "")
         {
-            var patArea = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var patArea = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems);
             if (patArea == null)
                 return new NoRecordFoundResult();
 
@@ -298,12 +372,13 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(string id)
+        public async Task<IActionResult> Copy(string id, string systems = "")
         {
-            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new AreaCopyViewModel
             {
+                OriginalArea = entity.Area,
                 Area = entity.Area,
                 CopyCountries = true
             };
@@ -329,14 +404,9 @@ namespace R10.Web.Areas.Patent.Controllers
                 var source = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == copyOptions.OriginalArea);
                 if (source != null)
                 {
-                    page.Detail = source;
                     page.Detail.Area = copyOptions.Area;
-
-                    if (copyOptions.CopyCountries)
-                    {
-                        var countries = await _repository.PatAreasCountries.Where(c => c.Country != null).AsNoTracking().ToListAsync();
-                        page.Detail.PatAreaCountries = countries;
-                    }
+                    page.Detail.Description = source.Description;
+                    page.Detail.Systems = source.Systems;
                 }
             }
         }
@@ -345,7 +415,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, string areaId)
         {
-            var result = (await _repository.PatAreasCountries.AsNoTracking().Where(ca => ca.Country != null).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
+            var result = (await _repository.PatAreasCountries.AsNoTracking().Where(ca => ca.Area == areaId).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -361,11 +431,24 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (updated.Any() || added.Any() || deleted.Any())
             {
+                // Set Area on added items before validation (Area comes from parent, not the grid)
+                foreach (var item in added)
+                    item.Area = areaId;
+                foreach (var item in updated)
+                    item.Area = areaId;
+
+                ModelState.Clear();
+                foreach (var item in added.Concat(updated))
+                    TryValidateModel(item);
+
                 if (!ModelState.IsValid)
                     return new JsonBadRequest(new { errors = ModelState.Errors() });
 
                 foreach (var item in _mapper.Map<List<PatAreaCountry>>(added))
+                {
+                    item.Area = areaId;
                     _repository.PatAreasCountries.Add(item);
+                }
                 foreach (var item in _mapper.Map<List<PatAreaCountry>>(updated))
                     _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                 foreach (var item in _mapper.Map<List<PatAreaCountry>>(deleted))
@@ -392,6 +475,15 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         #endregion
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
+        }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {

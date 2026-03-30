@@ -9,7 +9,7 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CountryID#", fromSearch = true }), "Country")).Width(200);
+                    columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: Country#", fromSearch = true }), "Country")).Width(200);
                     columns.Bound(m => m.CountryName);
                     columns.Bound(m => m.CPICode);
                 })

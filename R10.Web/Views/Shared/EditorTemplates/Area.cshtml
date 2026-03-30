@@ -2,8 +2,8 @@
 @inject IStringLocalizer<SharedResource> Localizer
 
 @{
-    var id = ViewData["id"].ToString();
-    var area = ViewData["area"].ToString();
+    var id = ViewData["id"]?.ToString() ?? "Area";
+    var area = ViewData["area"]?.ToString() ?? "";
 
     var linkUrl = Url.Action("DetailLink", "Area", new
     {

@@ -98,7 +98,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                     var area = mainSearchFilters.FirstOrDefault(f => f.Property == "Area");
                     if (area != null)
                     {
-                        tmkCountries = tmkCountries.Where(w => w.TmkCountryAreas.Any(a => EF.Functions.Like(a.Area.Area, area.Value)));
+                        tmkCountries = tmkCountries.Where(w => w.TmkCountryAreas.Any(a => EF.Functions.Like(a.Area, area.Value)));
                         mainSearchFilters.Remove(area);
                     }
                 }
@@ -227,14 +227,17 @@ namespace R10.Web.Areas.Trademark.Controllers
 
                 var existing = await _tmkCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == tmkCountry.Country);
                 if (existing != null)
+                {
+                    tmkCountry.DateCreated = existing.DateCreated ?? now;
                     await _tmkCountryService.Update(tmkCountry);
+                }
                 else
                 {
                     tmkCountry.DateCreated = now;
                     await _tmkCountryService.Add(tmkCountry);
                 }
 
-                return Json(tmkCountry.Country);
+                return Json(new { id = tmkCountry.Country });
             }
             else
             {
@@ -364,7 +367,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         public async Task<IActionResult> AreaDelete([Bind(Prefix = "deleted")] CountryAreaViewModel deleted)
         {
-            if (deleted.AreaCtryId > 0)
+            if (!string.IsNullOrEmpty(deleted.Area) && !string.IsNullOrEmpty(deleted.Country))
             {
                 _repository.TmkAreasCountries.Remove(_mapper.Map<TmkAreaCountry>(deleted));
                 await _repository.SaveChangesAsync();

@@ -67,8 +67,9 @@
                 model.Id(ca => ca.Country);
             })
             .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
-            .Update(update => update.Action("CountriesUpdate", "Area"))
-            .Destroy(destroy => destroy.Action("CountryDelete", "Area"))
+            .Update(update => update.Action("CountriesUpdate", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
+            .Destroy(destroy => destroy.Action("CountryDelete", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
+
             .Events(events =>
             {
                 events.Error("pageHelper.onGridError");

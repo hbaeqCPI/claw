@@ -9,13 +9,7 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkAreaCountry> builder)
         {
             builder.ToTable("tblTmkAreaCountry");
-            builder.HasNoKey();
-            builder.Ignore(e => e.Area);
-
-            builder.Ignore(e => e.CreatedBy);
-            builder.Ignore(e => e.UpdatedBy);
-            builder.Ignore(e => e.DateCreated);
-            builder.Ignore(e => e.LastUpdate);
+            builder.HasKey(e => new { e.Area, e.Country });
         }
     }
 }

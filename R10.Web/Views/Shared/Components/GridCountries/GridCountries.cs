@@ -7,6 +7,8 @@ namespace R10.Web.ViewComponents
     {
         public IViewComponentResult Invoke(GridOptions model)
         {
+            if (model.Permission != null)
+                ViewData["PagePermission"] = model.Permission;
             return View(model);
         }
     }

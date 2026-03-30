@@ -55,10 +55,23 @@ namespace R10.Web.Services.Menu
                 {
                     ("Action Type", "ActionType", "{\"area\":\"Patent\"}", 10),
                     ("Area", "Area", "{\"area\":\"Patent\"}", 20),
+                    ("Area Delete", "AreaDelete", "{\"area\":\"Patent\"}", 25),
+                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Patent\"}", 26),
+                    ("Case Type", "CaseType", "{\"area\":\"Patent\"}", 28),
+                    ("Country", "Country", "{\"area\":\"Patent\"}", 29),
                     ("Country Due", "CountryDue", "{\"area\":\"Patent\"}", 30),
                     ("Country Expiry", "CountryExp", "{\"area\":\"Patent\"}", 40),
+                    ("Country Exp Delete", "CountryExpDelete", "{\"area\":\"Patent\"}", 45),
+                    ("Country Law Ext", "CountryLawExt", "{\"area\":\"Patent\"}", 47),
                     ("Des Case Type", "DesCaseType", "{\"area\":\"Patent\"}", 50),
-                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Patent\"}", 60)
+                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Patent\"}", 52),
+                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Patent\"}", 54),
+                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Patent\"}", 56),
+                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Patent\"}", 60),
+                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Patent\"}", 62),
+                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Patent\"}", 64),
+                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Patent\"}", 66),
+                    ("Indicator", "Indicator", "{\"area\":\"Patent\"}", 70)
                 };
 
                 // Trademark auxiliary items
@@ -66,10 +79,21 @@ namespace R10.Web.Services.Menu
                 {
                     ("Action Type", "ActionType", "{\"area\":\"Trademark\"}", 10),
                     ("Area", "Area", "{\"area\":\"Trademark\"}", 20),
+                    ("Area Delete", "AreaDelete", "{\"area\":\"Trademark\"}", 25),
+                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Trademark\"}", 26),
+                    ("Case Type", "CaseType", "{\"area\":\"Trademark\"}", 28),
+                    ("Country", "Country", "{\"area\":\"Trademark\"}", 29),
                     ("Country Due", "CountryDue", "{\"area\":\"Trademark\"}", 30),
                     ("Des Case Type", "DesCaseType", "{\"area\":\"Trademark\"}", 40),
+                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Trademark\"}", 42),
+                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Trademark\"}", 44),
+                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Trademark\"}", 46),
                     ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Trademark\"}", 50),
-                    ("Standard Good", "StandardGood", "{\"area\":\"Trademark\"}", 60)
+                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Trademark\"}", 52),
+                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Trademark\"}", 54),
+                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Trademark\"}", 56),
+                    ("Indicator", "Indicator", "{\"area\":\"Trademark\"}", 60),
+                    ("Standard Good", "StandardGood", "{\"area\":\"Trademark\"}", 70)
                 };
 
                 bool changed = false;

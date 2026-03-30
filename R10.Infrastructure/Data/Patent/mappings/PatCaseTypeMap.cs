@@ -9,7 +9,7 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatCaseType> builder)
         {
             builder.ToTable("tblPatCaseType");
-            builder.HasNoKey();
+            builder.HasKey(e => e.CaseType);
         }
     }
 }

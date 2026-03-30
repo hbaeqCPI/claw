@@ -112,6 +112,13 @@ namespace R10.Web.Areas.Trademark.Controllers
                     {
                         mainSearchFilters.Remove(countryName);
                     }
+
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        areas = areas.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
                 }
                 areas = _viewModelService.AddCriteria(areas, mainSearchFilters);
 
@@ -122,11 +129,11 @@ namespace R10.Web.Areas.Trademark.Controllers
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task<DetailPageViewModel<TmkArea>> PrepareEditScreen(string id)
+        private async Task<DetailPageViewModel<TmkArea>> PrepareEditScreen(string id, string systems = "")
         {
             var viewModel = new DetailPageViewModel<TmkArea>
             {
-                Detail = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id)
+                Detail = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems)
             };
 
             if (viewModel.Detail != null)
@@ -140,16 +147,17 @@ namespace R10.Web.Areas.Trademark.Controllers
 
                 viewModel.Container = _dataContainer;
 
-                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
+                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id, systems = systems });
+                viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { areaCode = id, systems = systems }) : "";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?id={id}&systems={Uri.EscapeDataString(systems)}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
             return viewModel;
         }
 
-        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, string systems = "", bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
-            var page = await PrepareEditScreen(id);
+            var page = await PrepareEditScreen(id, systems);
             if (page.Detail == null)
             {
                 if (Request.IsAjax())
@@ -164,6 +172,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Area Detail"].ToString(),
+                RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -206,7 +215,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
+            if (!Request.IsAjax() && TempData.Peek("CopyOptions") == null)
                 return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
@@ -222,13 +231,17 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Area"].ToString(),
+                RecordId = 0,
                 PagePermission = page,
                 Data = detail,
-                FromSearch = fromSearch
+                FromSearch = fromSearch,
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            if (Request.IsAjax())
+                return PartialView("Index", model);
+            return View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
@@ -241,17 +254,73 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var now = DateTime.Now;
                 tmkArea.UserID = userName;
                 tmkArea.LastUpdate = now;
+                tmkArea.Description ??= "";
+                tmkArea.Systems ??= "";
 
-                var existing = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == tmkArea.Area);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(tmkArea.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems within this record
+                var newSystems = tmkArea.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                tmkArea.Systems = string.Join(",", newSystems);
+
+                // Normalize OriginalSystems for comparison
+                var isNewRecord = tmkArea.IsNewRecord || tmkArea.OriginalSystems == "__NEW__" || tmkArea.OriginalSystems == null;
+                var originalSystemsValue = tmkArea.OriginalSystems == "__EMPTY__" ? "" : (tmkArea.OriginalSystems ?? "");
+
+                // Find existing record on update (match by Area + original systems)
+                TmkArea existing = null;
+                if (!isNewRecord)
+                {
+                    existing = await _areaService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Area == tmkArea.Area && c.Systems == originalSystemsValue);
+                }
+
+                // Check for duplicate systems across other records with the same Area name
+                var allRecords = await _areaService.QueryableList.AsNoTracking()
+                    .Where(c => c.Area == tmkArea.Area && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
+
+                // Exclude existing record's systems from the check
+                if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                    allRecords.Remove(existing.Systems);
+
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to {tmkArea.Area}: {string.Join(", ", duplicates)}");
+
                 if (existing != null)
-                    await _areaService.Update(tmkArea);
+                {
+                    tmkArea.DateCreated = existing.DateCreated ?? now;
+
+                    // Use raw SQL to avoid EF composite key tracking issues
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblTmkArea SET Area=@p0, Description=@p1, Systems=@p2, UserID=@p3, DateCreated=@p4, LastUpdate=@p5
+                          WHERE Area=@p6 AND Systems=@p7",
+                        tmkArea.Area, tmkArea.Description ?? "", tmkArea.Systems, tmkArea.UserID ?? "",
+                        tmkArea.DateCreated, tmkArea.LastUpdate,
+                        existing.Area, existing.Systems ?? "");
+                }
                 else
                 {
                     tmkArea.DateCreated = now;
-                    await _areaService.Add(tmkArea);
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblTmkArea (Area, Description, Systems, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                        tmkArea.Area, tmkArea.Description ?? "", tmkArea.Systems, tmkArea.UserID ?? "",
+                        tmkArea.DateCreated, tmkArea.LastUpdate);
                 }
 
-                return Json(tmkArea.Area);
+                return Json(new { id = tmkArea.Area, redirectUrl = Url.Action("Detail", new { id = tmkArea.Area, systems = tmkArea.Systems, singleRecord = true }) });
             }
             else
             {
@@ -261,22 +330,21 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string areaCode, string systems = "")
         {
-            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkArea WHERE Area=@p0 AND Systems=@p1", areaCode ?? "", systems ?? "");
 
-            if (entity == null)
+            if (count == 0)
                 return new RecordDoesNotExistResult();
-
-            await _areaService.Delete(entity);
 
             return Ok();
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(string id)
+        public async Task<IActionResult> Copy(string id, string systems = "")
         {
-            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var entity = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new AreaCopyViewModel
             {
@@ -306,21 +374,16 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var source = await _areaService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Area == copyOptions.OriginalArea);
                 if (source != null)
                 {
-                    page.Detail = source;
                     page.Detail.Area = copyOptions.Area;
-
-                    if (copyOptions.CopyCountries)
-                    {
-                        var countries = await _repository.TmkAreasCountries.Where(c => c.Country != null).AsNoTracking().ToListAsync();
-                        page.Detail.TmkAreaCountries = countries;
-                    }
+                    page.Detail.Description = source.Description;
+                    page.Detail.Systems = source.Systems;
                 }
             }
         }
 
-        public async Task<IActionResult> GetRecordStamps(string id)
+        public async Task<IActionResult> GetRecordStamps(string id, string systems = "")
         {
-            var tmkArea = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id);
+            var tmkArea = await _areaService.QueryableList.FirstOrDefaultAsync(c => c.Area == id && c.Systems == systems);
             if (tmkArea == null)
                 return new NoRecordFoundResult();
 
@@ -346,7 +409,7 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, string areaId)
         {
-            var result = (await _repository.TmkAreasCountries.AsNoTracking().Where(ca => ca.Country != null).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
+            var result = (await _repository.TmkAreasCountries.AsNoTracking().Where(ca => ca.Area == areaId).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -362,11 +425,23 @@ namespace R10.Web.Areas.Trademark.Controllers
 
             if (updated.Any() || added.Any() || deleted.Any())
             {
+                foreach (var item in added)
+                    item.Area = areaId;
+                foreach (var item in updated)
+                    item.Area = areaId;
+
+                ModelState.Clear();
+                foreach (var item in added.Concat(updated))
+                    TryValidateModel(item);
+
                 if (!ModelState.IsValid)
                     return new JsonBadRequest(new { errors = ModelState.Errors() });
 
                 foreach (var item in _mapper.Map<List<TmkAreaCountry>>(added))
+                {
+                    item.Area = areaId;
                     _repository.TmkAreasCountries.Add(item);
+                }
                 foreach (var item in _mapper.Map<List<TmkAreaCountry>>(updated))
                     _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                 foreach (var item in _mapper.Map<List<TmkAreaCountry>>(deleted))
@@ -393,6 +468,15 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         #endregion
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
+        }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {

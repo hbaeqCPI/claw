@@ -2,7 +2,8 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.Area;
-    var addMode = string.IsNullOrEmpty(id);
+    var isCopy = ViewBag.CopyOptions != null;
+    var addMode = string.IsNullOrEmpty(id) || isCopy;
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
@@ -10,6 +11,11 @@
     bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
 }
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -31,6 +37,53 @@
                 </div>
             </div>
         </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="SystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="systemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="systemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#SystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "Area")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="systemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#systemsCheckboxes').html(html);
+                                var allCount = $('.systemChk').length;
+                                var checkedCount = $('.systemChk:checked').length;
+                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.systemChk', function() {
+                                var vals = [];
+                                $('.systemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#SystemsHidden').val(vals.join(','));
+                                var allCount = $('.systemChk').length;
+                                var checkedCount = $('.systemChk:checked').length;
+                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#systemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.systemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
     </div>
     @if (!addMode)
     {
@@ -41,7 +94,7 @@
         </ul>
         <div class="tab-content detail">
             <div class="tab-pane active show" id="patAreaDetailCountryTabContent" role="tabpanel" aria-labelledby="patAreaDetailCountryTab">
-                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentCode = Model.Area, Area = "Patent" })
+                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentCode = Model.Area, Area = "Patent", Permission = detailPagePermission })
             </div>
         </div>
         <div class="content-stamp">
@@ -51,6 +104,17 @@
 </form>
 
 <script>
+    patAreaPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    // Override edit mode afterSubmit to handle systems change redirect
+    patAreaPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
     patAreaPage.editableGrids = [
             {
             title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.Area'},

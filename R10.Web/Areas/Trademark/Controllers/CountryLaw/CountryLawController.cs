@@ -781,7 +781,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 {
                     page.Detail.Country = copyOptions.Country;
                     page.Detail.CaseType = copyOptions.CaseType;
-                    page.Detail.Systems = "";
+                    page.Detail.Systems = source.Systems ?? "";
                     page.Detail.DefaultAgent = source.DefaultAgent;
                     page.Detail.AutoGenDesCtry = source.AutoGenDesCtry;
                     page.Detail.AutoUpdtDesTmkRecs = source.AutoUpdtDesTmkRecs;

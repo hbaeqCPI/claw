@@ -1,6 +1,6 @@
 ﻿@model string
 @{
-    var id = ViewData["id"].ToString();
+    var id = ViewData["id"]?.ToString() ?? "ResponsibleCode";
     //var linkUrl = Url.Action("DetailLink", "Attorney", new
     //{
     //    Area = "Shared",

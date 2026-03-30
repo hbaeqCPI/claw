@@ -3,8 +3,8 @@
 
 @{
     var countryLabel = Localizer["Country"];
-    var id = ViewData["id"].ToString();
-    var area = ViewData["area"].ToString();
+    var id = ViewData["id"]?.ToString() ?? "Country";
+    var area = ViewData["area"]?.ToString() ?? "";
 
     var linkUrl = Url.Action("DetailLink", "Country", new
     {

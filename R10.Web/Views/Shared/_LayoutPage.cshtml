@@ -18,6 +18,7 @@
     <div id="page" class="page-content @ViewData["PageSelector"]">
         @RenderBody()
     </div>
+    <div class="popup"></div>
 </div>
 
 @await Component.InvokeAsync("AlertDialog")

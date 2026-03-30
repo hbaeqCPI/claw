@@ -216,14 +216,17 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 var existing = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.CaseType == caseType.CaseType);
                 if (existing != null)
+                {
+                    caseType.DateCreated = existing.DateCreated ?? now;
                     await _auxService.Update(caseType);
+                }
                 else
                 {
                     caseType.DateCreated = now;
                     await _auxService.Add(caseType);
                 }
 
-                return Json(caseType.CaseType);
+                return Json(new { id = caseType.CaseType });
             }
             else
                 return new JsonBadRequest(new { errors = ModelState.Errors() });

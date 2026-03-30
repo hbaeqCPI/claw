@@ -102,7 +102,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     var area = mainSearchFilters.FirstOrDefault(f => f.Property == "Area");
                     if (area != null)
                     {
-                        patCountries = patCountries.Where(w => w.PatCountryAreas.Any(a => EF.Functions.Like(a.Area.Area, area.Value)));
+                        patCountries = patCountries.Where(w => w.PatCountryAreas.Any(a => EF.Functions.Like(a.Area, area.Value)));
                         mainSearchFilters.Remove(area);
                     }
                 }
@@ -231,14 +231,17 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 var existing = await _patCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == patCountry.Country);
                 if (existing != null)
+                {
+                    patCountry.DateCreated = existing.DateCreated ?? now;
                     await _patCountryService.Update(patCountry);
+                }
                 else
                 {
                     patCountry.DateCreated = now;
                     await _patCountryService.Add(patCountry);
                 }
 
-                return Json(patCountry.Country);
+                return Json(new { id = patCountry.Country });
             }
             else
             {
@@ -330,7 +333,7 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         public async Task<IActionResult> AreaDelete([Bind(Prefix = "deleted")] CountryAreaViewModel deleted)
         {
-            if (deleted.AreaCtryId > 0)
+            if (!string.IsNullOrEmpty(deleted.Area) && !string.IsNullOrEmpty(deleted.Country))
             {
                 _repository.PatAreasCountries.Remove(_mapper.Map<PatAreaCountry>(deleted));
                 await _repository.SaveChangesAsync();
