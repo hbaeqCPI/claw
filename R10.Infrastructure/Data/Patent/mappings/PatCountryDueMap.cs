@@ -12,6 +12,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
             builder.HasKey(e => e.CDueId);
             builder.Ignore(e => e.FollowupAction);
             builder.Ignore(e => e.OldFollowupAction);
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
             // builder.Ignore(e => e.ParentTStamp); // Removed: ParentTStamp no longer exists
         }
     }

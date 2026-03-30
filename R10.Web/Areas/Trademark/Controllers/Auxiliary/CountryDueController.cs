@@ -31,6 +31,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         private readonly IViewModelService<TmkCountryDue> _viewModelService;
         private readonly IEntityService<TmkCountryDue> _auxService;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "tmkCountryDueDetail";
 
@@ -38,12 +39,14 @@ namespace R10.Web.Areas.Trademark.Controllers
             IAuthorizationService authService,
             IViewModelService<TmkCountryDue> viewModelService,
             IEntityService<TmkCountryDue> auxService,
-            IStringLocalizer<SharedResource> localizer)
+            IStringLocalizer<SharedResource> localizer,
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _auxService = auxService;
             _localizer = localizer;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -87,7 +90,18 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (ModelState.IsValid)
             {
-                var entities = _viewModelService.AddCriteria(mainSearchFilters);
+                var entities = _auxService.QueryableList;
+                if (mainSearchFilters.Count > 0)
+                {
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
+                }
+                entities = _viewModelService.AddCriteria(entities, mainSearchFilters);
+
                 var result = await _viewModelService.CreateViewModelForGrid(request, entities, "ActionType", "CDueId");
                 return Json(result);
             }
@@ -214,15 +228,114 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var now = DateTime.Now;
                 entity.UserID = userName;
                 entity.LastUpdate = now;
-                if (entity.CDueId <= 0)
-                    entity.DateCreated = now;
+                entity.Systems ??= "";
+
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(entity.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems
+                var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                entity.Systems = string.Join(",", newSystems);
+
+                // Check for duplicate systems across records with the same key fields
+                var dupeQuery = _auxService.QueryableList.AsNoTracking()
+                    .Where(c => c.Country == entity.Country && c.CaseType == entity.CaseType
+                        && c.ActionType == entity.ActionType && c.ActionDue == entity.ActionDue
+                        && c.BasedOn == entity.BasedOn && c.Yr == entity.Yr && c.Mo == entity.Mo
+                        && c.Dy == entity.Dy && c.Indicator == entity.Indicator
+                        && c.Systems != null && c.Systems != "");
+                if (entity.CDueId > 0)
+                    dupeQuery = dupeQuery.Where(c => c.CDueId != entity.CDueId);
+
+                var allRecords = await dupeQuery.Select(c => c.Systems).ToListAsync();
+                var usedSystems = allRecords
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", duplicates)}");
 
                 if (entity.CDueId > 0)
-                    await _auxService.Update(entity);
-                else
-                    await _auxService.Add(entity);
+                {
+                    var existing = await _auxService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.CDueId == entity.CDueId);
 
-                return Json(entity.CDueId);
+                    entity.DateCreated = existing?.DateCreated ?? now;
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblTmkCountryDue SET Country=@p0, CaseType=@p1, ActionType=@p2, ActionDue=@p3, BasedOn=@p4,
+                          Yr=@p5, Mo=@p6, Dy=@p7, Indicator=@p8, Recurring=@p9, EffBasedOn=@p10, EffStartDate=@p11, EffEndDate=@p12,
+                          CPIAction=@p13, Calculate=@p14, CPIPermanentID=@p17,
+                          Systems=@p15, UserID=@p18, DateCreated=@p19, LastUpdate=@p20
+                          WHERE CDueId=@p16",
+                        new object[] {
+                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.ActionType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.ActionDue ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.BasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Yr),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Mo),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.Dy),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.Indicator ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Recurring),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.EffBasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p11", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p12", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p13", entity.CPIAction),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p14", entity.Calculate),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p15", entity.Systems),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p16", entity.CDueId),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p17", System.Data.SqlDbType.Int) { Value = entity.CPIPermanentID.HasValue ? entity.CPIPermanentID.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p19", entity.DateCreated),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate)
+                        });
+                }
+                else
+                {
+                    entity.DateCreated = now;
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblTmkCountryDue (CDueId, Country, CaseType, ActionType, ActionDue, BasedOn,
+                          Yr, Mo, Dy, Indicator, Recurring, EffBasedOn, EffStartDate, EffEndDate,
+                          CPIAction, Calculate, CPIPermanentID,
+                          Systems, UserID, DateCreated, LastUpdate)
+                          VALUES ((SELECT ISNULL(MAX(CDueId),0)+1 FROM tblTmkCountryDue), @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p17, @p15, @p18, @p19, @p20)",
+                        new object[] {
+                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.ActionType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.ActionDue ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.BasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Yr),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Mo),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.Dy),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.Indicator ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Recurring),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.EffBasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p11", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p12", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p13", entity.CPIAction),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p14", entity.Calculate),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p15", entity.Systems),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p17", System.Data.SqlDbType.Int) { Value = entity.CPIPermanentID.HasValue ? entity.CPIPermanentID.Value : DBNull.Value },
+                            new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p19", entity.DateCreated),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate)
+                        });
+
+                    // Retrieve the new CDueId
+                    var inserted = await _auxService.QueryableList.AsNoTracking()
+                        .OrderByDescending(c => c.CDueId).FirstOrDefaultAsync();
+                    if (inserted != null)
+                        entity.CDueId = inserted.CDueId;
+                }
+
+                return Json(new { id = entity.CDueId, redirectUrl = Url.Action("Detail", new { id = entity.CDueId, singleRecord = true }) });
             }
             else
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -315,6 +428,15 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_auxService.QueryableList, request, property, text, filterType, requiredRelation);
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
         }
 
         [HttpGet()]

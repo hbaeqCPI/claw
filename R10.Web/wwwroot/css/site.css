@@ -1443,13 +1443,10 @@ td.inactive {
     }
 
     .navbar .dropdown-menu .nav-sub-menu {
-        /*columns: 2;
-        -webkit-columns: 2;
-        -moz-columns: 2;*/
-        -webkit-column-count: 2;
-        -moz-column-count: 2;
-        column-count: 2;
-        padding: 0 30px 30px 0;
+        -webkit-column-count: 1;
+        -moz-column-count: 1;
+        column-count: 1;
+        padding: 0 10px 20px 0;
         list-style-type: none;
     }
 

@@ -16,6 +16,11 @@
     <input type="hidden" asp-for="CDueId" />
     <input type="hidden" asp-for="Country" />
     <input type="hidden" asp-for="CaseType" />
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -96,9 +101,9 @@
                 </div>
             </div>
         </div>
-        <div class="form-row">
-            <div class="col-md-2">
-                <div class="form-group float-label">
+        <div class="form-row align-items-end">
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
                     <label asp-for="Yr"></label>
                     @if (isReadOnly)
                     {
@@ -106,13 +111,13 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Yr").Format("0").Value(Model.Yr).HtmlAttributes(new { style = "width: 100%" }))
+                        @(Html.Kendo().NumericTextBox<int>().Name("Yr").Format("0").Value(Model.Yr).Min(0).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
                         <span asp-validation-for="Yr"></span>
                     }
                 </div>
             </div>
-            <div class="col-md-2">
-                <div class="form-group float-label">
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
                     <label asp-for="Mo"></label>
                     @if (isReadOnly)
                     {
@@ -120,13 +125,13 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Mo").Format("0").Value(Model.Mo).HtmlAttributes(new { style = "width: 100%" }))
+                        @(Html.Kendo().NumericTextBox<int>().Name("Mo").Format("0").Value(Model.Mo).Min(0).Max(12).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
                         <span asp-validation-for="Mo"></span>
                     }
                 </div>
             </div>
-            <div class="col-md-2">
-                <div class="form-group float-label">
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
                     <label asp-for="Dy"></label>
                     @if (isReadOnly)
                     {
@@ -134,14 +139,12 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Dy").Format("0").Value(Model.Dy).HtmlAttributes(new { style = "width: 100%" }))
+                        @(Html.Kendo().NumericTextBox<int>().Name("Dy").Format("0").Value(Model.Dy).Min(0).Max(31).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
                         <span asp-validation-for="Dy"></span>
                     }
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-sm-3 col-md-3 col-lg-2">
                 <div class="form-group float-label">
                     <label asp-for="Recurring"></label>
                     @if (isReadOnly)
@@ -162,6 +165,20 @@
                             )
                         <span asp-validation-for="Recurring"></span>
                     }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-2">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="k-checkbox" asp-for="CPIAction" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="CPIAction">@Localizer["CPI Action"]</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="k-checkbox" asp-for="Calculate" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="Calculate">@Localizer["Calculate"]</label>
                 </div>
             </div>
         </div>
@@ -209,6 +226,53 @@
                 </div>
             </div>
         </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="cdueSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="cdueSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="cdueSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#cdueSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "CountryDue")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="cdueSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#cdueSystemsCheckboxes').html(html);
+                                var allCount = $('.cdueSystemChk').length;
+                                var checkedCount = $('.cdueSystemChk:checked').length;
+                                $('#cdueSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.cdueSystemChk', function() {
+                                var vals = [];
+                                $('.cdueSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#cdueSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.cdueSystemChk').length;
+                                var checkedCount = $('.cdueSystemChk:checked').length;
+                                $('#cdueSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#cdueSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.cdueSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
     </div>
 
     @if (!addMode)
@@ -218,3 +282,16 @@
         </div>
     }
 </form>
+
+<script>
+    patCountryDuePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patCountryDuePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+</script>

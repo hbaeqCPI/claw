@@ -30,6 +30,7 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IViewModelService<PatCountryExp> _viewModelService;
         private readonly IEntityService<PatCountryExp> _auxService;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "patCountryExpDetail";
 
@@ -37,12 +38,14 @@ namespace R10.Web.Areas.Patent.Controllers
             IAuthorizationService authService,
             IViewModelService<PatCountryExp> viewModelService,
             IEntityService<PatCountryExp> auxService,
-            IStringLocalizer<SharedResource> localizer)
+            IStringLocalizer<SharedResource> localizer,
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _auxService = auxService;
             _localizer = localizer;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -86,7 +89,17 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                var entities = _viewModelService.AddCriteria(mainSearchFilters);
+                var entities = _auxService.QueryableList;
+                if (mainSearchFilters.Count > 0)
+                {
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
+                }
+                entities = _viewModelService.AddCriteria(entities, mainSearchFilters);
                 var result = await _viewModelService.CreateViewModelForGrid(request, entities, "Country", "CExpId");
                 return Json(result);
             }
@@ -196,7 +209,8 @@ namespace R10.Web.Areas.Patent.Controllers
                 RecordId = detail.CExpId,
                 PagePermission = page,
                 Data = detail,
-                FromSearch = fromSearch
+                FromSearch = fromSearch,
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
@@ -209,12 +223,127 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (entity.CExpId > 0)
-                    await _auxService.Update(entity);
-                else
-                    await _auxService.Add(entity);
+                entity.Systems ??= "";
 
-                return Json(entity.CExpId);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(entity.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems
+                var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                entity.Systems = string.Join(",", newSystems);
+
+                var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
+
+                if (entity.CExpId > 0 && !isNewRecord)
+                {
+                    // Update existing record
+                    var existing = await _auxService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.CExpId == entity.CExpId);
+
+                    if (existing != null)
+                    {
+                        // Check for duplicate systems across records with the same key fields
+                        var allRecords = await _auxService.QueryableList.AsNoTracking()
+                            .Where(c => c.CExpId != entity.CExpId
+                                && c.Country == entity.Country && c.CaseType == entity.CaseType
+                                && c.Type == entity.Type && c.BasedOn == entity.BasedOn
+                                && c.Yr == entity.Yr && c.Mo == entity.Mo && c.Dy == entity.Dy
+                                && c.Systems != null && c.Systems != "")
+                            .Select(c => c.Systems)
+                            .ToListAsync();
+
+                        var usedSystems = allRecords
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            .Select(s => s.Trim())
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                        if (duplicates.Any())
+                            return new JsonBadRequest($"The following systems are already assigned to another Country Expiration record: {string.Join(", ", duplicates)}");
+
+                        var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p8", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
+                        var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p9", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
+
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"UPDATE tblPatCountryExp SET Country=@p0, CaseType=@p1, Type=@p2, BasedOn=@p3,
+                              Yr=@p4, Mo=@p5, Dy=@p6, EffBasedOn=@p7, EffStartDate=@p8, EffEndDate=@p9,
+                              Systems=@p10
+                              WHERE CExpId=@p11",
+                            new object[] {
+                                new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.Type ?? ""),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.BasedOn ?? ""),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Yr),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Mo),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Dy),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.EffBasedOn ?? ""),
+                                effStart, effEnd,
+                                new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.Systems),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p11", entity.CExpId)
+                            });
+                    }
+                    else
+                    {
+                        return new RecordDoesNotExistResult();
+                    }
+                }
+                else
+                {
+                    // Insert new record
+                    // Check for duplicate systems across records with the same key fields
+                    var allRecords = await _auxService.QueryableList.AsNoTracking()
+                        .Where(c => c.Country == entity.Country && c.CaseType == entity.CaseType
+                            && c.Type == entity.Type && c.BasedOn == entity.BasedOn
+                            && c.Yr == entity.Yr && c.Mo == entity.Mo && c.Dy == entity.Dy
+                            && c.Systems != null && c.Systems != "")
+                        .Select(c => c.Systems)
+                        .ToListAsync();
+
+                    var usedSystems = allRecords
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                    if (duplicates.Any())
+                        return new JsonBadRequest($"The following systems are already assigned to another Country Expiration record: {string.Join(", ", duplicates)}");
+
+                    var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p8", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
+                    var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p9", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblPatCountryExp (CExpId, Country, CaseType, Type, BasedOn,
+                          Yr, Mo, Dy, EffBasedOn, EffStartDate, EffEndDate, Systems)
+                          VALUES ((SELECT ISNULL(MAX(CExpId),0)+1 FROM tblPatCountryExp), @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10)",
+                        new object[] {
+                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.Type ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.BasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Yr),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Mo),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Dy),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.EffBasedOn ?? ""),
+                            effStart, effEnd,
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.Systems)
+                        });
+
+                    // Retrieve the newly inserted CExpId
+                    var inserted = await _auxService.QueryableList.AsNoTracking()
+                        .Where(c => c.Country == entity.Country && c.CaseType == entity.CaseType
+                            && c.Type == entity.Type && c.Systems == entity.Systems)
+                        .OrderByDescending(c => c.CExpId)
+                        .FirstOrDefaultAsync();
+                    if (inserted != null)
+                        entity.CExpId = inserted.CExpId;
+                }
+
+                return Json(new { id = entity.CExpId, redirectUrl = Url.Action("Detail", new { id = entity.CExpId, singleRecord = true }) });
             }
             else
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -224,12 +353,11 @@ namespace R10.Web.Areas.Patent.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var entity = await GetById(id);
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatCountryExp WHERE CExpId=@p0", id);
 
-            if (entity == null)
+            if (count == 0)
                 return new RecordDoesNotExistResult();
-
-            await _auxService.Delete(entity);
 
             return Ok();
         }
@@ -237,6 +365,15 @@ namespace R10.Web.Areas.Patent.Controllers
         private async Task<PatCountryExp> GetById(int id)
         {
             return await _auxService.QueryableList.SingleOrDefaultAsync((c => c.CExpId == id));
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

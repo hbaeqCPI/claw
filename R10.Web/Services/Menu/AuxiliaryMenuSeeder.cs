@@ -50,56 +50,82 @@ namespace R10.Web.Services.Menu
                     return;
                 }
 
-                // Patent auxiliary items
-                var patentItems = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                // Patent categories
+                var patManage = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                {
+                    ("Country Due", "CountryDue", "{\"area\":\"Patent\"}", 10),
+                    ("Country Expiry", "CountryExp", "{\"area\":\"Patent\"}", 20),
+                    ("Country Expiry Delete", "CountryExpDelete", "{\"area\":\"Patent\"}", 25),
+                    ("Country Law", "CountryLaw", "{\"area\":\"Patent\"}", 30),
+                };
+                var patAuxiliary = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
                 {
                     ("Action Type", "ActionType", "{\"area\":\"Patent\"}", 10),
                     ("Area", "Area", "{\"area\":\"Patent\"}", 20),
-                    ("Area Delete", "AreaDelete", "{\"area\":\"Patent\"}", 25),
-                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Patent\"}", 26),
-                    ("Case Type", "CaseType", "{\"area\":\"Patent\"}", 28),
-                    ("Country", "Country", "{\"area\":\"Patent\"}", 29),
-                    ("Country Due", "CountryDue", "{\"area\":\"Patent\"}", 30),
-                    ("Country Expiry", "CountryExp", "{\"area\":\"Patent\"}", 40),
-                    ("Country Exp Delete", "CountryExpDelete", "{\"area\":\"Patent\"}", 45),
-                    ("Country Law Ext", "CountryLawExt", "{\"area\":\"Patent\"}", 47),
-                    ("Des Case Type", "DesCaseType", "{\"area\":\"Patent\"}", 50),
-                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Patent\"}", 52),
-                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Patent\"}", 54),
-                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Patent\"}", 56),
-                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Patent\"}", 60),
-                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Patent\"}", 62),
-                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Patent\"}", 64),
-                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Patent\"}", 66),
+                    ("Area Delete", "AreaDelete", "{\"area\":\"Patent\"}", 21),
+                    ("Area Country", "AreaCountry", "{\"area\":\"Patent\"}", 22),
+                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Patent\"}", 23),
+                    ("Case Type", "CaseType", "{\"area\":\"Patent\"}", 30),
+                    ("Country", "Country", "{\"area\":\"Patent\"}", 40),
+                    ("Country Law Ext", "CountryLawExt", "{\"area\":\"Patent\"}", 60),
                     ("Indicator", "Indicator", "{\"area\":\"Patent\"}", 70)
                 };
+                var patDesignated = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                {
+                    ("Des Case Type", "DesCaseType", "{\"area\":\"Patent\"}", 10),
+                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Patent\"}", 11),
+                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Patent\"}", 12),
+                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Patent\"}", 13),
+                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Patent\"}", 20),
+                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Patent\"}", 21),
+                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Patent\"}", 22),
+                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Patent\"}", 23),
+                };
 
-                // Trademark auxiliary items
-                var trademarkItems = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                // Trademark categories
+                var tmkManage = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                {
+                    ("Country Due", "CountryDue", "{\"area\":\"Trademark\"}", 10),
+                    ("Country Law", "CountryLaw", "{\"area\":\"Trademark\"}", 20),
+                };
+                var tmkAuxiliary = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
                 {
                     ("Action Type", "ActionType", "{\"area\":\"Trademark\"}", 10),
                     ("Area", "Area", "{\"area\":\"Trademark\"}", 20),
-                    ("Area Delete", "AreaDelete", "{\"area\":\"Trademark\"}", 25),
-                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Trademark\"}", 26),
-                    ("Case Type", "CaseType", "{\"area\":\"Trademark\"}", 28),
-                    ("Country", "Country", "{\"area\":\"Trademark\"}", 29),
-                    ("Country Due", "CountryDue", "{\"area\":\"Trademark\"}", 30),
-                    ("Des Case Type", "DesCaseType", "{\"area\":\"Trademark\"}", 40),
-                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Trademark\"}", 42),
-                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Trademark\"}", 44),
-                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Trademark\"}", 46),
-                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Trademark\"}", 50),
-                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Trademark\"}", 52),
-                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Trademark\"}", 54),
-                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Trademark\"}", 56),
-                    ("Indicator", "Indicator", "{\"area\":\"Trademark\"}", 60),
-                    ("Standard Good", "StandardGood", "{\"area\":\"Trademark\"}", 70)
+                    ("Area Delete", "AreaDelete", "{\"area\":\"Trademark\"}", 21),
+                    ("Area Country", "AreaCountry", "{\"area\":\"Trademark\"}", 22),
+                    ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Trademark\"}", 23),
+                    ("Case Type", "CaseType", "{\"area\":\"Trademark\"}", 30),
+                    ("Country", "Country", "{\"area\":\"Trademark\"}", 40),
+                    ("Indicator", "Indicator", "{\"area\":\"Trademark\"}", 50),
+                    ("Standard Good", "StandardGood", "{\"area\":\"Trademark\"}", 60)
+                };
+                var tmkDesignated = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
+                {
+                    ("Des Case Type", "DesCaseType", "{\"area\":\"Trademark\"}", 10),
+                    ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Trademark\"}", 11),
+                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Trademark\"}", 12),
+                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Trademark\"}", 13),
+                    ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Trademark\"}", 20),
+                    ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Trademark\"}", 21),
+                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Trademark\"}", 22),
+                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Trademark\"}", 23),
                 };
 
                 bool changed = false;
 
-                changed |= await SeedAuxiliaryCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, patentTop.Id, "Patent", patentItems, cancellationToken);
-                changed |= await SeedAuxiliaryCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop.Id, "Trademark", trademarkItems, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, patentTop.Id, "Patent", "Manage", 10, patManage, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, patentTop.Id, "Patent", "Auxiliary", 20, patAuxiliary, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, patentTop.Id, "Patent", "Designated", 30, patDesignated, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop.Id, "Trademark", "Manage", 10, tmkManage, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop.Id, "Trademark", "Auxiliary", 20, tmkAuxiliary, cancellationToken);
+                changed |= await SeedCategory(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop.Id, "Trademark", "Designated", 30, tmkDesignated, cancellationToken);
+
+                // Clean up: remove items from Auxiliary that now belong to Manage or Designated
+                changed |= await CleanupMisplacedItems(db, menuItemRepo, allItems, allPages, patentTop.Id, "Patent",
+                    patManage, patAuxiliary, patDesignated, cancellationToken);
+                changed |= await CleanupMisplacedItems(db, menuItemRepo, allItems, allPages, trademarkTop.Id, "Trademark",
+                    tmkManage, tmkAuxiliary, tmkDesignated, cancellationToken);
 
                 // Seed "Releases" top-level tab (after Trademark, before Administration)
                 changed |= await SeedReleasesTopLevel(db, menuItemRepo, menuPageRepo, allItems, allPages, trademarkTop, cancellationToken);
@@ -121,7 +147,7 @@ namespace R10.Web.Services.Menu
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-        private async Task<bool> SeedAuxiliaryCategory(
+        private async Task<bool> SeedCategory(
             ICPiDbContext db,
             IRepository<CPiMenuItem> menuItemRepo,
             IRepository<CPiMenuPage> menuPageRepo,
@@ -129,37 +155,39 @@ namespace R10.Web.Services.Menu
             List<CPiMenuPage> allPages,
             string parentTopId,
             string areaName,
+            string categoryTitle,
+            int categorySortOrder,
             List<(string Title, string Controller, string RouteOptions, int SortOrder)> items,
             CancellationToken cancellationToken)
         {
             bool changed = false;
 
-            // Find or create "Auxiliary" category
-            var auxCategory = allItems.FirstOrDefault(m => m.ParentId == parentTopId && m.Title == "Auxiliary");
-            if (auxCategory != null && string.IsNullOrEmpty(auxCategory.Policy))
+            // Find or create category
+            var category = allItems.FirstOrDefault(m => m.ParentId == parentTopId && m.Title == categoryTitle);
+            if (category != null && string.IsNullOrEmpty(category.Policy))
             {
-                // Fix previously seeded items missing Policy
-                auxCategory.Policy = "*";
-                menuItemRepo.Update(auxCategory);
+                category.Policy = "*";
+                menuItemRepo.Update(category);
                 await db.SaveChangesAsync();
-                _logger.LogInformation("AuxiliaryMenuSeeder: Fixed missing Policy on 'Auxiliary' category under {Area}.", areaName);
                 changed = true;
             }
-            if (auxCategory == null)
+            if (category == null)
             {
-                auxCategory = new CPiMenuItem
+                category = new CPiMenuItem
                 {
                     ParentId = parentTopId,
-                    Title = "Auxiliary",
-                    SortOrder = 20,
+                    Title = categoryTitle,
+                    SortOrder = categorySortOrder,
                     IsEnabled = true,
                     Policy = "*"
                 };
-                menuItemRepo.Add(auxCategory);
+                menuItemRepo.Add(category);
                 await db.SaveChangesAsync();
-                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Auxiliary' category under {Area}.", areaName);
+                allItems.Add(category);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created '{Category}' category under {Area}.", categoryTitle, areaName);
                 changed = true;
             }
+            var auxCategory = category;
 
             foreach (var (title, controller, routeOptions, sortOrder) in items)
             {
@@ -306,6 +334,47 @@ namespace R10.Web.Services.Menu
                 changed = true;
             }
 
+            return changed;
+        }
+
+        private async Task<bool> CleanupMisplacedItems(
+            ICPiDbContext db,
+            IRepository<CPiMenuItem> menuItemRepo,
+            List<CPiMenuItem> allItems,
+            List<CPiMenuPage> allPages,
+            string parentTopId,
+            string areaName,
+            List<(string Title, string Controller, string RouteOptions, int SortOrder)> manageItems,
+            List<(string Title, string Controller, string RouteOptions, int SortOrder)> auxiliaryItems,
+            List<(string Title, string Controller, string RouteOptions, int SortOrder)> designatedItems,
+            CancellationToken cancellationToken)
+        {
+            bool changed = false;
+            var allCategories = new[] { ("Manage", manageItems), ("Auxiliary", auxiliaryItems), ("Designated", designatedItems) };
+
+            foreach (var (catTitle, catItems) in allCategories)
+            {
+                var category = allItems.FirstOrDefault(m => m.ParentId == parentTopId && m.Title == catTitle);
+                if (category == null) continue;
+
+                var validControllers = new HashSet<string>(catItems.Select(i => i.Controller), StringComparer.OrdinalIgnoreCase);
+                var leafItems = allItems.Where(m => m.ParentId == category.Id && m.PageId.HasValue).ToList();
+
+                foreach (var leaf in leafItems)
+                {
+                    var page = allPages.FirstOrDefault(p => p.Id == leaf.PageId);
+                    if (page == null) continue;
+
+                    if (!validControllers.Contains(page.Controller ?? ""))
+                    {
+                        menuItemRepo.Delete(leaf);
+                        await db.SaveChangesAsync();
+                        allItems.Remove(leaf);
+                        _logger.LogInformation("AuxiliaryMenuSeeder: Removed '{Title}' from {Area}/{Category}.", leaf.Title, areaName, catTitle);
+                        changed = true;
+                    }
+                }
+            }
             return changed;
         }
     }

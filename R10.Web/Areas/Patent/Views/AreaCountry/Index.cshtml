@@ -1,0 +1,11 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["Area Country"];
+    ViewData["ActivePage"] = "patAreaCountryPage";
+}
+@section Scripts {
+    <script>var @ViewBag.ActivePage = new ActivePage();</script>
+}
+<script>if (typeof patAreaCountryPage === 'undefined') { var patAreaCountryPage = new ActivePage(); }</script>
+@await Html.PartialPageAsync(Model.Page, Model)

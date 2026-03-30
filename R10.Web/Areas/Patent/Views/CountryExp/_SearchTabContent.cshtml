@@ -10,13 +10,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Country">@Localizer["Country"]</label>
-                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.SharedCountry("Country", countryLabel, countryNameLabel, "PatCountryExps"))
-                </div>
-            </div>
-            <div class="col-md-8 col-lg-8 col-xl-6">
-                <div class="form-group float-label">
-                    <label for="PatCountry.CountryName">@Localizer["Country Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.SharedCountryName("PatCountry.CountryName", "PatCountryExps"))
+                    @await Component.InvokeAsync("ComboBox", new { name = "Country" })
                 </div>
             </div>
         </div>
@@ -40,43 +34,11 @@
                 </div>
             </div>
         </div>
-        <div class="form-row mt-4">
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="CreatedBy">@Localizer["Created By"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy" })
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="DateCreatedFrom">@Localizer["Date Created From"]</label>
-                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedFrom"))
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="DateCreatedTo">@Localizer["Date Created To"]</label>
-                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("DateCreatedTo"))
-                </div>
-            </div>
-        </div>
         <div class="form-row">
             <div class="col-md-4">
                 <div class="form-group float-label">
-                    <label for="UpdatedBy">@Localizer["Updated By"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy" })
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="LastUpdateFrom">@Localizer["Last Update From"]</label>
-                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateFrom"))
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="LastUpdateTo">@Localizer["Last Update To"]</label>
-                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LastUpdateTo"))
+                    <label for="SystemName">@Localizer["Systems"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
                 </div>
             </div>
         </div>

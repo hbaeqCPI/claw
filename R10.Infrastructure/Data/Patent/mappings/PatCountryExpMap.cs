@@ -11,6 +11,8 @@ namespace R10.Infrastructure.Data.Patent.mappings
             builder.ToTable("tblPatCountryExp");
             builder.HasKey(e => e.CExpId);
             builder.Ignore(e => e.ParentTStamp);
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }
