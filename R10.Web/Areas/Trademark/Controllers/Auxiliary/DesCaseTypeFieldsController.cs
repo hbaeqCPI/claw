@@ -41,6 +41,16 @@ namespace R10.Web.Areas.Trademark.Controllers
             _localizer = localizer;
         }
 
+        private async Task<DetailPagePermission> GetPermission()
+        {
+            var p = new DetailPagePermission();
+            p.CanEditRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryModify)).Succeeded;
+            p.CanDeleteRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
+            p.CanAddRecord = p.CanEditRecord;
+            p.CanCopyRecord = p.CanEditRecord;
+            return p;
+        }
+
         public async Task<IActionResult> Index()
         {
             var model = new PageViewModel()
@@ -78,16 +88,40 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request)
+        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var data = await _repository.TmkDesCaseTypeFields.AsNoTracking().ToListAsync();
+            var entities = _repository.TmkDesCaseTypeFields.AsNoTracking().AsQueryable();
+            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+            {
+                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                if (systemName != null)
+                {
+                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                    mainSearchFilters.Remove(systemName);
+                }
+
+                foreach (var filter in mainSearchFilters)
+                {
+                    if (string.IsNullOrEmpty(filter.Value)) continue;
+                    var val = filter.Value;
+                    switch (filter.Property)
+                    {
+                        case "DesCaseType": entities = entities.Where(e => EF.Functions.Like(e.DesCaseType, val)); break;
+                        case "FromField": entities = entities.Where(e => EF.Functions.Like(e.FromField, val)); break;
+                        case "ToField": entities = entities.Where(e => EF.Functions.Like(e.ToField, val)); break;
+                    }
+                }
+            }
+            var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false)
+        public async Task<IActionResult> Detail(string desCaseType, string fromField, string toField, string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
-            var items = await _repository.TmkDesCaseTypeFields.AsNoTracking().ToListAsync();
-            if (id < 0 || id >= items.Count)
+            var detail = await _repository.TmkDesCaseTypeFields.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.DesCaseType == desCaseType && e.FromField == fromField && e.ToField == toField && e.Systems == systems);
+
+            if (detail == null)
             {
                 if (Request.IsAjax())
                     return new RecordDoesNotExistResult();
@@ -95,15 +129,19 @@ namespace R10.Web.Areas.Trademark.Controllers
                     return RedirectToAction("Index");
             }
 
-            var detail = items[id];
+            var permission = await GetPermission();
+            permission.DeleteScreenUrl = permission.CanDeleteRecord
+                ? Url.Action("Delete", new { desCaseType = detail.DesCaseType, fromField = detail.FromField, toField = detail.ToField, systems = detail.Systems })
+                : "";
+
             PageViewModel model = new PageViewModel()
             {
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Detail"].ToString(),
-                RecordId = id,
                 SingleRecord = singleRecord || !Request.IsAjax(),
-                Data = detail
+                Data = detail,
+                PagePermission = permission
             };
 
             if (Request.IsAjax())
@@ -125,17 +163,24 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
-        public IActionResult Add(bool fromSearch = false)
+        public async Task<IActionResult> Add(string desCaseType = "", string fromField = "", string toField = "", bool fromSearch = false)
         {
             if (!Request.IsAjax())
                 return RedirectToAction("Index");
+
+            var entity = new TmkDesCaseTypeFields();
+            if (!string.IsNullOrEmpty(desCaseType)) entity.DesCaseType = desCaseType;
+            if (!string.IsNullOrEmpty(fromField)) entity.FromField = fromField;
+            if (!string.IsNullOrEmpty(toField)) entity.ToField = toField;
 
             var model = new PageViewModel()
             {
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = _dataContainer,
                 Title = _localizer["New Des Case Type Fields"].ToString(),
-                Data = new TmkDesCaseTypeFields()
+                Data = entity,
+                PagePermission = await GetPermission(),
+                AfterCancelledInsert = this.Url.Action("Index")
             };
             ModelState.Clear();
 
@@ -149,26 +194,97 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-            _repository.Set<TmkDesCaseTypeFields>().Add(entity);
-            await _repository.SaveChangesAsync();
-            return Json(0);
+            entity.Systems ??= "";
+
+            // Require at least one system
+            if (string.IsNullOrWhiteSpace(entity.Systems))
+                return new JsonBadRequest("At least one system must be selected.");
+
+            // Deduplicate and sort systems
+            var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+            entity.Systems = string.Join(",", newSystems);
+
+            var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
+            var originalSystemsValue = entity.OriginalSystems == "__EMPTY__" ? "" : (entity.OriginalSystems ?? "");
+
+            // Find existing record on update
+            TmkDesCaseTypeFields existing = null;
+            if (!isNewRecord)
+            {
+                existing = await _repository.TmkDesCaseTypeFields.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField
+                        && c.ToField == entity.ToField && c.Systems == originalSystemsValue);
+            }
+
+            // Check for duplicate systems across other records with the same key fields
+            var allRecords = await _repository.TmkDesCaseTypeFields.AsNoTracking()
+                .Where(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField
+                    && c.ToField == entity.ToField
+                    && c.Systems != null && c.Systems != "")
+                .Select(c => c.Systems)
+                .ToListAsync();
+
+            // Exclude existing record's systems from the check
+            if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                allRecords.Remove(existing.Systems);
+
+            var usedSystems = allRecords
+                .Where(s => !string.IsNullOrEmpty(s))
+                .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+            if (duplicates.Any())
+                return new JsonBadRequest($"The following systems are already assigned to this Des Case Type Fields record: {string.Join(", ", duplicates)}");
+
+            if (existing != null)
+            {
+                // Use raw SQL to avoid EF composite key tracking issues
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"UPDATE tblTmkDesCaseTypeFields SET DesCaseType=@p0, FromField=@p1, ToField=@p2, Systems=@p3
+                      WHERE DesCaseType=@p4 AND FromField=@p5 AND ToField=@p6 AND Systems=@p7",
+                    entity.DesCaseType ?? "", entity.FromField ?? "", entity.ToField ?? "", entity.Systems,
+                    existing.DesCaseType ?? "", existing.FromField ?? "", existing.ToField ?? "", existing.Systems ?? "");
+            }
+            else
+            {
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"INSERT INTO tblTmkDesCaseTypeFields (DesCaseType, FromField, ToField, Systems)
+                      VALUES (@p0, @p1, @p2, @p3)",
+                    entity.DesCaseType ?? "", entity.FromField ?? "", entity.ToField ?? "", entity.Systems);
+            }
+
+            return Json(new { redirectUrl = Url.Action("Detail", new { desCaseType = entity.DesCaseType, fromField = entity.FromField, toField = entity.ToField, systems = entity.Systems, singleRecord = true }) });
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete([FromBody] TmkDesCaseTypeFields entity)
+        public async Task<IActionResult> Delete(string desCaseType, string fromField, string toField, string systems = "")
         {
-            _repository.Set<TmkDesCaseTypeFields>().Remove(entity);
-            await _repository.SaveChangesAsync();
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkDesCaseTypeFields WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND Systems=@p3",
+                desCaseType ?? "", fromField ?? "", toField ?? "", systems ?? "");
+
+            if (count == 0)
+                return new RecordDoesNotExistResult();
+
             return Ok();
         }
 
-        [HttpGet]
-        public IActionResult DetailLink(int? id)
+        [HttpGet()]
+        public IActionResult Copy(string desCaseType, string fromField, string toField, string systems = "")
         {
-            return id > 0
-                ? RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true })
-                : RedirectToAction(nameof(Add), new { fromSearch = true });
+            return RedirectToAction("Add", new { desCaseType, fromField, toField, fromSearch = false });
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

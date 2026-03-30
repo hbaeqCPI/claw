@@ -1,32 +1,26 @@
 @model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
-@inject ISystemSettings<PatSetting> Settings
-@{
-    var settings = await Settings.GetSetting();
-}
+@using R10.Core.Entities.Patent
 
 @(Html.Kendo().Grid<PatDesCaseType>()
-                .Name($"{Model.PageId}-Grid")
-                .Columns(columns =>
-                {
-                    columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: IntlCode#", fromSearch = true }), "IntlCode")).Width(150);
-                    columns.Bound(m => m.CaseType).Width(150);
-                    columns.Bound(m => m.DesCountry).Width(150);
-                    columns.Bound(m => m.DesCaseType).Width(150);
-                })
-                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
-                .AutoBind(false)
-                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
-                .Sortable(sort => sort.AllowUnsort(false))
-                .Excel(excel => excel.FileName("DesCaseTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseType")))
-                .DataSource(dataSource => dataSource
-                .Ajax().Events(events => events.Error("patDesCaseTypePage.searchResultGridError"))
-                .Events(events => events.RequestEnd("patDesCaseTypePage.searchResultGridRequestEnd"))
-                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
-                .Read(read => read.Action("PageRead", "DesCaseType")
-                .Data("patDesCaseTypePage.gridMainSearchFilters")
-                )
-                .Sort(sort => sort.Add(m => m.IntlCode))
-                )
-                .HtmlAttributes(new { @class = "kendo-Grid" })
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { intlCode = "#: IntlCode#", caseType = "#: CaseType#", desCountry = "#: DesCountry#", desCaseType = "#: DesCaseType#", systems = "#: Systems#", fromSearch = true }), "IntlCode")).Width(150);
+        columns.Bound(m => m.CaseType).Width(150);
+        columns.Bound(m => m.DesCountry).Width(150);
+        columns.Bound(m => m.DesCaseType).Width(150);
+        columns.Bound(m => m.Systems).Width(300);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("DesCaseTypeList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseType")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("patDesCaseTypePage.searchResultGridError"))
+        .Events(events => events.RequestEnd("patDesCaseTypePage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "DesCaseType").Data("patDesCaseTypePage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
 )

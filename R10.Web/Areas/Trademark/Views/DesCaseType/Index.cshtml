@@ -4,11 +4,11 @@
     ViewData["Title"] = Localizer["Designation Case Type"];
     ViewData["ActivePage"] = "tmkDesCaseTypePage";
 }
-
 @section Scripts {
-    <script>
-        var @ViewBag.ActivePage = new ActivePage();
-    </script>
+    <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
-
+<script>
+if (typeof tmkDesCaseTypePage === 'undefined') { var tmkDesCaseTypePage = new ActivePage(); }
+tmkDesCaseTypePage.mainSearchRecordIds = tmkDesCaseTypePage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

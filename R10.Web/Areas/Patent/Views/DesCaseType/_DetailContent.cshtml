@@ -1,13 +1,19 @@
 @model PatDesCaseType
+@using R10.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var addMode = string.IsNullOrEmpty(Model.IntlCode);
-
+    var addMode = Model.IsNewRecord;
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
 }
+
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -42,6 +48,81 @@
                     <span asp-validation-for="DesCaseType"></span>
                 </div>
             </div>
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check">
+                    <input type="checkbox" class="k-checkbox" asp-for="Default" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="Default">@Localizer["Default?"]</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="patDCTSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patDCTSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="patDCTSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#patDCTSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "DesCaseType")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patDCTSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#patDCTSystemsCheckboxes').html(html);
+                                var allCount = $('.patDCTSystemChk').length;
+                                var checkedCount = $('.patDCTSystemChk:checked').length;
+                                $('#patDCTSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.patDCTSystemChk', function() {
+                                var vals = [];
+                                $('.patDCTSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#patDCTSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.patDCTSystemChk').length;
+                                var checkedCount = $('.patDCTSystemChk:checked').length;
+                                $('#patDCTSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#patDCTSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.patDCTSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
         </div>
     </div>
+
 </form>
+
+<script>
+    patDesCaseTypePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patDesCaseTypePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

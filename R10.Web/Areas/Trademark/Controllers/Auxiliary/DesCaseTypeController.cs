@@ -41,6 +41,16 @@ namespace R10.Web.Areas.Trademark.Controllers
             _localizer = localizer;
         }
 
+        private async Task<DetailPagePermission> GetPermission()
+        {
+            var p = new DetailPagePermission();
+            p.CanEditRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryModify)).Succeeded;
+            p.CanDeleteRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
+            p.CanAddRecord = p.CanEditRecord;
+            p.CanCopyRecord = p.CanEditRecord;
+            return p;
+        }
+
         public async Task<IActionResult> Index()
         {
             var model = new PageViewModel()
@@ -78,16 +88,41 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request)
+        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var data = await _repository.TmkDesCaseTypes.AsNoTracking().ToListAsync();
+            var entities = _repository.TmkDesCaseTypes.AsNoTracking().AsQueryable();
+            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+            {
+                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                if (systemName != null)
+                {
+                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                    mainSearchFilters.Remove(systemName);
+                }
+
+                foreach (var filter in mainSearchFilters)
+                {
+                    if (string.IsNullOrEmpty(filter.Value)) continue;
+                    var val = filter.Value;
+                    switch (filter.Property)
+                    {
+                        case "IntlCode": entities = entities.Where(e => EF.Functions.Like(e.IntlCode, val)); break;
+                        case "CaseType": entities = entities.Where(e => EF.Functions.Like(e.CaseType, val)); break;
+                        case "DesCountry": entities = entities.Where(e => EF.Functions.Like(e.DesCountry, val)); break;
+                        case "DesCaseType": entities = entities.Where(e => EF.Functions.Like(e.DesCaseType, val)); break;
+                    }
+                }
+            }
+            var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false)
+        public async Task<IActionResult> Detail(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
-            var items = await _repository.TmkDesCaseTypes.AsNoTracking().ToListAsync();
-            if (id < 0 || id >= items.Count)
+            var detail = await _repository.TmkDesCaseTypes.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IntlCode == intlCode && e.CaseType == caseType && e.DesCountry == desCountry && e.DesCaseType == desCaseType && e.Systems == systems);
+
+            if (detail == null)
             {
                 if (Request.IsAjax())
                     return new RecordDoesNotExistResult();
@@ -95,15 +130,24 @@ namespace R10.Web.Areas.Trademark.Controllers
                     return RedirectToAction("Index");
             }
 
-            var detail = items[id];
+            var permission = await GetPermission();
+            permission.DeleteScreenUrl = permission.CanDeleteRecord
+                ? Url.Action("Delete", new { intlCode = detail.IntlCode, caseType = detail.CaseType, desCountry = detail.DesCountry, desCaseType = detail.DesCaseType, systems = detail.Systems })
+                : "";
+            permission.CopyScreenUrl = permission.CanCopyRecord
+                ? Url.Action("Add", new { fromSearch = true, copyIntlCode = detail.IntlCode, copyCaseType = detail.CaseType, copyDesCountry = detail.DesCountry, copyDesCaseType = detail.DesCaseType, copySystems = detail.Systems, copyDefault = detail.Default })
+                : "";
+            permission.IsCopyScreenPopup = false;
+
             PageViewModel model = new PageViewModel()
             {
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Designation Case Type Detail"].ToString(),
-                RecordId = id,
+                RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
-                Data = detail
+                Data = detail,
+                PagePermission = permission
             };
 
             if (Request.IsAjax())
@@ -125,17 +169,30 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
-        public IActionResult Add(bool fromSearch = false)
+        public async Task<IActionResult> Add(bool fromSearch = false, string copyIntlCode = "", string copyCaseType = "", string copyDesCountry = "", string copyDesCaseType = "", string copySystems = "", bool copyDefault = false)
         {
             if (!Request.IsAjax())
                 return RedirectToAction("Index");
+
+            var entity = new TmkDesCaseType { IsNewRecord = true };
+            if (!string.IsNullOrEmpty(copyIntlCode))
+            {
+                entity.IntlCode = copyIntlCode;
+                entity.CaseType = copyCaseType;
+                entity.DesCountry = copyDesCountry;
+                entity.DesCaseType = copyDesCaseType;
+                entity.Systems = copySystems ?? "";
+                entity.Default = copyDefault;
+            }
 
             var model = new PageViewModel()
             {
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = _dataContainer,
                 Title = _localizer["New Designation Case Type"].ToString(),
-                Data = new TmkDesCaseType()
+                Data = entity,
+                PagePermission = await GetPermission(),
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
@@ -149,26 +206,107 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
-            _repository.Set<TmkDesCaseType>().Add(entity);
-            await _repository.SaveChangesAsync();
-            return Json(0);
+            entity.Systems ??= "";
+
+            // Require at least one system
+            if (string.IsNullOrWhiteSpace(entity.Systems))
+                return new JsonBadRequest("At least one system must be selected.");
+
+            // Deduplicate and sort systems
+            var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+            entity.Systems = string.Join(",", newSystems);
+
+            var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
+            var originalSystemsValue = entity.OriginalSystems == "__EMPTY__" ? "" : (entity.OriginalSystems ?? "");
+
+            // Find existing record on update
+            TmkDesCaseType existing = null;
+            if (!isNewRecord)
+            {
+                existing = await _repository.TmkDesCaseTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType && c.Systems == originalSystemsValue);
+            }
+
+            // Check for duplicate systems across other records with the same key fields
+            var allRecords = await _repository.TmkDesCaseTypes.AsNoTracking()
+                .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                    && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                    && c.Systems != null && c.Systems != "")
+                .Select(c => c.Systems)
+                .ToListAsync();
+
+            // Exclude existing record's systems from the check
+            if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                allRecords.Remove(existing.Systems);
+
+            var usedSystems = allRecords
+                .Where(s => !string.IsNullOrEmpty(s))
+                .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+            if (duplicates.Any())
+                return new JsonBadRequest($"The following systems are already assigned to this Designation Case Type record: {string.Join(", ", duplicates)}");
+
+            if (existing != null)
+            {
+                // Use raw SQL to avoid EF composite key tracking issues
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"UPDATE tblTmkDesCaseType SET IntlCode=@p0, CaseType=@p1, DesCountry=@p2, DesCaseType=@p3, [Default]=@p4, Systems=@p5
+                      WHERE IntlCode=@p6 AND CaseType=@p7 AND DesCountry=@p8 AND DesCaseType=@p9 AND Systems=@p10",
+                    entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems,
+                    existing.IntlCode ?? "", existing.CaseType ?? "", existing.DesCountry ?? "", existing.DesCaseType ?? "", existing.Systems ?? "");
+            }
+            else
+            {
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems)
+                      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                    entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems);
+            }
+
+            return Json(new { redirectUrl = Url.Action("Detail", new { intlCode = entity.IntlCode, caseType = entity.CaseType, desCountry = entity.DesCountry, desCaseType = entity.DesCaseType, systems = entity.Systems, singleRecord = true }) });
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete([FromBody] TmkDesCaseType entity)
+        public async Task<IActionResult> Delete(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "")
         {
-            _repository.Set<TmkDesCaseType>().Remove(entity);
-            await _repository.SaveChangesAsync();
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkDesCaseType WHERE IntlCode=@p0 AND CaseType=@p1 AND DesCountry=@p2 AND DesCaseType=@p3 AND Systems=@p4",
+                intlCode ?? "", caseType ?? "", desCountry ?? "", desCaseType ?? "", systems ?? "");
+
+            if (count == 0)
+                return new RecordDoesNotExistResult();
+
             return Ok();
         }
 
-        [HttpGet]
-        public IActionResult DetailLink(int? id)
+        [HttpGet()]
+        public async Task<IActionResult> Copy(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "")
         {
-            return id > 0
-                ? RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true })
-                : RedirectToAction(nameof(Add), new { fromSearch = true });
+            var entity = await _repository.TmkDesCaseTypes.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.IntlCode == intlCode && c.CaseType == caseType && c.DesCountry == desCountry && c.DesCaseType == desCaseType && c.Systems == systems);
+            if (entity == null) return new RecordDoesNotExistResult();
+
+            return RedirectToAction("Add", new { fromSearch = true, copyIntlCode = entity.IntlCode, copyCaseType = entity.CaseType, copyDesCountry = entity.DesCountry, copyDesCaseType = entity.DesCaseType, copySystems = entity.Systems, copyDefault = entity.Default });
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
+        }
+
+        public async Task<IActionResult> GetRecordStamps(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "")
+        {
+            // This entity does not have audit fields, return empty
+            return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

@@ -24,3 +24,25 @@
 @await Component.InvokeAsync("AlertDialog")
 @await Component.InvokeAsync("ConfirmDialog")
 @await Component.InvokeAsync("LoadingSpinner")
+
+<script>
+    $(document).ready(function() {
+        // Show any deferred success message from a previous action (e.g., delete)
+        var msg = sessionStorage.getItem('cpiDeferredSuccess');
+        if (msg) {
+            sessionStorage.removeItem('cpiDeferredSuccess');
+            setTimeout(function() {
+                if (typeof cpiStatusMessage !== 'undefined') cpiStatusMessage.success(msg, 5000);
+            }, 500);
+        }
+
+        // Monkey-patch showSuccess to store message for post-navigation display
+        if (typeof pageHelper !== 'undefined') {
+            var _origShowSuccess = pageHelper.showSuccess;
+            pageHelper.showSuccess = function(message) {
+                if (message) sessionStorage.setItem('cpiDeferredSuccess', message);
+                _origShowSuccess(message);
+            };
+        }
+    });
+</script>

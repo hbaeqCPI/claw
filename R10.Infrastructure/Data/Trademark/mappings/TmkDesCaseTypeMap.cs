@@ -9,7 +9,10 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkDesCaseType> builder)
         {
             builder.ToTable("tblTmkDesCaseType");
-            builder.HasKey(e => new { e.IntlCode, e.CaseType, e.DesCountry, e.DesCaseType });
+            builder.HasKey(e => new { e.IntlCode, e.CaseType, e.DesCountry, e.DesCaseType, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
+            builder.Ignore(e => e.ParentTStamp);
         }
     }
 }
