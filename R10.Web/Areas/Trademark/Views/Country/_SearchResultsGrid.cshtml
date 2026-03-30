@@ -9,8 +9,9 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: Country#", fromSearch = true }), "Country")).Width(200);
+                    columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: Country#", systems = "#: Systems#", fromSearch = true }), "Country")).Width(200);
                     columns.Bound(m => m.CountryName);
+                    columns.Bound(m => m.Systems).Width(200);
                     columns.Bound(m => m.CPICode);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))

@@ -9,8 +9,10 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatCountry> builder)
         {
             builder.ToTable("tblPatCountry");
-            builder.HasKey(e => e.Country);
+            builder.HasKey(e => new { e.Country, e.Systems });
             builder.Ignore(e => e.PatCountryAreas);
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }

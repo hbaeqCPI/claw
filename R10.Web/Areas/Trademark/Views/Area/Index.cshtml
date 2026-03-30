@@ -11,4 +11,10 @@
     </script>
 }
 
+<script>
+    if (typeof tmkAreaPage === 'undefined') {
+        var tmkAreaPage = new ActivePage();
+    }
+</script>
+
 @await Html.PartialPageAsync(Model.Page, Model)

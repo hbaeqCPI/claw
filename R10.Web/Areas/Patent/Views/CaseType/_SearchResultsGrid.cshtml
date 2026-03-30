@@ -1,4 +1,4 @@
-﻿@model PageViewModel
+@model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ISystemSettings<PatSetting> Settings
 @{
@@ -9,8 +9,9 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.CaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CaseType#", fromSearch = true }), "CaseType")).Width(200);
+                    columns.Bound(m => m.CaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: CaseType#", systems = "#: Systems#", fromSearch = true }), "CaseType")).Width(200);
                     columns.Bound(m => m.Description);
+                    columns.Bound(m => m.Systems).Width(200);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
                 .AutoBind(false)

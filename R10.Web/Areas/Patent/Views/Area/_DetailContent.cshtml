@@ -41,43 +41,43 @@
             <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Systems"></label>
-                    <input type="hidden" name="Systems" id="SystemsHidden" value="@Model.Systems" />
+                    <input type="hidden" name="Systems" id="areaSystemsHidden" value="@Model.Systems" />
                     <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
                         @if (!isReadOnly)
                         {
                             <div class="position-absolute" style="top: 4px; right: 8px;">
-                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="systemsToggleAll" class="mr-1"/>Select All</label>
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="areaSystemsToggleAll" class="mr-1"/>Select All</label>
                             </div>
                         }
-                        <div id="systemsCheckboxes"></div>
+                        <div id="areaSystemsCheckboxes"></div>
                     </div>
                     <script>
                         $(document).ready(function() {
                             var disabled = @(isReadOnly ? "true" : "false");
-                            var selected = ($('#SystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            var selected = ($('#areaSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
                             $.getJSON('@Url.Action("GetSystemList", "Area")', function(data) {
                                 var html = '';
                                 $.each(data, function(i, name) {
                                     var checked = selected.indexOf(name) > -1 ? ' checked' : '';
                                     var dis = disabled ? ' disabled' : '';
-                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="systemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="areaSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
                                 });
-                                $('#systemsCheckboxes').html(html);
-                                var allCount = $('.systemChk').length;
-                                var checkedCount = $('.systemChk:checked').length;
-                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                                $('#areaSystemsCheckboxes').html(html);
+                                var allCount = $('.areaSystemChk').length;
+                                var checkedCount = $('.areaSystemChk:checked').length;
+                                $('#areaSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
                             });
-                            $(document).on('change', '.systemChk', function() {
+                            $(document).on('change', '.areaSystemChk', function() {
                                 var vals = [];
-                                $('.systemChk:checked').each(function() { vals.push($(this).val()); });
-                                $('#SystemsHidden').val(vals.join(','));
-                                var allCount = $('.systemChk').length;
-                                var checkedCount = $('.systemChk:checked').length;
-                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                                $('.areaSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#areaSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.areaSystemChk').length;
+                                var checkedCount = $('.areaSystemChk:checked').length;
+                                $('#areaSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
                             });
-                            $('#systemsToggleAll').click(function() {
+                            $('#areaSystemsToggleAll').click(function() {
                                 var isChecked = $(this).prop('checked');
-                                $('.systemChk').prop('checked', isChecked).first().trigger('change');
+                                $('.areaSystemChk').prop('checked', isChecked).first().trigger('change');
                             });
                         });
                     </script>

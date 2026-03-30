@@ -489,11 +489,15 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [HttpGet]
-        public IActionResult DetailLink(string id)
+        public async Task<IActionResult> DetailLink(string id)
         {
             if (!string.IsNullOrEmpty(id))
             {
-                return RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true });
+                var first = await _areaService.QueryableList.AsNoTracking()
+                    .Where(a => a.Area == id)
+                    .Select(a => a.Systems)
+                    .FirstOrDefaultAsync();
+                return RedirectToAction(nameof(Detail), new { id = id, systems = first ?? "", singleRecord = true, fromSearch = true });
             }
             else
             {

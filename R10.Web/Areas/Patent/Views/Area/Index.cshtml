@@ -11,4 +11,10 @@
     </script>
 }
 
+<script>
+    if (typeof patAreaPage === 'undefined') {
+        var patAreaPage = new ActivePage();
+    }
+</script>
+
 @await Html.PartialPageAsync(Model.Page, Model)

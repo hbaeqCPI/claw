@@ -105,6 +105,13 @@ namespace R10.Web.Areas.Patent.Controllers
                         patCountries = patCountries.Where(w => w.PatCountryAreas.Any(a => EF.Functions.Like(a.Area, area.Value)));
                         mainSearchFilters.Remove(area);
                     }
+
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        patCountries = patCountries.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
                 }
                 patCountries = _viewModelService.AddCriteria(patCountries, mainSearchFilters);
 
@@ -121,9 +128,9 @@ namespace R10.Web.Areas.Patent.Controllers
             return File(fileContents, contentType, fileName);
         }
 
-        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false, string tab = "")
+        public async Task<IActionResult> Detail(string id, string systems = "", bool singleRecord = false, bool fromSearch = false, string tab = "")
         {
-            var page = await PrepareEditScreen(id);
+            var page = await PrepareEditScreen(id, systems);
             if (page.Detail == null)
             {
                 if (Request.IsAjax())
@@ -173,7 +180,7 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(string id, bool fromSearch = false)
         {
-            if (!Request.IsAjax())
+            if (!Request.IsAjax() && TempData.Peek("CopyOptions") == null)
                 return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
@@ -193,27 +200,27 @@ namespace R10.Web.Areas.Patent.Controllers
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
                 Title = _localizer["New Country"].ToString(),
-                //SingleRecord = singleRecord || !Request.IsAjax(),
-                //ActiveTab = tab,
                 PagePermission = page,
                 Data = detail,
-                FromSearch = fromSearch
+                FromSearch = fromSearch,
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            if (Request.IsAjax())
+                return PartialView("Index", model);
+            return View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string countryCode, string systems = "")
         {
-            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatCountry WHERE Country=@p0 AND Systems=@p1", countryCode ?? "", systems ?? "");
 
-            if (entity == null)
+            if (count == 0)
                 return new RecordDoesNotExistResult();
-
-            await _patCountryService.Delete(entity);
 
             return Ok();
         }
@@ -228,20 +235,72 @@ namespace R10.Web.Areas.Patent.Controllers
                 var now = DateTime.Now;
                 patCountry.UserID = userName;
                 patCountry.LastUpdate = now;
+                patCountry.Systems ??= "";
+                patCountry.CountryPaidThruCPI = true;
 
-                var existing = await _patCountryService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.Country == patCountry.Country);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(patCountry.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems within this record
+                var newSystems = patCountry.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                patCountry.Systems = string.Join(",", newSystems);
+
+                var isNewRecord = patCountry.IsNewRecord || patCountry.OriginalSystems == "__NEW__" || patCountry.OriginalSystems == null;
+                var originalSystemsValue = patCountry.OriginalSystems == "__EMPTY__" ? "" : (patCountry.OriginalSystems ?? "");
+
+                // Find existing record on update (match by Country + original systems)
+                PatCountry existing = null;
+                if (!isNewRecord)
+                {
+                    existing = await _patCountryService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Country == patCountry.Country && c.Systems == originalSystemsValue);
+                }
+
+                // Check for duplicate systems across other records with the same Country
+                var allRecords = await _patCountryService.QueryableList.AsNoTracking()
+                    .Where(c => c.Country == patCountry.Country && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
+
+                // Exclude existing record's systems from the check
+                if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                    allRecords.Remove(existing.Systems);
+
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to {patCountry.Country}: {string.Join(", ", duplicates)}");
+
                 if (existing != null)
                 {
                     patCountry.DateCreated = existing.DateCreated ?? now;
-                    await _patCountryService.Update(patCountry);
+
+                    // Use raw SQL to avoid EF composite key tracking issues
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblPatCountry SET Country=@p0, CountryName=@p1, CPICode=@p2, CountryPaidThruCPI=@p3, Systems=@p4, UserID=@p5, DateCreated=@p6, LastUpdate=@p7
+                          WHERE Country=@p8 AND Systems=@p9",
+                        patCountry.Country, patCountry.CountryName ?? "", patCountry.CPICode ?? "", true, patCountry.Systems, patCountry.UserID ?? "",
+                        patCountry.DateCreated, patCountry.LastUpdate,
+                        existing.Country, existing.Systems ?? "");
                 }
                 else
                 {
                     patCountry.DateCreated = now;
-                    await _patCountryService.Add(patCountry);
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblPatCountry (Country, CountryName, CPICode, CountryPaidThruCPI, Systems, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7)",
+                        patCountry.Country, patCountry.CountryName ?? "", patCountry.CPICode ?? "", true, patCountry.Systems, patCountry.UserID ?? "",
+                        patCountry.DateCreated, patCountry.LastUpdate);
                 }
 
-                return Json(new { id = patCountry.Country });
+                return Json(new { id = patCountry.Country, redirectUrl = Url.Action("Detail", new { id = patCountry.Country, systems = patCountry.Systems, singleRecord = true }) });
             }
             else
             {
@@ -249,19 +308,19 @@ namespace R10.Web.Areas.Patent.Controllers
             }
         }
 
-        public async Task<IActionResult> GetRecordStamps(string id)
+        public async Task<IActionResult> GetRecordStamps(string id, string systems = "")
         {
-            var patCountry = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
+            var patCountry = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id && c.Systems == systems);
             if (patCountry == null)
                 return new NoRecordFoundResult();
 
             return ViewComponent("RecordStamps", new { createdBy = patCountry.UserID, dateCreated = patCountry.DateCreated, updatedBy = patCountry.UserID, lastUpdate = patCountry.LastUpdate });
         }
 
-        private async Task<DetailPageViewModel<PatCountry>> PrepareEditScreen(string id)
+        private async Task<DetailPageViewModel<PatCountry>> PrepareEditScreen(string id, string systems = "")
         {
             var viewModel = new DetailPageViewModel<PatCountry>();
-            viewModel.Detail = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
+            viewModel.Detail = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id && c.Systems == systems);
 
             if (viewModel.Detail != null)
             {
@@ -272,9 +331,11 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 this.AddDefaultNavigationUrls(viewModel);
 
-                viewModel.EditScreenUrl = $"{viewModel.EditScreenUrl}/{id}";
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
                 viewModel.Container = _dataContainer;
+
+                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id, systems = systems });
+                viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { countryCode = id, systems = systems }) : "";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?id={id}&systems={Uri.EscapeDataString(systems)}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
             return viewModel;
@@ -342,6 +403,15 @@ namespace R10.Web.Areas.Patent.Controllers
             return Ok();
         }
 
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
+        }
+
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_patCountryService.QueryableList, request, property, text, filterType, requiredRelation);
@@ -358,9 +428,9 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(string id)
+        public async Task<IActionResult> Copy(string id, string systems = "")
         {
-            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id);
+            var entity = await _patCountryService.QueryableList.FirstOrDefaultAsync(c => c.Country == id && c.Systems == systems);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new CountryCopyViewModel
             {

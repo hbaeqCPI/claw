@@ -32,21 +32,22 @@ namespace R10.Web.Areas.Trademark.Controllers
         private readonly IViewModelService<TmkCaseType> _viewModelService;
         private readonly IEntityService<TmkCaseType> _auxService;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IApplicationDbContext _repository;
+
         private readonly string _dataContainer = "tmkCaseTypeDetail";
-        private readonly IReportService _reportService;
 
         public CaseTypeController(
             IAuthorizationService authService,
             IViewModelService<TmkCaseType> viewModelService,
             IEntityService<TmkCaseType> auxService,
             IStringLocalizer<SharedResource> localizer,
-            IReportService reportService)
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _auxService = auxService;
             _localizer = localizer;
-            _reportService = reportService;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -90,18 +91,29 @@ namespace R10.Web.Areas.Trademark.Controllers
         {
             if (ModelState.IsValid)
             {
-                var tmkCaseTypes = _viewModelService.AddCriteria(mainSearchFilters);
-                var result = await _viewModelService.CreateViewModelForGrid(request, tmkCaseTypes, "CaseType", "CaseType");
+                var caseTypes = _auxService.QueryableList;
+                if (mainSearchFilters.Count > 0)
+                {
+                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                    if (systemName != null)
+                    {
+                        caseTypes = caseTypes.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                        mainSearchFilters.Remove(systemName);
+                    }
+                }
+                caseTypes = _viewModelService.AddCriteria(caseTypes, mainSearchFilters);
+
+                var result = await _viewModelService.CreateViewModelForGrid(request, caseTypes, "CaseType", "CaseType");
                 return Json(result);
             }
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task<DetailPageViewModel<TmkCaseType>> PrepareEditScreen(string id)
+        private async Task<DetailPageViewModel<TmkCaseType>> PrepareEditScreen(string id, string systems = "")
         {
             var viewModel = new DetailPageViewModel<TmkCaseType>
             {
-                Detail = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id)
+                Detail = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id && c.Systems == systems)
             };
 
             if (viewModel.Detail != null)
@@ -115,16 +127,17 @@ namespace R10.Web.Areas.Trademark.Controllers
 
                 viewModel.Container = _dataContainer;
 
-                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
-                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
+                viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id, systems = systems });
+                viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { caseTypeCode = id, systems = systems }) : "";
+                viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?id={id}&systems={Uri.EscapeDataString(systems)}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
             }
             return viewModel;
         }
 
-        public async Task<IActionResult> Detail(string id, bool singleRecord = false, bool fromSearch = false)
+        public async Task<IActionResult> Detail(string id, string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
-            var page = await PrepareEditScreen(id);
+            var page = await PrepareEditScreen(id, systems);
             if (page.Detail == null)
             {
                 if (Request.IsAjax())
@@ -180,7 +193,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
+            if (!Request.IsAjax() && TempData.Peek("CopyOptions") == null)
                 return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
@@ -202,7 +215,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            if (Request.IsAjax())
+                return PartialView("Index", model);
+            return View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
@@ -215,20 +230,72 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var now = DateTime.Now;
                 caseType.UserID = userName;
                 caseType.LastUpdate = now;
+                caseType.Description ??= "";
+                caseType.Systems ??= "";
 
-                var existing = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.CaseType == caseType.CaseType);
+                // Require at least one system
+                if (string.IsNullOrWhiteSpace(caseType.Systems))
+                    return new JsonBadRequest("At least one system must be selected.");
+
+                // Deduplicate and sort systems within this record
+                var newSystems = caseType.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+                caseType.Systems = string.Join(",", newSystems);
+
+                var isNewRecord = caseType.IsNewRecord || caseType.OriginalSystems == "__NEW__" || caseType.OriginalSystems == null;
+                var originalSystemsValue = caseType.OriginalSystems == "__EMPTY__" ? "" : (caseType.OriginalSystems ?? "");
+
+                // Find existing record on update (match by CaseType + original systems)
+                TmkCaseType existing = null;
+                if (!isNewRecord)
+                {
+                    existing = await _auxService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.CaseType == caseType.CaseType && c.Systems == originalSystemsValue);
+                }
+
+                // Check for duplicate systems across other records with the same CaseType name
+                var allRecords = await _auxService.QueryableList.AsNoTracking()
+                    .Where(c => c.CaseType == caseType.CaseType && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
+
+                // Exclude existing record's systems from the check
+                if (existing != null && !string.IsNullOrEmpty(existing.Systems))
+                    allRecords.Remove(existing.Systems);
+
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to {caseType.CaseType}: {string.Join(", ", duplicates)}");
+
                 if (existing != null)
                 {
                     caseType.DateCreated = existing.DateCreated ?? now;
-                    await _auxService.Update(caseType);
+
+                    // Use raw SQL to avoid EF composite key tracking issues
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblTmkCaseType SET CaseType=@p0, Description=@p1, LockTmkRecord=@p2, Systems=@p3, UserID=@p4, DateCreated=@p5, LastUpdate=@p6
+                          WHERE CaseType=@p7 AND Systems=@p8",
+                        caseType.CaseType, caseType.Description ?? "", caseType.LockTmkRecord ?? false, caseType.Systems, caseType.UserID ?? "",
+                        caseType.DateCreated, caseType.LastUpdate,
+                        existing.CaseType, existing.Systems ?? "");
                 }
                 else
                 {
                     caseType.DateCreated = now;
-                    await _auxService.Add(caseType);
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblTmkCaseType (CaseType, Description, LockTmkRecord, Systems, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
+                        caseType.CaseType, caseType.Description ?? "", caseType.LockTmkRecord ?? false, caseType.Systems, caseType.UserID ?? "",
+                        caseType.DateCreated, caseType.LastUpdate);
                 }
 
-                return Json(new { id = caseType.CaseType });
+                return Json(new { id = caseType.CaseType, redirectUrl = Url.Action("Detail", new { id = caseType.CaseType, systems = caseType.Systems, singleRecord = true }) });
             }
             else
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -236,22 +303,21 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string caseTypeCode, string systems = "")
         {
-            var entity = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id);
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkCaseType WHERE CaseType=@p0 AND Systems=@p1", caseTypeCode ?? "", systems ?? "");
 
-            if (entity == null)
+            if (count == 0)
                 return new RecordDoesNotExistResult();
-
-            await _auxService.Delete(entity);
 
             return Ok();
         }
 
         [HttpGet()]
-        public async Task<IActionResult> Copy(string id)
+        public async Task<IActionResult> Copy(string id, string systems = "")
         {
-            var entity = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id);
+            var entity = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id && c.Systems == systems);
             if (entity == null) return new RecordDoesNotExistResult();
 
             var viewModel = new CaseTypeCopyViewModel
@@ -281,8 +347,9 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var source = await _auxService.QueryableList.AsNoTracking().FirstOrDefaultAsync(c => c.CaseType == copyOptions.OriginalCaseType);
                 if (source != null)
                 {
-                    page.Detail = source;
                     page.Detail.CaseType = copyOptions.CaseType;
+                    page.Detail.Description = source.Description;
+                    page.Detail.Systems = source.Systems;
                 }
             }
         }
@@ -298,12 +365,26 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost]
         public IActionResult Print([FromBody] PrintViewModel tmkCaseTypePrintModel)
         {
-            if (ModelState.IsValid)
-            {
-                return _reportService.GetReport(tmkCaseTypePrintModel, ReportType.TmkCaseTypePrintScreen).Result;
-            }
+            // ReportService removed during debloat
+            return BadRequest("Report service is not available.");
+        }
 
-            return BadRequest("Unhandled error.");
+        public async Task<IActionResult> GetRecordStamps(string id, string systems = "")
+        {
+            var caseType = await _auxService.QueryableList.FirstOrDefaultAsync(c => c.CaseType == id && c.Systems == systems);
+            if (caseType == null)
+                return new NoRecordFoundResult();
+
+            return ViewComponent("RecordStamps", new { createdBy = caseType.UserID, dateCreated = caseType.DateCreated, updatedBy = caseType.UserID, lastUpdate = caseType.LastUpdate });
+        }
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = await _repository.AppSystems.AsNoTracking()
+                .OrderBy(s => s.SystemName)
+                .Select(s => s.SystemName)
+                .ToListAsync();
+            return Json(systems);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

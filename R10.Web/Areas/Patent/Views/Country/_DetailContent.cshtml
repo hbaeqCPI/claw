@@ -2,7 +2,8 @@
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
     var id = Model.Country;
-    var addMode = string.IsNullOrEmpty(id);
+    var isCopy = ViewBag.CopyOptions != null;
+    var addMode = string.IsNullOrEmpty(id) || isCopy;
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord;
@@ -11,6 +12,11 @@
 
 <form cpi-detail-form action="Save">
     <input type="hidden" asp-for="Country" />
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -40,9 +46,56 @@
             <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2 order-sm-3 order-lg-last">
                 <div class="form-group float-label">
                     <div class="custom-control custom-checkbox">
-                        <input class="custom-control-input" type="checkbox" asp-for="CountryPaidThruCPI" disabled="@isReadOnly" />
-                        <label asp-for="CountryPaidThruCPI" class="custom-control-label"></label>
+                        <input type="checkbox" checked disabled class="custom-control-input" id="CountryPaidThruCPIDisplay" />
+                        <label for="CountryPaidThruCPIDisplay" class="custom-control-label">@SharedLocalizer["Country Paid Thru CPI"]</label>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="SystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="systemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="systemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#SystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "Country")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="systemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#systemsCheckboxes').html(html);
+                                var allCount = $('.systemChk').length;
+                                var checkedCount = $('.systemChk:checked').length;
+                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.systemChk', function() {
+                                var vals = [];
+                                $('.systemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#SystemsHidden').val(vals.join(','));
+                                var allCount = $('.systemChk').length;
+                                var checkedCount = $('.systemChk:checked').length;
+                                $('#systemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#systemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.systemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
@@ -66,6 +119,16 @@
 </form>
 
 <script>
+    patCountryPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patCountryPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
     patCountryPage.editableGrids = [
             {
              title: '@SharedLocalizer["Areas"]', name: 'areasGrid', isDirty: false, filter: { country: '@Model.Country'},
@@ -81,8 +144,7 @@
             let url = $(e.target).data("url");
             const row = $(e.target).closest("tr");
             const dataItem = areasGrid.data("kendoGrid").dataItem(row);
-            console.log(dataItem);
-            const linkUrl = url.replace("actualValue", dataItem.AreaID);
+            const linkUrl = url.replace("actualValue", dataItem.Area);
             pageHelper.openLink(linkUrl, false);
         });
     })

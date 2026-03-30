@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkCaseType> builder)
         {
             builder.ToTable("tblTmkCaseType");
-            builder.HasKey(e => e.CaseType);
+            builder.HasKey(e => new { e.CaseType, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }
