@@ -11,8 +11,8 @@
                 {
                     columns.Bound(m => m.Indicator).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: IndicatorId#", fromSearch = true }), "Indicator")).Width(200);
                     columns.Bound(m => m.Description);
-                    columns.Bound(m => m.CPIIndicator).Width(120);
-                    columns.Bound(m => m.FFIndicator).Title("FF Indicator").Width(120);
+                    columns.Bound(m => m.CPIIndicator).ClientTemplate("#: CPIIndicator ? '✓' : '' #").Width(120);
+                    columns.Bound(m => m.FFIndicator).Title("FF Indicator").ClientTemplate("#: FFIndicator ? '✓' : '' #").Width(120);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
                 .AutoBind(false)

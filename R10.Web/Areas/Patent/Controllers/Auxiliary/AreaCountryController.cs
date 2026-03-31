@@ -265,13 +265,12 @@ namespace R10.Web.Areas.Patent.Controllers
             return Json(systems);
         }
 
-        public async Task<IActionResult> GetAreaList()
+        public async Task<IActionResult> GetAreaList(string property = "Area", string text = "", FilterType filterType = FilterType.Contains)
         {
-            var areas = await _repository.PatAreas.AsNoTracking()
-                .Select(a => a.Area)
-                .Distinct()
-                .OrderBy(a => a)
-                .ToListAsync();
+            var query = _repository.PatAreas.AsNoTracking().Select(a => new { Area = a.Area }).Distinct();
+            if (!string.IsNullOrEmpty(text))
+                query = query.Where(a => EF.Functions.Like(a.Area, $"%{text}%"));
+            var areas = await query.OrderBy(a => a.Area).ToListAsync();
             return Json(areas);
         }
 

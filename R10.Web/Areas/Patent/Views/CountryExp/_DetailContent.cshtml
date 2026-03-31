@@ -41,8 +41,15 @@
             <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="CaseType"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
-                    <span asp-validation-for="CaseType"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseType" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Patent", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        <span asp-validation-for="CaseType"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -50,8 +57,25 @@
             <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="Type"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="Type" asp-is-readonly="@isReadOnly" />
-                    <span asp-validation-for="Type"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Type" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("Type")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(new[] {
+                                new { Text = "Tax Start", Value = "Tax Start" },
+                                new { Text = "Expiration", Value = "Expiration" }
+                            })
+                            .Value(Model.Type)
+                            .HtmlAttributes(new { style = "width:100%" })
+                        )
+                        <span asp-validation-for="Type"></span>
+                    }
                 </div>
             </div>
             <div class="col-md-4 col-lg-3 col-xl-2">

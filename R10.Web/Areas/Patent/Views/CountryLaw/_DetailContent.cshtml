@@ -55,6 +55,20 @@
                     <input type="text" id="Country_@(pageId)_Name" class="form-control form-control-sm" readonly="readonly" asp-for="CountryName" />
                 </div>
             </div>
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check">
+                    @if (isReadOnly)
+                    {
+                        <input type="checkbox" class="k-checkbox" asp-for="AutoGenDesCtry" disabled="disabled" />
+                        <input type="hidden" asp-for="AutoGenDesCtry" />
+                    }
+                    else
+                    {
+                        <input type="checkbox" class="k-checkbox" asp-for="AutoGenDesCtry" />
+                    }
+                    <label class="k-checkbox-label" asp-for="AutoGenDesCtry"></label>
+                </div>
+            </div>
         </div>
         <div class="form-row">
             <div class="col-md-2">
@@ -82,6 +96,34 @@
                 <div class="form-group float-label">
                     <label asp-for="CaseTypeDescription"></label>
                     <input type="text" id="CaseType_@(pageId)_Name" class="form-control form-control-sm" readonly="readonly" asp-for="CaseTypeDescription" />
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-center">
+                <div>
+                    <div class="form-check mb-1">
+                        @if (isReadOnly)
+                        {
+                            <input type="checkbox" class="k-checkbox" asp-for="AutoUpdtDesPatRecs" disabled="disabled" />
+                            <input type="hidden" asp-for="AutoUpdtDesPatRecs" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="k-checkbox" asp-for="AutoUpdtDesPatRecs" />
+                        }
+                        <label class="k-checkbox-label" asp-for="AutoUpdtDesPatRecs"></label>
+                    </div>
+                    <div class="form-check">
+                        @if (isReadOnly)
+                        {
+                            <input type="checkbox" class="k-checkbox" asp-for="CalcExpirBeforeIssue" disabled="disabled" />
+                            <input type="hidden" asp-for="CalcExpirBeforeIssue" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="k-checkbox" asp-for="CalcExpirBeforeIssue" />
+                        }
+                        <label class="k-checkbox-label" asp-for="CalcExpirBeforeIssue"></label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,50 +172,6 @@
                             });
                         });
                     </script>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col-md-2">
-                <div class="form-check">
-                    @if (isReadOnly)
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="AutoGenDesCtry" disabled="disabled" />
-                        <input type="hidden" asp-for="AutoGenDesCtry" />
-                    }
-                    else
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="AutoGenDesCtry" />
-                    }
-                    <label class="k-checkbox-label" asp-for="AutoGenDesCtry"></label>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-check">
-                    @if (isReadOnly)
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="AutoUpdtDesPatRecs" disabled="disabled" />
-                        <input type="hidden" asp-for="AutoUpdtDesPatRecs" />
-                    }
-                    else
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="AutoUpdtDesPatRecs" />
-                    }
-                    <label class="k-checkbox-label" asp-for="AutoUpdtDesPatRecs"></label>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-check">
-                    @if (isReadOnly)
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="CalcExpirBeforeIssue" disabled="disabled" />
-                        <input type="hidden" asp-for="CalcExpirBeforeIssue" />
-                    }
-                    else
-                    {
-                        <input type="checkbox" class="k-checkbox" asp-for="CalcExpirBeforeIssue" />
-                    }
-                    <label class="k-checkbox-label" asp-for="CalcExpirBeforeIssue"></label>
                 </div>
             </div>
         </div>

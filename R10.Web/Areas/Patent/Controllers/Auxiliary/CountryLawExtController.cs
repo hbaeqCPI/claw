@@ -279,13 +279,12 @@ namespace R10.Web.Areas.Patent.Controllers
             return Json(countries);
         }
 
-        public async Task<IActionResult> GetCaseTypeList()
+        public async Task<IActionResult> GetCaseTypeList(string property = "CaseType", string text = "", FilterType filterType = FilterType.Contains)
         {
-            var caseTypes = await _repository.PatCaseTypes.AsNoTracking()
-                .Select(c => c.CaseType)
-                .Distinct()
-                .OrderBy(c => c)
-                .ToListAsync();
+            var query = _repository.PatCaseTypes.AsNoTracking().Select(c => new { CaseType = c.CaseType, Description = c.Description }).Distinct();
+            if (!string.IsNullOrEmpty(text))
+                query = query.Where(c => EF.Functions.Like(c.CaseType, $"%{text}%") || EF.Functions.Like(c.Description, $"%{text}%"));
+            var caseTypes = await query.OrderBy(c => c.CaseType).ToListAsync();
             return Json(caseTypes);
         }
 

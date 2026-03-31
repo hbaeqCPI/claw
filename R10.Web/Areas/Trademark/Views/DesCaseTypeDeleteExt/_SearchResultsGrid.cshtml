@@ -10,7 +10,7 @@
         columns.Bound(m => m.CaseType).Width(200);
         columns.Bound(m => m.DesCountry).Width(200);
         columns.Bound(m => m.DesCaseType).Width(200);
-        columns.Bound(m => m.Default).Width(80);
+        columns.Bound(m => m.Default).ClientTemplate("#: Default ? '✓' : '' #").Width(80);
         columns.Bound(m => m.IntlCodeNew).Width(200);
         columns.Bound(m => m.CaseTypeNew).Width(200);
         columns.Bound(m => m.DesCountryNew).Width(200);

@@ -29,24 +29,16 @@
                     <span asp-validation-for="Description"></span>
                 </div>
             </div>
-        </div>
-        <div class="form-row mt-4">
-            <div class="col-sm-4 col-md-3 col-lg-2">
-                <div class="form-group d-flex">
-                    <label class="toggle-switch">
-                        <input id="CPIIndicator" name="CPIIndicator" type="checkbox" checked="@Model.CPIIndicator" disabled="@isReadOnly" />
-                        <span class="slider round"></span>
-                    </label>
-                    <label for="CPIIndicator" class="ml-2">@SharedLocalizer["CPI Indicator"]</label>
+            <div class="col-auto d-flex align-items-center">
+                <div class="form-check mr-3">
+                    <input type="checkbox" class="k-checkbox" asp-for="CPIIndicator" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="CPIIndicator">@SharedLocalizer["CPI Indicator"]</label>
                 </div>
             </div>
-            <div class="col-sm-4 col-md-3 col-lg-2">
-                <div class="form-group d-flex">
-                    <label class="toggle-switch">
-                        <input id="FFIndicator" name="FFIndicator" type="checkbox" checked="@Model.FFIndicator" disabled="@isReadOnly" />
-                        <span class="slider round"></span>
-                    </label>
-                    <label for="FFIndicator" class="ml-2">@SharedLocalizer["Foreign Filing Indicator"]</label>
+            <div class="col-auto d-flex align-items-center">
+                <div class="form-check">
+                    <input type="checkbox" class="k-checkbox" asp-for="FFIndicator" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="FFIndicator">@SharedLocalizer["FF Indicator"]</label>
                 </div>
             </div>
         </div>

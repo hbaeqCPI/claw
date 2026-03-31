@@ -17,7 +17,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="CaseType"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
                     <span asp-validation-for="CaseType"></span>
                 </div>
             </div>
@@ -26,7 +26,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCountry"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCountry" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountry })
                     <span asp-validation-for="DesCountry"></span>
                 </div>
             </div>
@@ -35,7 +35,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseType"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
                     <span asp-validation-for="DesCaseType"></span>
                 </div>
             </div>
@@ -61,7 +61,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="CaseTypeNew"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="CaseTypeNew" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "CaseTypeNew", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseTypeNew })
                     <span asp-validation-for="CaseTypeNew"></span>
                 </div>
             </div>
@@ -70,7 +70,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCountryNew"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCountryNew" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCountryNew", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountryNew })
                     <span asp-validation-for="DesCountryNew"></span>
                 </div>
             </div>
@@ -79,7 +79,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseTypeNew"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCaseTypeNew" />
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseTypeNew", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseTypeNew })
                     <span asp-validation-for="DesCaseTypeNew"></span>
                 </div>
             </div>
