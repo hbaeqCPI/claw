@@ -133,12 +133,17 @@ namespace R10.Web.Areas.Trademark.Controllers
             permission.DeleteScreenUrl = permission.CanDeleteRecord
                 ? Url.Action("Delete", new { desCaseType = detail.DesCaseType, fromField = detail.FromField, toField = detail.ToField, systems = detail.Systems })
                 : "";
+            permission.CopyScreenUrl = permission.CanCopyRecord
+                ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = detail.DesCaseType, copyFromField = detail.FromField, copyToField = detail.ToField, copySystems = detail.Systems })
+                : "";
+            permission.IsCopyScreenPopup = false;
 
             PageViewModel model = new PageViewModel()
             {
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Detail"].ToString(),
+                RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = permission
@@ -163,15 +168,19 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
-        public async Task<IActionResult> Add(string desCaseType = "", string fromField = "", string toField = "", bool fromSearch = false)
+        public async Task<IActionResult> Add(bool fromSearch = false, string copyDesCaseType = "", string copyFromField = "", string copyToField = "", string copySystems = "")
         {
             if (!Request.IsAjax())
                 return RedirectToAction("Index");
 
-            var entity = new TmkDesCaseTypeFields();
-            if (!string.IsNullOrEmpty(desCaseType)) entity.DesCaseType = desCaseType;
-            if (!string.IsNullOrEmpty(fromField)) entity.FromField = fromField;
-            if (!string.IsNullOrEmpty(toField)) entity.ToField = toField;
+            var entity = new TmkDesCaseTypeFields { IsNewRecord = true };
+            if (!string.IsNullOrEmpty(copyDesCaseType))
+            {
+                entity.DesCaseType = copyDesCaseType;
+                entity.FromField = copyFromField;
+                entity.ToField = copyToField;
+                entity.Systems = copySystems ?? "";
+            }
 
             var model = new PageViewModel()
             {
@@ -180,7 +189,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Title = _localizer["New Des Case Type Fields"].ToString(),
                 Data = entity,
                 PagePermission = await GetPermission(),
-                AfterCancelledInsert = this.Url.Action("Index")
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
 
@@ -273,9 +282,13 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         [HttpGet()]
-        public IActionResult Copy(string desCaseType, string fromField, string toField, string systems = "")
+        public async Task<IActionResult> Copy(string desCaseType, string fromField, string toField, string systems = "")
         {
-            return RedirectToAction("Add", new { desCaseType, fromField, toField, fromSearch = false });
+            var entity = await _repository.TmkDesCaseTypeFields.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.DesCaseType == desCaseType && c.FromField == fromField && c.ToField == toField && c.Systems == systems);
+            if (entity == null) return new RecordDoesNotExistResult();
+
+            return RedirectToAction("Add", new { fromSearch = true, copyDesCaseType = entity.DesCaseType, copyFromField = entity.FromField, copyToField = entity.ToField, copySystems = entity.Systems });
         }
 
         public async Task<IActionResult> GetSystemList()

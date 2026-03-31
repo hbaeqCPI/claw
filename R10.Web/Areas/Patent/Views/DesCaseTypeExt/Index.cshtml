@@ -1,10 +1,14 @@
 @model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = Localizer["DesCaseType Ext"];
+    ViewData["Title"] = Localizer["Des Case Type Ext"];
     ViewData["ActivePage"] = "patDesCaseTypeExtPage";
 }
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof patDesCaseTypeExtPage === 'undefined') { var patDesCaseTypeExtPage = new ActivePage(); }
+patDesCaseTypeExtPage.mainSearchRecordIds = patDesCaseTypeExtPage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

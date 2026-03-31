@@ -1,101 +1,132 @@
 @model PatDesCaseTypeExt
 @using R10.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+}
 
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="IntlCode"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="IntlCode" />
+                    <input type="text" class="form-control form-control-sm" asp-for="IntlCode" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
                     <span asp-validation-for="IntlCode"></span>
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
-                    <label asp-for="CaseType"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" />
+                    <label asp-for="CaseType">@Localizer["Parent Case Type"]</label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CaseType" asp-is-readonly="@isReadOnly" />
                     <span asp-validation-for="CaseType"></span>
                 </div>
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="DesCountry"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCountry" />
+                    <input type="text" class="form-control form-control-sm" asp-for="DesCountry" asp-is-readonly="@isReadOnly" />
                     <span asp-validation-for="DesCountry"></span>
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseType"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" />
+                    <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" asp-is-readonly="@isReadOnly" />
                     <span asp-validation-for="DesCaseType"></span>
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-check mt-2">
-                    <input type="checkbox" class="k-checkbox" asp-for="Default">
-                    <label class="k-checkbox-label" asp-for="Default"></label>
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check mr-3">
+                    <input type="checkbox" class="k-checkbox" asp-for="Default" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="Default">@Localizer["Default?"]</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="k-checkbox" asp-for="GenApp" disabled="@(isReadOnly ? "disabled" : null)" />
+                    <label class="k-checkbox-label" asp-for="GenApp">@Localizer["Gen App?"]</label>
                 </div>
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-check mt-2">
-                    <input type="checkbox" class="k-checkbox" asp-for="GenApp">
-                    <label class="k-checkbox-label" asp-for="GenApp"></label>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
-                    <label asp-for="CreatedBy"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="CreatedBy" />
-                    <span asp-validation-for="CreatedBy"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
-                    <label asp-for="UpdatedBy"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="UpdatedBy" />
-                    <span asp-validation-for="UpdatedBy"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
-                    <label asp-for="DateCreated"></label>
-                    @(Html.Kendo().DateTimePicker().Name("DateCreated").Value(Model.DateCreated).Format("dd-MMM-yyyy HH:mm"))
-                    <span asp-validation-for="DateCreated"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
-                    <label asp-for="LastUpdate"></label>
-                    @(Html.Kendo().DateTimePicker().Name("LastUpdate").Value(Model.LastUpdate).Format("dd-MMM-yyyy HH:mm"))
-                    <span asp-validation-for="LastUpdate"></span>
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="patDCTExtSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patDCTExtSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="patDCTExtSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#patDCTExtSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "DesCaseTypeExt")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patDCTExtSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#patDCTExtSystemsCheckboxes').html(html);
+                                var allCount = $('.patDCTExtSystemChk').length;
+                                var checkedCount = $('.patDCTExtSystemChk:checked').length;
+                                $('#patDCTExtSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.patDCTExtSystemChk', function() {
+                                var vals = [];
+                                $('.patDCTExtSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#patDCTExtSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.patDCTExtSystemChk').length;
+                                var checkedCount = $('.patDCTExtSystemChk:checked').length;
+                                $('#patDCTExtSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#patDCTExtSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.patDCTExtSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
     </div>
-    <div class="form-row mt-3">
-        <div class="col">
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
-        </div>
-    </div>
+
 </form>
+
+<script>
+    patDesCaseTypeExtPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patDesCaseTypeExtPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

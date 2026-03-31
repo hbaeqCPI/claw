@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatDesCaseTypeExt> builder)
         {
             builder.ToTable("tblPatDesCaseType_Ext");
-            builder.HasNoKey();
+            builder.HasKey(e => new { e.IntlCode, e.CaseType, e.DesCountry, e.DesCaseType, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }

@@ -7,4 +7,8 @@
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof tmkDesCaseTypeExtPage === 'undefined') { var tmkDesCaseTypeExtPage = new ActivePage(); }
+tmkDesCaseTypeExtPage.mainSearchRecordIds = tmkDesCaseTypeExtPage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

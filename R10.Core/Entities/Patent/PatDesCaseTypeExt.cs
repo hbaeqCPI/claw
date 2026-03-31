@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Patent
 {
@@ -8,7 +9,7 @@ namespace R10.Core.Entities.Patent
         [StringLength(10)]
         public string? IntlCode { get; set; }
 
-        [Display(Name = "Case Type")]
+        [Display(Name = "Parent Case Type")]
         [StringLength(3)]
         public string? CaseType { get; set; }
 
@@ -25,5 +26,15 @@ namespace R10.Core.Entities.Patent
 
         [Display(Name = "Gen App")]
         public bool GenApp { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Systems")]
+        public string Systems { get; set; } = "";
+
+        [NotMapped]
+        public bool IsNewRecord { get; set; }
+
+        [NotMapped]
+        public string? OriginalSystems { get; set; }
     }
 }

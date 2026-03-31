@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R10.Core.Entities.Trademark
 {
@@ -9,7 +10,7 @@ namespace R10.Core.Entities.Trademark
         [StringLength(5)]
         public string? IntlCode { get; set; }
 
-        [Display(Name = "Case Type")]
+        [Display(Name = "Parent Case Type")]
         [StringLength(3)]
         public string? CaseType { get; set; }
 
@@ -27,5 +28,14 @@ namespace R10.Core.Entities.Trademark
         [Display(Name = "Gen App")]
         public bool GenApp { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Systems")]
+        public string Systems { get; set; } = "";
+
+        [NotMapped]
+        public bool IsNewRecord { get; set; }
+
+        [NotMapped]
+        public string? OriginalSystems { get; set; }
     }
 }

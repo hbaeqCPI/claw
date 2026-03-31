@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkDesCaseTypeFieldsExt> builder)
         {
             builder.ToTable("tblTmkDesCaseTypeFields_Ext");
-            builder.HasNoKey();
+            builder.HasKey(e => new { e.DesCaseType, e.FromField, e.ToField, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }
