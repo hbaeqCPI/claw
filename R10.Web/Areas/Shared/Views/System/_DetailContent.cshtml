@@ -9,7 +9,7 @@
     bool isReadOnly = !fullModify;
 }
 
-<form cpi-detail-form action="Save">
+<form cpi-detail-form action="Save" delete-message="This system will be removed from all records. This operation cannot be undone.">
     <input type="hidden" asp-for="SystemId" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 

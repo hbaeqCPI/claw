@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Trademark.mappings
         public void Configure(EntityTypeBuilder<TmkAreaDelete> builder)
         {
             builder.ToTable("tblTmkAreaDelete");
-            builder.HasNoKey();
+            builder.HasKey(e => new { e.Area, e.AreaNew, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }

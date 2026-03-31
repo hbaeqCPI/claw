@@ -432,10 +432,10 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> GetSystemList()
         {
-            var systems = await _repository.AppSystems.AsNoTracking()
-                .OrderBy(s => s.SystemName)
+            var systems = (await _repository.AppSystems.AsNoTracking()
                 .Select(s => s.SystemName)
-                .ToListAsync();
+                .ToListAsync())
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
             return Json(systems);
         }
 

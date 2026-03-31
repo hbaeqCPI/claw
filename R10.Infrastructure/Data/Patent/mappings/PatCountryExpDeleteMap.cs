@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatCountryExpDelete> builder)
         {
             builder.ToTable("tblPatCountryExpDelete");
-            builder.HasNoKey();
+            builder.HasKey(e => new { e.CExpId, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }

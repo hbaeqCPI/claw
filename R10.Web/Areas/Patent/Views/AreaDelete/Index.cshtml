@@ -7,4 +7,8 @@
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof patAreaDeletePage === 'undefined') { var patAreaDeletePage = new ActivePage(); }
+patAreaDeletePage.mainSearchRecordIds = patAreaDeletePage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

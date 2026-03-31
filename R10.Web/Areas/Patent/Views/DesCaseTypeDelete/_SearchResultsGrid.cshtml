@@ -6,15 +6,16 @@
     .Name($"{Model.PageId}-Grid")
     .Columns(columns =>
     {
-        columns.Bound(m => m.IntlCode).Width(200);
-        columns.Bound(m => m.CaseType).Width(200);
-        columns.Bound(m => m.DesCountry).Width(200);
-        columns.Bound(m => m.DesCaseType).Width(200);
-        columns.Bound(m => m.Default).ClientTemplate("#: Default ? '✓' : '' #").Width(80);
-        columns.Bound(m => m.IntlCodeNew).Width(200);
-        columns.Bound(m => m.CaseTypeNew).Width(200);
-        columns.Bound(m => m.DesCountryNew).Width(200);
-        columns.Bound(m => m.DesCaseTypeNew).Width(200);
+        columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { intlCode = "#: IntlCode#", caseType = "#: CaseType#", desCountry = "#: DesCountry#", desCaseType = "#: DesCaseType#", intlCodeNew = "#: IntlCodeNew#", caseTypeNew = "#: CaseTypeNew#", desCountryNew = "#: DesCountryNew#", desCaseTypeNew = "#: DesCaseTypeNew#", systems = "#: Systems#", fromSearch = true }), "IntlCode")).Width(120);
+        columns.Bound(m => m.CaseType).Width(100);
+        columns.Bound(m => m.DesCountry).Width(120);
+        columns.Bound(m => m.DesCaseType).Width(120);
+        columns.Bound(m => m.Default).ClientTemplate("#: Default ? '\\u2713' : '' #").Width(80);
+        columns.Bound(m => m.IntlCodeNew).Width(120);
+        columns.Bound(m => m.CaseTypeNew).Width(120);
+        columns.Bound(m => m.DesCountryNew).Width(120);
+        columns.Bound(m => m.DesCaseTypeNew).Width(120);
+        columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
     .AutoBind(false)

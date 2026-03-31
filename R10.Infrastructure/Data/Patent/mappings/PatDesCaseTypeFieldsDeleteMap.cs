@@ -9,7 +9,9 @@ namespace R10.Infrastructure.Data.Patent.mappings
         public void Configure(EntityTypeBuilder<PatDesCaseTypeFieldsDelete> builder)
         {
             builder.ToTable("tblPatDesCaseTypeFieldsDelete");
-            builder.HasNoKey();
+            builder.HasKey(e => new { e.DesCaseType, e.FromField, e.ToField, e.DesCaseTypeNew, e.FromFieldNew, e.ToFieldNew, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
         }
     }
 }

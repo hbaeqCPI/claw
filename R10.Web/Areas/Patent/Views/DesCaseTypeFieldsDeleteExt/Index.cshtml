@@ -1,10 +1,14 @@
 @model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = Localizer["DesCaseTypeFields Delete Ext"];
+    ViewData["Title"] = Localizer["Des Case Type Fields Delete Ext"];
     ViewData["ActivePage"] = "patDesCaseTypeFieldsDeleteExtPage";
 }
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof patDesCaseTypeFieldsDeleteExtPage === 'undefined') { var patDesCaseTypeFieldsDeleteExtPage = new ActivePage(); }
+patDesCaseTypeFieldsDeleteExtPage.mainSearchRecordIds = patDesCaseTypeFieldsDeleteExtPage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

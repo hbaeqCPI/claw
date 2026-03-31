@@ -31,6 +31,7 @@ namespace R10.Web.Areas.Shared.Controllers
         private readonly IViewModelService<AppSystem> _viewModelService;
         private readonly IEntityService<AppSystem> _systemService;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IApplicationDbContext _repository;
 
         private readonly string _dataContainer = "cpiSystemDetail";
 
@@ -38,12 +39,14 @@ namespace R10.Web.Areas.Shared.Controllers
             IAuthorizationService authService,
             IViewModelService<AppSystem> viewModelService,
             IEntityService<AppSystem> systemService,
-            IStringLocalizer<SharedResource> localizer)
+            IStringLocalizer<SharedResource> localizer,
+            IApplicationDbContext repository)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _systemService = systemService;
             _localizer = localizer;
+            _repository = repository;
         }
 
         public async Task<IActionResult> Index()
@@ -174,9 +177,46 @@ namespace R10.Web.Areas.Shared.Controllers
             if (entity == null)
                 return new RecordDoesNotExistResult();
 
+            var systemName = entity.SystemName;
+
+            // Delete the system
             await _systemService.Delete(entity);
 
+            // Cascade: remove this system name from all Systems columns across all tables
+            if (!string.IsNullOrEmpty(systemName))
+            {
+                await RemoveSystemFromAllTables(systemName);
+            }
+
             return Ok();
+        }
+
+        /// <summary>
+        /// Removes a system name from the comma-separated Systems column across all tables.
+        /// For each table with a Systems column, parses out the deleted system name and updates the row.
+        /// </summary>
+        private async Task RemoveSystemFromAllTables(string systemName)
+        {
+            // Get all table names that have a Systems column
+            var tables = await _repository.Database.SqlQueryRaw<string>(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'Systems' AND TABLE_NAME LIKE 'tbl%'")
+                .ToListAsync();
+
+            foreach (var table in tables)
+            {
+                // Update each table: parse out the system name from comma-separated Systems
+                // Use STRING_SPLIT to parse, filter out the deleted system, and STRING_AGG to rejoin
+                var sql = $@"UPDATE [{table}] SET Systems = (
+                    SELECT ISNULL(STRING_AGG(LTRIM(RTRIM(s.value)), ','), '')
+                    FROM STRING_SPLIT(Systems, ',') s
+                    WHERE LTRIM(RTRIM(s.value)) <> @p0 AND LTRIM(RTRIM(s.value)) <> ''
+                )
+                WHERE Systems IS NOT NULL AND Systems <> ''
+                AND (Systems = @p0 OR Systems LIKE @p0 + ',%' OR Systems LIKE '%,' + @p0 OR Systems LIKE '%,' + @p0 + ',%')";
+
+                await _repository.Database.ExecuteSqlRawAsync(sql,
+                    new Microsoft.Data.SqlClient.SqlParameter("@p0", systemName));
+            }
         }
 
         [HttpPost, Authorize(Policy = SharedAuthorizationPolicy.FullModify)]

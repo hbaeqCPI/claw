@@ -1,15 +1,35 @@
 @model TmkDesCaseTypeDelete
 @using R10.Core.Entities.Trademark
 @inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord || (string.IsNullOrEmpty(Model.IntlCode) && string.IsNullOrEmpty(Model.CaseType) && string.IsNullOrEmpty(Model.DesCountry) && string.IsNullOrEmpty(Model.DesCaseType));
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+}
 
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="IntlCode"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="IntlCode" />
-                    <span asp-validation-for="IntlCode"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="IntlCode" readonly />
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="IntlCode" />
+                        <span asp-validation-for="IntlCode"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -17,8 +37,15 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="CaseType"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
-                    <span asp-validation-for="CaseType"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseType" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        <span asp-validation-for="CaseType"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -26,8 +53,15 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCountry"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountry })
-                    <span asp-validation-for="DesCountry"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCountry" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountry })
+                        <span asp-validation-for="DesCountry"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -35,15 +69,22 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseType"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
-                    <span asp-validation-for="DesCaseType"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
+                        <span asp-validation-for="DesCaseType"></span>
+                    }
                 </div>
             </div>
         </div>
         <div class="form-row">
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-check mt-2">
-                    <input type="checkbox" class="k-checkbox" asp-for="Default">
+                    <input type="checkbox" class="k-checkbox" asp-for="Default" disabled="@(isReadOnly)">
                     <label class="k-checkbox-label" asp-for="Default"></label>
                 </div>
             </div>
@@ -52,8 +93,15 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="IntlCodeNew"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="IntlCodeNew" />
-                    <span asp-validation-for="IntlCodeNew"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="IntlCodeNew" readonly />
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="IntlCodeNew" />
+                        <span asp-validation-for="IntlCodeNew"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -61,8 +109,15 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="CaseTypeNew"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CaseTypeNew", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseTypeNew })
-                    <span asp-validation-for="CaseTypeNew"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseTypeNew" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseTypeNew", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseTypeNew })
+                        <span asp-validation-for="CaseTypeNew"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -70,8 +125,15 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCountryNew"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "DesCountryNew", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountryNew })
-                    <span asp-validation-for="DesCountryNew"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCountryNew" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCountryNew", controller = "Country", area = "Trademark", action = "GetPicklistData", defaultValue = Model.DesCountryNew })
+                        <span asp-validation-for="DesCountryNew"></span>
+                    }
                 </div>
             </div>
         </div>
@@ -79,15 +141,85 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseTypeNew"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseTypeNew", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseTypeNew })
-                    <span asp-validation-for="DesCaseTypeNew"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseTypeNew" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCaseTypeNew", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseTypeNew })
+                        <span asp-validation-for="DesCaseTypeNew"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="tmkDCTDelSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="tmkDCTDelSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="tmkDCTDelSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#tmkDCTDelSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "DesCaseTypeDelete")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="tmkDCTDelSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#tmkDCTDelSystemsCheckboxes').html(html);
+                                var allCount = $('.tmkDCTDelSystemChk').length;
+                                var checkedCount = $('.tmkDCTDelSystemChk:checked').length;
+                                $('#tmkDCTDelSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.tmkDCTDelSystemChk', function() {
+                                var vals = [];
+                                $('.tmkDCTDelSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#tmkDCTDelSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.tmkDCTDelSystemChk').length;
+                                var checkedCount = $('.tmkDCTDelSystemChk:checked').length;
+                                $('#tmkDCTDelSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#tmkDCTDelSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.tmkDCTDelSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
     </div>
-    <div class="form-row mt-3">
-        <div class="col">
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
-        </div>
-    </div>
 </form>
+
+<script>
+    tmkDesCaseTypeDeletePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    tmkDesCaseTypeDeletePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

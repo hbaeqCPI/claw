@@ -2,6 +2,33 @@
 @inject IStringLocalizer<SharedResource> Localizer
 <div class="tab-content search page-content">
     <div class="tab-pane show active" id="tmkDesCaseTypeFieldsDeleteSearchMainTabContent" aria-labelledby="tmkDesCaseTypeFieldsDeleteSearchMainTab" role="tabpanel">
-        <p class="text-muted">@Localizer["Click Search to view all records."]</p>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DesCaseType">@Localizer["Des Case Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="FromField">@Localizer["From Field"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "FromField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="ToField">@Localizer["To Field"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "ToField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="SystemName">@Localizer["Systems"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
+                </div>
+            </div>
+        </div>
     </div>
 </div>

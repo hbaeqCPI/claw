@@ -6,16 +6,14 @@
     .Name($"{Model.PageId}-Grid")
     .Columns(columns =>
     {
-        columns.Bound(m => m.CExpId).Width(100);
-        columns.Bound(m => m.Country).Width(200);
-        columns.Bound(m => m.CaseType).Width(200);
-        columns.Bound(m => m.Type).Width(200);
-        columns.Bound(m => m.BasedOn).Width(200);
-        columns.Bound(m => m.Yr).Width(100);
-        columns.Bound(m => m.Mo).Width(100);
-        columns.Bound(m => m.EffBasedOn).Width(200);
-        columns.Bound(m => m.EffStartDate).Format("{0:dd-MMM-yyyy}").Width(150);
-        columns.Bound(m => m.EffEndDate).Format("{0:dd-MMM-yyyy}").Width(150);
+        columns.Bound(m => m.Country).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { cExpId = "#: CExpId#", systems = "#: Systems#", fromSearch = true }), "Country")).Width(100);
+        columns.Bound(m => m.CaseType).Width(100);
+        columns.Bound(m => m.Type).Width(150);
+        columns.Bound(m => m.BasedOn).Width(150);
+        columns.Bound(m => m.Yr).Width(80);
+        columns.Bound(m => m.Mo).Width(80);
+        columns.Bound(m => m.Dy).Width(80);
+        columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
     .AutoBind(false)

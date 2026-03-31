@@ -1,23 +1,43 @@
 @model PatAreaDelete
 @using R10.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+}
 
 <form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="Area"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.Area })
-                    <span asp-validation-for="Area"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.Area })
+                        <span asp-validation-for="Area"></span>
+                    }
                 </div>
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
                 <div class="form-group float-label">
                     <label asp-for="Description"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="Description" />
+                    <input type="text" class="form-control form-control-sm" asp-for="Description" asp-is-readonly="@isReadOnly" />
                     <span asp-validation-for="Description"></span>
                 </div>
             </div>
@@ -25,43 +45,87 @@
         <div class="form-row">
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
-                    <label asp-for="UserID"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="UserID" />
-                    <span asp-validation-for="UserID"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
-                    <label asp-for="DateCreated"></label>
-                    @(Html.Kendo().DateTimePicker().Name("DateCreated").Value(Model.DateCreated).Format("dd-MMM-yyyy HH:mm"))
-                    <span asp-validation-for="DateCreated"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
-                    <label asp-for="LastUpdate"></label>
-                    @(Html.Kendo().DateTimePicker().Name("LastUpdate").Value(Model.LastUpdate).Format("dd-MMM-yyyy HH:mm"))
-                    <span asp-validation-for="LastUpdate"></span>
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
-                <div class="form-group float-label">
                     <label asp-for="AreaNew"></label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "AreaNew", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.AreaNew })
-                    <span asp-validation-for="AreaNew"></span>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="AreaNew" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "AreaNew", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.AreaNew })
+                        <span asp-validation-for="AreaNew"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    <input type="hidden" name="Systems" id="patADelSystemsHidden" value="@Model.Systems" />
+                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
+                        @if (!isReadOnly)
+                        {
+                            <div class="position-absolute" style="top: 4px; right: 8px;">
+                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patADelSystemsToggleAll" class="mr-1"/>Select All</label>
+                            </div>
+                        }
+                        <div id="patADelSystemsCheckboxes"></div>
+                    </div>
+                    <script>
+                        $(document).ready(function() {
+                            var disabled = @(isReadOnly ? "true" : "false");
+                            var selected = ($('#patADelSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
+                            $.getJSON('@Url.Action("GetSystemList", "AreaDelete")', function(data) {
+                                var html = '';
+                                $.each(data, function(i, name) {
+                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
+                                    var dis = disabled ? ' disabled' : '';
+                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patADelSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
+                                });
+                                $('#patADelSystemsCheckboxes').html(html);
+                                var allCount = $('.patADelSystemChk').length;
+                                var checkedCount = $('.patADelSystemChk:checked').length;
+                                $('#patADelSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $(document).on('change', '.patADelSystemChk', function() {
+                                var vals = [];
+                                $('.patADelSystemChk:checked').each(function() { vals.push($(this).val()); });
+                                $('#patADelSystemsHidden').val(vals.join(',')).trigger('change');
+                                var allCount = $('.patADelSystemChk').length;
+                                var checkedCount = $('.patADelSystemChk:checked').length;
+                                $('#patADelSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
+                            });
+                            $('#patADelSystemsToggleAll').click(function() {
+                                var isChecked = $(this).prop('checked');
+                                $('.patADelSystemChk').prop('checked', isChecked).first().trigger('change');
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
     </div>
-    <div class="form-row mt-3">
-        <div class="col">
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fal fa-save mr-1"></i>@Localizer["Save"]</button>
-        </div>
-    </div>
+
 </form>
+
+<script>
+    patAreaDeletePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patAreaDeletePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

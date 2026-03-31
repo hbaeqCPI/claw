@@ -6,12 +6,13 @@
     .Name($"{Model.PageId}-Grid")
     .Columns(columns =>
     {
-        columns.Bound(m => m.DesCaseType).Width(200);
+        columns.Bound(m => m.DesCaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", fromField = "#: FromField#", toField = "#: ToField#", desCaseTypeNew = "#: DesCaseTypeNew#", fromFieldNew = "#: FromFieldNew#", toFieldNew = "#: ToFieldNew#", systems = "#: Systems#", fromSearch = true }), "DesCaseType")).Width(150);
         columns.Bound(m => m.FromField).Width(200);
         columns.Bound(m => m.ToField).Width(200);
-        columns.Bound(m => m.DesCaseTypeNew).Width(200);
+        columns.Bound(m => m.DesCaseTypeNew).Width(150);
         columns.Bound(m => m.FromFieldNew).Width(200);
         columns.Bound(m => m.ToFieldNew).Width(200);
+        columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
     .AutoBind(false)

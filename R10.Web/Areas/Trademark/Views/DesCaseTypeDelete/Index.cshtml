@@ -7,4 +7,8 @@
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof tmkDesCaseTypeDeletePage === 'undefined') { var tmkDesCaseTypeDeletePage = new ActivePage(); }
+tmkDesCaseTypeDeletePage.mainSearchRecordIds = tmkDesCaseTypeDeletePage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)

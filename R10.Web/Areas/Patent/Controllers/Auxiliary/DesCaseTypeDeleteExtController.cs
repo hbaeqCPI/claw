@@ -35,6 +35,16 @@ namespace R10.Web.Areas.Patent.Controllers
             _localizer = localizer;
         }
 
+        private async Task<DetailPagePermission> GetPermission()
+        {
+            var p = new DetailPagePermission();
+            p.CanEditRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded;
+            p.CanDeleteRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
+            p.CanAddRecord = p.CanEditRecord;
+            p.CanCopyRecord = p.CanEditRecord;
+            return p;
+        }
+
         public async Task<IActionResult> Index()
         {
             var model = new PageViewModel { Page = PageType.Search, PageId = "patDesCaseTypeDeleteExtSearch", Title = _localizer["Des Case Type Delete Ext Search"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded };
@@ -51,52 +61,266 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpGet]
         public IActionResult Search() => RedirectToAction("Index");
 
-        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request)
+        public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var data = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking().ToListAsync();
+            var entities = _repository.PatDesCaseTypeDeleteExts.AsNoTracking().AsQueryable();
+
+            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+            {
+                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+                if (systemName != null)
+                {
+                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
+                    mainSearchFilters.Remove(systemName);
+                }
+
+                foreach (var filter in mainSearchFilters)
+                {
+                    if (filter.Property == "IntlCode" && !string.IsNullOrEmpty(filter.Value))
+                        entities = entities.Where(a => a.IntlCode == filter.Value);
+                    else if (filter.Property == "CaseType" && !string.IsNullOrEmpty(filter.Value))
+                        entities = entities.Where(a => a.CaseType == filter.Value);
+                    else if (filter.Property == "DesCountry" && !string.IsNullOrEmpty(filter.Value))
+                        entities = entities.Where(a => a.DesCountry == filter.Value);
+                    else if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
+                        entities = entities.Where(a => a.DesCaseType == filter.Value);
+                }
+            }
+
+            var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
-        public IActionResult Add(bool fromSearch = false)
+        public async Task<IActionResult> Detail(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
-            var model = new PageViewModel { Page = fromSearch ? PageType.Detail : PageType.DetailContent, PageId = _dataContainer, Title = _localizer["New Des Case Type Delete Ext"].ToString(), Data = new PatDesCaseTypeDeleteExt() };
-            ModelState.Clear();
-            return PartialView("Index", model);
-        }
-
-        public async Task<IActionResult> Detail(int id, bool singleRecord = false, bool fromSearch = false)
-        {
-            var items = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking().ToListAsync();
-            if (id < 0 || id >= items.Count) return new RecordDoesNotExistResult();
-            var detail = items[id];
-            var model = new PageViewModel { Page = PageType.Detail, PageId = _dataContainer, Title = _localizer["Des Case Type Delete Ext Detail"].ToString(), RecordId = id, SingleRecord = singleRecord || !Request.IsAjax(), Data = detail };
+            var detail = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.IntlCode == intlCode && c.CaseType == caseType && c.DesCountry == desCountry && c.DesCaseType == desCaseType
+                    && c.IntlCodeNew == intlCodeNew && c.CaseTypeNew == caseTypeNew && c.DesCountryNew == desCountryNew && c.DesCaseTypeNew == desCaseTypeNew && c.Systems == systems);
+            if (detail == null)
+            {
+                if (Request.IsAjax()) return new RecordDoesNotExistResult();
+                return RedirectToAction("Index");
+            }
+            var perm = await GetPermission();
+            perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { intlCode, caseType, desCountry, desCaseType, intlCodeNew, caseTypeNew, desCountryNew, desCaseTypeNew, systems }) : "";
+            perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyIntlCode = detail.IntlCode, copyCaseType = detail.CaseType, copyDesCountry = detail.DesCountry, copyDesCaseType = detail.DesCaseType, copyDefault = detail.Default, copyIntlCodeNew = detail.IntlCodeNew, copyCaseTypeNew = detail.CaseTypeNew, copyDesCountryNew = detail.DesCountryNew, copyDesCaseTypeNew = detail.DesCaseTypeNew, copySystems = detail.Systems }) : "";
+            perm.IsCopyScreenPopup = false;
+            var model = new PageViewModel
+            {
+                Page = PageType.Detail,
+                PageId = _dataContainer,
+                Title = _localizer["Des Case Type Delete Ext Detail"].ToString(),
+                RecordId = 1,
+                SingleRecord = singleRecord || !Request.IsAjax(),
+                Data = detail,
+                PagePermission = perm
+            };
             if (Request.IsAjax() && !singleRecord && !fromSearch) model.Page = PageType.DetailContent;
             return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
+        }
+
+        [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> Add(bool fromSearch = false, string copyIntlCode = "", string copyCaseType = "", string copyDesCountry = "", string copyDesCaseType = "", bool copyDefault = false, string copyIntlCodeNew = "", string copyCaseTypeNew = "", string copyDesCountryNew = "", string copyDesCaseTypeNew = "", string copySystems = "")
+        {
+            if (!Request.IsAjax()) return RedirectToAction("Index");
+            var data = new PatDesCaseTypeDeleteExt { IsNewRecord = true };
+
+            if (!string.IsNullOrEmpty(copyIntlCode) || !string.IsNullOrEmpty(copyCaseType) || !string.IsNullOrEmpty(copyDesCountry))
+            {
+                data.IntlCode = copyIntlCode;
+                data.CaseType = copyCaseType;
+                data.DesCountry = copyDesCountry;
+                data.DesCaseType = copyDesCaseType;
+                data.Default = copyDefault;
+                data.IntlCodeNew = copyIntlCodeNew;
+                data.CaseTypeNew = copyCaseTypeNew;
+                data.DesCountryNew = copyDesCountryNew;
+                data.DesCaseTypeNew = copyDesCaseTypeNew;
+                data.Systems = copySystems ?? "";
+            }
+
+            var model = new PageViewModel
+            {
+                Page = fromSearch ? PageType.Detail : PageType.DetailContent,
+                PageId = _dataContainer,
+                Title = _localizer["New Des Case Type Delete Ext"].ToString(),
+                Data = data,
+                PagePermission = await GetPermission(),
+                AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
+            };
+            ModelState.Clear();
+            return PartialView("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] PatDesCaseTypeDeleteExt entity)
         {
             if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
-            _repository.Set<PatDesCaseTypeDeleteExt>().Add(entity);
-            await _repository.SaveChangesAsync();
-            return Json(0);
+
+            entity.Systems ??= "";
+
+            // Require at least one system
+            if (string.IsNullOrWhiteSpace(entity.Systems))
+                return new JsonBadRequest("At least one system must be selected.");
+
+            // Deduplicate and sort systems
+            var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+            entity.Systems = string.Join(",", newSystems);
+
+            var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
+            var originalSystemsValue = entity.OriginalSystems == "__EMPTY__" ? "" : (entity.OriginalSystems ?? "");
+
+            if (!isNewRecord)
+            {
+                // Update existing record
+                var existing = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                        && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
+                        && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
+                        && c.Systems == originalSystemsValue);
+
+                if (existing != null)
+                {
+                    // Check for duplicate systems across records with same composite key (minus Systems)
+                    var allRecords = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking()
+                        .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                            && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                            && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
+                            && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
+                            && c.Systems != originalSystemsValue
+                            && c.Systems != null && c.Systems != "")
+                        .Select(c => c.Systems)
+                        .ToListAsync();
+
+                    var usedSystems = allRecords
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                    if (duplicates.Any())
+                        return new JsonBadRequest($"The following systems are already assigned to another Des Case Type Delete Ext record: {string.Join(", ", duplicates)}");
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblPatDesCaseTypeDelete_Ext SET IntlCode=@p0, CaseType=@p1, DesCountry=@p2, DesCaseType=@p3,
+                          [Default]=@p4, IntlCodeNew=@p5, CaseTypeNew=@p6, DesCountryNew=@p7, DesCaseTypeNew=@p8, Systems=@p9
+                          WHERE IntlCode=@p10 AND CaseType=@p11 AND DesCountry=@p12 AND DesCaseType=@p13
+                          AND IntlCodeNew=@p14 AND CaseTypeNew=@p15 AND DesCountryNew=@p16 AND DesCaseTypeNew=@p17 AND Systems=@p18",
+                        new object[] {
+                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.DesCountry ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Default),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.IntlCodeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.CaseTypeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.DesCountryNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.DesCaseTypeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Systems),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", existing.IntlCode ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p11", existing.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p12", existing.DesCountry ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p13", existing.DesCaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p14", existing.IntlCodeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p15", existing.CaseTypeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p16", existing.DesCountryNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p17", existing.DesCaseTypeNew ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p18", existing.Systems ?? "")
+                        });
+                }
+                else
+                {
+                    return new RecordDoesNotExistResult();
+                }
+            }
+            else
+            {
+                // Insert new record
+                var allRecords = await _repository.PatDesCaseTypeDeleteExts.AsNoTracking()
+                    .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                        && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
+                        && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
+                        && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
+
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to another Des Case Type Delete Ext record: {string.Join(", ", duplicates)}");
+
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"INSERT INTO tblPatDesCaseTypeDelete_Ext (IntlCode, CaseType, DesCountry, DesCaseType, [Default], IntlCodeNew, CaseTypeNew, DesCountryNew, DesCaseTypeNew, Systems)
+                      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)",
+                    new object[] {
+                        new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.DesCountry ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Default),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.IntlCodeNew ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.CaseTypeNew ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.DesCountryNew ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.DesCaseTypeNew ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Systems)
+                    });
+            }
+
+            return Json(new { id = 0, redirectUrl = Url.Action("Detail", new { intlCode = entity.IntlCode, caseType = entity.CaseType, desCountry = entity.DesCountry, desCaseType = entity.DesCaseType, intlCodeNew = entity.IntlCodeNew, caseTypeNew = entity.CaseTypeNew, desCountryNew = entity.DesCountryNew, desCaseTypeNew = entity.DesCaseTypeNew, systems = entity.Systems, singleRecord = true }) });
         }
 
-        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete), ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete([FromBody] PatDesCaseTypeDeleteExt entity)
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
+        public async Task<IActionResult> Delete(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "")
         {
-            _repository.Set<PatDesCaseTypeDeleteExt>().Remove(entity);
-            await _repository.SaveChangesAsync();
+            var count = await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatDesCaseTypeDelete_Ext WHERE IntlCode=@p0 AND CaseType=@p1 AND DesCountry=@p2 AND DesCaseType=@p3 AND IntlCodeNew=@p4 AND CaseTypeNew=@p5 AND DesCountryNew=@p6 AND DesCaseTypeNew=@p7 AND Systems=@p8",
+                new object[] {
+                    new Microsoft.Data.SqlClient.SqlParameter("@p0", intlCode ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p1", caseType ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p2", desCountry ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p3", desCaseType ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p4", intlCodeNew ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p5", caseTypeNew ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p6", desCountryNew ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p7", desCaseTypeNew ?? ""),
+                    new Microsoft.Data.SqlClient.SqlParameter("@p8", systems ?? "")
+                });
+
+            if (count == 0)
+                return new RecordDoesNotExistResult();
+
             return Ok();
         }
 
-        [HttpGet]
-        public IActionResult DetailLink(int? id)
+        public async Task<IActionResult> GetSystemList()
         {
-            return id > 0 ? RedirectToAction(nameof(Detail), new { id = id, singleRecord = true, fromSearch = true }) : RedirectToAction(nameof(Add), new { fromSearch = true });
+            var systems = (await _repository.AppSystems.AsNoTracking()
+                .Select(s => s.SystemName)
+                .ToListAsync())
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
+            return Json(systems);
+        }
+
+        public IActionResult GetRecordStamps(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "")
+        {
+            return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
+        }
+
+        [HttpGet]
+        public IActionResult DetailLink(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "")
+        {
+            if (!string.IsNullOrEmpty(intlCode) || !string.IsNullOrEmpty(caseType) || !string.IsNullOrEmpty(desCountry))
+                return RedirectToAction(nameof(Detail), new { intlCode, caseType, desCountry, desCaseType, intlCodeNew, caseTypeNew, desCountryNew, desCaseTypeNew, systems, singleRecord = true, fromSearch = true });
+            return RedirectToAction(nameof(Add), new { fromSearch = true });
         }
 
         [HttpPost]

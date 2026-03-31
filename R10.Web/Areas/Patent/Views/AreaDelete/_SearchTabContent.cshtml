@@ -2,6 +2,27 @@
 @inject IStringLocalizer<SharedResource> Localizer
 <div class="tab-content search page-content">
     <div class="tab-pane show active" id="patAreaDeleteSearchMainTabContent" aria-labelledby="patAreaDeleteSearchMainTab" role="tabpanel">
-        <p class="text-muted">@Localizer["Click Search to view all records."]</p>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Area">@Localizer["Area"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="AreaNew">@Localizer["Area New"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "AreaNew", controller = "Area", area = "Patent", action = "GetPicklistData" })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="SystemName">@Localizer["Systems"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
+                </div>
+            </div>
+        </div>
     </div>
 </div>

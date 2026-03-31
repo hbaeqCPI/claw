@@ -1,10 +1,14 @@
 @model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = Localizer["AreaCountry Delete"];
+    ViewData["Title"] = Localizer["Area Country Delete"];
     ViewData["ActivePage"] = "patAreaCountryDeletePage";
 }
 @section Scripts {
     <script>var @ViewBag.ActivePage = new ActivePage();</script>
 }
+<script>
+if (typeof patAreaCountryDeletePage === 'undefined') { var patAreaCountryDeletePage = new ActivePage(); }
+patAreaCountryDeletePage.mainSearchRecordIds = patAreaCountryDeletePage.mainSearchRecordIds || [];
+</script>
 @await Html.PartialPageAsync(Model.Page, Model)
