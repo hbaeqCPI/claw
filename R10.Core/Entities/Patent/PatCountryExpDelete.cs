@@ -8,18 +8,22 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Country Exp Id")]
         public int CExpId { get; set; }
 
+        [Required]
         [Display(Name = "Country")]
         [StringLength(5)]
         public string? Country { get; set; }
 
+        [Required]
         [Display(Name = "Case Type")]
         [StringLength(3)]
         public string? CaseType { get; set; }
 
+        [Required]
         [Display(Name = "Type")]
         [StringLength(30)]
         public string? Type { get; set; }
 
+        [Required]
         [Display(Name = "Based On")]
         [StringLength(12)]
         public string? BasedOn { get; set; }

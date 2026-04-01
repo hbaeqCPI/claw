@@ -8,7 +8,6 @@
     {
         columns.Bound(m => m.Area).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { areaCode = "#: Area#", areaNewCode = "#: AreaNew#", systems = "#: Systems#", fromSearch = true }), "Area")).Width(200);
         columns.Bound(m => m.Description).Width(200);
-        columns.Bound(m => m.AreaNew).Width(200);
         columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))

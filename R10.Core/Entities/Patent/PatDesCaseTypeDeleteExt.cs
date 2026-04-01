@@ -5,18 +5,22 @@ namespace R10.Core.Entities.Patent
 {
     public class PatDesCaseTypeDeleteExt
     {
+        [Required]
         [Display(Name = "Intl Code")]
         [StringLength(10)]
         public string? IntlCode { get; set; }
 
+        [Required]
         [Display(Name = "Case Type")]
         [StringLength(3)]
         public string? CaseType { get; set; }
 
+        [Required]
         [Display(Name = "Des Country")]
         [StringLength(5)]
         public string? DesCountry { get; set; }
 
+        [Required]
         [Display(Name = "Des Case Type")]
         [StringLength(3)]
         public string? DesCaseType { get; set; }

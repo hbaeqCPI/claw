@@ -101,6 +101,8 @@ namespace R10.Web.Areas.Patent.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { cExpId = cExpId, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyCountry = detail.Country, copyCaseType = detail.CaseType, copyType = detail.Type, copyBasedOn = detail.BasedOn, copyYr = detail.Yr, copyMo = detail.Mo, copyDy = detail.Dy, copyEffBasedOn = detail.EffBasedOn, copySystems = detail.Systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -163,9 +165,20 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] PatCountryExpDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             entity.Systems ??= "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.Country))
+                ModelState.AddModelError("Country", "Country is required.");
+            if (string.IsNullOrWhiteSpace(entity.CaseType))
+                ModelState.AddModelError("CaseType", "Case Type is required.");
+            if (string.IsNullOrWhiteSpace(entity.Type))
+                ModelState.AddModelError("Type", "Type is required.");
+            if (string.IsNullOrWhiteSpace(entity.BasedOn))
+                ModelState.AddModelError("BasedOn", "Based On is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))

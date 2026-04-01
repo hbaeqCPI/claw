@@ -5,10 +5,12 @@ namespace R10.Core.Entities.Trademark
 {
     public class TmkAreaCountryDelete
     {
+        [Required]
         [Display(Name = "Area")]
         [StringLength(10)]
         public string? Area { get; set; }
 
+        [Required]
         [Display(Name = "Country")]
         [StringLength(5)]
         public string? Country { get; set; }

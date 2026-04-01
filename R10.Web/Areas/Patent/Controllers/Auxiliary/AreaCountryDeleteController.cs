@@ -101,6 +101,8 @@ namespace R10.Web.Areas.Patent.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { areaCode = areaCode, country = country, areaNewCode = areaNewCode, countryNew = countryNew, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyArea = areaCode, copyCountry = country, copyAreaNew = areaNewCode, copyCountryNew = countryNew, copySystems = detail.Systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -149,9 +151,18 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] PatAreaCountryDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             entity.Systems ??= "";
+            entity.AreaNew = entity.Area ?? "";
+            entity.CountryNew = entity.Country ?? "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.Area))
+                ModelState.AddModelError("Area", "Area is required.");
+            if (string.IsNullOrWhiteSpace(entity.Country))
+                ModelState.AddModelError("Country", "Country is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
@@ -170,7 +181,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 // Update existing record
                 var existing = await _repository.PatAreaCountryDeletes.AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Area == entity.Area && c.Country == entity.Country
-                        && c.AreaNew == entity.AreaNew && c.CountryNew == entity.CountryNew
                         && c.Systems == originalSystemsValue);
 
                 if (existing != null)
@@ -178,7 +188,6 @@ namespace R10.Web.Areas.Patent.Controllers
                     // Check for duplicate systems across records with the same (Area, Country, AreaNew, CountryNew)
                     var allRecords = await _repository.PatAreaCountryDeletes.AsNoTracking()
                         .Where(c => c.Area == entity.Area && c.Country == entity.Country
-                            && c.AreaNew == entity.AreaNew && c.CountryNew == entity.CountryNew
                             && c.Systems != originalSystemsValue
                             && c.Systems != null && c.Systems != "")
                         .Select(c => c.Systems)
@@ -196,7 +205,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
                     await _repository.Database.ExecuteSqlRawAsync(
                         @"UPDATE tblPatAreaCountryDelete SET Area=@p0, Country=@p1, AreaNew=@p2, CountryNew=@p3, Systems=@p4
-                          WHERE Area=@p5 AND Country=@p6 AND AreaNew=@p7 AND CountryNew=@p8 AND Systems=@p9",
+                          WHERE Area=@p5 AND Country=@p6 AND Systems=@p9",
                         new object[] {
                             new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Area ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.Country ?? ""),
@@ -221,7 +230,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 // Check for duplicate systems across records with the same (Area, Country, AreaNew, CountryNew)
                 var allRecords = await _repository.PatAreaCountryDeletes.AsNoTracking()
                     .Where(c => c.Area == entity.Area && c.Country == entity.Country
-                        && c.AreaNew == entity.AreaNew && c.CountryNew == entity.CountryNew
                         && c.Systems != null && c.Systems != "")
                     .Select(c => c.Systems)
                     .ToListAsync();
@@ -255,7 +263,7 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> Delete(string areaCode = "", string country = "", string areaNewCode = "", string countryNew = "", string systems = "")
         {
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblPatAreaCountryDelete WHERE Area=@p0 AND Country=@p1 AND AreaNew=@p2 AND CountryNew=@p3 AND Systems=@p4",
+                "DELETE FROM tblPatAreaCountryDelete WHERE Area=@p0 AND Country=@p1 AND Systems=@p4",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", areaCode ?? ""),
                     new Microsoft.Data.SqlClient.SqlParameter("@p1", country ?? ""),

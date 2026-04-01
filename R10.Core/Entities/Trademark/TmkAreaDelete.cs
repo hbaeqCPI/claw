@@ -5,6 +5,7 @@ namespace R10.Core.Entities.Trademark
 {
     public class TmkAreaDelete : ClawBaseEntity
     {
+        [Required]
         [Display(Name = "Area")]
         [StringLength(10)]
         public string? Area { get; set; }

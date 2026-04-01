@@ -14,11 +14,11 @@ namespace R10.Core.Entities.Patent
         public string? Country { get; set; }
 
         [Display(Name = "Area New")]
-        [Required, StringLength(10)]
+        [StringLength(10)]
         public string? AreaNew { get; set; }
 
         [Display(Name = "Country New")]
-        [Required, StringLength(5)]
+        [StringLength(5)]
         public string? CountryNew { get; set; }
 
         [StringLength(500)]

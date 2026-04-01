@@ -70,10 +70,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                         data = data.Where(a => a.Area == filter.Value);
                     else if (filter.Property == "Country" && !string.IsNullOrEmpty(filter.Value))
                         data = data.Where(a => a.Country == filter.Value);
-                    else if (filter.Property == "AreaNew" && !string.IsNullOrEmpty(filter.Value))
-                        data = data.Where(a => a.AreaNew == filter.Value);
-                    else if (filter.Property == "CountryNew" && !string.IsNullOrEmpty(filter.Value))
-                        data = data.Where(a => a.CountryNew == filter.Value);
                 }
             }
 
@@ -129,6 +125,8 @@ namespace R10.Web.Areas.Trademark.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { areaCode = areaCode, country = country, areaNewCode = areaNewCode, countryNew = countryNew, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyArea = areaCode, copyCountry = country, copyAreaNew = areaNewCode, copyCountryNew = countryNew, copySystems = systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -149,9 +147,18 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] TmkAreaCountryDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             entity.Systems ??= "";
+            entity.AreaNew = entity.Area ?? "";
+            entity.CountryNew = entity.Country ?? "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.Area))
+                ModelState.AddModelError("Area", "Area is required.");
+            if (string.IsNullOrWhiteSpace(entity.Country))
+                ModelState.AddModelError("Country", "Country is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
@@ -170,12 +177,12 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (!isNewRecord)
             {
                 existing = await _repository.TmkAreaCountryDeletes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Area == entity.Area && c.Country == entity.Country && c.AreaNew == entity.AreaNew && c.CountryNew == entity.CountryNew && c.Systems == originalSystemsValue);
+                    .FirstOrDefaultAsync(c => c.Area == entity.Area && c.Country == entity.Country && c.Systems == originalSystemsValue);
             }
 
             // Check for duplicate systems across other records with the same (Area, Country, AreaNew, CountryNew)
             var allRecords = await _repository.TmkAreaCountryDeletes.AsNoTracking()
-                .Where(c => c.Area == entity.Area && c.Country == entity.Country && c.AreaNew == entity.AreaNew && c.CountryNew == entity.CountryNew && c.Systems != null && c.Systems != "")
+                .Where(c => c.Area == entity.Area && c.Country == entity.Country && c.Systems != null && c.Systems != "")
                 .Select(c => c.Systems)
                 .ToListAsync();
 
@@ -198,7 +205,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 // Use raw SQL to avoid EF composite key tracking issues
                 await _repository.Database.ExecuteSqlRawAsync(
                     @"UPDATE tblTmkAreaCountryDelete SET Area=@p0, Country=@p1, AreaNew=@p2, CountryNew=@p3, Systems=@p4
-                      WHERE Area=@p5 AND Country=@p6 AND AreaNew=@p7 AND CountryNew=@p8 AND Systems=@p9",
+                      WHERE Area=@p5 AND Country=@p6 AND Systems=@p9",
                     entity.Area, entity.Country, entity.AreaNew, entity.CountryNew, entity.Systems,
                     existing.Area, existing.Country, existing.AreaNew, existing.CountryNew, existing.Systems ?? "");
             }
@@ -217,7 +224,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> Delete(string areaCode = "", string country = "", string areaNewCode = "", string countryNew = "", string systems = "")
         {
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblTmkAreaCountryDelete WHERE Area=@p0 AND Country=@p1 AND AreaNew=@p2 AND CountryNew=@p3 AND Systems=@p4",
+                "DELETE FROM tblTmkAreaCountryDelete WHERE Area=@p0 AND Country=@p1 AND Systems=@p4",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", areaCode ?? ""),
                     new Microsoft.Data.SqlClient.SqlParameter("@p1", country ?? ""),

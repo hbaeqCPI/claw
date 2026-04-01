@@ -100,6 +100,8 @@ namespace R10.Web.Areas.Trademark.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { desCaseType, fromField, toField, desCaseTypeNew, fromFieldNew, toFieldNew, systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = detail.DesCaseType, copyFromField = detail.FromField, copyToField = detail.ToField, copyDesCaseTypeNew = detail.DesCaseTypeNew, copyFromFieldNew = detail.FromFieldNew, copyToFieldNew = detail.ToFieldNew, copySystems = detail.Systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -150,9 +152,21 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] TmkDesCaseTypeFieldsDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             entity.Systems ??= "";
+            entity.DesCaseTypeNew = entity.DesCaseType ?? "";
+            entity.FromFieldNew = entity.FromField ?? "";
+            entity.ToFieldNew = entity.ToField ?? "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.DesCaseType))
+                ModelState.AddModelError("DesCaseType", "Des Case Type is required.");
+            if (string.IsNullOrWhiteSpace(entity.FromField))
+                ModelState.AddModelError("FromField", "From Field is required.");
+            if (string.IsNullOrWhiteSpace(entity.ToField))
+                ModelState.AddModelError("ToField", "To Field is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
@@ -170,7 +184,6 @@ namespace R10.Web.Areas.Trademark.Controllers
             {
                 var existing = await _repository.TmkDesCaseTypeFieldsDeletes.AsNoTracking()
                     .FirstOrDefaultAsync(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField && c.ToField == entity.ToField
-                        && c.DesCaseTypeNew == entity.DesCaseTypeNew && c.FromFieldNew == entity.FromFieldNew && c.ToFieldNew == entity.ToFieldNew
                         && c.Systems == originalSystemsValue);
 
                 if (existing != null)
@@ -179,7 +192,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                         @"UPDATE tblTmkDesCaseTypeFieldsDelete SET DesCaseType=@p0, FromField=@p1, ToField=@p2,
                           DesCaseTypeNew=@p3, FromFieldNew=@p4, ToFieldNew=@p5, Systems=@p6
                           WHERE DesCaseType=@p7 AND FromField=@p8 AND ToField=@p9
-                          AND DesCaseTypeNew=@p10 AND FromFieldNew=@p11 AND ToFieldNew=@p12 AND Systems=@p13",
+                          AND Systems=@p13",
                         new object[] {
                             new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.DesCaseType ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.FromField ?? ""),
@@ -225,7 +238,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> Delete(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "")
         {
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblTmkDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND DesCaseTypeNew=@p3 AND FromFieldNew=@p4 AND ToFieldNew=@p5 AND Systems=@p6",
+                "DELETE FROM tblTmkDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND Systems=@p6",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", desCaseType ?? ""),
                     new Microsoft.Data.SqlClient.SqlParameter("@p1", fromField ?? ""),

@@ -102,6 +102,8 @@ namespace R10.Web.Areas.Patent.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { intlCode, caseType, desCountry, desCaseType, intlCodeNew, caseTypeNew, desCountryNew, desCaseTypeNew, systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyIntlCode = detail.IntlCode, copyCaseType = detail.CaseType, copyDesCountry = detail.DesCountry, copyDesCaseType = detail.DesCaseType, copyDefault = detail.Default, copyIntlCodeNew = detail.IntlCodeNew, copyCaseTypeNew = detail.CaseTypeNew, copyDesCountryNew = detail.DesCountryNew, copyDesCaseTypeNew = detail.DesCaseTypeNew, copySystems = detail.Systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -155,9 +157,24 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] PatDesCaseTypeDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             entity.Systems ??= "";
+            entity.IntlCodeNew = entity.IntlCode ?? "";
+            entity.CaseTypeNew = entity.CaseType ?? "";
+            entity.DesCountryNew = entity.DesCountry ?? "";
+            entity.DesCaseTypeNew = entity.DesCaseType ?? "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.IntlCode))
+                ModelState.AddModelError("IntlCode", "Intl Code is required.");
+            if (string.IsNullOrWhiteSpace(entity.CaseType))
+                ModelState.AddModelError("CaseType", "Case Type is required.");
+            if (string.IsNullOrWhiteSpace(entity.DesCountry))
+                ModelState.AddModelError("DesCountry", "Des Country is required.");
+            if (string.IsNullOrWhiteSpace(entity.DesCaseType))
+                ModelState.AddModelError("DesCaseType", "Des Case Type is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
@@ -177,8 +194,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 var existing = await _repository.PatDesCaseTypeDeletes.AsNoTracking()
                     .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
                         && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                        && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
-                        && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
                         && c.Systems == originalSystemsValue);
 
                 if (existing != null)
@@ -187,8 +202,6 @@ namespace R10.Web.Areas.Patent.Controllers
                     var allRecords = await _repository.PatDesCaseTypeDeletes.AsNoTracking()
                         .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
                             && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                            && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
-                            && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
                             && c.Systems != originalSystemsValue
                             && c.Systems != null && c.Systems != "")
                         .Select(c => c.Systems)
@@ -208,7 +221,7 @@ namespace R10.Web.Areas.Patent.Controllers
                         @"UPDATE tblPatDesCaseTypeDelete SET IntlCode=@p0, CaseType=@p1, DesCountry=@p2, DesCaseType=@p3,
                           [Default]=@p4, IntlCodeNew=@p5, CaseTypeNew=@p6, DesCountryNew=@p7, DesCaseTypeNew=@p8, Systems=@p9
                           WHERE IntlCode=@p10 AND CaseType=@p11 AND DesCountry=@p12 AND DesCaseType=@p13
-                          AND IntlCodeNew=@p14 AND CaseTypeNew=@p15 AND DesCountryNew=@p16 AND DesCaseTypeNew=@p17 AND Systems=@p18",
+                          AND Systems=@p18",
                         new object[] {
                             new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
@@ -242,8 +255,6 @@ namespace R10.Web.Areas.Patent.Controllers
                 var allRecords = await _repository.PatDesCaseTypeDeletes.AsNoTracking()
                     .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
                         && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                        && c.IntlCodeNew == entity.IntlCodeNew && c.CaseTypeNew == entity.CaseTypeNew
-                        && c.DesCountryNew == entity.DesCountryNew && c.DesCaseTypeNew == entity.DesCaseTypeNew
                         && c.Systems != null && c.Systems != "")
                     .Select(c => c.Systems)
                     .ToListAsync();
@@ -282,7 +293,7 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> Delete(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "")
         {
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblPatDesCaseTypeDelete WHERE IntlCode=@p0 AND CaseType=@p1 AND DesCountry=@p2 AND DesCaseType=@p3 AND IntlCodeNew=@p4 AND CaseTypeNew=@p5 AND DesCountryNew=@p6 AND DesCaseTypeNew=@p7 AND Systems=@p8",
+                "DELETE FROM tblPatDesCaseTypeDelete WHERE IntlCode=@p0 AND CaseType=@p1 AND DesCountry=@p2 AND DesCaseType=@p3 AND Systems=@p8",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", intlCode ?? ""),
                     new Microsoft.Data.SqlClient.SqlParameter("@p1", caseType ?? ""),

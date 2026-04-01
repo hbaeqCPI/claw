@@ -6,6 +6,7 @@
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
+    bool keyFieldsReadOnly = isReadOnly || !addMode; // Key fields readonly on edit
 }
 
 <form cpi-detail-form action="Save">
@@ -21,7 +22,7 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="Area"></label>
-                    @if (isReadOnly)
+                    @if (keyFieldsReadOnly)
                     {
                         <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
                     }
@@ -46,15 +47,8 @@
             <div class="col col-sm-5 col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="AreaNew"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="AreaNew" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "AreaNew", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.AreaNew })
-                        <span asp-validation-for="AreaNew"></span>
-                    }
+                    <input type="hidden" name="AreaNew" id="AreaNew" value="@Model.AreaNew" />
+                    <input type="text" class="form-control form-control-sm" id="AreaNewDisplay" value="@Model.AreaNew" readonly />
                 </div>
             </div>
         </div>
@@ -110,6 +104,14 @@
 </form>
 
 <script>
+    $(document).ready(function() {
+        function syncAreaNewField() {
+            var area = $('[name=Area]').val() || $('input[name=Area]').val() || '';
+            $('#AreaNew').val(area);
+            $('#AreaNewDisplay').val(area);
+        }
+        $(document).on('change', '[name=Area], [name=Area_input]', syncAreaNewField);
+    });
     patAreaDeletePage.afterInsert = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
@@ -121,6 +123,12 @@
         }
     };
     $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
         $('.copy-record').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();

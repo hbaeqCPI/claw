@@ -6,6 +6,7 @@
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
+    bool keyFieldsReadOnly = isReadOnly || !addMode; // Key fields readonly on edit
 }
 
 <form cpi-detail-form action="Save">
@@ -18,10 +19,10 @@
 
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseType"></label>
-                    @if (isReadOnly)
+                    @if (keyFieldsReadOnly)
                     {
                         <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
                     }
@@ -34,10 +35,10 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="FromField"></label>
-                    @if (isReadOnly)
+                    @if (keyFieldsReadOnly)
                     {
                         <input type="text" class="form-control form-control-sm" asp-for="FromField" readonly />
                     }
@@ -48,12 +49,10 @@
                     }
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="ToField"></label>
-                    @if (isReadOnly)
+                    @if (keyFieldsReadOnly)
                     {
                         <input type="text" class="form-control form-control-sm" asp-for="ToField" readonly />
                     }
@@ -66,50 +65,27 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="DesCaseTypeNew"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseTypeNew" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "DesCaseTypeNew", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseTypeNew })
-                        <span asp-validation-for="DesCaseTypeNew"></span>
-                    }
+                    <input type="hidden" name="DesCaseTypeNew" id="DesCaseTypeNew" value="@Model.DesCaseTypeNew" />
+                    <input type="text" class="form-control form-control-sm" id="DesCaseTypeNewDisplay" value="@Model.DesCaseTypeNew" readonly />
                 </div>
             </div>
         </div>
         <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="FromFieldNew"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="FromFieldNew" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "FromFieldNew", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", defaultValue = Model.FromFieldNew })
-                        <span asp-validation-for="FromFieldNew"></span>
-                    }
+                    <input type="hidden" name="FromFieldNew" id="FromFieldNew" value="@Model.FromFieldNew" />
+                    <input type="text" class="form-control form-control-sm" id="FromFieldNewDisplay" value="@Model.FromFieldNew" readonly />
                 </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3">
+            <div class="col-md-4 col-lg-3">
                 <div class="form-group float-label">
                     <label asp-for="ToFieldNew"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="ToFieldNew" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "ToFieldNew", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", defaultValue = Model.ToFieldNew })
-                        <span asp-validation-for="ToFieldNew"></span>
-                    }
+                    <input type="hidden" name="ToFieldNew" id="ToFieldNew" value="@Model.ToFieldNew" />
+                    <input type="text" class="form-control form-control-sm" id="ToFieldNewDisplay" value="@Model.ToFieldNew" readonly />
                 </div>
             </div>
         </div>
@@ -164,6 +140,22 @@
 </form>
 
 <script>
+    function syncNewFields() {
+        var desCaseTypeVal = $('[name=DesCaseType]').val() || '';
+        $('#DesCaseTypeNew').val(desCaseTypeVal);
+        $('#DesCaseTypeNewDisplay').val(desCaseTypeVal);
+        var fromFieldVal = $('[name=FromField]').val() || '';
+        $('#FromFieldNew').val(fromFieldVal);
+        $('#FromFieldNewDisplay').val(fromFieldVal);
+        var toFieldVal = $('[name=ToField]').val() || '';
+        $('#ToFieldNew').val(toFieldVal);
+        $('#ToFieldNewDisplay').val(toFieldVal);
+    }
+    // sync only on change
+    $(document).on('change', '[name=DesCaseType], [name=DesCaseType_input], [name=FromField], [name=FromField_input], [name=ToField], [name=ToField_input]', syncNewFields);
+</script>
+
+<script>
     tmkDesCaseTypeFieldsDeletePage.afterInsert = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
@@ -175,6 +167,12 @@
         }
     };
     $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
         $('.copy-record').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();

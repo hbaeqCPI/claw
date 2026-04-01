@@ -69,8 +69,6 @@ namespace R10.Web.Areas.Trademark.Controllers
                 {
                     if (filter.Property == "Area" && !string.IsNullOrEmpty(filter.Value))
                         data = data.Where(a => a.Area == filter.Value);
-                    else if (filter.Property == "AreaNew" && !string.IsNullOrEmpty(filter.Value))
-                        data = data.Where(a => a.AreaNew == filter.Value);
                 }
             }
 
@@ -125,6 +123,8 @@ namespace R10.Web.Areas.Trademark.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
+            perm.SearchScreenUrl = Url.Action("Index");
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { areaCode = areaCode, areaNewCode = areaNewCode, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyArea = areaCode, copyAreaNew = areaNewCode, copyDescription = detail.Description, copySystems = systems }) : "";
             perm.IsCopyScreenPopup = false;
@@ -145,7 +145,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] TmkAreaDelete entity)
         {
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear(); // Clear binding errors for auto-filled New fields
 
             var userName = User.GetUserName();
             var now = DateTime.Now;
@@ -153,6 +153,12 @@ namespace R10.Web.Areas.Trademark.Controllers
             entity.LastUpdate = now;
             entity.Description ??= "";
             entity.Systems ??= "";
+            entity.AreaNew = entity.Area ?? "";
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(entity.Area))
+                ModelState.AddModelError("Area", "Area is required.");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
@@ -171,12 +177,12 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (!isNewRecord)
             {
                 existing = await _repository.TmkAreaDeletes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Area == entity.Area && c.AreaNew == entity.AreaNew && c.Systems == originalSystemsValue);
+                    .FirstOrDefaultAsync(c => c.Area == entity.Area && c.Systems == originalSystemsValue);
             }
 
             // Check for duplicate systems across other records with the same (Area, AreaNew)
             var allRecords = await _repository.TmkAreaDeletes.AsNoTracking()
-                .Where(c => c.Area == entity.Area && c.AreaNew == entity.AreaNew && c.Systems != null && c.Systems != "")
+                .Where(c => c.Area == entity.Area && c.Systems != null && c.Systems != "")
                 .Select(c => c.Systems)
                 .ToListAsync();
 
@@ -201,7 +207,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 // Use raw SQL to avoid EF composite key tracking issues
                 await _repository.Database.ExecuteSqlRawAsync(
                     @"UPDATE tblTmkAreaDelete SET Area=@p0, Description=@p1, AreaNew=@p2, Systems=@p3, UserID=@p4, DateCreated=@p5, LastUpdate=@p6
-                      WHERE Area=@p7 AND AreaNew=@p8 AND Systems=@p9",
+                      WHERE Area=@p7 AND Systems=@p9",
                     entity.Area, entity.Description ?? "", entity.AreaNew, entity.Systems,
                     entity.UserID ?? "", entity.DateCreated, entity.LastUpdate,
                     existing.Area, existing.AreaNew, existing.Systems ?? "");
@@ -223,7 +229,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> Delete(string areaCode = "", string areaNewCode = "", string systems = "")
         {
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblTmkAreaDelete WHERE Area=@p0 AND AreaNew=@p1 AND Systems=@p2",
+                "DELETE FROM tblTmkAreaDelete WHERE Area=@p0 AND Systems=@p2",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", areaCode ?? ""),
                     new Microsoft.Data.SqlClient.SqlParameter("@p1", areaNewCode ?? ""),

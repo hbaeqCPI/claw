@@ -11,10 +11,6 @@
         columns.Bound(m => m.DesCountry).Width(120);
         columns.Bound(m => m.DesCaseType).Width(120);
         columns.Bound(m => m.Default).ClientTemplate("#: Default ? '\\u2713' : '' #").Width(80);
-        columns.Bound(m => m.IntlCodeNew).Width(120);
-        columns.Bound(m => m.CaseTypeNew).Width(100);
-        columns.Bound(m => m.DesCountryNew).Width(120);
-        columns.Bound(m => m.DesCaseTypeNew).Width(120);
         columns.Bound(m => m.Systems).Width(200);
     })
     .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
