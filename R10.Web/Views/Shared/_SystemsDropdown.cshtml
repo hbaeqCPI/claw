@@ -1,0 +1,75 @@
+@*
+    Shared Systems MultiSelect dropdown partial.
+    Pass via ViewData:
+        - "SystemsValue" (string): current comma-separated systems value
+        - "SystemsPrefix" (string): unique prefix for element IDs
+        - "SystemsAction" (string): GetSystemList action URL
+        - "SystemsReadOnly" (bool): whether the control is disabled
+*@
+@{
+    var systemsValue = ViewData["SystemsValue"] as string ?? "";
+    var prefix = ViewData["SystemsPrefix"] as string ?? "sys";
+    var actionUrl = ViewData["SystemsAction"] as string ?? "";
+    var isDisabled = ViewData["SystemsReadOnly"] is bool b && b;
+    var hiddenId = $"{prefix}SystemsHidden";
+    var selectId = $"{prefix}SystemsSelect";
+    var selectedValues = systemsValue.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+}
+
+<input type="hidden" name="Systems" id="@hiddenId" value="@systemsValue" />
+@if (isDisabled)
+{
+    <input type="text" class="form-control form-control-sm" value="@systemsValue" readonly />
+}
+else
+{
+    @(Html.Kendo().MultiSelect()
+        .Name(selectId)
+        .DataSource(ds => ds.Read(r => r.Url(actionUrl)))
+        .Value(selectedValues)
+        .Placeholder(" ")
+        .AutoClose(false)
+        .HeaderTemplateId($"{prefix}HeaderTmpl")
+        .HtmlAttributes(new { style = "width:100%; max-width:300px;" })
+    )
+    <script type="text/x-kendo-tmpl" id="@($"{prefix}HeaderTmpl")">
+        <div style="padding:4px 8px; border-bottom:1px solid \\#ddd; background:\\#f5f5f5;">
+            <label style="cursor:pointer; margin:0; font-size:small;">
+                <input type="checkbox" class="@($"{prefix}SelectAllChk") mr-1" />Select All
+            </label>
+        </div>
+    </script>
+    <script>
+        $(document).ready(function () {
+            var ms = $('#@selectId').data('kendoMultiSelect');
+            if (!ms) return;
+
+            function syncHidden() {
+                $('#@hiddenId').val(ms.value().join(',')).trigger('change');
+            }
+
+            function updateSelectAll() {
+                var allCount = ms.dataSource.data().length;
+                var selCount = ms.value().length;
+                $('.@($"{prefix}SelectAllChk")').prop('checked', allCount > 0 && allCount === selCount);
+            }
+
+            ms.bind('change', function () {
+                syncHidden();
+                updateSelectAll();
+            });
+
+            ms.dataSource.bind('change', updateSelectAll);
+
+            $(document).on('click', '.@($"{prefix}SelectAllChk")', function () {
+                if ($(this).prop('checked')) {
+                    ms.value(ms.dataSource.data().toJSON());
+                } else {
+                    ms.value([]);
+                }
+                syncHidden();
+                ms.trigger("change"); // trigger dirty tracking in entryForm
+            });
+        });
+    </script>
+}

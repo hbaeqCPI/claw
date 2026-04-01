@@ -41,8 +41,8 @@
                     @Html.Raw(string.IsNullOrEmpty(Model.AfterCancelledInsert) ? "" : $"onCancel: {Model.AfterCancelledInsert}, ")
                 },
                 editModeOptions: {
-                    @Html.Raw(Model.RecordId == 0 || string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit} ")
-
+                    @Html.Raw(Model.RecordId == 0 || string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit}, ")
+                    onCancel: function() { cpiBreadCrumbs.markLastNode({ dirty: false }); pageHelper.showSearchScreen("@Url.Action("Index")"); }
                 }
             });
         };

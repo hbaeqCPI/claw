@@ -1456,6 +1456,31 @@ td.inactive {
             break-inside: avoid-column;
         }
 
+/* Systems MultiSelect - match float-label pattern */
+.float-label .k-multiselect .k-multiselect-wrap {
+    min-height: 38px !important;
+    padding: 14px 4px 2px 8px !important;
+    font-size: 0.8125rem !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.2rem !important;
+    background: #fff !important;
+}
+.float-label .k-multiselect .k-multiselect-wrap .k-input {
+    height: 20px !important;
+    padding: 0 4px !important;
+    font-size: 0.8125rem !important;
+}
+.float-label .k-multiselect .k-multiselect-wrap li.k-button {
+    font-size: 0.75rem !important;
+    padding: 1px 4px !important;
+    margin: 1px !important;
+    min-height: 18px !important;
+    line-height: 16px !important;
+}
+.float-label .k-multiselect { width: 100% !important; }
+.float-label .k-multiselect + .k-clear-value,
+.float-label .k-multiselect .k-multiselect-wrap .k-loading { top: 10px !important; }
+
 /* collapsed menu */
 @media screen and (max-width: 991px) {
     .navbar {

@@ -41,46 +41,12 @@
             <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Systems"></label>
-                    <input type="hidden" name="Systems" id="areaSystemsHidden" value="@Model.Systems" />
-                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
-                        @if (!isReadOnly)
-                        {
-                            <div class="position-absolute" style="top: 4px; right: 8px;">
-                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="areaSystemsToggleAll" class="mr-1"/>Select All</label>
-                            </div>
-                        }
-                        <div id="areaSystemsCheckboxes"></div>
-                    </div>
-                    <script>
-                        $(document).ready(function() {
-                            var disabled = @(isReadOnly ? "true" : "false");
-                            var selected = ($('#areaSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
-                            $.getJSON('@Url.Action("GetSystemList", "Area")', function(data) {
-                                var html = '';
-                                $.each(data, function(i, name) {
-                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
-                                    var dis = disabled ? ' disabled' : '';
-                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="areaSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
-                                });
-                                $('#areaSystemsCheckboxes').html(html);
-                                var allCount = $('.areaSystemChk').length;
-                                var checkedCount = $('.areaSystemChk:checked').length;
-                                $('#areaSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $(document).on('change', '.areaSystemChk', function() {
-                                var vals = [];
-                                $('.areaSystemChk:checked').each(function() { vals.push($(this).val()); });
-                                $('#areaSystemsHidden').val(vals.join(',')).trigger('change');
-                                var allCount = $('.areaSystemChk').length;
-                                var checkedCount = $('.areaSystemChk:checked').length;
-                                $('#areaSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $('#areaSystemsToggleAll').click(function() {
-                                var isChecked = $(this).prop('checked');
-                                $('.areaSystemChk').prop('checked', isChecked).first().trigger('change');
-                            });
-                        });
-                    </script>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "area" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", isReadOnly }
+                    })
                 </div>
             </div>
         </div>
@@ -134,4 +100,15 @@
             pageHelper.openLink(linkUrl, false);
         });
     })
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
 </script>

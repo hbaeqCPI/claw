@@ -55,46 +55,12 @@
             <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Systems"></label>
-                    <input type="hidden" name="Systems" id="patACSystemsHidden" value="@Model.Systems" />
-                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
-                        @if (!isReadOnly)
-                        {
-                            <div class="position-absolute" style="top: 4px; right: 8px;">
-                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patACSystemsToggleAll" class="mr-1"/>Select All</label>
-                            </div>
-                        }
-                        <div id="patACSystemsCheckboxes"></div>
-                    </div>
-                    <script>
-                        $(document).ready(function() {
-                            var disabled = @(isReadOnly ? "true" : "false");
-                            var selected = ($('#patACSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
-                            $.getJSON('@Url.Action("GetSystemList", "AreaCountry")', function(data) {
-                                var html = '';
-                                $.each(data, function(i, name) {
-                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
-                                    var dis = disabled ? ' disabled' : '';
-                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patACSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
-                                });
-                                $('#patACSystemsCheckboxes').html(html);
-                                var allCount = $('.patACSystemChk').length;
-                                var checkedCount = $('.patACSystemChk:checked').length;
-                                $('#patACSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $(document).on('change', '.patACSystemChk', function() {
-                                var vals = [];
-                                $('.patACSystemChk:checked').each(function() { vals.push($(this).val()); });
-                                $('#patACSystemsHidden').val(vals.join(',')).trigger('change');
-                                var allCount = $('.patACSystemChk').length;
-                                var checkedCount = $('.patACSystemChk:checked').length;
-                                $('#patACSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $('#patACSystemsToggleAll').click(function() {
-                                var isChecked = $(this).prop('checked');
-                                $('.patACSystemChk').prop('checked', isChecked).first().trigger('change');
-                            });
-                        });
-                    </script>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patAC" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", isReadOnly }
+                    })
                 </div>
             </div>
         </div>
@@ -114,6 +80,12 @@
         }
     };
     $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
         $('.copy-record').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();

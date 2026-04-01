@@ -113,46 +113,12 @@
             <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Systems"></label>
-                    <input type="hidden" name="Systems" id="patDCTDelExtSystemsHidden" value="@Model.Systems" />
-                    <div class="border rounded p-2 position-relative" style="min-height: 60px; padding-top: 30px !important;">
-                        @if (!isReadOnly)
-                        {
-                            <div class="position-absolute" style="top: 4px; right: 8px;">
-                                <label class="small mb-0" style="cursor:pointer;"><input type="checkbox" id="patDCTDelExtSystemsToggleAll" class="mr-1"/>Select All</label>
-                            </div>
-                        }
-                        <div id="patDCTDelExtSystemsCheckboxes"></div>
-                    </div>
-                    <script>
-                        $(document).ready(function() {
-                            var disabled = @(isReadOnly ? "true" : "false");
-                            var selected = ($('#patDCTDelExtSystemsHidden').val() || '').split(',').filter(function(s) { return s.length > 0; });
-                            $.getJSON('@Url.Action("GetSystemList", "DesCaseTypeDeleteExt")', function(data) {
-                                var html = '';
-                                $.each(data, function(i, name) {
-                                    var checked = selected.indexOf(name) > -1 ? ' checked' : '';
-                                    var dis = disabled ? ' disabled' : '';
-                                    html += '<label class="mr-3" style="white-space:nowrap;"><input type="checkbox" class="patDCTDelExtSystemChk mr-1" value="' + name + '"' + checked + dis + '/>' + name + '</label>';
-                                });
-                                $('#patDCTDelExtSystemsCheckboxes').html(html);
-                                var allCount = $('.patDCTDelExtSystemChk').length;
-                                var checkedCount = $('.patDCTDelExtSystemChk:checked').length;
-                                $('#patDCTDelExtSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $(document).on('change', '.patDCTDelExtSystemChk', function() {
-                                var vals = [];
-                                $('.patDCTDelExtSystemChk:checked').each(function() { vals.push($(this).val()); });
-                                $('#patDCTDelExtSystemsHidden').val(vals.join(',')).trigger('change');
-                                var allCount = $('.patDCTDelExtSystemChk').length;
-                                var checkedCount = $('.patDCTDelExtSystemChk:checked').length;
-                                $('#patDCTDelExtSystemsToggleAll').prop('checked', allCount > 0 && allCount === checkedCount);
-                            });
-                            $('#patDCTDelExtSystemsToggleAll').click(function() {
-                                var isChecked = $(this).prop('checked');
-                                $('.patDCTDelExtSystemChk').prop('checked', isChecked).first().trigger('change');
-                            });
-                        });
-                    </script>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patDCTDelExt" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", isReadOnly }
+                    })
                 </div>
             </div>
         </div>
