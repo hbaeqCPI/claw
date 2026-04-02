@@ -123,7 +123,6 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyCountry = "", string copyCaseType = "", string copyType = "", string copyBasedOn = "", int copyYr = 0, int copyMo = 0, int copyDy = 0, string copyEffBasedOn = "", string copySystems = "")
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
             var data = new PatCountryExpDelete { IsNewRecord = true };
 
             if (!string.IsNullOrEmpty(copyCountry))
@@ -149,7 +148,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]

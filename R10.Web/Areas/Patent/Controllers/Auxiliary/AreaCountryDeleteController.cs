@@ -123,7 +123,6 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyArea = "", string copyCountry = "", string copyAreaNew = "", string copyCountryNew = "", string copySystems = "")
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
             var data = new PatAreaCountryDelete { IsNewRecord = true };
 
             if (!string.IsNullOrEmpty(copyArea))
@@ -145,7 +144,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]

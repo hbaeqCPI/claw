@@ -124,7 +124,6 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyIntlCode = "", string copyCaseType = "", string copyDesCountry = "", string copyDesCaseType = "", bool copyDefault = false, string copyIntlCodeNew = "", string copyCaseTypeNew = "", string copyDesCountryNew = "", string copyDesCaseTypeNew = "", string copySystems = "")
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
             var data = new PatDesCaseTypeDelete { IsNewRecord = true };
 
             if (!string.IsNullOrEmpty(copyIntlCode) || !string.IsNullOrEmpty(copyCaseType) || !string.IsNullOrEmpty(copyDesCountry))
@@ -151,7 +150,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]

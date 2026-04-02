@@ -124,6 +124,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 viewModel.Container = _dataContainer;
 
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
                 viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
                 viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
@@ -214,7 +215,7 @@ namespace R10.Web.Areas.Patent.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]

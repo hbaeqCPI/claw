@@ -122,7 +122,6 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyDesCaseType = "", string copyFromField = "", string copyToField = "", string copyDesCaseTypeNew = "", string copyFromFieldNew = "", string copyToFieldNew = "", string copySystems = "")
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
             var data = new TmkDesCaseTypeFieldsDeleteExt { IsNewRecord = true };
 
             if (!string.IsNullOrEmpty(copyDesCaseType) || !string.IsNullOrEmpty(copyFromField) || !string.IsNullOrEmpty(copyToField))
@@ -146,7 +145,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]

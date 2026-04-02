@@ -17,6 +17,7 @@ namespace R10.Core.Entities.Trademark
         public string? CaseType { get; set; }
 
         [StringLength(30)]
+        [Required(ErrorMessage = "The Action Type field is required.")]
         [Display(Name = "Action Type")]
         public string? ActionType { get; set; }
 
@@ -65,6 +66,7 @@ namespace R10.Core.Entities.Trademark
         public int? CPIPermanentID { get; set; }
 
         [StringLength(500)]
+        [Required(ErrorMessage = "At least one system must be selected.")]
         [Display(Name = "Systems")]
         public string Systems { get; set; } = "";
 

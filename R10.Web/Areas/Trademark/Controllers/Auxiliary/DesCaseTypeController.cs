@@ -196,7 +196,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]

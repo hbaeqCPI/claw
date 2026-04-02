@@ -6,7 +6,7 @@
     var childLinkParam = $"{{country: '{Model.Country}', caseType: '{Model.CaseType}' }}";
 }
 
-<div data-countryLawId="@Model.Id" data-country="@Model.Country" data-caseType="@Model.CaseType" data-url-add="@Url.Action("CountryDueAdd", "CountryLaw")"
+<div data-countryLawId="@Model.Id" data-country="@Model.Country" data-caseType="@Model.CaseType" data-systems="@Model.Systems" data-url-add="@Url.Action("CountryDueAdd", "CountryLaw")"
      data-url-edit="@Url.Action("CountryDueEdit", "CountryLaw")"
      data-url-copy="@Url.Action("CountryDueCopy", "CountryLaw")"
      data-url-compute="@Url.Action("CountryDueCompute", "CountryLaw")">
@@ -43,12 +43,12 @@
                       command.Custom("Copy").Click("function(e) {tmkCountryLawPage.copyCountryDueRecord(e,this)}").IconClass("k-icon fal fa-copy")
                       .Text(Localizer["Copy"]);
               }).Width(10);
-              columns.Command(command =>
+              @*columns.Command(command =>
               {
                   if (permission.CanAddRecord)
                       command.Custom("Generate").Click("function(e) {tmkCountryLawPage.reComputeCountryLawActions(e,this)}").IconClass("k-icon fal fa-bolt")
                       .Text(Localizer["Generate"]);
-              }).Width(10);
+              }).Width(10);*@
           })
           .Pageable()
           .Sortable(sort => sort.AllowUnsort(false))

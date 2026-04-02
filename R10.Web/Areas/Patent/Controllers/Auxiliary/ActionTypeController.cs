@@ -186,7 +186,7 @@ namespace R10.Web.Areas.Patent.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
 
@@ -299,6 +299,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 viewModel.EditScreenUrl = $"{viewModel.EditScreenUrl}/{id}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
                 viewModel.Container = _dataContainer;
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             }
             return viewModel;
         }
@@ -306,7 +307,7 @@ namespace R10.Web.Areas.Patent.Controllers
         private async Task<List<DetailPageAction>> GetMorePageActions(DetailPageViewModel<ActionTypeViewModel> pagePermission)
         {
             var pageActions = new List<DetailPageAction>();
-            
+
             if (pagePermission.CanAddRecord)
                 pageActions.Add(new DetailPageAction { Url = Url.Action("ActionDueCompute", "ActionType", new { area = "Patent", actionTypeId = pagePermission.Detail.ActionTypeID, country = pagePermission.Detail.Country }), Label = _localizer[$"Generate"], IsPopup = true, IconClass = "fa-bolt", ControlId = "actionDueCompute", IsPageNav = true });            
             

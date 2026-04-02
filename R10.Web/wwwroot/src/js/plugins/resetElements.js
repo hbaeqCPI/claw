@@ -39,7 +39,19 @@
 
             var isEmpty = !el.val() || el.val().length === 0;
 
-            
+            // Kendo NumericTextBox: display input is empty on blur but widget still has value
+            if (isEmpty) {
+                var numericInput = el.closest('.k-numeric-wrap').siblings('input[data-role="numerictextbox"]');
+                if (numericInput.length === 0)
+                    numericInput = container.find('input[data-role="numerictextbox"]');
+                if (numericInput.length > 0) {
+                    var ntb = numericInput.data('kendoNumericTextBox');
+                    if (ntb && ntb.value() !== null && ntb.value() !== undefined) {
+                        isEmpty = false;
+                    }
+                }
+            }
+
             if (isEmpty) {
                 container.removeClass('active').addClass('inactive');
             }

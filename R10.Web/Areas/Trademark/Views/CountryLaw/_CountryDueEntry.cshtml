@@ -23,6 +23,8 @@
 
     var labelCanGenerate = Localizer["Generate this Action?"];
     bool copyLawAction = ViewBag.CopyLawAction ?? false;
+    // Allow full edit regardless of CPI Action status
+    Model.CPIAction = false;
 }
 
 <div class="modal fade" id="tmkCountryDueEntryDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
@@ -47,10 +49,7 @@
 
                         <div class="row">
                             <div class="col-12 col-md-6">
-                                @if (Model.CPIAction)
-                                {
-                                    <div class="dymo-alert">@Localizer["CPI Action: Limited Edit"]</div>
-                                }
+                                @*CPI Action restriction removed - allow full edit*@
                             </div>
                             <div class="col-12 col-md-6">
                                 @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
@@ -152,7 +151,7 @@
                                         }
                                         else
                                         {
-                                            @(Html.Kendo().NumericTextBox<int>().Name("Yr").Value((int?)Model.Yr).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                            <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
                                         }
 
                                     </div>
@@ -166,7 +165,7 @@
                                         }
                                         else
                                         {
-                                            @(Html.Kendo().NumericTextBox<int>().Name("Mo").Value((int?)Model.Mo).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                            <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
                                         }
 
                                     </div>
@@ -180,7 +179,7 @@
                                         }
                                         else
                                         {
-                                            @(Html.Kendo().NumericTextBox<int>().Name("Dy").Value((int?)Model.Dy).Format("0").HtmlAttributes(new { style = "width: 100%" }))
+                                            <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
                                         }
 
                                     </div>

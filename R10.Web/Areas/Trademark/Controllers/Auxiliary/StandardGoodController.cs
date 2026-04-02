@@ -112,6 +112,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 this.AddDefaultNavigationUrls(viewModel);
 
                 viewModel.Container = _dataContainer;
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
 
                 viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
                 viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
@@ -217,7 +218,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]

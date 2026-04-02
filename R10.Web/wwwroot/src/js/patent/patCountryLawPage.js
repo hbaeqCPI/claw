@@ -29,7 +29,8 @@ export default class PatCountryLaw extends ActivePage {
                     const data = {
                         countryLawId: parent.data("countrylawid"),
                         country: parent.data("country"),
-                        caseType: parent.data("casetype")
+                        caseType: parent.data("casetype"),
+                        systems: parent.data("systems")
                     };
                     self.openCountryDueEntry(grid, url, data, true);
 

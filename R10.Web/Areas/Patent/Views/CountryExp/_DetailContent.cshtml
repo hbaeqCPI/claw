@@ -63,17 +63,10 @@
                     }
                     else
                     {
-                        @(Html.Kendo().DropDownList()
-                            .Name("Type")
-                            .DataTextField("Text")
-                            .DataValueField("Value")
-                            .BindTo(new[] {
-                                new { Text = "Tax Start", Value = "Tax Start" },
-                                new { Text = "Expiration", Value = "Expiration" }
-                            })
-                            .Value(Model.Type)
-                            .HtmlAttributes(new { style = "width:100%" })
-                        )
+                        <select class="form-control form-control-sm" asp-for="Type" style="width:100%; height:44px; padding-top:20px;">
+                            <option value="Tax Start" selected="@(Model.Type == "Tax Start" ? "selected" : null)">Tax Start</option>
+                            <option value="Expiration" selected="@(Model.Type == "Expiration" ? "selected" : null)">Expiration</option>
+                        </select>
                         <span asp-validation-for="Type"></span>
                     }
                 </div>
@@ -103,7 +96,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Yr").Format("0").Value(Model.Yr).Min(0).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
                         <span asp-validation-for="Yr"></span>
                     }
                 </div>
@@ -117,7 +110,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Mo").Format("0").Value(Model.Mo).Min(0).Max(12).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
                         <span asp-validation-for="Mo"></span>
                     }
                 </div>
@@ -131,7 +124,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Dy").Format("0").Value(Model.Dy).Min(0).Max(31).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
                         <span asp-validation-for="Dy"></span>
                     }
                 </div>

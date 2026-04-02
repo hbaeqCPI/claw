@@ -297,6 +297,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 viewModel.EditScreenUrl = $"{viewModel.EditScreenUrl}/{id}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
                 viewModel.Container = _dataContainer;
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             }
             return viewModel;
         }

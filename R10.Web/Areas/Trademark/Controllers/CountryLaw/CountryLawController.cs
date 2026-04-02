@@ -257,9 +257,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 await _repository.Database.ExecuteSqlRawAsync(
                     "DELETE FROM tblTmkCountryDue WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
                     country ?? "", caseType ?? "", systems ?? "");
-                await _repository.Database.ExecuteSqlRawAsync(
-                    "DELETE FROM tblTmkCountryExp WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
-                    country ?? "", caseType ?? "", systems ?? "");
+                // tblTmkCountryExp does not exist for Trademark
                 await _repository.Database.ExecuteSqlRawAsync(
                     "DELETE FROM tblTmkDesCaseType WHERE IntlCode=@p0 AND CaseType=@p1 AND Systems=@p2",
                     country ?? "", caseType ?? "", systems ?? "");
@@ -356,9 +354,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                         await _repository.Database.ExecuteSqlRawAsync(
                             "UPDATE tblTmkCountryDue SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
                             countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
-                        await _repository.Database.ExecuteSqlRawAsync(
-                            "UPDATE tblTmkCountryExp SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
-                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                        // tblTmkCountryExp does not exist for Trademark
                     }
                 }
                 else
@@ -448,9 +444,12 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> GetRecordStamps(string country, string caseType, string systems = "")
         {
+            if (string.IsNullOrEmpty(country) || string.IsNullOrEmpty(caseType))
+                return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
+
             var countryLaw = await GetByKey(country, caseType, systems);
             if (countryLaw == null)
-                return new NoRecordFoundResult();
+                return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
 
             return ViewComponent("RecordStamps", new { createdBy = countryLaw.UserID, dateCreated = countryLaw.DateCreated, updatedBy = countryLaw.UserID, lastUpdate = countryLaw.LastUpdate });
         }
@@ -501,9 +500,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return Json(result);
         }
 
-        public IActionResult CountryDueAdd(string country, string caseType)
+        public IActionResult CountryDueAdd(string country, string caseType, string systems = "")
         {
-            return PartialView("_CountryDueEntry", new TmkCountryDue { Country = country, CaseType = caseType, Calculate = true });
+            return PartialView("_CountryDueEntry", new TmkCountryDue { Country = country, CaseType = caseType, Systems = systems, Calculate = true });
         }
 
         public async Task<IActionResult> CountryDueEdit(int cDueId)
@@ -570,6 +569,16 @@ namespace R10.Web.Areas.Trademark.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CountryDueSave([FromBody] TmkCountryDue countryDue)
         {
+            // Inherit Systems from parent if not provided
+            if (string.IsNullOrEmpty(countryDue.Systems))
+            {
+                var parentSystems = await _countryLawService.TmkCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == countryDue.Country && c.CaseType == countryDue.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                countryDue.Systems = parentSystems ?? "";
+                ModelState.Remove("Systems");
+            }
+
             if (ModelState.IsValid)
             {
                 if (string.IsNullOrEmpty(countryDue.ActionType))
@@ -578,23 +587,12 @@ namespace R10.Web.Areas.Trademark.Controllers
                 var userName = User.GetUserName();
                 var now = DateTime.Now;
 
-                if (countryDue.CPIAction)
-                {
-                    var origCountryDue = await _countryLawService.TmkCountryDues.AsNoTracking().FirstOrDefaultAsync(c => c.CDueId == countryDue.CDueId);
-                    origCountryDue.Calculate = countryDue.Calculate;
-                    origCountryDue.FollowupAction = countryDue.FollowupAction;
-                    origCountryDue.OldFollowupAction = countryDue.OldFollowupAction;
-                    origCountryDue.UserID = userName;
-                    origCountryDue.LastUpdate = now;
-                    await _countryLawService.CountryDueUpdate(origCountryDue);
-                }
-                else {
-                    countryDue.UserID = userName;
-                    countryDue.LastUpdate = now;
-                    if (countryDue.CDueId <= 0)
-                        countryDue.DateCreated = now;
-                    await _countryLawService.CountryDueUpdate(countryDue);
-                }
+                // Allow full edit regardless of CPIAction status
+                countryDue.UserID = userName;
+                countryDue.LastUpdate = now;
+                if (countryDue.CDueId <= 0)
+                    countryDue.DateCreated = now;
+                await _countryLawService.CountryDueUpdate(countryDue);
                 return Ok();
             }
             return BadRequest(ModelState);
@@ -613,12 +611,18 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
+            // Get parent's Systems to ensure child records inherit it
+            var parentSystems = (await _countryLawService.TmkCountryLaws.AsNoTracking()
+                .Where(c => c.Country == country && c.CaseType == caseType)
+                .Select(c => c.Systems).FirstOrDefaultAsync()) ?? "";
+
             var userName = User.GetUserName();
             var now = DateTime.Now;
             foreach (var item in updated)
             {
                 item.UserID = userName;
                 item.LastUpdate = now;
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
             }
             // Generate CDueId for new records (not an identity column)
             var maxDueId = await _countryLawService.TmkCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0;
@@ -628,6 +632,11 @@ namespace R10.Web.Areas.Trademark.Controllers
                 item.UserID = userName;
                 item.DateCreated = now;
                 item.LastUpdate = now;
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
+            }
+            foreach (var item in deleted)
+            {
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
             }
             await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
@@ -636,8 +645,15 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.CountryLawCanDelete)]
         public async Task<IActionResult> CountryDueDelete([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] TmkCountryDue deleted)
         {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            // Inherit Systems from parent if not provided
+            if (string.IsNullOrEmpty(deleted.Systems))
+            {
+                var parentSystems = await _countryLawService.TmkCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == deleted.Country && c.CaseType == deleted.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                deleted.Systems = parentSystems ?? "";
+            }
+            ModelState.Clear(); // Clear all validation - delete only needs CDueId
 
             if (deleted.CDueId > 0)
             {
@@ -662,6 +678,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                     DesCountry = x.d.DesCountry,
                     DesCaseType = x.d.DesCaseType,
                     Default = x.d.Default,
+                    Systems = x.d.Systems,
                     DesCountryName = c != null ? c.CountryName : ""
                 })
                 .ToListAsync();
@@ -677,13 +694,24 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (deleted.Any() && !canDelete)
                 return Forbid("Not authorized.");
 
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            // Get parent's Systems to ensure child records inherit it
+            var parentSystems = (await _countryLawService.TmkCountryLaws.AsNoTracking()
+                .Where(c => c.Country == country && c.CaseType == caseType)
+                .Select(c => c.Systems).FirstOrDefaultAsync()) ?? "";
 
             foreach (var item in added)
             {
                 item.IntlCode = country;
                 item.CaseType = caseType;
+                item.Systems = parentSystems;
+            }
+            foreach (var item in updated)
+            {
+                item.Systems = parentSystems;
+            }
+            foreach (var item in deleted)
+            {
+                item.Systems = parentSystems;
             }
             await _countryLawService.UpdateChild(country, caseType, User.GetUserName(), updated, added, deleted);
             return Ok();
@@ -692,8 +720,14 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.CountryLawCanDelete)]
         public async Task<IActionResult> DesCaseTypeDelete([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] TmkDesCaseType deleted)
         {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear();
+            if (string.IsNullOrEmpty(deleted.Systems))
+            {
+                var parentSystems = await _countryLawService.TmkCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == deleted.IntlCode && c.CaseType == deleted.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                deleted.Systems = parentSystems ?? "";
+            }
 
             await _countryLawService.UpdateChild(deleted.IntlCode, deleted.CaseType, User.GetUserName(), new List<TmkDesCaseType>(), new List<TmkDesCaseType>(), new List<TmkDesCaseType>() { deleted });
             return Ok();

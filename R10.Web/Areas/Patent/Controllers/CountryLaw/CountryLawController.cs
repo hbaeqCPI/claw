@@ -470,9 +470,12 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetRecordStamps(string country, string caseType)
         {
+            if (string.IsNullOrEmpty(country) || string.IsNullOrEmpty(caseType))
+                return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
+
             var countryLaw = await GetByKey(country, caseType);
             if (countryLaw == null)
-                return new NoRecordFoundResult();
+                return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
 
             return ViewComponent("RecordStamps", new { createdBy = countryLaw.UserID, dateCreated = countryLaw.DateCreated, updatedBy = countryLaw.UserID, lastUpdate = countryLaw.LastUpdate });
         }
@@ -529,9 +532,9 @@ namespace R10.Web.Areas.Patent.Controllers
             return Json(result);
         }
 
-        public IActionResult CountryDueAdd(string country, string caseType)
+        public IActionResult CountryDueAdd(string country, string caseType, string systems = "")
         {
-            return PartialView("_CountryDueEntry", new PatCountryDue { Country = country, CaseType = caseType, Calculate = true});
+            return PartialView("_CountryDueEntry", new PatCountryDue { Country = country, CaseType = caseType, Systems = systems, Calculate = true});
         }
 
         public async Task<IActionResult> CountryDueEdit(int cDueId)
@@ -600,6 +603,16 @@ namespace R10.Web.Areas.Patent.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CountryDueSave([FromBody] PatCountryDue countryDue)
         {
+            // Inherit Systems from parent if not provided
+            if (string.IsNullOrEmpty(countryDue.Systems))
+            {
+                var parentSystems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == countryDue.Country && c.CaseType == countryDue.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                countryDue.Systems = parentSystems ?? "";
+                ModelState.Remove("Systems");
+            }
+
             if (ModelState.IsValid)
             {
                 if (string.IsNullOrEmpty(countryDue.ActionType))
@@ -640,8 +653,10 @@ namespace R10.Web.Areas.Patent.Controllers
             if (deleted.Any() && !canDelete)
                 return Forbid("Not authorized.");
 
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            // Get parent's Systems to ensure child records inherit it
+            var parentSystems = (await _countryLawService.PatCountryLaws.AsNoTracking()
+                .Where(c => c.Country == country && c.CaseType == caseType)
+                .Select(c => c.Systems).FirstOrDefaultAsync()) ?? "";
 
             var userName = User.GetUserName();
             var now = DateTime.Now;
@@ -649,6 +664,7 @@ namespace R10.Web.Areas.Patent.Controllers
             {
                 item.UserID = userName;
                 item.LastUpdate = now;
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
             }
             // Generate CDueId for new records (not an identity column)
             var maxDueId = await _countryLawService.PatCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0;
@@ -658,6 +674,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 item.UserID = userName;
                 item.DateCreated = now;
                 item.LastUpdate = now;
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
+            }
+            foreach (var item in deleted)
+            {
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
             }
             await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
@@ -666,6 +687,20 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawCanDelete)]
         public async Task<IActionResult> CountryDueDelete([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] PatCountryDue deleted)
         {
+            // Inherit Systems from parent if not provided
+            if (string.IsNullOrEmpty(deleted.Systems))
+            {
+                var parentSystems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == deleted.Country && c.CaseType == deleted.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                deleted.Systems = parentSystems ?? "";
+                ModelState.Remove("Systems");
+            }
+            ModelState.Remove("ActionType");
+            ModelState.Remove("ActionDue");
+            ModelState.Remove("BasedOn");
+            ModelState.Remove("Indicator");
+
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
@@ -694,8 +729,10 @@ namespace R10.Web.Areas.Patent.Controllers
             if (deleted.Any() && !canDelete)
                 return Forbid("Not authorized.");
 
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            // Get parent's Systems to ensure child records inherit it
+            var parentSystems = (await _countryLawService.PatCountryLaws.AsNoTracking()
+                .Where(c => c.Country == country && c.CaseType == caseType)
+                .Select(c => c.Systems).FirstOrDefaultAsync()) ?? "";
 
             // Generate CExpId for new records (not an identity column)
             var maxExpId = await _repository.PatCountryExpirations.MaxAsync(e => (int?)e.CExpId) ?? 0;
@@ -703,6 +740,15 @@ namespace R10.Web.Areas.Patent.Controllers
             foreach (var item in added)
             {
                 item.CExpId = ++maxExpId;
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
+            }
+            foreach (var item in updated)
+            {
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
+            }
+            foreach (var item in deleted)
+            {
+                if (string.IsNullOrEmpty(item.Systems)) item.Systems = parentSystems;
             }
             await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
@@ -711,11 +757,17 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawCanDelete)]
         public async Task<IActionResult> CountryExpDelete([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] PatCountryExp deleted)
         {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear();
 
             if (deleted.CExpId > 0)
             {
+                if (string.IsNullOrEmpty(deleted.Systems))
+                {
+                    var parentSystems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                        .Where(c => c.Country == deleted.Country && c.CaseType == deleted.CaseType)
+                        .Select(c => c.Systems).FirstOrDefaultAsync();
+                    deleted.Systems = parentSystems ?? "";
+                }
                 await _countryLawService.UpdateChild(deleted.Country, deleted.CaseType, User.GetUserName(), new List<PatCountryExp>(), new List<PatCountryExp>(), new List<PatCountryExp>() { deleted });
             }
             return Ok();
@@ -737,6 +789,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     DesCountry = x.d.DesCountry,
                     DesCaseType = x.d.DesCaseType,
                     Default = x.d.Default,
+                    Systems = x.d.Systems,
                     DesCountryName = c != null ? c.CountryName : ""
                 })
                 .ToListAsync();
@@ -752,13 +805,28 @@ namespace R10.Web.Areas.Patent.Controllers
             if (deleted.Any() && !canDelete)
                 return Forbid("Not authorized.");
 
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            // Get parent's Systems to ensure child records inherit it
+            var parentSystems = (await _countryLawService.PatCountryLaws.AsNoTracking()
+                .Where(c => c.Country == country && c.CaseType == caseType)
+                .Select(c => c.Systems).FirstOrDefaultAsync()) ?? "";
 
             foreach (var item in added)
             {
                 item.IntlCode = country;
                 item.CaseType = caseType;
+                item.Systems = parentSystems;
+            }
+            foreach (var item in updated)
+            {
+                item.IntlCode = country;
+                item.CaseType = caseType;
+                item.Systems = parentSystems;
+            }
+            foreach (var item in deleted)
+            {
+                item.IntlCode = country;
+                item.CaseType = caseType;
+                item.Systems = parentSystems;
             }
             await _countryLawService.UpdateChild(country, caseType, User.GetUserName(), updated, added, deleted);
             return Ok();
@@ -767,9 +835,15 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawCanDelete)]
         public async Task<IActionResult> DesCaseTypeDelete([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] PatDesCaseType deleted)
         {
-            if (!ModelState.IsValid)
-                return new JsonBadRequest(new { errors = ModelState.Errors() });
+            ModelState.Clear();
 
+            if (string.IsNullOrEmpty(deleted.Systems))
+            {
+                var parentSystems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                    .Where(c => c.Country == deleted.IntlCode && c.CaseType == deleted.CaseType)
+                    .Select(c => c.Systems).FirstOrDefaultAsync();
+                deleted.Systems = parentSystems ?? "";
+            }
             await _countryLawService.UpdateChild(deleted.IntlCode, deleted.CaseType, User.GetUserName(), new List<PatDesCaseType>(), new List<PatDesCaseType>(), new List<PatDesCaseType>() { deleted });
             return Ok();
         }

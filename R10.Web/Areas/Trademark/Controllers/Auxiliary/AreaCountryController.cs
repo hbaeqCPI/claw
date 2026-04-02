@@ -82,7 +82,6 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyArea = "", string copyCountry = "", string copySystems = "")
         {
-            if (!Request.IsAjax()) return RedirectToAction("Index");
             var data = new TmkAreaCountry { IsNewRecord = true };
 
             if (!string.IsNullOrEmpty(copyArea))
@@ -102,7 +101,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 AfterCancelledInsert = $"function() {{ window.location.href = '{Url.Action("Index")}'; }}"
             };
             ModelState.Clear();
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         public async Task<IActionResult> Detail(string areaCode, string country, string systems = "", bool singleRecord = false, bool fromSearch = false)

@@ -93,6 +93,10 @@ namespace R10.Core.Services
 
         public async Task UpdateChild<T>(string country, string caseType, string userName, IEnumerable<T> updated, IEnumerable<T> added, IEnumerable<T> deleted) where T : class
         {
+            // Detach any tracked entities to avoid concurrency token (tStamp) conflicts
+            // when the grid doesn't send back the concurrency token
+            _repository.DetachAllEntities();
+
             if (updated.Any())
                 _repository.Set<T>().UpdateRange(updated);
 
@@ -119,11 +123,19 @@ namespace R10.Core.Services
         {
             if (deleted.Any())
             {
-                var followUpAction = await _repository.PatActionTypes.FirstOrDefaultAsync(a => a.CDueId == deleted.FirstOrDefault().CDueId);
+                var followUpAction = await _repository.PatActionTypes.AsNoTracking().FirstOrDefaultAsync(a => a.CDueId == deleted.FirstOrDefault().CDueId);
+
+                // Detach all tracked entities to avoid concurrency token (tStamp) conflicts
+                _repository.DetachAllEntities();
+
                 if (followUpAction != null)
                     _repository.PatActionTypes.Remove(followUpAction);
 
-                await UpdateChild(country, caseType, userName, new List<PatCountryDue>(), new List<PatCountryDue>(), deleted);
+                if (deleted.Any())
+                    _repository.Set<PatCountryDue>().RemoveRange(deleted);
+
+                UpdateParentStamps(country, caseType, userName);
+                await _repository.SaveChangesAsync();
             }
         }
 
@@ -171,6 +183,8 @@ namespace R10.Core.Services
             {
                 if (countryDue.CDueId > 0)
                 {
+                    // Detach any tracked entities to avoid concurrency token (tStamp) conflicts
+                    _repository.DetachAllEntities();
                     _repository.PatCountryDues.Update(countryDue);
                 }
                 else
@@ -363,10 +377,14 @@ namespace R10.Core.Services
 
         protected void UpdateParentStamps(string country, string caseType, string userName)
         {
-            var countryLaw = new PatCountryLaw() { Country = country, CaseType = caseType, UserID = userName, LastUpdate = DateTime.Now };
-            var entity = _repository.PatCountryLaws.Attach(countryLaw);
-            entity.Property(c => c.UserID).IsModified = true;
-            entity.Property(c => c.LastUpdate).IsModified = true;
+            try
+            {
+                // Use raw SQL to avoid EF tracking/concurrency issues with composite keys
+                _repository.Database.ExecuteSqlRaw(
+                    "UPDATE tblPatCountryLaw SET UserID=@p0, LastUpdate=@p1 WHERE Country=@p2 AND CaseType=@p3",
+                    userName, DateTime.Now, country, caseType);
+            }
+            catch { /* non-critical - just updating audit stamps */ }
         }
     }
 }

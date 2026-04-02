@@ -34,10 +34,10 @@
                 <a class="nav-link back-to-results" href="#" title="Search" role="button"><i class="fal fa-search pr-2"></i><span>@Localizer["Search"]</span></a>
             }
 
-            @if (Model.CanRefreshRecord)
+            @*@if (Model.CanRefreshRecord)
             {
                 <a class="nav-link page-nav refresh-record" data-url="@Model.RefreshRecordUrl" href="#" title="Refresh" role="button"><i class="fal fa-sync pr-2"></i><span>@Localizer["Refresh"]</span></a>
-            }
+            }*@
 
             @if (Model.CanAddRecord)
             {
@@ -47,12 +47,12 @@
             {
                 <a class="nav-link page-nav copy-record" href="#" title="Copy record" role="button" data-url="@Model.CopyScreenUrl" @(Model.IsCopyScreenPopup ? "data-popup=true" : "") data-container="@Model.Container"><i class="fal fa-copy pr-2"></i><span>@Localizer["Copy"]</span></a>
             }
-            @if (Model.CanPrintRecord)
+            @*@if (Model.CanPrintRecord)
             {
                 <a class="nav-link print-record" href="#" title="Print record" role="button" data-url="@Model.PrintScreenUrl" data-popup="true"
                    data-container="@Model.Container" data-confirm-url="@Model.PrintScreenUrl"
                    data-confirm-message="@Localizer["Please check to confirm"]"><i class="fal fa-file-arrow-down pr-2"></i><span>@Localizer["Print View"]</span></a>
-            }
+            }*@
 
             @if (Model.CanEmail)
             {

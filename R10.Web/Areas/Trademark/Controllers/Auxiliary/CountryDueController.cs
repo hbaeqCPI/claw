@@ -126,6 +126,7 @@ namespace R10.Web.Areas.Trademark.Controllers
 
                 viewModel.Container = _dataContainer;
 
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
                 viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id });
                 viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}/{id}";
                 viewModel.SearchScreenUrl = this.Url.Action("Index");
@@ -192,8 +193,6 @@ namespace R10.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
             if (page.Detail == null)
@@ -215,7 +214,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]

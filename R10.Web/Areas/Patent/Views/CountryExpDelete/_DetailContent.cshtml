@@ -99,7 +99,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Yr").Format("0").Value(Model.Yr).Min(0).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
                         <span asp-validation-for="Yr"></span>
                     }
                 </div>
@@ -113,7 +113,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Mo").Format("0").Value(Model.Mo).Min(0).Max(12).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
                         <span asp-validation-for="Mo"></span>
                     }
                 </div>
@@ -127,7 +127,7 @@
                     }
                     else
                     {
-                        @(Html.Kendo().NumericTextBox<int>().Name("Dy").Format("0").Value(Model.Dy).Min(0).Max(31).Decimals(0).HtmlAttributes(new { style = "width: 100%" }))
+                        <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
                         <span asp-validation-for="Dy"></span>
                     }
                 </div>

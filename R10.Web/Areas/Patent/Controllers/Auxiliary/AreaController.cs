@@ -146,6 +146,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 this.AddDefaultNavigationUrls(viewModel);
 
                 viewModel.Container = _dataContainer;
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
 
                 viewModel.EditScreenUrl = this.Url.Action("Detail", new { id = id, systems = systems });
                 viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { areaCode = id, systems = systems }) : "";
