@@ -309,6 +309,14 @@ namespace R10.Web.Areas.Trademark.Controllers
                         tmkArea.Area, tmkArea.Description ?? "", tmkArea.Systems, tmkArea.UserID ?? "",
                         tmkArea.DateCreated, tmkArea.LastUpdate,
                         existing.Area, existing.Systems ?? "");
+
+                    // Cascade Systems change to child AreaCountry records
+                    if (tmkArea.Systems != originalSystemsValue)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"UPDATE tblTmkAreaCountry SET Systems=@p0 WHERE Area=@p1 AND Systems=@p2",
+                            tmkArea.Systems, tmkArea.Area, originalSystemsValue);
+                    }
                 }
                 else
                 {

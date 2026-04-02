@@ -79,6 +79,7 @@
               .Model(model =>
               {
                   model.Id(d => d.CDueId);
+                  model.Field(d => d.Systems).DefaultValue(Model.Systems ?? "");
                   model.Field(d => d.ActionDue).Editable(false);
                   model.Field(d => d.BasedOn).Editable(false);
                   model.Field(d => d.Yr).Editable(false);

@@ -3,84 +3,100 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var addMode = Model.IsNewRecord;
+    var isCopyGroup = !string.IsNullOrEmpty(Model.CopyFromSystems);
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
 }
 
-<form cpi-detail-form action="Save">
-    @if (addMode)
-    {
+@if (addMode)
+{
+    <form cpi-detail-form action="Save">
         <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
-    }
-    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
-    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+        <input type="hidden" name="OriginalSystems" value="__NEW__" />
+        <input type="hidden" name="CopyFromSystems" value="@(Model.CopyFromSystems ?? "")" />
+        <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="true"></vc:detail-page-nav-links>
 
-    <div class="page-content detail cpiMainEntry">
-        <div class="form-row">
-            <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
-                <div class="form-group float-label">
-                    <label asp-for="DesCaseType"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
-                    }
-                    else
-                    {
+        <div class="page-content detail cpiMainEntry">
+            <div class="form-row">
+                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="DesCaseType"></label>
                         @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Patent", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
                         <span asp-validation-for="DesCaseType"></span>
-                    }
+                    </div>
+                </div>
+            </div>
+            @if (!isCopyGroup)
+            {
+                <div class="form-row">
+                    <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                        <div class="form-group float-label">
+                            <label asp-for="FromField"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="FromField" />
+                            <span asp-validation-for="FromField"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                        <div class="form-group float-label">
+                            <label asp-for="ToField"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="ToField" />
+                            <span asp-validation-for="ToField"></span>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="form-row">
+                <div class="col-md-6">
+                    <div class="form-group float-label">
+                        <label asp-for="Systems"></label>
+                        @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                            { "SystemsValue", Model.Systems },
+                            { "SystemsPrefix", "patDCTF" },
+                            { "SystemsAction", Url.Action("GetSystemList") },
+                            { "SystemsReadOnly", false }
+                        })
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="form-row">
-            <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
-                <div class="form-group float-label">
-                    <label asp-for="FromField"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="FromField" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "FromField", controller = "DesCaseTypeFields", area = "Patent", action = "GetPicklistData", textProperty = "FromField", defaultValue = Model.FromField })
-                        <span asp-validation-for="FromField"></span>
-                    }
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
-                <div class="form-group float-label">
-                    <label asp-for="ToField"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="ToField" readonly />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", new { name = "ToField", controller = "DesCaseTypeFields", area = "Patent", action = "GetPicklistData", textProperty = "ToField", defaultValue = Model.ToField })
-                        <span asp-validation-for="ToField"></span>
-                    }
-                </div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="col-md-6">
-                <div class="form-group float-label">
-                    <label asp-for="Systems"></label>
-                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
-                        { "SystemsValue", Model.Systems },
-                        { "SystemsPrefix", "patDCTF" },
-                        { "SystemsAction", Url.Action("GetSystemList") },
-                        { "SystemsReadOnly", isReadOnly }
-                    })
-                </div>
-            </div>
-        </div>
-    </div>
+    </form>
+}
+else
+{
+    <form cpi-detail-form>
+        <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="false"></vc:detail-page-nav-links>
 
-</form>
+        <div class="page-content detail cpiMainEntry">
+            <div class="form-row">
+                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="DesCaseType"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
+                    </div>
+                </div>
+                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-3">
+                    <div class="form-group float-label">
+                        <label asp-for="Systems"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="Systems" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="patDCTFieldsTab" href="#patDCTFieldsTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="patDCTFieldsTabContent" title="@Localizer["Fields"]">@Localizer["Fields"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="patDCTFieldsTabContent" role="tabpanel" aria-labelledby="patDCTFieldsTab">
+                @await Html.PartialAsync("_GridDesCaseTypeFields", new R10.Web.Areas.Shared.ViewModels.ChildViewModel { Code = Model.DesCaseType, Permission = detailPagePermission }, new ViewDataDictionary(ViewData) { { "Systems", Model.Systems } })
+            </div>
+        </div>
+    </form>
+}
 
 <script>
     patDesCaseTypeFieldsPage.afterInsert = function(result) {
@@ -93,6 +109,9 @@
             pageHelper.openLink(result.redirectUrl, true);
         }
     };
+    patDesCaseTypeFieldsPage.editableGrids = [
+        { name: 'desCaseTypeFieldsGrid', isDirty: false, filter: { desCaseType: '@Model.DesCaseType', systems: '@Model.Systems' }, afterSubmit: patDesCaseTypeFieldsPage.updateRecordStamps }
+    ];
     $(document).ready(function() {
         $('.page-nav.add-record').off('click').on('click', function(e) {
             e.preventDefault();

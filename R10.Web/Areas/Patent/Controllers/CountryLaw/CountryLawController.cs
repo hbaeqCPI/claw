@@ -256,6 +256,17 @@ namespace R10.Web.Areas.Patent.Controllers
             var countryLaw = _countryLawService.PatCountryLaws.FirstOrDefault(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (countryLaw != null)
             {
+                // Cascade delete all child records
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblPatCountryDue WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblPatCountryExp WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblPatDesCaseType WHERE IntlCode=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+
                 await _countryLawService.DeleteCountryLaw(countryLaw);
                 return Ok();
             }
@@ -345,6 +356,17 @@ namespace R10.Web.Areas.Patent.Controllers
                         countryLaw.DateCreated = existing.DateCreated;
                         await _countryLawService.UpdateCountryLaw(countryLaw);
                     }
+
+                    // Cascade Systems change to child records
+                    if (countryLaw.Systems != originalSystemsValue)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblPatCountryDue SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
+                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblPatCountryExp SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
+                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                    }
                 }
                 else
                 {
@@ -390,6 +412,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     due.CDueId = ++maxDueId;
                     due.Country = newCountryLaw.Country;
                     due.CaseType = newCountryLaw.CaseType;
+                    due.Systems = newCountryLaw.Systems;
                     due.CPIAction = false;
                     due.CPIPermanentID = 0;
                     due.UserID = userName;
@@ -408,6 +431,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     exp.CExpId = ++maxExpId;
                     exp.Country = newCountryLaw.Country;
                     exp.CaseType = newCountryLaw.CaseType;
+                    exp.Systems = newCountryLaw.Systems;
                 }
                 await _countryLawService.AddChildren(sourceExps);
             }
@@ -626,8 +650,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 item.UserID = userName;
                 item.LastUpdate = now;
             }
+            // Generate CDueId for new records (not an identity column)
+            var maxDueId = await _countryLawService.PatCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0;
             foreach (var item in added)
             {
+                item.CDueId = ++maxDueId;
                 item.UserID = userName;
                 item.DateCreated = now;
                 item.LastUpdate = now;
@@ -670,7 +697,13 @@ namespace R10.Web.Areas.Patent.Controllers
             if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
 
+            // Generate CExpId for new records (not an identity column)
+            var maxExpId = await _repository.PatCountryExpirations.MaxAsync(e => (int?)e.CExpId) ?? 0;
             var userName = User.GetUserName();
+            foreach (var item in added)
+            {
+                item.CExpId = ++maxExpId;
+            }
             await _countryLawService.UpdateChild(country, caseType, userName, updated, added, deleted);
             return Ok();
         }
@@ -777,7 +810,20 @@ namespace R10.Web.Areas.Patent.Controllers
             var detail = await _countryLawService.PatCountryLaws.ProjectTo<PatCountryLawDetailViewModel>()
                 .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (detail != null)
+            {
                 detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
+
+                // Populate CountryName and CaseTypeDescription
+                var countryEntity = await _patCountryService.QueryableList.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Country == country);
+                if (countryEntity != null)
+                    detail.CountryName = countryEntity.CountryName;
+
+                var caseTypeEntity = await _countryLawService.PatCaseTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.CaseType == caseType);
+                if (caseTypeEntity != null)
+                    detail.CaseTypeDescription = caseTypeEntity.Description;
+            }
             return detail;
         }
 

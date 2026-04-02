@@ -253,6 +253,17 @@ namespace R10.Web.Areas.Trademark.Controllers
             var countryLaw = _countryLawService.TmkCountryLaws.FirstOrDefault(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (countryLaw != null)
             {
+                // Cascade delete all child records
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblTmkCountryDue WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblTmkCountryExp WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblTmkDesCaseType WHERE IntlCode=@p0 AND CaseType=@p1 AND Systems=@p2",
+                    country ?? "", caseType ?? "", systems ?? "");
+
                 await _countryLawService.DeleteCountryLaw(countryLaw);
                 return Ok();
             }
@@ -338,6 +349,17 @@ namespace R10.Web.Areas.Trademark.Controllers
                         countryLaw.DateCreated = existing.DateCreated;
                         await _countryLawService.UpdateCountryLaw(countryLaw);
                     }
+
+                    // Cascade Systems change to child records
+                    if (countryLaw.Systems != originalSystemsValue)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblTmkCountryDue SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
+                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblTmkCountryExp SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
+                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                    }
                 }
                 else
                 {
@@ -382,6 +404,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                     due.CDueId = ++maxDueId;
                     due.Country = newCountryLaw.Country;
                     due.CaseType = newCountryLaw.CaseType;
+                    due.Systems = newCountryLaw.Systems;
                     due.CPIAction = false;
                     due.CPIPermanentID = 0;
                     due.UserID = userName;
@@ -597,8 +620,11 @@ namespace R10.Web.Areas.Trademark.Controllers
                 item.UserID = userName;
                 item.LastUpdate = now;
             }
+            // Generate CDueId for new records (not an identity column)
+            var maxDueId = await _countryLawService.TmkCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0;
             foreach (var item in added)
             {
+                item.CDueId = ++maxDueId;
                 item.UserID = userName;
                 item.DateCreated = now;
                 item.LastUpdate = now;
@@ -709,7 +735,20 @@ namespace R10.Web.Areas.Trademark.Controllers
             var detail = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>()
                 .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
             if (detail != null)
+            {
                 detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
+
+                // Populate CountryName and CaseTypeDescription
+                var countryEntity = await _TmkCountryService.QueryableList.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Country == country);
+                if (countryEntity != null)
+                    detail.CountryName = countryEntity.CountryName;
+
+                var caseTypeEntity = await _countryLawService.TmkCaseTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.CaseType == caseType);
+                if (caseTypeEntity != null)
+                    detail.CaseTypeDescription = caseTypeEntity.Description;
+            }
             return detail;
         }
 

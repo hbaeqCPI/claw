@@ -175,6 +175,8 @@ namespace R10.Core.Services
                 }
                 else
                 {
+                    // Generate CDueId - not an identity column
+                    countryDue.CDueId = (await _repository.PatCountryDues.MaxAsync(d => (int?)d.CDueId) ?? 0) + 1;
                     _repository.PatCountryDues.Add(countryDue);
                     countryDue.OldFollowupAction = ""; //maybe from copy
                 }

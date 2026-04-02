@@ -9,6 +9,7 @@ namespace R10.Web.Areas.Shared.ViewModels
     {
         public string? Country { get; set; }
         public string? CaseType { get; set; }
+        public string? Systems { get; set; }
         public bool CanDeleteChild { get; set; }
         
     }

@@ -315,6 +315,14 @@ namespace R10.Web.Areas.Patent.Controllers
                         patArea.Area, patArea.Description ?? "", patArea.Systems, patArea.UserID ?? "",
                         patArea.DateCreated, patArea.LastUpdate,
                         existing.Area, existing.Systems ?? "");
+
+                    // Cascade Systems change to child AreaCountry records
+                    if (patArea.Systems != originalSystemsValue)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"UPDATE tblPatAreaCountry SET Systems=@p0 WHERE Area=@p1 AND Systems=@p2",
+                            patArea.Systems, patArea.Area, originalSystemsValue);
+                    }
                 }
                 else
                 {

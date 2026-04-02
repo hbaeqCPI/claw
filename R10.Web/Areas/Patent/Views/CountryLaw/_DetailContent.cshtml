@@ -14,7 +14,7 @@
     bool isReadOnlyRemarks = !(fullModify || detailPagePermission.CanEditRemarksOnly);
     var countryLabel = Localizer["Country"];
     var countryNameLabel = Localizer["Country Name"];
-    var childViewModel = new CountryLawChildViewModel { Id=0, CanDeleteChild=Model.CanDeleteChild, Country=Model.Country, CaseType = Model.CaseType, Permission = detailPagePermission };
+    var childViewModel = new CountryLawChildViewModel { Id=0, CanDeleteChild=Model.CanDeleteChild, Country=Model.Country, CaseType = Model.CaseType, Systems = Model.Systems, Permission = detailPagePermission };
 
     var pageId = ViewData["PageId"];
     var saveAction = detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" : fullModify ? "Save" : "";

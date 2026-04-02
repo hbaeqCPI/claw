@@ -12,14 +12,6 @@
                      .Name("patCountryExpGrid")
                      .Columns(columns =>
                      {
-                         columns.Bound(e => e.EffBasedOn)
-                             //.EditorTemplateName("ComboBox").Width(200)
-                             //.EditorViewData(new {action = "GetBasedOnList", controller = "CountryLaw", area = "Patent", dataTextField = "Text", dataValueField = "Text" });
-                             .EditorTemplateName("DropDownList").Width(150)
-                             .EditorViewData(new {data = basedOnOptions});
-
-                         columns.Bound(a => a.EffStartDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
-                         columns.Bound(a => a.EffEndDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
                          columns.Bound(e => e.Type)
                             .EditorTemplateName("ComboBox").Width(150)
                             .EditorViewData(new {action = "GetExpirationTypeList", controller = "CountryLaw", area = "Patent", dataTextField = "Text", dataValueField = "Text" });
@@ -31,6 +23,14 @@
                          columns.Bound(e => e.Yr).Width(80);
                          columns.Bound(e => e.Mo).Width(80);
                          columns.Bound(e => e.Dy).Width(80);
+                         columns.Bound(e => e.EffBasedOn)
+                             //.EditorTemplateName("ComboBox").Width(200)
+                             //.EditorViewData(new {action = "GetBasedOnList", controller = "CountryLaw", area = "Patent", dataTextField = "Text", dataValueField = "Text" });
+                             .EditorTemplateName("DropDownList").Width(150)
+                             .EditorViewData(new {data = basedOnOptions});
+
+                         columns.Bound(a => a.EffStartDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
+                         columns.Bound(a => a.EffEndDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
                          columns.Command(command =>
                          {
                              if (Model.CanDeleteChild)
@@ -69,6 +69,7 @@
                              model.Id(e => e.CExpId);
                              model.Field(e => e.Country).DefaultValue(Model.Country);
                              model.Field(e => e.CaseType).DefaultValue(Model.CaseType);
+                             model.Field(e => e.Systems).DefaultValue(Model.Systems ?? "");
 
                          })
                          .Read(create => create.Action("CountryExpRead", "CountryLaw").Data(childLinkParam))

@@ -5,14 +5,12 @@
     var settings = await Settings.GetSetting();
 }
 
-@(Html.Kendo().Grid<TmkDesCaseTypeFields>()
+@(Html.Kendo().Grid<dynamic>()
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.DesCaseType).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", fromField = "#: FromField#", toField = "#: ToField#", systems = "#: Systems#", fromSearch = true }), "DesCaseType")).Width(200);
-                    columns.Bound(m => m.FromField);
-                    columns.Bound(m => m.ToField);
-                    columns.Bound(m => m.Systems).Width(200);
+                    columns.Bound("DesCaseType").Title(Localizer["Des Case Type"].Value).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", systems = "#: Systems#", fromSearch = true }), "DesCaseType")).Width(200);
+                    columns.Bound("Systems").Title(Localizer["Systems"].Value).Width(300);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
                 .AutoBind(false)
@@ -26,7 +24,7 @@
                 .Read(read => read.Action("PageRead", "DesCaseTypeFields")
                 .Data("tmkDesCaseTypeFieldsPage.gridMainSearchFilters")
                 )
-                .Sort(sort => sort.Add(m => m.DesCaseType))
+                .Sort(sort => sort.Add("DesCaseType"))
                 )
                 .HtmlAttributes(new { @class = "kendo-Grid" })
 )

@@ -65,6 +65,7 @@
                          .ServerOperation(false)
                          .Model(model =>
                          {
+                             model.Field(d => d.Systems).DefaultValue(Model.Systems ?? "");
                              model.Field(d => d.DesCountryName).Editable(false);
                          })
                          .Read(create => create.Action("DesCaseTypeRead", "CountryLaw").Data(childLinkParam))
