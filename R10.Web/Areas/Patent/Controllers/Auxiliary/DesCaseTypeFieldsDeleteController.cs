@@ -77,11 +77,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.DesCaseType == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
                     else if (filter.Property == "FromField" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.FromField == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.FromField, filter.Value));
                     else if (filter.Property == "ToField" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.ToField == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.ToField, filter.Value));
                 }
             }
 

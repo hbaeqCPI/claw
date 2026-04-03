@@ -194,7 +194,7 @@ namespace R10.Web.Helpers
 
             foreach (var filter in mainSearchFilters)
             {
-               // filter.Value = filter.Value.Replace("*", "%").Replace("?", "_");
+                filter.Value = filter.Value.Replace("*", "%").Replace("?", "_");
 
                 if (!string.IsNullOrEmpty(filter.Operator))
                     continue;

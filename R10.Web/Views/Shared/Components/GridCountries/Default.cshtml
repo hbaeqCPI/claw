@@ -25,7 +25,8 @@
                                         .Editable($"{pageName}.isGridColumnEditable")
                                         .EditorViewData(new { id = "CountriesGrid_Country", area = Model.Area })
                                         .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
-                columns.Bound(ca => ca.Country).Title("Country Name")
+                columns.Bound(ca => ca.CountryName).Title("Country Name")
+                    .Editable("function() { return false; }")
                     .HtmlAttributes(new { @class = "d-none d-sm-table-cell name-field" })
                     .HeaderHtmlAttributes(new { @class = "d-none d-sm-table-cell" });
                 columns.Command(command =>
@@ -66,9 +67,9 @@
             {
                 model.Id(ca => ca.Country);
             })
-            .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
-            .Update(update => update.Action("CountriesUpdate", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
-            .Destroy(destroy => destroy.Action("CountryDelete", "Area").Data($"{{areaId: '{Model.ParentCode}'}}"))
+            .Read(read => read.Action("CountriesRead", "Area").Data($"{{areaId: '{Model.ParentCode}', systems: '{Model.ParentScreen ?? ""}'}}"))
+            .Update(update => update.Action("CountriesUpdate", "Area").Data($"{{areaId: '{Model.ParentCode}', systems: '{Model.ParentScreen ?? ""}'}}"))
+            .Destroy(destroy => destroy.Action("CountryDelete", "Area").Data($"{{areaId: '{Model.ParentCode}', systems: '{Model.ParentScreen ?? ""}'}}"))
 
             .Events(events =>
             {

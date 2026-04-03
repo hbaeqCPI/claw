@@ -70,7 +70,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.DesCaseType == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
                     else if (filter.Property == "SystemName" && !string.IsNullOrEmpty(filter.Value))
                         entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + filter.Value.Replace("%", "") + "%"));
                 }

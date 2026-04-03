@@ -16,6 +16,8 @@
         <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
     }
     <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    <input type="hidden" name="CopyFromSystems" value="@(Model.CopyFromSystems ?? "")" />
+    <input type="hidden" name="CopyFromArea" value="@(Model.CopyFromArea ?? "")" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
 
     <div class="page-content detail cpiMainEntry">
@@ -60,7 +62,7 @@
         </ul>
         <div class="tab-content detail">
             <div class="tab-pane active show" id="tmkAreaDetailCountryTabContent" role="tabpanel" aria-labelledby="tmkAreaDetailCountryTab">
-                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentCode = Model.Area, Area = "Trademark" })
+                @await Component.InvokeAsync("GridCountries", new GridOptions { ParentCode = Model.Area, Area = "Trademark", Permission = detailPagePermission, ParentScreen = Model.Systems })
             </div>
         </div>
         <div class="content-stamp">
@@ -82,7 +84,7 @@
     };
     tmkAreaPage.editableGrids = [
             {
-            title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.Area'},
+            title: '@Localizer["Countries"]', name: 'countriesGrid', isDirty: false, filter: { areaId: '@Model.Area', systems: '@Model.Systems'},
             afterSubmit: tmkAreaPage.updateRecordStamps
             }
     ];

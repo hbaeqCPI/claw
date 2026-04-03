@@ -67,9 +67,9 @@ namespace R10.Web.Areas.Patent.Controllers
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "Area" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Area == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.Area, filter.Value));
                     else if (filter.Property == "Country" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Country == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.Country, filter.Value));
                 }
             }
 

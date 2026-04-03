@@ -24,6 +24,12 @@ namespace R10.Core.Entities.Patent
         [NotMapped]
         public string? OriginalSystems { get; set; }
 
+        [NotMapped]
+        public string? CopyFromSystems { get; set; }
+
+        [NotMapped]
+        public string? CopyFromArea { get; set; }
+
         public List <PatAreaCountry>? PatAreaCountries { get; set; }
     }
 }

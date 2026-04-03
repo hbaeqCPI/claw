@@ -243,7 +243,12 @@ const formDataToCriteriaList = function (form) {
         else if (this.value && !this.name.endsWith("_input")) {
             const name = this.name;
             let value = this.value;
-            
+
+            // Convert wildcard characters for search criteria
+            if (typeof value === 'string') {
+                value = value.replace(/\*/g, '%').replace(/\?/g, '_');
+            }
+
             const element = form.is("form") ? form.find("input[name='" + this.name + "']") : form.filter("input[name='" + this.name + "']");
             if (element.data("role") === "datepicker") {
                 let dateValue = element.data("kendoDatePicker").value();

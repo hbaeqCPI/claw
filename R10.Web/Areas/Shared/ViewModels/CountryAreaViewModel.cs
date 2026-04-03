@@ -16,6 +16,12 @@ namespace R10.Web.Areas.Shared.ViewModels
         [Display(Name = "Description")]
         public string? AreaDescription { get; set; }
 
+        [Display(Name = "Country Name")]
+        public string? CountryName { get; set; }
+
+        [Display(Name = "Systems")]
+        public string Systems { get; set; } = "";
+
         public CountryLookupViewModel? CountryLookup { get; set; }
     }
 }

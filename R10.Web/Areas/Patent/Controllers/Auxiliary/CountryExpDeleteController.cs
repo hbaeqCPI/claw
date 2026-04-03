@@ -77,13 +77,13 @@ namespace R10.Web.Areas.Patent.Controllers
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "Country" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Country == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.Country, filter.Value));
                     else if (filter.Property == "CaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.CaseType == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.CaseType, filter.Value));
                     else if (filter.Property == "Type" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Type == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.Type, filter.Value));
                     else if (filter.Property == "BasedOn" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.BasedOn == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.BasedOn, filter.Value));
                 }
             }
 

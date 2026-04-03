@@ -333,6 +333,23 @@ namespace R10.Web.Areas.Patent.Controllers
                           VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
                         patArea.Area, patArea.Description ?? "", patArea.Systems, patArea.UserID ?? "",
                         patArea.DateCreated, patArea.LastUpdate);
+
+                    // Copy child AreaCountry records from source if this is a copy
+                    if (!string.IsNullOrEmpty(patArea.CopyFromSystems))
+                    {
+                        var sourceArea = patArea.CopyFromArea ?? patArea.Area;
+                        var sourceSystems = patArea.CopyFromSystems;
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"INSERT INTO tblPatAreaCountry (Area, Country, Systems)
+                              SELECT @p0, Country, @p1
+                              FROM tblPatAreaCountry
+                              WHERE Area=@p2 AND Systems=@p3
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM tblPatAreaCountry ac2
+                                  WHERE ac2.Area=@p0 AND ac2.Country=tblPatAreaCountry.Country AND ac2.Systems=@p1
+                              )",
+                            patArea.Area ?? "", patArea.Systems, sourceArea ?? "", sourceSystems ?? "");
+                    }
                 }
 
                 return Json(new { id = patArea.Area, redirectUrl = Url.Action("Detail", new { id = patArea.Area, systems = patArea.Systems, singleRecord = true }) });
@@ -416,15 +433,36 @@ namespace R10.Web.Areas.Patent.Controllers
                     page.Detail.Area = copyOptions.Area;
                     page.Detail.Description = source.Description;
                     page.Detail.Systems = source.Systems;
+                    if (copyOptions.CopyCountries)
+                    {
+                        page.Detail.CopyFromSystems = source.Systems;
+                        page.Detail.CopyFromArea = source.Area;
+                    }
                 }
             }
         }
 
         #region Countries Child Grid
 
-        public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, string areaId)
+        public async Task<IActionResult> CountriesRead([DataSourceRequest] DataSourceRequest request, string areaId, string systems = "")
         {
-            var result = (await _repository.PatAreasCountries.AsNoTracking().Where(ca => ca.Area == areaId).ProjectTo<CountryAreaViewModel>(_mapper.ConfigurationProvider).ToListAsync()).ToDataSourceResult(request);
+            // Show records where ANY of the parent's systems appear in the AreaCountry's Systems
+            var parentIndividualSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+            var allAreaCountries = await _repository.PatAreasCountries.AsNoTracking().Where(ca => ca.Area == areaId).ToListAsync();
+            var filtered = allAreaCountries.Where(ac =>
+            {
+                var acSystems = (ac.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                return parentIndividualSystems.Any(ps => acSystems.Contains(ps));
+            }).ToList();
+            var countryNames = await _repository.PatCountries.AsNoTracking()
+                .ToDictionaryAsync(c => c.Country ?? "", c => c.CountryName ?? "");
+            var result = filtered.Select(ac => new CountryAreaViewModel
+            {
+                Area = ac.Area,
+                Country = ac.Country,
+                Systems = ac.Systems,
+                CountryName = countryNames.GetValueOrDefault(ac.Country ?? "", "")
+            }).ToList().ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -432,7 +470,8 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> CountriesUpdate(string areaId,
             [Bind(Prefix = "updated")] IEnumerable<CountryAreaViewModel> updated,
             [Bind(Prefix = "new")] IEnumerable<CountryAreaViewModel> added,
-            [Bind(Prefix = "deleted")] IEnumerable<CountryAreaViewModel> deleted)
+            [Bind(Prefix = "deleted")] IEnumerable<CountryAreaViewModel> deleted,
+            string systems = "")
         {
             var canDelete = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
             if (deleted.Any() && !canDelete)
@@ -440,29 +479,40 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (updated.Any() || added.Any() || deleted.Any())
             {
-                // Set Area on added items before validation (Area comes from parent, not the grid)
+                var parentSystems = systems;
+
+                var parentIndividualSystems = (parentSystems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
                 foreach (var item in added)
-                    item.Area = areaId;
-                foreach (var item in updated)
-                    item.Area = areaId;
-
-                ModelState.Clear();
-                foreach (var item in added.Concat(updated))
-                    TryValidateModel(item);
-
-                if (!ModelState.IsValid)
-                    return new JsonBadRequest(new { errors = ModelState.Errors() });
-
-                foreach (var item in _mapper.Map<List<PatAreaCountry>>(added))
                 {
-                    item.Area = areaId;
-                    _repository.PatAreasCountries.Add(item);
+                    // Check if any existing record for this (Area, Country) has overlapping systems
+                    var existingRecords = await _repository.PatAreasCountries.AsNoTracking()
+                        .Where(ac => ac.Area == areaId && ac.Country == item.Country)
+                        .Select(ac => ac.Systems).ToListAsync();
+                    var existingSystems = existingRecords
+                        .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var overlap = parentIndividualSystems.Where(s => existingSystems.Contains(s)).ToList();
+                    if (overlap.Any())
+                        return BadRequest($"Country '{item.Country}' already exists for system(s): {string.Join(", ", overlap)}");
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO tblPatAreaCountry (Area, Country, Systems) VALUES (@p0, @p1, @p2)",
+                        areaId, item.Country ?? "", parentSystems);
                 }
-                foreach (var item in _mapper.Map<List<PatAreaCountry>>(updated))
-                    _repository.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                foreach (var item in _mapper.Map<List<PatAreaCountry>>(deleted))
-                    _repository.PatAreasCountries.Remove(item);
-                await _repository.SaveChangesAsync();
+                foreach (var item in updated)
+                {
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        "UPDATE tblPatAreaCountry SET Country=@p0 WHERE Area=@p1 AND Country=@p2 AND Systems=@p3",
+                        item.Country ?? "", areaId, item.Country ?? "", parentSystems);
+                }
+                foreach (var item in deleted)
+                {
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        "DELETE FROM tblPatAreaCountry WHERE Area=@p0 AND Country=@p1 AND Systems=@p2",
+                        areaId, item.Country ?? "", parentSystems);
+                }
+
                 var success = deleted.Count() + updated.Count() + added.Count() == 1 ?
                 _localizer["Country has been saved successfully."].ToString() :
                 _localizer["Countries have been saved successfully"].ToString();
@@ -476,8 +526,13 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             if (!string.IsNullOrEmpty(deleted.Country))
             {
-                _repository.PatAreasCountries.Remove(_mapper.Map<PatAreaCountry>(deleted));
-                await _repository.SaveChangesAsync();
+                var parentSystems = (await _repository.PatAreas.AsNoTracking()
+                    .Where(a => a.Area == deleted.Area)
+                    .Select(a => a.Systems).FirstOrDefaultAsync()) ?? "";
+
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblPatAreaCountry WHERE Area=@p0 AND Country=@p1 AND Systems=@p2",
+                    deleted.Area ?? "", deleted.Country ?? "", parentSystems);
                 return Ok(new { success = _localizer["Country has been deleted successfully."].ToString() });
             }
             return Ok();

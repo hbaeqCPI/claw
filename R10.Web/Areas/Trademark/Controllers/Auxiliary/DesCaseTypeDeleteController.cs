@@ -77,13 +77,13 @@ namespace R10.Web.Areas.Trademark.Controllers
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "IntlCode" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.IntlCode == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.IntlCode, filter.Value));
                     else if (filter.Property == "CaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.CaseType == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.CaseType, filter.Value));
                     else if (filter.Property == "DesCountry" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.DesCountry == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.DesCountry, filter.Value));
                     else if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.DesCaseType == filter.Value);
+                        entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
                 }
             }
 
