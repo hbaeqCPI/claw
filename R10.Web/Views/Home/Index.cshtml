@@ -15,10 +15,10 @@
                     <h6 class="text-muted text-uppercase small font-weight-bold mb-1">@Localizer["Manage"]</h6>
                     <hr class="mt-1 mb-2" />
                     <ul class="list-unstyled">
+                        <li class="mb-1"><a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="home-link">@Localizer["Country Law"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="CountryDue" asp-action="Index" class="home-link">@Localizer["Country Due"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="CountryExp" asp-action="Index" class="home-link">@Localizer["Country Expiry"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="CountryExpDelete" asp-action="Index" class="home-link">@Localizer["Country Expiry Delete"]</a></li>
-                        <li class="mb-1"><a asp-area="Patent" asp-controller="CountryLaw" asp-action="Search" class="home-link">@Localizer["Country Law"]</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -27,13 +27,13 @@
                     <ul class="list-unstyled" style="column-count: 2; column-gap: 2rem;">
                         <li class="mb-1"><a asp-area="Patent" asp-controller="ActionType" asp-action="Index" class="home-link">@Localizer["Action Type"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="Area" asp-action="Index" class="home-link">@Localizer["Area"]</a></li>
-                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaDelete" asp-action="Index" class="home-link">@Localizer["Area Delete"]</a></li>
-                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaCountry" asp-action="Index" class="home-link">@Localizer["Area Country"]</a></li>
-                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaCountryDelete" asp-action="Index" class="home-link">@Localizer["Area Country Delete"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="CaseType" asp-action="Search" class="home-link">@Localizer["Case Type"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="Country" asp-action="Index" class="home-link">@Localizer["Country"]</a></li>
-                        <li class="mb-1"><a asp-area="Patent" asp-controller="CountryLawExt" asp-action="Index" class="home-link">@Localizer["Country Law Ext"]</a></li>
                         <li class="mb-1"><a asp-area="Patent" asp-controller="Indicator" asp-action="Index" class="home-link">@Localizer["Indicator"]</a></li>
+                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaCountry" asp-action="Index" class="home-link">@Localizer["Area Country"]</a></li>
+                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaDelete" asp-action="Index" class="home-link">@Localizer["Area Delete"]</a></li>
+                        <li class="mb-1"><a asp-area="Patent" asp-controller="AreaCountryDelete" asp-action="Index" class="home-link">@Localizer["Area Country Delete"]</a></li>
+                        <li class="mb-1"><a asp-area="Patent" asp-controller="CountryLawExt" asp-action="Index" class="home-link">@Localizer["Country Law Ext"]</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -62,8 +62,8 @@
                     <h6 class="text-muted text-uppercase small font-weight-bold mb-1">@Localizer["Manage"]</h6>
                     <hr class="mt-1 mb-2" />
                     <ul class="list-unstyled">
-                        <li class="mb-1"><a asp-area="Trademark" asp-controller="CountryDue" asp-action="Index" class="home-link">@Localizer["Country Due"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="CountryLaw" asp-action="Search" class="home-link">@Localizer["Country Law"]</a></li>
+                        <li class="mb-1"><a asp-area="Trademark" asp-controller="CountryDue" asp-action="Index" class="home-link">@Localizer["Country Due"]</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -72,13 +72,13 @@
                     <ul class="list-unstyled" style="column-count: 2; column-gap: 2rem;">
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="ActionType" asp-action="Index" class="home-link">@Localizer["Action Type"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="Area" asp-action="Index" class="home-link">@Localizer["Area"]</a></li>
-                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaDelete" asp-action="Index" class="home-link">@Localizer["Area Delete"]</a></li>
-                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaCountry" asp-action="Index" class="home-link">@Localizer["Area Country"]</a></li>
-                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaCountryDelete" asp-action="Index" class="home-link">@Localizer["Area Country Delete"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="CaseType" asp-action="Search" class="home-link">@Localizer["Case Type"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="Country" asp-action="Index" class="home-link">@Localizer["Country"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="Indicator" asp-action="Index" class="home-link">@Localizer["Indicator"]</a></li>
                         <li class="mb-1"><a asp-area="Trademark" asp-controller="StandardGood" asp-action="Index" class="home-link">@Localizer["Standard Goods"]</a></li>
+                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaCountry" asp-action="Index" class="home-link">@Localizer["Area Country"]</a></li>
+                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaDelete" asp-action="Index" class="home-link">@Localizer["Area Delete"]</a></li>
+                        <li class="mb-1"><a asp-area="Trademark" asp-controller="AreaCountryDelete" asp-action="Index" class="home-link">@Localizer["Area Country Delete"]</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">

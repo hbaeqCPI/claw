@@ -334,6 +334,64 @@ namespace R10.Web.Services.Menu
                 changed = true;
             }
 
+            // Find or create "Auxiliary" subcategory under Releases
+            var auxCategory = allItems.FirstOrDefault(m => m.ParentId == releasesTop.Id && m.Title == "Auxiliary");
+            if (auxCategory == null)
+            {
+                auxCategory = new CPiMenuItem
+                {
+                    ParentId = releasesTop.Id,
+                    Title = "Auxiliary",
+                    SortOrder = 20,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(auxCategory);
+                await db.SaveChangesAsync();
+                allItems.Add(auxCategory);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Auxiliary' category under Releases.");
+                changed = true;
+            }
+
+            // Find or create the "Systems" page and menu item
+            var systemRouteOptions = "{\"area\":\"Shared\"}";
+            var systemPage = allPages.FirstOrDefault(p => p.Controller == "System" && p.RouteOptions == systemRouteOptions);
+            if (systemPage == null)
+            {
+                systemPage = new CPiMenuPage
+                {
+                    Name = "Systems",
+                    Controller = "System",
+                    Action = "Index",
+                    RouteOptions = systemRouteOptions,
+                    Policy = "*"
+                };
+                menuPageRepo.Add(systemPage);
+                await db.SaveChangesAsync();
+                allPages.Add(systemPage);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Systems' page.");
+                changed = true;
+            }
+
+            var systemLeaf = allItems.FirstOrDefault(m => m.ParentId == auxCategory.Id && m.PageId == systemPage.Id);
+            if (systemLeaf == null)
+            {
+                systemLeaf = new CPiMenuItem
+                {
+                    ParentId = auxCategory.Id,
+                    Title = "Systems",
+                    PageId = systemPage.Id,
+                    SortOrder = 10,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(systemLeaf);
+                await db.SaveChangesAsync();
+                allItems.Add(systemLeaf);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Systems' menu item under Releases/Auxiliary.");
+                changed = true;
+            }
+
             return changed;
         }
 
