@@ -1,7 +1,7 @@
 @model TmkDesCaseTypeFields
 @inject IStringLocalizer<SharedResource> Localizer
 @{
-    var addMode = Model.IsNewRecord || string.IsNullOrEmpty(Model.DesCaseType);
+    var addMode = Model.IsNewRecord;
     var isCopyGroup = !string.IsNullOrEmpty(Model.CopyFromSystems);
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
@@ -14,6 +14,7 @@
         <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
         <input type="hidden" name="OriginalSystems" value="__NEW__" />
         <input type="hidden" name="CopyFromSystems" value="@(Model.CopyFromSystems ?? "")" />
+        <input type="hidden" name="CopyFromDesCaseType" value="@(Model.CopyFromDesCaseType ?? "")" />
         <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="true"></vc:detail-page-nav-links>
 
         <div class="page-content detail cpiMainEntry">
@@ -65,7 +66,10 @@
 }
 else
 {
-    <form cpi-detail-form>
+    <form cpi-detail-form action="Save">
+        <input type="hidden" name="OriginalSystems" value="@(string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems)" />
+        <input type="hidden" name="FromField" value="" />
+        <input type="hidden" name="ToField" value="" />
         <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="false"></vc:detail-page-nav-links>
 
         <div class="page-content detail cpiMainEntry">
@@ -76,10 +80,15 @@ else
                         <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
                     </div>
                 </div>
-                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-3">
+                <div class="col-md-6">
                     <div class="form-group float-label">
                         <label asp-for="Systems"></label>
-                        <input type="text" class="form-control form-control-sm" asp-for="Systems" readonly />
+                        @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                            { "SystemsValue", Model.Systems },
+                            { "SystemsPrefix", "tmkDCTF_detail" },
+                            { "SystemsAction", Url.Action("GetSystemList") },
+                            { "SystemsReadOnly", false }
+                        })
                     </div>
                 </div>
             </div>
@@ -109,7 +118,40 @@ else
         }
     };
     tmkDesCaseTypeFieldsPage.editableGrids = [
-        { name: 'desCaseTypeFieldsGrid', isDirty: false, filter: { desCaseType: '@Model.DesCaseType', systems: '@Model.Systems' }, afterSubmit: tmkDesCaseTypeFieldsPage.updateRecordStamps }
+        {
+            name: 'desCaseTypeFieldsGrid', isDirty: false,
+            filter: { desCaseType: '@Model.DesCaseType', systems: '@Model.Systems' },
+            afterSubmit: tmkDesCaseTypeFieldsPage.updateRecordStamps,
+            beforeSubmit: function() {
+                var defer = $.Deferred();
+                var grid = $("#desCaseTypeFieldsGrid").data("kendoGrid");
+                var allData = [];
+                var data = grid.dataSource.data();
+                for (var i = 0; i < data.length; i++) {
+                    allData.push({ FromField: data[i].FromField, ToField: data[i].ToField });
+                }
+                var postData = {
+                    desCaseType: '@Model.DesCaseType',
+                    systems: '@Model.Systems',
+                    allRows: allData
+                };
+                $.ajax({
+                    url: '@Url.Action("FieldsReplaceAll", "DesCaseTypeFields")',
+                    data: JSON.stringify(postData),
+                    contentType: 'application/json',
+                    type: 'POST',
+                    success: function() {
+                        grid.dataSource.read();
+                        defer.resolve();
+                    },
+                    error: function(e) {
+                        pageHelper.showErrors(e);
+                        defer.reject();
+                    }
+                });
+                return defer.promise();
+            }
+        }
     ];
     $(document).ready(function() {
         $('.page-nav.add-record').off('click').on('click', function(e) {

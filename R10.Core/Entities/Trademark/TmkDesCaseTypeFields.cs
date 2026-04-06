@@ -29,5 +29,8 @@ namespace R10.Core.Entities.Trademark
 
         [NotMapped]
         public string? CopyFromSystems { get; set; }
+
+        [NotMapped]
+        public string? CopyFromDesCaseType { get; set; }
     }
 }
