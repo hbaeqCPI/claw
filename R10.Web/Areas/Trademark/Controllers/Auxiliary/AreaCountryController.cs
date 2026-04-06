@@ -271,5 +271,31 @@ namespace R10.Web.Areas.Trademark.Controllers
                 .ToListAsync();
             return Json(countries);
         }
+
+        [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> MoveToDelete(string areaCode = "", string countryCode = "", string systems = "")
+        {
+            var newIndividualSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!newIndividualSystems.Any()) newIndividualSystems.Add("");
+            var existingDeleteSystems = await _repository.TmkAreaCountryDeletes.AsNoTracking()
+                .Where(d => d.Area == areaCode && d.Country == countryCode)
+                .Select(d => d.Systems).Distinct().ToListAsync();
+            var existingIndividual = existingDeleteSystems
+                .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var overlap = newIndividualSystems.Where(s => existingIndividual.Contains(s)).ToList();
+            if (overlap.Any())
+                return BadRequest($"The following systems already exist in the Delete table: {string.Join(", ", overlap)}");
+
+            await _repository.Database.ExecuteSqlRawAsync(
+                "INSERT INTO tblTmkAreaCountryDelete (Area, Country, AreaNew, CountryNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4)",
+                areaCode ?? "", countryCode ?? "", areaCode ?? "", countryCode ?? "", systems ?? "");
+
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkAreaCountry WHERE Area=@p0 AND Country=@p1 AND Systems=@p2",
+                areaCode ?? "", countryCode ?? "", systems ?? "");
+
+            return Ok(new { success = "Record moved to delete table successfully." });
+        }
     }
 }

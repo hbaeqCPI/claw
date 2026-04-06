@@ -67,43 +67,97 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                if (systemName != null)
-                {
-                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                    mainSearchFilters.Remove(systemName);
-                }
-
                 foreach (var filter in mainSearchFilters)
                 {
                     if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
                         entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
-                    else if (filter.Property == "FromField" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.FromField, filter.Value));
-                    else if (filter.Property == "ToField" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.ToField, filter.Value));
+                    else if (filter.Property == "SystemName" && !string.IsNullOrEmpty(filter.Value))
+                        entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + filter.Value.Replace("%", "") + "%"));
                 }
             }
 
-            var data = await entities.ToListAsync();
+            // Return distinct (DesCaseType, Systems) combos for the search grid
+            var data = await entities
+                .Select(e => new { e.DesCaseType, e.Systems })
+                .Distinct()
+                .OrderBy(d => d.DesCaseType).ThenBy(d => d.Systems)
+                .ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        public async Task<IActionResult> Detail(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
+        public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType = "", string systems = "")
         {
-            var detail = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
-                .FirstOrDefaultAsync(c => c.DesCaseType == desCaseType && c.FromField == fromField && c.ToField == toField
-                    && c.DesCaseTypeNew == desCaseTypeNew && c.FromFieldNew == fromFieldNew && c.ToFieldNew == toFieldNew && c.Systems == systems);
-            if (detail == null)
+            systems ??= "";
+            var data = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                .Where(f => f.DesCaseType == desCaseType && (f.Systems == systems || (f.Systems == null && systems == "") || (f.Systems == "" && systems == "")))
+                .ToListAsync();
+            return Json(data.ToDataSourceResult(request));
+        }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public IActionResult FieldsUpdate()
+        {
+            return Ok(new { success = "Record has been saved successfully." });
+        }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> FieldsReplaceAll([FromBody] FieldsDeleteReplaceAllRequest model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.DesCaseType))
+                return BadRequest("Invalid request.");
+
+            // Delete all existing records for this group
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND Systems=@p1",
+                model.DesCaseType, model.Systems ?? "");
+
+            // Re-insert all rows from the grid
+            if (model.AllRows != null)
+            {
+                foreach (var row in model.AllRows)
+                {
+                    if (!string.IsNullOrEmpty(row.FromField))
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
+                            model.DesCaseType, row.FromField ?? "", row.ToField ?? "", row.DesCaseTypeNew ?? "", row.FromFieldNew ?? "", row.ToFieldNew ?? "", model.Systems ?? "");
+                    }
+                }
+            }
+
+            return Ok();
+        }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
+        public async Task<IActionResult> FieldsDestroy([DataSourceRequest] DataSourceRequest request, [Bind(Prefix = "deleted")] PatDesCaseTypeFieldsDelete deleted)
+        {
+            if (deleted != null && !string.IsNullOrEmpty(deleted.FromField))
+            {
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM tblPatDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND DesCaseTypeNew=@p3 AND FromFieldNew=@p4 AND ToFieldNew=@p5 AND Systems=@p6",
+                    deleted.DesCaseType ?? "", deleted.FromField ?? "", deleted.ToField ?? "", deleted.DesCaseTypeNew ?? "", deleted.FromFieldNew ?? "", deleted.ToFieldNew ?? "", deleted.Systems ?? "");
+            }
+            return Ok(new { success = "Record deleted successfully." });
+        }
+
+        public async Task<IActionResult> Detail(string desCaseType, string systems = "", bool singleRecord = false, bool fromSearch = false)
+        {
+            systems ??= "";
+            var exists = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                .AnyAsync(c => c.DesCaseType == desCaseType && (c.Systems == systems || (c.Systems == null && systems == "") || (c.Systems == "" && systems == "")));
+            if (!exists)
             {
                 if (Request.IsAjax()) return new RecordDoesNotExistResult();
                 return RedirectToAction("Index");
             }
+
+            var detail = new PatDesCaseTypeFieldsDelete { DesCaseType = desCaseType, Systems = systems };
+
             var perm = await GetPermission();
             perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             perm.SearchScreenUrl = Url.Action("Index");
-            perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { desCaseType, fromField, toField, desCaseTypeNew, fromFieldNew, toFieldNew, systems }) : "";
-            perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = detail.DesCaseType, copyFromField = detail.FromField, copyToField = detail.ToField, copyDesCaseTypeNew = detail.DesCaseTypeNew, copyFromFieldNew = detail.FromFieldNew, copyToFieldNew = detail.ToFieldNew, copySystems = detail.Systems }) : "";
+            perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { desCaseType = desCaseType, systems = systems }) : "";
+            perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = desCaseType, copySystems = systems, copyGroup = true }) : "";
             perm.IsCopyScreenPopup = false;
             var model = new PageViewModel
             {
@@ -120,11 +174,11 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
-        public async Task<IActionResult> Add(bool fromSearch = false, string copyDesCaseType = "", string copyFromField = "", string copyToField = "", string copyDesCaseTypeNew = "", string copyFromFieldNew = "", string copyToFieldNew = "", string copySystems = "")
+        public async Task<IActionResult> Add(bool fromSearch = false, string copyDesCaseType = "", string copyFromField = "", string copyToField = "", string copyDesCaseTypeNew = "", string copyFromFieldNew = "", string copyToFieldNew = "", string copySystems = "", bool copyGroup = false)
         {
             var data = new PatDesCaseTypeFieldsDelete { IsNewRecord = true };
 
-            if (!string.IsNullOrEmpty(copyDesCaseType) || !string.IsNullOrEmpty(copyFromField))
+            if (!string.IsNullOrEmpty(copyDesCaseType))
             {
                 data.DesCaseType = copyDesCaseType;
                 data.FromField = copyFromField;
@@ -133,6 +187,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 data.FromFieldNew = copyFromFieldNew;
                 data.ToFieldNew = copyToFieldNew;
                 data.Systems = copySystems ?? "";
+                if (copyGroup)
+                {
+                    data.CopyFromSystems = copySystems ?? "";
+                    data.CopyFromDesCaseType = copyDesCaseType ?? "";
+                }
             }
 
             var model = new PageViewModel
@@ -151,66 +210,98 @@ namespace R10.Web.Areas.Patent.Controllers
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify), ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] PatDesCaseTypeFieldsDelete entity)
         {
-            ModelState.Clear(); // Clear binding errors for auto-filled New fields
+            // Group copy or detail page system update doesn't submit FromField/ToField
+            if (!string.IsNullOrEmpty(entity.CopyFromSystems) || string.IsNullOrEmpty(entity.FromField))
+            {
+                ModelState.Remove("FromField");
+                ModelState.Remove("ToField");
+            }
+            ModelState.Remove("DesCaseTypeNew");
+            ModelState.Remove("FromFieldNew");
+            ModelState.Remove("ToFieldNew");
+            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             entity.Systems ??= "";
-            entity.DesCaseTypeNew = entity.DesCaseType ?? "";
-            entity.FromFieldNew = entity.FromField ?? "";
-            entity.ToFieldNew = entity.ToField ?? "";
-
-            // Validate required fields
-            if (string.IsNullOrWhiteSpace(entity.DesCaseType))
-                ModelState.AddModelError("DesCaseType", "Des Case Type is required.");
-            if (string.IsNullOrWhiteSpace(entity.FromField))
-                ModelState.AddModelError("FromField", "From Field is required.");
-            if (string.IsNullOrWhiteSpace(entity.ToField))
-                ModelState.AddModelError("ToField", "To Field is required.");
-            if (!ModelState.IsValid) return new JsonBadRequest(new { errors = ModelState.Errors() });
 
             // Require at least one system
             if (string.IsNullOrWhiteSpace(entity.Systems))
                 return new JsonBadRequest("At least one system must be selected.");
 
-            // Deduplicate and sort systems
-            var newSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            // Split into individual systems
+            var individualSystems = entity.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
-            entity.Systems = string.Join(",", newSystems);
 
             var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
-            var originalSystemsValue = entity.OriginalSystems == "__EMPTY__" ? "" : (entity.OriginalSystems ?? "");
 
-            if (!isNewRecord)
+            if (isNewRecord && !string.IsNullOrEmpty(entity.CopyFromSystems))
             {
-                // Update existing record
-                var existing = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField && c.ToField == entity.ToField
-                        && c.Systems == originalSystemsValue);
+                // Group copy: block if any individual system in the new selection already exists for this DesCaseType
+                var existingSystemStrings = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                    .Where(c => c.DesCaseType == entity.DesCaseType)
+                    .Select(c => c.Systems)
+                    .Distinct()
+                    .ToListAsync();
+                var existingIndividualSystems = existingSystemStrings
+                    .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var overlap = individualSystems.Where(s => existingIndividualSystems.Contains(s)).ToList();
+                if (overlap.Any())
+                    return new JsonBadRequest($"The following systems already exist for Des Case Type '{entity.DesCaseType}': {string.Join(", ", overlap)}");
 
-                if (existing != null)
+                // Bulk-copy all records from source with the combined Systems string
+                var newSystems = string.Join(",", individualSystems);
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems)
+                      SELECT @p0, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, @p1
+                      FROM tblPatDesCaseTypeFieldsDelete
+                      WHERE DesCaseType=@p2 AND Systems=@p3",
+                    entity.DesCaseType ?? "", newSystems, entity.CopyFromDesCaseType ?? entity.DesCaseType ?? "", entity.CopyFromSystems);
+            }
+            else if (isNewRecord)
+            {
+                // Individual add: check system-level overlap for this DesCaseType
+                var newSystemsStr = string.Join(",", individualSystems);
+                var existingStrs = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                    .Where(c => c.DesCaseType == entity.DesCaseType)
+                    .Select(c => c.Systems).Distinct().ToListAsync();
+                var existingIndiv = existingStrs
+                    .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var sysOverlap = individualSystems.Where(s => existingIndiv.Contains(s)).ToList();
+                if (sysOverlap.Any())
+                    return new JsonBadRequest($"The following systems already exist for Des Case Type '{entity.DesCaseType}': {string.Join(", ", sysOverlap)}");
+
+                entity.DesCaseTypeNew = entity.DesCaseType ?? "";
+                entity.FromFieldNew = entity.FromField ?? "";
+                entity.ToFieldNew = entity.ToField ?? "";
+
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
+                    entity.DesCaseType ?? "", entity.FromField ?? "", entity.ToField ?? "", entity.DesCaseTypeNew ?? "", entity.FromFieldNew ?? "", entity.ToFieldNew ?? "", newSystemsStr);
+            }
+            else
+            {
+                var originalSystems = entity.OriginalSystems == "__EMPTY__" ? "" : entity.OriginalSystems;
+                var newSystemsValue = string.Join(",", individualSystems);
+
+                if (string.IsNullOrEmpty(entity.FromField))
                 {
-                    // Check for duplicate systems across records with same composite key (minus Systems)
-                    var allRecords = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
-                        .Where(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField && c.ToField == entity.ToField
-                            && c.Systems != originalSystemsValue
-                            && c.Systems != null && c.Systems != "")
-                        .Select(c => c.Systems)
-                        .ToListAsync();
-
-                    var usedSystems = allRecords
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                        .Select(s => s.Trim())
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
-                    if (duplicates.Any())
-                        return new JsonBadRequest($"The following systems are already assigned to another Des Case Type Fields Delete record: {string.Join(", ", duplicates)}");
-
+                    // Bulk systems update from detail page - update ALL records for this DesCaseType+Systems group
+                    if (newSystemsValue != originalSystems)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblPatDesCaseTypeFieldsDelete SET Systems=@p0 WHERE DesCaseType=@p1 AND Systems=@p2",
+                            newSystemsValue, entity.DesCaseType ?? "", originalSystems ?? "");
+                    }
+                }
+                else
+                {
+                    // Single record update
                     await _repository.Database.ExecuteSqlRawAsync(
                         @"UPDATE tblPatDesCaseTypeFieldsDelete SET DesCaseType=@p0, FromField=@p1, ToField=@p2,
                           DesCaseTypeNew=@p3, FromFieldNew=@p4, ToFieldNew=@p5, Systems=@p6
-                          WHERE DesCaseType=@p7 AND FromField=@p8 AND ToField=@p9
-                          AND Systems=@p13",
+                          WHERE DesCaseType=@p7 AND FromField=@p8 AND ToField=@p9 AND Systems=@p10",
                         new object[] {
                             new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.DesCaseType ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.FromField ?? ""),
@@ -218,70 +309,36 @@ namespace R10.Web.Areas.Patent.Controllers
                             new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseTypeNew ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.FromFieldNew ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.ToFieldNew ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Systems),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p7", existing.DesCaseType ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p8", existing.FromField ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p9", existing.ToField ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p10", existing.DesCaseTypeNew ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p11", existing.FromFieldNew ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p12", existing.ToFieldNew ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p13", existing.Systems ?? "")
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", newSystemsValue),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.DesCaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.FromField ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.ToField ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", originalSystems ?? "")
                         });
-                }
-                else
-                {
-                    return new RecordDoesNotExistResult();
+
+                    // Cascade Systems change to all sibling records in the same group
+                    if (newSystemsValue != originalSystems)
+                    {
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblPatDesCaseTypeFieldsDelete SET Systems=@p0 WHERE DesCaseType=@p1 AND Systems=@p2",
+                            newSystemsValue, entity.DesCaseType ?? "", originalSystems ?? "");
+                    }
                 }
             }
-            else
-            {
-                // Insert new record
-                var allRecords = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
-                    .Where(c => c.DesCaseType == entity.DesCaseType && c.FromField == entity.FromField && c.ToField == entity.ToField
-                        && c.Systems != null && c.Systems != "")
-                    .Select(c => c.Systems)
-                    .ToListAsync();
 
-                var usedSystems = allRecords
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    .Select(s => s.Trim())
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
-                if (duplicates.Any())
-                    return new JsonBadRequest($"The following systems are already assigned to another Des Case Type Fields Delete record: {string.Join(", ", duplicates)}");
-
-                await _repository.Database.ExecuteSqlRawAsync(
-                    @"INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems)
-                      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
-                    new object[] {
-                        new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.DesCaseType ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.FromField ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.ToField ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseTypeNew ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.FromFieldNew ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.ToFieldNew ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Systems)
-                    });
-            }
-
-            return Json(new { id = 0, redirectUrl = Url.Action("Detail", new { desCaseType = entity.DesCaseType, fromField = entity.FromField, toField = entity.ToField, desCaseTypeNew = entity.DesCaseTypeNew, fromFieldNew = entity.FromFieldNew, toFieldNew = entity.ToFieldNew, systems = entity.Systems, singleRecord = true }) });
+            var redirectSystems = string.Join(",", individualSystems);
+            return Json(new { id = 0, redirectUrl = Url.Action("Detail", new { desCaseType = entity.DesCaseType, systems = redirectSystems, singleRecord = true }) });
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
-        public async Task<IActionResult> Delete(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "")
+        public async Task<IActionResult> Delete(string desCaseType = "", string systems = "")
         {
+            // Delete ALL records for this (DesCaseType, Systems) group
             var count = await _repository.Database.ExecuteSqlRawAsync(
-                "DELETE FROM tblPatDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND Systems=@p6",
+                "DELETE FROM tblPatDesCaseTypeFieldsDelete WHERE DesCaseType=@p0 AND Systems=@p1",
                 new object[] {
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", desCaseType ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p1", fromField ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p2", toField ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p3", desCaseTypeNew ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p4", fromFieldNew ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p5", toFieldNew ?? ""),
-                    new Microsoft.Data.SqlClient.SqlParameter("@p6", systems ?? "")
+                    new Microsoft.Data.SqlClient.SqlParameter("@p1", systems ?? "")
                 });
 
             if (count == 0)
@@ -299,16 +356,16 @@ namespace R10.Web.Areas.Patent.Controllers
             return Json(systems);
         }
 
-        public IActionResult GetRecordStamps(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "")
+        public IActionResult GetRecordStamps(string desCaseType = "", string systems = "")
         {
             return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
         }
 
         [HttpGet]
-        public IActionResult DetailLink(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "")
+        public IActionResult DetailLink(string desCaseType = "", string systems = "")
         {
-            if (!string.IsNullOrEmpty(desCaseType) || !string.IsNullOrEmpty(fromField))
-                return RedirectToAction(nameof(Detail), new { desCaseType, fromField, toField, desCaseTypeNew, fromFieldNew, toFieldNew, systems, singleRecord = true, fromSearch = true });
+            if (!string.IsNullOrEmpty(desCaseType))
+                return RedirectToAction(nameof(Detail), new { desCaseType, systems, singleRecord = true, fromSearch = true });
             return RedirectToAction(nameof(Add), new { fromSearch = true });
         }
 
@@ -317,5 +374,21 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             return File(Convert.FromBase64String(base64), contentType, fileName);
         }
+    }
+
+    public class FieldsDeleteReplaceAllRequest
+    {
+        public string DesCaseType { get; set; }
+        public string Systems { get; set; }
+        public List<FieldsDeleteReplaceAllRow> AllRows { get; set; }
+    }
+
+    public class FieldsDeleteReplaceAllRow
+    {
+        public string FromField { get; set; }
+        public string ToField { get; set; }
+        public string DesCaseTypeNew { get; set; }
+        public string FromFieldNew { get; set; }
+        public string ToFieldNew { get; set; }
     }
 }

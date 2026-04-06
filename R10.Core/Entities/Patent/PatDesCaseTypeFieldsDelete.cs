@@ -41,5 +41,11 @@ namespace R10.Core.Entities.Patent
 
         [NotMapped]
         public string? OriginalSystems { get; set; }
+
+        [NotMapped]
+        public string? CopyFromSystems { get; set; }
+
+        [NotMapped]
+        public string? CopyFromDesCaseType { get; set; }
     }
 }

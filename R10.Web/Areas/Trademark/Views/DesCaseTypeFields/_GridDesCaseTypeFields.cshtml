@@ -27,6 +27,15 @@
                     .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
                     .HtmlAttributes(new { @class = "grid-action" });
         }).Width(10);
+        columns.Command(command =>
+        {
+            if (detailPagePermission.CanEditRecord)
+                command.Custom("MoveToDelete")
+                    .Click("function(e) { moveRowToDelete(e); }")
+                    .IconClass("k-icon fal fa-exchange-alt")
+                    .Text($"<span class='grid-action-label'>{Localizer["To Delete"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+        }).Width(10);
     })
     .ToolBar(toolbar =>
     {

@@ -295,5 +295,34 @@ namespace R10.Web.Areas.Patent.Controllers
         {
             return File(Convert.FromBase64String(base64), contentType, fileName);
         }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> MoveToDelete(string areaCode = "", string countryCode = "", string systems = "")
+        {
+            // Check for system-level overlap in the delete table
+            var newIndividualSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!newIndividualSystems.Any()) newIndividualSystems.Add("");
+            var existingDeleteSystems = await _repository.PatAreaCountryDeletes.AsNoTracking()
+                .Where(d => d.Area == areaCode && d.Country == countryCode)
+                .Select(d => d.Systems).Distinct().ToListAsync();
+            var existingIndividual = existingDeleteSystems
+                .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var overlap = newIndividualSystems.Where(s => existingIndividual.Contains(s)).ToList();
+            if (overlap.Any())
+                return BadRequest($"The following systems already exist in the Delete table: {string.Join(", ", overlap)}");
+
+            // Insert into delete table
+            await _repository.Database.ExecuteSqlRawAsync(
+                "INSERT INTO tblPatAreaCountryDelete (Area, Country, AreaNew, CountryNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4)",
+                areaCode ?? "", countryCode ?? "", areaCode ?? "", countryCode ?? "", systems ?? "");
+
+            // Delete from area country table
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatAreaCountry WHERE Area=@p0 AND Country=@p1 AND Systems=@p2",
+                areaCode ?? "", countryCode ?? "", systems ?? "");
+
+            return Ok(new { success = "Record moved to delete table successfully." });
+        }
     }
 }

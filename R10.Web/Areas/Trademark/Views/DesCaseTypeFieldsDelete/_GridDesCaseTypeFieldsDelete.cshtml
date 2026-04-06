@@ -1,22 +1,28 @@
 @model R10.Web.Areas.Shared.ViewModels.ChildViewModel
 @inject IStringLocalizer<SharedResource> Localizer
-@inject ISystemSettings<PatSetting> Settings
+@inject ISystemSettings<DefaultSetting> Settings
 @{
     var settings = await Settings.GetSetting();
     var detailPagePermission = Model.Permission ?? new DetailPagePermission();
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     var desCaseType = Model.Code;
     var systems = ViewData["Systems"]?.ToString() ?? "";
-    var pageName = ViewBag.ActivePage?.ToString() ?? "patDesCaseTypeFieldsPage";
+    var pageName = ViewBag.ActivePage?.ToString() ?? "tmkDesCaseTypeFieldsDeletePage";
 }
 
-@(Html.Kendo().Grid<R10.Core.Entities.Patent.PatDesCaseTypeFields>()
-    .Name("desCaseTypeFieldsGrid")
+@(Html.Kendo().Grid<R10.Core.Entities.Trademark.TmkDesCaseTypeFieldsDelete>()
+    .Name("desCaseTypeFieldsDeleteGrid")
     .Columns(columns =>
     {
-        columns.Bound(f => f.FromField).Title(Localizer["From Field"].Value).Width(300)
+        columns.Bound(f => f.FromField).Title(Localizer["From Field"].Value).Width(200)
             .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
-        columns.Bound(f => f.ToField).Title(Localizer["To Field"].Value).Width(300)
+        columns.Bound(f => f.ToField).Title(Localizer["To Field"].Value).Width(200)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(f => f.DesCaseTypeNew).Title(Localizer["Des Case Type New"].Value).Width(150)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(f => f.FromFieldNew).Title(Localizer["From Field New"].Value).Width(200)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(f => f.ToFieldNew).Title(Localizer["To Field New"].Value).Width(200)
             .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
         columns.Command(command =>
         {
@@ -25,15 +31,6 @@
                     .Click($"function(e) {{ {pageName}.deleteGridRow(e,this) }}")
                     .IconClass("k-icon fal fa-trash-alt")
                     .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
-                    .HtmlAttributes(new { @class = "grid-action" });
-        }).Width(10);
-        columns.Command(command =>
-        {
-            if (detailPagePermission.CanEditRecord)
-                command.Custom("MoveToDelete")
-                    .Click("function(e) { moveRowToDelete(e); }")
-                    .IconClass("k-icon fal fa-exchange-alt")
-                    .Text($"<span class='grid-action-label'>{Localizer["To Delete"]}</span>")
                     .HtmlAttributes(new { @class = "grid-action" });
         }).Width(10);
     })
@@ -62,11 +59,14 @@
             model.Id(f => f.FromField);
             model.Field(f => f.DesCaseType).DefaultValue(desCaseType).Editable(false);
             model.Field(f => f.Systems).DefaultValue(systems).Editable(false);
+            model.Field(f => f.DesCaseTypeNew).DefaultValue(desCaseType);
+            model.Field(f => f.FromFieldNew).DefaultValue("");
+            model.Field(f => f.ToFieldNew).DefaultValue("");
         })
-        .Read(read => read.Action("FieldsRead", "DesCaseTypeFields").Data($"{{ desCaseType: '{desCaseType}', systems: '{systems}' }}"))
-        .Create(create => create.Action("FieldsCreate", "DesCaseTypeFields"))
-        .Update(update => update.Action("FieldsUpdate", "DesCaseTypeFields"))
-        .Destroy(destroy => destroy.Action("FieldsDestroy", "DesCaseTypeFields"))
+        .Read(read => read.Action("FieldsRead", "DesCaseTypeFieldsDelete").Data($"{{ desCaseType: '{desCaseType}', systems: '{systems}' }}"))
+        .Create(create => create.Action("FieldsReplaceAll", "DesCaseTypeFieldsDelete"))
+        .Update(update => update.Action("FieldsUpdate", "DesCaseTypeFieldsDelete"))
+        .Destroy(destroy => destroy.Action("FieldsDestroy", "DesCaseTypeFieldsDelete"))
         .Events(events => events.Error("pageHelper.onGridError"))
     )
     .HtmlAttributes(new { @class = "kendo-Grid" })

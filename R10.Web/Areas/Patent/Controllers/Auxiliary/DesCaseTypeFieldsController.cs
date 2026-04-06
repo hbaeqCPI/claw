@@ -147,7 +147,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     item.DesCaseType ?? desCaseType, item.FromField ?? "", item.ToField ?? "", item.Systems ?? systems);
             }
 
-            return Ok();
+            return Ok(new { success = "Record has been saved successfully." });
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
@@ -278,13 +278,14 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (isNewRecord && !string.IsNullOrEmpty(entity.CopyFromSystems))
             {
-                // Group copy: block if any of the new systems already exist for this DesCaseType
-                var existingSystemValues = await _repository.PatDesCaseTypeFields.AsNoTracking()
+                // Group copy: block if any individual system already exists for this DesCaseType
+                var existingSystemStrings = await _repository.PatDesCaseTypeFields.AsNoTracking()
                     .Where(c => c.DesCaseType == entity.DesCaseType)
-                    .Select(c => c.Systems)
-                    .Distinct()
-                    .ToListAsync();
-                var overlap = individualSystems.Where(s => existingSystemValues.Contains(s, StringComparer.OrdinalIgnoreCase)).ToList();
+                    .Select(c => c.Systems).Distinct().ToListAsync();
+                var existingIndividualSystems = existingSystemStrings
+                    .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var overlap = individualSystems.Where(s => existingIndividualSystems.Contains(s)).ToList();
                 if (overlap.Any())
                     return new JsonBadRequest($"The following systems already exist for Des Case Type '{entity.DesCaseType}': {string.Join(", ", overlap)}");
 
@@ -413,6 +414,59 @@ namespace R10.Web.Areas.Patent.Controllers
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_repository.PatDesCaseTypeFields.AsQueryable(), request, property, text, filterType, requiredRelation);
+        }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> MoveToDelete(string desCaseType = "", string systems = "")
+        {
+            // Check for system-level overlap in the delete table
+            var newIndividualSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!newIndividualSystems.Any()) newIndividualSystems.Add("");
+            var existingDeleteSystems = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                .Where(d => d.DesCaseType == desCaseType)
+                .Select(d => d.Systems).Distinct().ToListAsync();
+            var existingIndividual = existingDeleteSystems
+                .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var overlap = newIndividualSystems.Where(s => existingIndividual.Contains(s)).ToList();
+            if (overlap.Any())
+                return BadRequest($"The following systems already exist in the Delete table for '{desCaseType}': {string.Join(", ", overlap)}");
+
+            // Bulk insert into delete table
+            await _repository.Database.ExecuteSqlRawAsync(
+                @"INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems)
+                  SELECT DesCaseType, FromField, ToField, DesCaseType, FromField, ToField, Systems
+                  FROM tblPatDesCaseTypeFields WHERE DesCaseType=@p0 AND Systems=@p1",
+                desCaseType ?? "", systems ?? "");
+
+            // Delete from source table
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatDesCaseTypeFields WHERE DesCaseType=@p0 AND Systems=@p1",
+                desCaseType ?? "", systems ?? "");
+
+            return Ok(new { success = "Records moved to delete table successfully." });
+        }
+
+        [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> MoveRowToDelete(string desCaseType = "", string fromField = "", string toField = "", string systems = "")
+        {
+            // Check if this exact row already exists in delete table
+            var exactDupe = await _repository.PatDesCaseTypeFieldsDeletes.AsNoTracking()
+                .AnyAsync(d => d.DesCaseType == desCaseType && d.FromField == fromField && d.ToField == toField && d.Systems == systems);
+            if (exactDupe)
+                return BadRequest("This field already exists in the delete table.");
+
+            // Insert into delete table (New fields = regular fields)
+            await _repository.Database.ExecuteSqlRawAsync(
+                "INSERT INTO tblPatDesCaseTypeFieldsDelete (DesCaseType, FromField, ToField, DesCaseTypeNew, FromFieldNew, ToFieldNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
+                desCaseType, fromField, toField, desCaseType, fromField, toField, systems);
+
+            // Delete from source table
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblPatDesCaseTypeFields WHERE DesCaseType=@p0 AND FromField=@p1 AND ToField=@p2 AND Systems=@p3",
+                desCaseType, fromField, toField, systems);
+
+            return Ok(new { success = "Field moved to delete table successfully." });
         }
     }
 

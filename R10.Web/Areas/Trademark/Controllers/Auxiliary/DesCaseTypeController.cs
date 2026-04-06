@@ -262,10 +262,38 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
             else
             {
-                await _repository.Database.ExecuteSqlRawAsync(
-                    @"INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems)
-                      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
-                    entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems);
+                // Check if a matching record exists (same IntlCode, CaseType, DesCountry, DesCaseType, Default)
+                var matchingRecord = await _repository.TmkDesCaseTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
+                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                        && c.Default == entity.Default);
+
+                if (matchingRecord != null)
+                {
+                    // Merge new systems into existing record
+                    var existingSystems = (matchingRecord.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var overlap = newSystems.Where(s => existingSystems.Contains(s)).ToList();
+                    if (overlap.Any())
+                        return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", overlap)}");
+
+                    foreach (var s in newSystems) existingSystems.Add(s);
+                    var mergedSystems = string.Join(",", existingSystems.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
+
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        "UPDATE tblTmkDesCaseType SET Systems=@p0 WHERE IntlCode=@p1 AND CaseType=@p2 AND DesCountry=@p3 AND DesCaseType=@p4 AND Systems=@p5",
+                        mergedSystems, matchingRecord.IntlCode ?? "", matchingRecord.CaseType ?? "",
+                        matchingRecord.DesCountry ?? "", matchingRecord.DesCaseType ?? "", matchingRecord.Systems ?? "");
+
+                    entity.Systems = mergedSystems;
+                }
+                else
+                {
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                        entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems);
+                }
             }
 
             return Json(new { redirectUrl = Url.Action("Detail", new { intlCode = entity.IntlCode, caseType = entity.CaseType, desCountry = entity.DesCountry, desCaseType = entity.DesCaseType, systems = entity.Systems, singleRecord = true }) });
@@ -312,6 +340,45 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
             return await GetPicklistData(_repository.TmkDesCaseTypes.AsQueryable(), request, property, text, filterType, requiredRelation);
+        }
+
+        [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> MoveToDelete(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", bool defaultVal = false, string systems = "")
+        {
+            var existingDelete = await _repository.TmkDesCaseTypeDeletes.AsNoTracking()
+                .FirstOrDefaultAsync(d => d.IntlCode == intlCode && d.CaseType == caseType && d.DesCountry == desCountry && d.DesCaseType == desCaseType);
+
+            var newIndividualSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (existingDelete != null)
+            {
+                // Merge systems into existing delete record
+                var existingSystems = (existingDelete.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var overlap = newIndividualSystems.Where(s => existingSystems.Contains(s)).ToList();
+                if (overlap.Any())
+                    return BadRequest($"The following systems already exist in the Delete table: {string.Join(", ", overlap)}");
+
+                foreach (var s in newIndividualSystems) existingSystems.Add(s);
+                var mergedSystems = string.Join(",", existingSystems.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
+
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "UPDATE tblTmkDesCaseTypeDelete SET Systems=@p0 WHERE IntlCode=@p1 AND CaseType=@p2 AND DesCountry=@p3 AND DesCaseType=@p4 AND Systems=@p5",
+                    mergedSystems, existingDelete.IntlCode ?? "", existingDelete.CaseType ?? "", existingDelete.DesCountry ?? "", existingDelete.DesCaseType ?? "", existingDelete.Systems ?? "");
+            }
+            else
+            {
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "INSERT INTO tblTmkDesCaseTypeDelete (IntlCode, CaseType, DesCountry, DesCaseType, [Default], IntlCodeNew, CaseTypeNew, DesCountryNew, DesCaseTypeNew, Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)",
+                    intlCode ?? "", caseType ?? "", desCountry ?? "", desCaseType ?? "", defaultVal, intlCode ?? "", caseType ?? "", desCountry ?? "", desCaseType ?? "", systems ?? "");
+            }
+
+            // Delete from source table
+            await _repository.Database.ExecuteSqlRawAsync(
+                "DELETE FROM tblTmkDesCaseType WHERE IntlCode=@p0 AND CaseType=@p1 AND DesCountry=@p2 AND DesCaseType=@p3 AND Systems=@p4",
+                intlCode ?? "", caseType ?? "", desCountry ?? "", desCaseType ?? "", systems ?? "");
+
+            return Ok(new { success = "Record moved to delete table successfully." });
         }
     }
 }
