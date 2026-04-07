@@ -384,26 +384,7 @@ namespace R10.Web.Areas.Admin.Controllers
 
                 var pageActions = new List<DetailPageAction>();
 
-                if (((CPiUserType)detail.UserType).IsRegularUser())
-                {
-                    pageActions.Add(new DetailPageAction()
-                    {
-                        Label = _localizer["Set Entity Filter"].ToString(),
-                        Class = "cpi-popup set-entity-filter" + (showPopUp == 2 ? " show" : ""), //call generic popup modal
-                        IconClass = "fal fa-filter",
-                        Url = Url.Action("SetEntityFilter"),
-                        Data = new Dictionary<string, string>() { { "get-id", detail.PkId.ToString() }, { "large-modal", "true" } }
-                    });
-                }
-
-                pageActions.Add(new DetailPageAction()
-                {
-                    Label = _localizer["Account Settings"].ToString(),
-                    Class = "cpi-popup account-settings" + (showPopUp == 3 ? " show" : ""), //call generic popup modal
-                    IconClass = "fal fa-cog",
-                    Url = Url.Action("AccountSettings"),
-                    Data = new Dictionary<string, string>() { { "get-id", detail.PkId.ToString() }, { "extra-large-modal", "true" } }
-                });
+                // Entity Filter and Account Settings buttons removed — all users have full r/w access
 
                 if (!isLoggedInUser && !string.IsNullOrEmpty(detail.PasswordHash))
                     pageActions.Add(new DetailPageAction()

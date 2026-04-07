@@ -12,7 +12,8 @@
     }
 
     var themeColors = Model.Theme.Colors.Select(c => new SelectListItem() { Value = c.Key, Text = c.Value }).ToList();
-    var isSystemUser = (await AuthorizationService.AuthorizeAsync(User, CPiAuthorizationPolicy.SystemUser)).Succeeded;
+    // All users have full access — no user type restrictions
+    var isSystemUser = true;
 }
 
 <div class="page-content">

@@ -190,6 +190,36 @@
     --grid-header-link-hover: #fff;
 }*/
 
+.colorway-espresso {
+    --bg-danger: #D9534F;
+    --bg-success: #17864C;
+    --bg-menu-bar: #2C1E14; /* dark roast, cooler */
+    --bg-menu-tab: #3A2818; /* mid roast, less red */
+    --bg-pager: #1C130C; /* near-black, neutral */
+    --text-header: #2C1E14;
+    --text-label: #5A4535; /* cooler brown mid-tone */
+    --link-label: #6B5040; /* muted taupe-brown */
+    --link-text: #7A5540; /* cool sienna-brown */
+    --link-hover: #8F6B52; /* warm taupe hover */
+    --link-accent: #42291A; /* deep neutral brown */
+    --control-focused: #7A5540; /* cool brown focus ring */
+    --btn-primary: #7A5540; /* cool brown CTA */
+    --btn-primary-hover: #6A4833; /* deeper on hover */
+    --btn-primary-active: #4E3222; /* darkest active */
+    --grid-hover: #E8D8C8; /* cool latte hover */
+    --grid-alt-row: #F5EFE8; /* neutral cream stripe */
+    --tab-horizontal-text: #F5EDE0;
+    --tab-horizontal-background: #2C1E14;
+    --tab-horizontal-hover: #3A2818;
+    --tab-horizontal-hover-text: #E8D8C8;
+    --tab-child-horizontal-background: #F5EFE8;
+    --grid-header-background: #2C1E14;
+    --grid-header-text: #F5EDE0;
+    --grid-header-link: #C8A98A; /* cool caramel */
+    --grid-header-link-hover: #E8D8C8;
+    --badge-info: #7A5540;
+}
+
 .colorway-pumpkin {
     --bg-danger: #D9534F;
     --bg-success: #17864C;

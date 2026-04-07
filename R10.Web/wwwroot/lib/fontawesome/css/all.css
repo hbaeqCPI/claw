@@ -1206,6 +1206,9 @@ readers do not read off random characters that represent icons */
 
 .fa-pumpkin::before {
   content: "\f707"; }
+.fa-espresso::before {
+    content: "\f708";
+}
 
 .fa-clipboard-list::before {
   content: "\f46d"; }
@@ -15344,6 +15347,9 @@ readers do not read off random characters that represent icons */
 
 .fad.fa-pumpkin::after, .fa-duotone.fa-pumpkin::after {
   content: "\f707\f707"; }
+    .fad.fa-espresso::after, .fa-duotone.fa-espresso::after {
+        content: "\f708\f708";
+    }
 
 .fad.fa-clipboard-list::after, .fa-duotone.fa-clipboard-list::after {
   content: "\f46d\f46d"; }

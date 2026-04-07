@@ -90,13 +90,15 @@
 
     <script type="text/javascript">
         $(document).ready(function () {
-
-            mailPage.runMailDownloader();
-            mailPage.refreshMailCount();
-            setInterval(mailPage.refreshMailCount, 60 * 1000);
-
-            documentVerificationPage.refreshToDoCount();
-            setInterval(documentVerificationPage.refreshToDoCount, 60 * 1000);
+            if (typeof mailPage !== 'undefined') {
+                mailPage.runMailDownloader();
+                mailPage.refreshMailCount();
+                setInterval(mailPage.refreshMailCount, 60 * 1000);
+            }
+            if (typeof documentVerificationPage !== 'undefined') {
+                documentVerificationPage.refreshToDoCount();
+                setInterval(documentVerificationPage.refreshToDoCount, 60 * 1000);
+            }
         });
     </script>
     @RenderSection("Scripts", required: false)
