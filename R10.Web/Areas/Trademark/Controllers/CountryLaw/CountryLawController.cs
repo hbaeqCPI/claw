@@ -164,7 +164,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Country Law Detail"].ToString(),
-                RecordId = 0,
+                RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -250,7 +250,10 @@ namespace R10.Web.Areas.Trademark.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string country, string caseType, string systems = "")
         {
+            systems ??= "";
             var countryLaw = _countryLawService.TmkCountryLaws.FirstOrDefault(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
+            if (countryLaw == null && !string.IsNullOrEmpty(systems))
+                countryLaw = _countryLawService.TmkCountryLaws.FirstOrDefault(c => c.Country == country && c.CaseType == caseType && c.Systems.StartsWith(systems));
             if (countryLaw != null)
             {
                 // Cascade delete all child records
@@ -337,16 +340,29 @@ namespace R10.Web.Areas.Trademark.Controllers
 
                 if (existing != null)
                 {
+                    countryLaw.DateCreated = existing.DateCreated ?? now;
+
                     if (existing.Systems != countryLaw.Systems)
                     {
-                        await _countryLawService.DeleteCountryLaw(existing);
-                        countryLaw.DateCreated = existing.DateCreated;
-                        await _countryLawService.AddCountryLaw(countryLaw);
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "DELETE FROM tblTmkCountryLaw WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
+                            existing.Country ?? "", existing.CaseType ?? "", existing.Systems ?? "");
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
+                              VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10)",
+                            countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
+                            countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
+                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     }
                     else
                     {
-                        countryLaw.DateCreated = existing.DateCreated;
-                        await _countryLawService.UpdateCountryLaw(countryLaw);
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            @"UPDATE tblTmkCountryLaw SET DefaultAgent=@p0, AutoGenDesCtry=@p1, AutoUpdtDesTmkRecs=@p2,
+                              Remarks=@p3, UserRemarks=@p4, UserID=@p5, LastUpdate=@p6
+                              WHERE Country=@p7 AND CaseType=@p8 AND Systems=@p9",
+                            countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
+                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.LastUpdate,
+                            countryLaw.Country ?? "", countryLaw.CaseType ?? "", existing.Systems ?? "");
                     }
 
                     // Cascade Systems change to child records
@@ -425,10 +441,10 @@ namespace R10.Web.Areas.Trademark.Controllers
                     .Where(d => d.IntlCode == srcCountry && d.CaseType == srcCaseType).ToListAsync();
                 foreach (var des in sourceDesCaseTypes)
                 {
-                    des.IntlCode = newCountryLaw.Country;
-                    des.CaseType = newCountryLaw.CaseType;
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                        newCountryLaw.Country ?? "", newCountryLaw.CaseType ?? "", des.DesCountry ?? "", des.DesCaseType ?? "", des.Default, newCountryLaw.Systems ?? "");
                 }
-                await _countryLawService.AddChildren(sourceDesCaseTypes);
             }
         }
 
@@ -794,8 +810,19 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         private async Task<TmkCountryLawDetailViewModel> GetByKey(string country, string caseType, string systems = "")
         {
+            systems ??= "";
             var detail = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>()
                 .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
+            if (detail == null && !string.IsNullOrEmpty(systems))
+            {
+                detail = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>()
+                    .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems.StartsWith(systems));
+            }
+            if (detail == null && string.IsNullOrEmpty(systems))
+            {
+                detail = await _countryLawService.TmkCountryLaws.ProjectTo<TmkCountryLawDetailViewModel>()
+                    .FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType);
+            }
             if (detail != null)
             {
                 detail.HasDesignatedCountries = await _countryLawService.HasDesignatedCountries(detail.Country, detail.CaseType);
@@ -840,7 +867,12 @@ namespace R10.Web.Areas.Trademark.Controllers
         [HttpGet()]
         public async Task<IActionResult> Copy(string country, string caseType, string systems = "")
         {
+            systems ??= "";
             var entity = await _countryLawService.TmkCountryLaws.FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems == systems);
+            if (entity == null && !string.IsNullOrEmpty(systems))
+                entity = await _countryLawService.TmkCountryLaws.FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType && c.Systems.StartsWith(systems));
+            if (entity == null && string.IsNullOrEmpty(systems))
+                entity = await _countryLawService.TmkCountryLaws.FirstOrDefaultAsync(c => c.Country == country && c.CaseType == caseType);
             if (entity == null) return new RecordDoesNotExistResult();
             var viewModel = new CountryLawCopyViewModel
             {

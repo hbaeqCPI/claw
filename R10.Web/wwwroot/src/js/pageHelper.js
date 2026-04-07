@@ -443,7 +443,7 @@ const initializeDetailTabs = function (activePage) {
     else {
         backToSearch.on("click", function () {
             cpiStatusMessage.hide();
-            openLink(searchResultsUrl, true);
+            window.location.href = activePage.searchUrl;
         });
     }
 
@@ -645,13 +645,16 @@ const setupEditModeOptions = function (options) {
 const showSearchScreen = function (url) {
     //remove search screen
     //use search results url
-    url = url + "/search";
+    var searchUrl = url + "/search";
 
-    if (window.cpiBreadCrumbs.hasNodeByUrl(url)) {
+    if (window.cpiBreadCrumbs.hasNodeByUrl(searchUrl)) {
+        window.cpiBreadCrumbs.showNodeByUrl(searchUrl);
+    }
+    else if (window.cpiBreadCrumbs.hasNodeByUrl(url)) {
         window.cpiBreadCrumbs.showNodeByUrl(url);
     }
     else {
-        openLink(url, false);
+        window.location.href = url;
     }
 };
 

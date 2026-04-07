@@ -42,6 +42,14 @@
                 },
                 editModeOptions: {
                     @Html.Raw(Model.RecordId == 0 || string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit}, ")
+                    afterSubmit: function(result) {
+                        if (result && result.redirectUrl) {
+                            window.location.href = result.redirectUrl;
+                        } else {
+                            var id = result && result.id ? result.id : (result || 0);
+                            @(ViewBag.ActivePage).showDetails(id);
+                        }
+                    },
                     onCancel: function() { cpiBreadCrumbs.markLastNode({ dirty: false }); pageHelper.showSearchScreen("@Url.Action("Index")"); }
                 }
             });
