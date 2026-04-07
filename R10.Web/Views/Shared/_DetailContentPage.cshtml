@@ -44,6 +44,8 @@
                     @Html.Raw(Model.RecordId == 0 || string.IsNullOrEmpty(Model.BeforeSubmit) ? "" : $"beforeSubmit: {Model.BeforeSubmit}, ")
                     afterSubmit: function(result) {
                         if (result && result.redirectUrl) {
+                            cpiBreadCrumbs.markLastNode({ dirty: false });
+                            $(window).off('beforeunload');
                             window.location.href = result.redirectUrl;
                         } else {
                             var id = result && result.id ? result.id : (result || 0);

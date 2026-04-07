@@ -392,7 +392,13 @@ namespace R10.Web.Areas.Trademark.Controllers
                         return new JsonBadRequest($"System(s) '{string.Join(", ", sysOverlap)}' already assigned to {countryLaw.Country}/{countryLaw.CaseType}.");
 
                     countryLaw.DateCreated = now;
-                    await _countryLawService.AddCountryLaw(countryLaw);
+                    _repository.DetachAllEntities();
+                    await _repository.Database.ExecuteSqlRawAsync(
+                        @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10)",
+                        countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
+                        countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
+                        countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
                         await CopyChildData(countryLaw);
                 }

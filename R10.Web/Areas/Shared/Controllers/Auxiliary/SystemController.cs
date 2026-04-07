@@ -206,15 +206,21 @@ namespace R10.Web.Areas.Shared.Controllers
             {
                 // Update each table: parse out the system name from comma-separated Systems
                 // Use STRING_SPLIT to parse, filter out the deleted system, and STRING_AGG to rejoin
-                var sql = $@"UPDATE [{table}] SET Systems = (
+                // Delete records where this is the ONLY system (would become empty after removal)
+                var deleteSql = $@"DELETE FROM [{table}]
+                    WHERE Systems IS NOT NULL AND Systems <> '' AND Systems = @p0";
+                await _repository.Database.ExecuteSqlRawAsync(deleteSql,
+                    new Microsoft.Data.SqlClient.SqlParameter("@p0", systemName));
+
+                // Remove the system from records that have multiple systems
+                var updateSql = $@"UPDATE [{table}] SET Systems = (
                     SELECT ISNULL(STRING_AGG(LTRIM(RTRIM(s.value)), ','), '')
                     FROM STRING_SPLIT(Systems, ',') s
                     WHERE LTRIM(RTRIM(s.value)) <> @p0 AND LTRIM(RTRIM(s.value)) <> ''
                 )
                 WHERE Systems IS NOT NULL AND Systems <> ''
-                AND (Systems = @p0 OR Systems LIKE @p0 + ',%' OR Systems LIKE '%,' + @p0 OR Systems LIKE '%,' + @p0 + ',%')";
-
-                await _repository.Database.ExecuteSqlRawAsync(sql,
+                AND (Systems LIKE @p0 + ',%' OR Systems LIKE '%,' + @p0 OR Systems LIKE '%,' + @p0 + ',%')";
+                await _repository.Database.ExecuteSqlRawAsync(updateSql,
                     new Microsoft.Data.SqlClient.SqlParameter("@p0", systemName));
             }
         }
