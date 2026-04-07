@@ -21,8 +21,11 @@
 }
 
 <form cpi-detail-form action="@saveAction">
-    <input type="hidden" asp-for="Country" />
-    <input type="hidden" asp-for="CaseType" />
+    @if (!addMode)
+    {
+        <input type="hidden" asp-for="Country" />
+        <input type="hidden" asp-for="CaseType" />
+    }
     <input type="hidden" name="CopyOptions" value="@(ViewBag.CopyOptions ?? "")" />
     <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>

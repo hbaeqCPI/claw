@@ -3,7 +3,7 @@
 @{
 
     var permission = Model.Permission;
-    var childLinkParam = $"{{country: '{Model.Country}', caseType: '{Model.CaseType}'}}";
+    var childLinkParam = $"{{country: '{Model.Country}', caseType: '{Model.CaseType}', systems: '{Model.Systems}'}}";
 }
 
 @(Html.Kendo().Grid<TmkDesCaseTypeViewModel>()

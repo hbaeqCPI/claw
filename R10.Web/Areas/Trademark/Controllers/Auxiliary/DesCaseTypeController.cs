@@ -262,38 +262,26 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
             else
             {
-                // Check if a matching record exists (same IntlCode, CaseType, DesCountry, DesCaseType, Default)
-                var matchingRecord = await _repository.TmkDesCaseTypes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
-                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                        && c.Default == entity.Default);
+                // Check for duplicate systems across records with the same key fields
+                var insertRecords = await _repository.TmkDesCaseTypes.AsNoTracking()
+                    .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                        && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
 
-                if (matchingRecord != null)
-                {
-                    // Merge new systems into existing record
-                    var existingSystems = (matchingRecord.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var overlap = newSystems.Where(s => existingSystems.Contains(s)).ToList();
-                    if (overlap.Any())
-                        return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", overlap)}");
+                var insertUsedSystems = insertRecords
+                    .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    foreach (var s in newSystems) existingSystems.Add(s);
-                    var mergedSystems = string.Join(",", existingSystems.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
+                var insertDuplicates = newSystems.Where(s => insertUsedSystems.Contains(s)).ToList();
+                if (insertDuplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", insertDuplicates)}");
 
-                    await _repository.Database.ExecuteSqlRawAsync(
-                        "UPDATE tblTmkDesCaseType SET Systems=@p0 WHERE IntlCode=@p1 AND CaseType=@p2 AND DesCountry=@p3 AND DesCaseType=@p4 AND Systems=@p5",
-                        mergedSystems, matchingRecord.IntlCode ?? "", matchingRecord.CaseType ?? "",
-                        matchingRecord.DesCountry ?? "", matchingRecord.DesCaseType ?? "", matchingRecord.Systems ?? "");
-
-                    entity.Systems = mergedSystems;
-                }
-                else
-                {
-                    await _repository.Database.ExecuteSqlRawAsync(
-                        @"INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems)
-                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
-                        entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems);
-                }
+                await _repository.Database.ExecuteSqlRawAsync(
+                    @"INSERT INTO tblTmkDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems)
+                      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                    entity.IntlCode ?? "", entity.CaseType ?? "", entity.DesCountry ?? "", entity.DesCaseType ?? "", entity.Default, entity.Systems);
             }
 
             return Json(new { redirectUrl = Url.Action("Detail", new { intlCode = entity.IntlCode, caseType = entity.CaseType, desCountry = entity.DesCountry, desCaseType = entity.DesCaseType, systems = entity.Systems, singleRecord = true }) });

@@ -24,38 +24,7 @@
         <div class="col-lg-6 col-xl-5">
             <h5>@SharedLocalizer["Display Options"]</h5>
             <ul class="list-group">
-                @if (Model.DefaultPage != null)
-                {
-                    @if (isSystemUser)
-                    {
-                        <li class="d-flex justify-content-between ">
-                            <label for="DefaultPageId">@SharedLocalizer["Default page"]</label>
-                            <span>
-                                @(Html.Kendo().DropDownList()
-                                    .Name("DefaultPageId").AutoWidth(true)
-                                    .DataTextField("Name")
-                                    .DataValueField("Id")
-                                    .OptionLabel(" ")
-                                    .Value(Model.DefaultPage.DefaultPageId.ToString())
-                                    .AutoBind(true)
-                                    .DataSource(source =>
-                                    {
-                                        source.Read(read =>
-                                        {
-                                            read.Action("GetDefaultPageList", "Manage");
-                                        })
-                                        .ServerFiltering(true);
-                                    })
-                                    .Events(e =>
-                                    {
-                                        e.Change("saveDefaultPage");
-                                    })
-                                    .HtmlAttributes(new { @class = "k-control", style = "min-width: 150px;" })
-                                    )
-                            </span>
-                        </li>
-                    }
-                }
+                @*Default page option removed*@
                 @if (Model.UserPreferences != null)
                 {
                     <li class="d-flex justify-content-between">
@@ -455,9 +424,6 @@
 </style>
 
 <script>
-    function saveDefaultPage(e) {
-        saveSetting("@CPiSettings.DefaultPage", `{ DefaultPageId: ${this.selectedIndex > 0 ? this.dataItem(this.selectedIndex).Id : 0} }`, true);
-    }
     function saveTheme(e) {
         const theme = this.dataItem(this.selectedIndex).Value;
         saveUserPreference(`{ Theme: "${theme.replace(" ", "-")}" }`, function () {

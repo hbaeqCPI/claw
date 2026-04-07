@@ -207,7 +207,7 @@ namespace R10.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
+            if (!Request.IsAjax() && !TempData.ContainsKey("CopyOptions"))
                 return RedirectToAction("Index");
 
             var page = await PrepareAddScreen();
@@ -231,7 +231,7 @@ namespace R10.Web.Areas.Patent.Controllers
             };
             ModelState.Clear();
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         private async Task<DetailPageViewModel<PatCountryLawDetailViewModel>> PrepareAddScreen()
@@ -305,7 +305,8 @@ namespace R10.Web.Areas.Patent.Controllers
                     countryLaw.Systems = string.Join(",", systems);
                 }
 
-                var isNewRecord = countryLaw.OriginalSystems == "__NEW__" || countryLaw.OriginalSystems == null;
+                var isNewRecord = countryLaw.OriginalSystems == "__NEW__" || countryLaw.OriginalSystems == null
+                    || !string.IsNullOrEmpty(countryLaw.CopyOptions);
                 var originalSystemsValue = countryLaw.OriginalSystems == "__EMPTY__" ? "" : (countryLaw.OriginalSystems ?? "");
 
                 // Check no individual system is already used under another row with same Country+CaseType
@@ -366,17 +367,24 @@ namespace R10.Web.Areas.Patent.Controllers
                         await _repository.Database.ExecuteSqlRawAsync(
                             "UPDATE tblPatCountryExp SET Systems=@p0 WHERE Country=@p1 AND CaseType=@p2 AND Systems=@p3",
                             countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
+                        await _repository.Database.ExecuteSqlRawAsync(
+                            "UPDATE tblPatDesCaseType SET Systems=@p0 WHERE IntlCode=@p1 AND CaseType=@p2 AND Systems=@p3",
+                            countryLaw.Systems, countryLaw.Country ?? "", countryLaw.CaseType ?? "", originalSystemsValue ?? "");
                     }
                 }
                 else
                 {
-                    // Check for exact duplicate before inserting
-                    var exactDupe = await _countryLawService.PatCountryLaws.AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType && c.Systems == countryLaw.Systems);
-                    if (exactDupe != null)
-                    {
-                        return new JsonBadRequest($"A record for {countryLaw.Country}/{countryLaw.CaseType} with these systems already exists.");
-                    }
+                    // Double-check: no system overlap at individual level
+                    var allExistingSystems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                        .Where(c => c.Country == countryLaw.Country && c.CaseType == countryLaw.CaseType)
+                        .Select(c => c.Systems).ToListAsync();
+                    var allTaken = allExistingSystems
+                        .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var newIndividual = countryLaw.Systems.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                    var sysOverlap = newIndividual.Where(s => allTaken.Contains(s)).ToList();
+                    if (sysOverlap.Any())
+                        return new JsonBadRequest($"System(s) '{string.Join(", ", sysOverlap)}' already assigned to {countryLaw.Country}/{countryLaw.CaseType}.");
 
                     countryLaw.DateCreated = now;
                     await _countryLawService.AddCountryLaw(countryLaw);
@@ -526,9 +534,18 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region CountryDue
 
-        public async Task<IActionResult> CountryDueRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
+        public async Task<IActionResult> CountryDueRead([DataSourceRequest] DataSourceRequest request, string country, string caseType, string systems = "")
         {
-            var result = (await _countryLawService.GetCountryDues(country, caseType)).ToDataSourceResult(request);
+            var allDues = await _countryLawService.GetCountryDues(country, caseType);
+            // Filter by systems - show records where any system overlaps
+            var parentSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var filtered = parentSystems.Any()
+                ? allDues.Where(d => {
+                    var dueSystems = (d.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    return parentSystems.Any(ps => dueSystems.Contains(ps));
+                }).ToList()
+                : allDues;
+            var result = filtered.ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -714,9 +731,17 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region CountryExp
 
-        public async Task<IActionResult> CountryExpRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
+        public async Task<IActionResult> CountryExpRead([DataSourceRequest] DataSourceRequest request, string country, string caseType, string systems = "")
         {
-            var result = (await _countryLawService.GetCountryExps(country, caseType)).ToDataSourceResult(request);
+            var allExps = await _countryLawService.GetCountryExps(country, caseType);
+            var parentSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var filtered = parentSystems.Any()
+                ? allExps.Where(e => {
+                    var expSystems = (e.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    return parentSystems.Any(ps => expSystems.Contains(ps));
+                }).ToList()
+                : allExps;
+            var result = filtered.ToDataSourceResult(request);
             return Json(result);
         }
 
@@ -776,8 +801,9 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #region DesCaseType
 
-        public async Task<IActionResult> DesCaseTypeRead([DataSourceRequest] DataSourceRequest request, string country, string caseType)
+        public async Task<IActionResult> DesCaseTypeRead([DataSourceRequest] DataSourceRequest request, string country, string caseType, string systems = "")
         {
+            var parentSystems = (systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var desCaseTypes = _countryLawService.PatDesCaseTypes.Where(d => d.IntlCode == country && d.CaseType == caseType);
             var countries = _patCountryService.QueryableList;
             var result = await desCaseTypes
@@ -793,6 +819,14 @@ namespace R10.Web.Areas.Patent.Controllers
                     DesCountryName = c != null ? c.CountryName : ""
                 })
                 .ToListAsync();
+            // Filter by systems overlap
+            if (parentSystems.Any())
+            {
+                result = result.Where(r => {
+                    var rSystems = (r.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    return parentSystems.Any(ps => rSystems.Contains(ps));
+                }).ToList();
+            }
             return Json(result.ToDataSourceResult(request));
         }
 
@@ -871,6 +905,7 @@ namespace R10.Web.Areas.Patent.Controllers
 
                 viewModel.Container = _dataContainer;
 
+                viewModel.AddScreenUrl = viewModel.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
                 viewModel.EditScreenUrl = Url.Action("Detail", new { country = country, caseType = caseType, systems = systems });
                 viewModel.DeleteScreenUrl = viewModel.CanDeleteRecord ? Url.Action("Delete", new { country = country, caseType = caseType, systems = systems }) : "";
                 viewModel.CopyScreenUrl = $"{viewModel.CopyScreenUrl}?country={country}&caseType={caseType}&systems={systems}";
@@ -971,7 +1006,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 {
                     page.Detail.Country = copyOptions.Country;
                     page.Detail.CaseType = copyOptions.CaseType;
-                    page.Detail.Systems = source.Systems ?? "";
+                    page.Detail.Systems = copyOptions.Systems ?? source.Systems ?? "";
                     page.Detail.DefaultAgent = source.DefaultAgent;
                     page.Detail.AutoGenDesCtry = source.AutoGenDesCtry;
                     page.Detail.AutoUpdtDesPatRecs = source.AutoUpdtDesPatRecs;

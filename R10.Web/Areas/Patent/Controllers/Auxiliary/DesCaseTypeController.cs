@@ -205,46 +205,32 @@ namespace R10.Web.Areas.Patent.Controllers
             }
             else
             {
-                // Check if a matching record exists (same IntlCode, CaseType, DesCountry, DesCaseType, Default)
-                var existingRecord = await _repository.PatDesCaseTypes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
-                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                        && c.Default == entity.Default);
+                // Check for duplicate systems across records with the same key fields
+                var allRecords = await _repository.PatDesCaseTypes.AsNoTracking()
+                    .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
+                        && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
 
-                if (existingRecord != null)
-                {
-                    // Merge new systems into existing record's Systems
-                    var existingSystems = (existingRecord.Systems ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(s => s.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var overlap = newSystems.Where(s => existingSystems.Contains(s)).ToList();
-                    if (overlap.Any())
-                        return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", overlap)}");
+                var usedSystems = allRecords
+                    .SelectMany(s => (s ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    // Add new systems to existing
-                    foreach (var s in newSystems) existingSystems.Add(s);
-                    var mergedSystems = string.Join(",", existingSystems.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned: {string.Join(", ", duplicates)}");
 
-                    await _repository.Database.ExecuteSqlRawAsync(
-                        "UPDATE tblPatDesCaseType SET Systems=@p0 WHERE IntlCode=@p1 AND CaseType=@p2 AND DesCountry=@p3 AND DesCaseType=@p4 AND Systems=@p5",
-                        mergedSystems, existingRecord.IntlCode ?? "", existingRecord.CaseType ?? "",
-                        existingRecord.DesCountry ?? "", existingRecord.DesCaseType ?? "", existingRecord.Systems ?? "");
-
-                    entity.Systems = mergedSystems;
-                }
-                else
-                {
-                    // No matching record — insert new
-                    await _repository.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO tblPatDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
-                        new object[] {
-                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.DesCountry ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseType ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Default),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Systems)
+                await _repository.Database.ExecuteSqlRawAsync(
+                    "INSERT INTO tblPatDesCaseType (IntlCode, CaseType, DesCountry, DesCaseType, [Default], Systems) VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                    new object[] {
+                        new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.DesCountry ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Default),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Systems)
                         });
-                }
             }
 
             return Json(new { id = 0, redirectUrl = Url.Action("Detail", new { intlCode = entity.IntlCode, caseType = entity.CaseType, desCountry = entity.DesCountry, desCaseType = entity.DesCaseType, systems = entity.Systems, singleRecord = true }) });
