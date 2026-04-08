@@ -27,5 +27,15 @@ namespace R10.Core.Entities
         [StringLength(50)]
         [Display(Name = "System Type")]
         public string SystemType { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Systems")]
+        public string Systems { get; set; } = "";
+
+        [Display(Name = "Generate Patent")]
+        public bool GeneratePatent { get; set; } = true;
+
+        [Display(Name = "Generate Trademark")]
+        public bool GenerateTrademark { get; set; } = true;
     }
 }

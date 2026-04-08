@@ -23,6 +23,7 @@ using R10.Web.Interfaces;
 using R10.Web.Models;
 using R10.Web.Models.PageViewModels;
 using R10.Web.Security;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace R10.Web.Areas.Releases.Controllers
 {
@@ -1000,6 +1001,150 @@ namespace R10.Web.Areas.Releases.Controllers
                 .OrderBy(d => d.DocTypeName)
                 .ToListAsync();
             return Json(list);
+        }
+
+        #endregion
+
+        #region MDB Generation
+
+        public async Task<IActionResult> GetSystemList()
+        {
+            var systems = (await _systemService.QueryableList.AsNoTracking()
+                .Select(s => s.SystemName)
+                .ToListAsync())
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
+            return Json(systems);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GenerateMdb(int id)
+        {
+            var release = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == id);
+            if (release == null)
+                return BadRequest("Release not found.");
+
+            if (string.IsNullOrWhiteSpace(release.SystemType))
+                return BadRequest("No system type selected for this release. Please save the release with a system type first.");
+
+            try
+            {
+                var env = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+                var mdbService = new Services.MdbGenerationService(
+                    HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(),
+                    HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Services.MdbGenerationService>>(),
+                    env.WebRootPath);
+
+                // Generate to a temp folder first — filter by SystemType
+                var tempFolder = Path.Combine(Path.GetTempPath(), $"mdbgen_{Guid.NewGuid():N}");
+                var files = await mdbService.GenerateMdbFiles(release.SystemType, release.GeneratePatent, release.GenerateTrademark, tempFolder, release.Name);
+
+                if (!files.Any())
+                    return BadRequest("MDB Generator completed but produced no files.");
+
+                // Store generated files in the release's Documents folder
+                var userName = User.GetUserName();
+                var systemType = ToDocSystemType(release.SystemType);
+
+                // Get or create the root document folder for this release
+                var rootFolder = await _documentService.GetFolder(
+                    systemType, "ReleaseId", release.ReleaseId, TruncateFolderName(release.Name), 0);
+                if (rootFolder == null)
+                {
+                    rootFolder = await _documentService.AddFolder(
+                        systemType, "ReleaseId", "Rel", release.ReleaseId,
+                        TruncateFolderName(release.Name), 0, false);
+                }
+
+                if (rootFolder == null)
+                    return BadRequest("Could not find or create the document folder for this release.");
+
+                var debugInfo = new List<string>();
+                int addedCount = 0;
+                foreach (var filePath in files)
+                {
+                    if (!System.IO.File.Exists(filePath))
+                    {
+                        debugInfo.Add($"File not found: {filePath}");
+                        continue;
+                    }
+
+                    var fileName = Path.GetFileName(filePath);
+                    var fileExtension = Path.GetExtension(fileName);
+                    var fileInfo = new FileInfo(filePath);
+
+                    // Check if a document with this name already exists in the folder — remove it first
+                    var existingDocs = await _documentService.DocDocuments
+                        .Where(d => d.FolderId == rootFolder.FolderId && d.DocName == Path.GetFileNameWithoutExtension(fileName))
+                        .ToListAsync();
+                    foreach (var existingDoc in existingDocs)
+                    {
+                        DocFile existingFile = null;
+                        if (existingDoc.FileId.HasValue)
+                        {
+                            existingFile = await _documentService.GetFileById(existingDoc.FileId.Value);
+                            if (existingFile != null)
+                                _documentHelper.DeleteDocumentFile(existingFile.DocFileName, existingFile.ThumbFileName, false);
+                        }
+                        await _documentService.DeleteDoc(existingDoc, existingFile);
+                    }
+
+                    // Create DocFile record
+                    var docFile = new DocFile
+                    {
+                        FileExt = fileExtension?.TrimStart('.'),
+                        UserFileName = fileName,
+                        FileSize = (int)fileInfo.Length,
+                        IsImage = false,
+                        CreatedBy = userName,
+                        UpdatedBy = userName,
+                        DateCreated = DateTime.Now,
+                        LastUpdate = DateTime.Now
+                    };
+                    docFile = await _documentService.AddDocFile(docFile);
+
+                    // Create DocDocument record
+                    var docDocument = new DocDocument
+                    {
+                        FolderId = rootFolder.FolderId,
+                        DocName = Path.GetFileNameWithoutExtension(fileName),
+                        FileId = docFile.FileId,
+                        Author = userName,
+                        CreatedBy = userName,
+                        UpdatedBy = userName,
+                        DateCreated = DateTime.Now,
+                        LastUpdate = DateTime.Now
+                    };
+                    await _documentService.UpdateDocuments(userName,
+                        Enumerable.Empty<DocDocument>(),
+                        new[] { docDocument },
+                        Enumerable.Empty<DocDocument>(),
+                        null, false);
+
+                    // Save physical file to the documents directory
+                    var docBasePath = _documentHelper.GetDocumentBasePath();
+                    Directory.CreateDirectory(docBasePath);
+                    var destPath = Path.Combine(docBasePath, docFile.DocFileName);
+                    var destDir = Path.GetDirectoryName(destPath);
+                    if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                        Directory.CreateDirectory(destDir);
+                    System.IO.File.Copy(filePath, destPath, true);
+
+                    debugInfo.Add($"{fileName} -> FolderId={rootFolder.FolderId}, DocFileId={docFile.FileId}, DocFileName={docFile.DocFileName}");
+                    addedCount++;
+                }
+
+                // Clean up temp folder
+                try { Directory.Delete(tempFolder, true); } catch { }
+
+                var msg = $"MDB files generated successfully. {addedCount} file(s) added to Documents.";
+                if (debugInfo.Any())
+                    msg += " [" + string.Join("; ", debugInfo) + "]";
+                return Ok(new { success = msg });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error generating MDB files: {ex.Message}");
+            }
         }
 
         #endregion
