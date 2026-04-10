@@ -63,7 +63,7 @@
             model.Field(f => f.DesCaseType).DefaultValue(desCaseType).Editable(false);
             model.Field(f => f.Systems).DefaultValue(systems).Editable(false);
         })
-        .Read(read => read.Action("FieldsRead", "DesCaseTypeFields").Data($"{{ desCaseType: '{desCaseType}', systems: '{systems}' }}"))
+        .Read(read => read.Action("FieldsRead", "DesCaseTypeFields").Data($"{{ desCaseType: '{desCaseType}' }}"))
         .Create(create => create.Action("FieldsCreate", "DesCaseTypeFields"))
         .Update(update => update.Action("FieldsUpdate", "DesCaseTypeFields"))
         .Destroy(destroy => destroy.Action("FieldsDestroy", "DesCaseTypeFields"))

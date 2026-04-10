@@ -10,7 +10,7 @@
             <div class="col-md-8 col-lg-8 col-xl-6">
                 <div class="form-group float-label">
                     <label for="ActionType">@Localizer["Action Type"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "ActionType" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "ActionType", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="CreatedBy">@Localizer["Created By"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "CreatedBy", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
@@ -70,7 +70,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="UpdatedBy">@Localizer["Updated By"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "UpdatedBy", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">

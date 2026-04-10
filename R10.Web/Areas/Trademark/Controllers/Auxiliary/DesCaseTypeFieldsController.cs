@@ -94,28 +94,24 @@ namespace R10.Web.Areas.Trademark.Controllers
             var entities = _repository.TmkDesCaseTypeFields.AsNoTracking().AsQueryable();
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                foreach (var filter in mainSearchFilters)
-                {
-                    if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
-                    else if (filter.Property == "SystemName" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + filter.Value.Replace("%", "") + "%"));
-                }
+                entities = entities.BuildCriteria(mainSearchFilters);
             }
 
             var data = await entities
                 .Select(e => new { e.DesCaseType, e.Systems })
                 .Distinct()
-                .OrderBy(d => d.DesCaseType).ThenBy(d => d.Systems)
+                .OrderBy(d => d.DesCaseType)
                 .ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems)
+        public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems = "")
         {
-            var data = await _repository.TmkDesCaseTypeFields.AsNoTracking()
-                .Where(f => f.DesCaseType == desCaseType && f.Systems == systems)
-                .ToListAsync();
+            var query = _repository.TmkDesCaseTypeFields.AsNoTracking()
+                .Where(f => f.DesCaseType == desCaseType);
+            if (!string.IsNullOrEmpty(systems))
+                query = query.Where(f => f.Systems == systems);
+            var data = await query.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
@@ -213,19 +209,27 @@ namespace R10.Web.Areas.Trademark.Controllers
         public async Task<IActionResult> Detail(string desCaseType, string fromField = "", string toField = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
             var exists = await _repository.TmkDesCaseTypeFields.AsNoTracking()
-                .AnyAsync(c => c.DesCaseType == desCaseType && c.Systems == systems);
+                .AnyAsync(c => c.DesCaseType == desCaseType);
             if (!exists)
             {
                 if (Request.IsAjax()) return new RecordDoesNotExistResult();
                 return RedirectToAction("Index");
             }
 
+            if (string.IsNullOrEmpty(systems))
+            {
+                systems = await _repository.TmkDesCaseTypeFields.AsNoTracking()
+                    .Where(c => c.DesCaseType == desCaseType)
+                    .Select(c => c.Systems)
+                    .FirstOrDefaultAsync() ?? "";
+            }
+
             var detail = new TmkDesCaseTypeFields { DesCaseType = desCaseType, Systems = systems };
 
             var permission = await GetPermission();
             permission.AddScreenUrl = permission.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
-            permission.DeleteScreenUrl = permission.CanDeleteRecord ? Url.Action("Delete", new { desCaseType = desCaseType, systems = systems }) : "";
-            permission.CopyScreenUrl = permission.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = desCaseType, copySystems = systems, copyGroup = true }) : "";
+            permission.DeleteScreenUrl = permission.CanDeleteRecord ? Url.Action("Delete", new { desCaseType = desCaseType }) : "";
+            permission.CopyScreenUrl = permission.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = desCaseType, copyGroup = true }) : "";
             permission.IsCopyScreenPopup = false;
 
             PageViewModel model = new PageViewModel()
@@ -411,13 +415,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Add", new { fromSearch = true, copyDesCaseType = entity.DesCaseType, copyFromField = entity.FromField, copyToField = entity.ToField, copySystems = entity.Systems });
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

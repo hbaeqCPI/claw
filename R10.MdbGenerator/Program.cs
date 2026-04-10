@@ -86,8 +86,8 @@ public class MdbGenerator
 {
     private readonly GeneratorConfig _config;
 
-    // Patent tables
-    private static readonly string[] PatentTables = new[]
+    // Full patent tables (used by 97, R5-7, R8&Up)
+    private static readonly string[] PatentTablesFull = new[]
     {
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
         "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
@@ -96,8 +96,8 @@ public class MdbGenerator
         "tblPatDesCaseTypeFields", "tblPatDesCaseTypeFields_Ext", "tblPatDesCaseTypeFieldsDelete", "tblPatDesCaseTypeFieldsDelete_Ext"
     };
 
-    // Trademark tables
-    private static readonly string[] TrademarkTables = new[]
+    // Full trademark tables (used by 97, R5-7, R8&Up)
+    private static readonly string[] TrademarkTablesFull = new[]
     {
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
@@ -106,6 +106,31 @@ public class MdbGenerator
         "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFields_Ext",
         "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext"
     };
+
+    // 2000&Up patent tables (no _Ext tables)
+    private static readonly string[] PatentTables2000 = new[]
+    {
+        "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
+        "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
+        "tblPatCountryExpDelete", "tblPatCountryLaw", "tblPatCountryLawUpdate",
+        "tblPatDesCaseType", "tblPatDesCaseTypeDelete",
+        "tblPatDesCaseTypeFields", "tblPatDesCaseTypeFieldsDelete"
+    };
+
+    // 2000&Up trademark tables (no _Ext tables)
+    private static readonly string[] TrademarkTables2000 = new[]
+    {
+        "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
+        "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
+        "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseTypeDelete",
+        "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFieldsDelete"
+    };
+
+    private static string[] GetPatentTables(string systemType) =>
+        systemType.Equals("2000&Up", StringComparison.OrdinalIgnoreCase) ? PatentTables2000 : PatentTablesFull;
+
+    private static string[] GetTrademarkTables(string systemType) =>
+        systemType.Equals("2000&Up", StringComparison.OrdinalIgnoreCase) ? TrademarkTables2000 : TrademarkTablesFull;
 
     // Per-table column whitelist: only export these columns for the specified tables
     private static readonly Dictionary<string, HashSet<string>> TableColumnWhitelist = new(StringComparer.OrdinalIgnoreCase)
@@ -131,19 +156,21 @@ public class MdbGenerator
             ? "Release"
             : string.Join("", _config.ReleaseName.Split(Path.GetInvalidFileNameChars()));
 
+        var systemType = (_config.Systems ?? "").Trim(); // Systems field carries the system type name
+
         if (_config.GeneratePatent)
         {
-            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Pat.accdb");
+            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Pat.mdb");
             if (File.Exists(path)) File.Delete(path);
-            await GenerateMdb(path, PatentTables, selectedSystems);
+            await GenerateMdb(path, GetPatentTables(systemType), selectedSystems);
             generatedFiles.Add(path);
         }
 
         if (_config.GenerateTrademark)
         {
-            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Tmk.accdb");
+            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Tmk.mdb");
             if (File.Exists(path)) File.Delete(path);
-            await GenerateMdb(path, TrademarkTables, selectedSystems);
+            await GenerateMdb(path, GetTrademarkTables(systemType), selectedSystems);
             generatedFiles.Add(path);
         }
 
@@ -157,7 +184,7 @@ public class MdbGenerator
 
         File.Copy(_config.TemplatePath, mdbPath, true);
 
-        var oleConnString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={mdbPath};";
+        var oleConnString = $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={mdbPath};";
 
         using var sqlConn = new SqlConnection(_config.SqlConnectionString);
         await sqlConn.OpenAsync();

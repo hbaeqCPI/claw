@@ -67,29 +67,25 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                foreach (var filter in mainSearchFilters)
-                {
-                    if (filter.Property == "DesCaseType" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.DesCaseType, filter.Value));
-                    else if (filter.Property == "SystemName" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + filter.Value.Replace("%", "") + "%"));
-                }
+                entities = entities.BuildCriteria(mainSearchFilters);
             }
 
-            // Return distinct (DesCaseType, Systems) combos for the search grid
+            // Return distinct (DesCaseType, Systems) for the search grid
             var data = await entities
                 .Select(e => new { e.DesCaseType, e.Systems })
                 .Distinct()
-                .OrderBy(d => d.DesCaseType).ThenBy(d => d.Systems)
+                .OrderBy(d => d.DesCaseType)
                 .ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
-        public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems)
+        public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems = "")
         {
-            var data = await _repository.PatDesCaseTypeFields.AsNoTracking()
-                .Where(f => f.DesCaseType == desCaseType && f.Systems == systems)
-                .ToListAsync();
+            var query = _repository.PatDesCaseTypeFields.AsNoTracking()
+                .Where(f => f.DesCaseType == desCaseType);
+            if (!string.IsNullOrEmpty(systems))
+                query = query.Where(f => f.Systems == systems);
+            var data = await query.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
 
@@ -223,21 +219,30 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> Detail(string desCaseType, string fromField = "", string toField = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
         {
-            // Check that at least one record exists for this (DesCaseType, Systems) combo
+            // Check that at least one record exists for this DesCaseType
             var exists = await _repository.PatDesCaseTypeFields.AsNoTracking()
-                .AnyAsync(c => c.DesCaseType == desCaseType && c.Systems == systems);
+                .AnyAsync(c => c.DesCaseType == desCaseType);
             if (!exists)
             {
                 if (Request.IsAjax()) return new RecordDoesNotExistResult();
                 return RedirectToAction("Index");
             }
 
+            // Get the systems value from the first matching record if not provided
+            if (string.IsNullOrEmpty(systems))
+            {
+                systems = await _repository.PatDesCaseTypeFields.AsNoTracking()
+                    .Where(c => c.DesCaseType == desCaseType)
+                    .Select(c => c.Systems)
+                    .FirstOrDefaultAsync() ?? "";
+            }
+
             var detail = new PatDesCaseTypeFields { DesCaseType = desCaseType, Systems = systems };
 
             var perm = await GetPermission();
             perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
-            perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { desCaseType = desCaseType, systems = systems }) : "";
-            perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = desCaseType, copySystems = systems, copyGroup = true }) : "";
+            perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { desCaseType = desCaseType }) : "";
+            perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyDesCaseType = desCaseType, copyGroup = true }) : "";
             perm.IsCopyScreenPopup = false;
             var model = new PageViewModel
             {
@@ -388,13 +393,9 @@ namespace R10.Web.Areas.Patent.Controllers
             return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         [HttpGet]

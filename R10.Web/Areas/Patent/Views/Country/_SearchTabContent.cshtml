@@ -11,13 +11,13 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Country">@Localizer["Country"]</label>
-                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.Country("Country", countryLabel, countryNameLabel))
+                    @await Component.InvokeAsync("ComboBox", new { name = "Country", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-8">
                 <div class="form-group float-label">
                     <label for="CountryName">@Localizer["Country Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CountryName" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "CountryName", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -25,19 +25,19 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="CPICode">@Localizer["CPI Code"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CPICode" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "CPICode", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="SystemName">@Localizer["Systems"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="UserID">@Localizer["User ID"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "UserID" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "UserID", multiSelect = true })
                 </div>
             </div>
         </div>

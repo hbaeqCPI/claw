@@ -6,13 +6,13 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Area">@Localizer["Area"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Area" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "Area", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Country">@Localizer["Country"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Country" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "Country", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -20,7 +20,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="SystemName">@Localizer["Systems"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
                 </div>
             </div>
         </div>

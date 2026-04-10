@@ -20,7 +20,7 @@ namespace R10.Web.Services
         public MdbGenerationService(IConfiguration configuration, ILogger<MdbGenerationService> logger, string webRootPath)
         {
             _sqlConnectionString = configuration.GetConnectionString("DefaultConnection");
-            _templatePath = Path.Combine(webRootPath, "templates", "blank_template.accdb");
+            _templatePath = Path.Combine(webRootPath, "templates", "blank_template.mdb");
             _logger = logger;
 
             // Find the MdbGenerator exe - look in solution's build output

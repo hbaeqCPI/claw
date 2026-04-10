@@ -22,7 +22,7 @@ namespace R10.Web.ViewComponents
                                            bool limitToList = false, string defaultText = "",
                                            bool required = false, string validationMessage = "", string limitToListMessage = "",
                                            string onSelect = "", string linkParamName = "", bool valuePrimitive = false, bool linkInNewTab = false,string[]? filterColumns=null,
-                                           List<ComboBoxColumn>? columns=null, string onError = "", int filterType = 0,bool ignoreCase=true)
+                                           List<ComboBoxColumn>? columns=null, string onError = "", int filterType = 0,bool ignoreCase=true, bool multiSelect = false)
         {
             var pageId = screen;
             if (string.IsNullOrEmpty(screen) && ViewBag.PageId != null)
@@ -69,7 +69,8 @@ namespace R10.Web.ViewComponents
                 FilterColumns = filterColumns,
                 Columns=columns,
                 OnError = onError,
-                IgnoreCase=ignoreCase
+                IgnoreCase=ignoreCase,
+                MultiSelect = multiSelect
             };
 
             if (string.IsNullOrEmpty(action))
@@ -127,6 +128,7 @@ namespace R10.Web.ViewComponents
         public string[]? FilterColumns { get; set; }
         public List<ComboBoxColumn>? Columns { get; set; }
         public bool IgnoreCase { get; set; } = true;
+        public bool MultiSelect { get; set; }
     }
 
     public class ComboBoxColumn

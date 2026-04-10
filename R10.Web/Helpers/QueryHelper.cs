@@ -92,16 +92,37 @@ namespace R10.Web.Helpers
 
         public static IQueryable<T> BuildCriteria<T>(this IQueryable<T> source, List<QueryFilterViewModel> mainSearchFilters)
         {
+            if (mainSearchFilters == null) return source;
+
             ApplyDefaultCriteriaSettings(mainSearchFilters);
 
             foreach (var filter in mainSearchFilters)
             {
-                if (filter.Property.StartsWith("MultiSelect_"))
+                // Skip filters with no value
+                if (string.IsNullOrEmpty(filter.Value)) continue;
+
+                var propertyName = filter.Property.StartsWith("MultiSelect_")
+                    ? filter.Property.Replace("MultiSelect_", "")
+                    : filter.Property;
+                bool isMultiValue = filter.Property.StartsWith("MultiSelect_")
+                    || (filter.Value.StartsWith("[") && filter.Value.EndsWith("]"));
+
+                if (isMultiValue)
                 {
                     var parsedFilterValue = filter.GetValueListForLoop();
-                    source = source.Where(ExpressionHelper.BuildLoopNestedPredicate<T>(filter.Property.Replace("MultiSelect_", ""), parsedFilterValue, false, filter.Operator));
-                }                    
-                else if (filter.Property.Contains(".") && !filter.Property.StartsWith("MultiSelect_"))
+                    if (parsedFilterValue.Count > 0)
+                    {
+                        // Build WHERE property IN (val1, val2, ...) using Contains
+                        var param = Expression.Parameter(typeof(T));
+                        var prop = propertyName.Split('.').Aggregate((Expression)param, Expression.PropertyOrField);
+                        var listExpr = Expression.Constant(parsedFilterValue);
+                        var containsCall = Expression.Call(listExpr, typeof(List<string>).GetMethod("Contains", new[] { typeof(string) })!, prop);
+                        var notNull = Expression.NotEqual(prop, Expression.Constant(null, typeof(string)));
+                        var combined = Expression.AndAlso(notNull, containsCall);
+                        source = source.Where(Expression.Lambda<Func<T, bool>>(combined, param));
+                    }
+                }
+                else if (filter.Property.Contains("."))
                     source = source.Where(ExpressionHelper.BuildNestedPredicate<T>(filter.Property, filter.Value, false, filter.Operator));
                 else
                     source = source.Where(ExpressionHelper.BuildPredicate<T>(filter.Property, filter.Value, false, filter.Operator));
@@ -190,7 +211,12 @@ namespace R10.Web.Helpers
         
         private static void ApplyDefaultCriteriaSettings(List<QueryFilterViewModel> mainSearchFilters)
         {
+            if (mainSearchFilters == null) return;
+
             DateTime dateTime;
+
+            // Remove filters with empty values before processing
+            mainSearchFilters.RemoveAll(f => string.IsNullOrEmpty(f.Value));
 
             foreach (var filter in mainSearchFilters)
             {
@@ -219,6 +245,48 @@ namespace R10.Web.Helpers
                 }
 
             }
+        }
+
+        /// <summary>
+        /// Extracts and removes the SystemName filter from mainSearchFilters,
+        /// then applies a Systems LIKE filter (supports single value or JSON array of values).
+        /// </summary>
+        public static IQueryable<T> ApplySystemsFilter<T>(IQueryable<T> source, List<QueryFilterViewModel> mainSearchFilters, Expression<Func<T, string>> systemsProperty)
+        {
+            var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
+            if (systemName != null && !string.IsNullOrEmpty(systemName.Value))
+            {
+                var values = new List<string>();
+                if (systemName.Value.StartsWith("[") && systemName.Value.EndsWith("]"))
+                {
+                    try { values = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(systemName.Value); }
+                    catch { values = new List<string> { systemName.Value }; }
+                }
+                else
+                {
+                    values.Add(systemName.Value);
+                }
+
+                // Build: x => Systems.Contains(v1) || Systems.Contains(v2) ...
+                var param = systemsProperty.Parameters[0];
+                var body = systemsProperty.Body;
+                Expression orExpr = null;
+                foreach (var v in values)
+                {
+                    var clean = v.Replace("%", "");
+                    var likePattern = Expression.Constant("%" + clean + "%");
+                    var likeCall = Expression.Call(
+                        typeof(DbFunctionsExtensions), "Like", Type.EmptyTypes,
+                        Expression.Constant(EF.Functions), body, likePattern);
+                    var notNull = Expression.NotEqual(body, Expression.Constant(null, typeof(string)));
+                    var combined = Expression.AndAlso(notNull, likeCall);
+                    orExpr = orExpr == null ? combined : Expression.OrElse(orExpr, combined);
+                }
+                if (orExpr != null)
+                    source = source.Where(Expression.Lambda<Func<T, bool>>(orExpr, param));
+            }
+            if (systemName != null) mainSearchFilters.Remove(systemName);
+            return source;
         }
 
         public static string GetToken(this List<QueryFilterViewModel> mainSearchFilters)

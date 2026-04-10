@@ -7,13 +7,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="SystemName">@Localizer["System Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName" })
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group float-label">
-                    <label for="SystemType">@Localizer["System Type"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemType" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", multiSelect = true })
                 </div>
             </div>
         </div>

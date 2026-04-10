@@ -12,7 +12,6 @@ namespace R10.Core.Entities
         [Display(Name = "System Name")]
         public string? SystemName { get; set; }
 
-        [Required]
         [StringLength(50)]
         [Display(Name = "System Type")]
         public string? SystemType { get; set; }

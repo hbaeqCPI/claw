@@ -92,13 +92,10 @@ namespace R10.Web.Areas.Patent.Controllers
             if (ModelState.IsValid)
             {
                 var caseTypes = _auxService.QueryableList;
-                if (mainSearchFilters.Count > 0)
+                if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                 {
-                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                    if (systemName != null)
                     {
-                        caseTypes = caseTypes.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                        mainSearchFilters.Remove(systemName);
+                    caseTypes = Helpers.QueryHelper.ApplySystemsFilter(caseTypes, mainSearchFilters, a => a.Systems);
                     }
                 }
                 caseTypes = _viewModelService.AddCriteria(caseTypes, mainSearchFilters);
@@ -379,13 +376,9 @@ namespace R10.Web.Areas.Patent.Controllers
             return ViewComponent("RecordStamps", new { createdBy = caseType.UserID, dateCreated = caseType.DateCreated, updatedBy = caseType.UserID, lastUpdate = caseType.LastUpdate });
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

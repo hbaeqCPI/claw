@@ -93,26 +93,11 @@ namespace R10.Web.Areas.Trademark.Controllers
             var entities = _repository.TmkDesCaseTypes.AsNoTracking().AsQueryable();
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                if (systemName != null)
                 {
-                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                    mainSearchFilters.Remove(systemName);
-                }
-
-                foreach (var filter in mainSearchFilters)
-                {
-                    if (string.IsNullOrEmpty(filter.Value)) continue;
-                    var val = filter.Value;
-                    switch (filter.Property)
-                    {
-                        case "IntlCode": entities = entities.Where(e => EF.Functions.Like(e.IntlCode, val)); break;
-                        case "CaseType": entities = entities.Where(e => EF.Functions.Like(e.CaseType, val)); break;
-                        case "DesCountry": entities = entities.Where(e => EF.Functions.Like(e.DesCountry, val)); break;
-                        case "DesCaseType": entities = entities.Where(e => EF.Functions.Like(e.DesCaseType, val)); break;
-                    }
+                    entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
                 }
             }
+            entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
@@ -310,13 +295,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Add", new { fromSearch = true, copyIntlCode = entity.IntlCode, copyCaseType = entity.CaseType, copyDesCountry = entity.DesCountry, copyDesCaseType = entity.DesCaseType, copySystems = entity.Systems, copyDefault = entity.Default });
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetRecordStamps(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "")

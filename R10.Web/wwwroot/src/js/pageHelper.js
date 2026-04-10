@@ -221,20 +221,38 @@ const formDataToCriteriaList = function (form) {
         combinedFields = formFields;
     }
 
-    //to handle saved criteria with wildcard (not selectable)
-    $(form).find('select').filter(function () {
-        if ($(this).data("role") == "multiselect") {
-
-            const value = $(this).find('option:selected').val();
-            if (!value) {
-                const ms = $(this);
-                const hiddenVal = $(ms.siblings('div')[0]).find("input").val();
-                if (hiddenVal) {
-                    combinedFields.push({ name: ms.attr('name'), value: hiddenVal });
+    // Extract MultiSelect values explicitly (serializeArray may not capture them reliably)
+    $(form).find('select[data-role="multiselect"]').each(function () {
+        const ms = $(this).data("kendoMultiSelect");
+        if (ms) {
+            const name = $(this).attr("name");
+            const selectedValues = ms.value();
+            if (selectedValues && selectedValues.length > 0) {
+                // Remove any existing entries for this field from combinedFields
+                combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+                // Add each selected value as a separate entry
+                for (var i = 0; i < selectedValues.length; i++) {
+                    combinedFields.push({ name: name, value: selectedValues[i] });
                 }
             }
         }
     });
+    // Also check multiselects in extended form containers
+    if (formId !== undefined) {
+        $('div[form="' + formId + '"]').find('select[data-role="multiselect"]').each(function () {
+            const ms = $(this).data("kendoMultiSelect");
+            if (ms) {
+                const name = $(this).attr("name");
+                const selectedValues = ms.value();
+                if (selectedValues && selectedValues.length > 0) {
+                    combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+                    for (var i = 0; i < selectedValues.length; i++) {
+                        combinedFields.push({ name: name, value: selectedValues[i] });
+                    }
+                }
+            }
+        });
+    }
 
     $.each(combinedFields, function () {
         if (this.name === verificationTokenFormData) {
@@ -302,6 +320,7 @@ const formDataToCriteriaList = function (form) {
         }
     });
 
+    console.log("formDataToCriteriaList filters:", JSON.stringify(filters));
     return { verificationToken: verificationToken, payLoad: filters };
 };
 

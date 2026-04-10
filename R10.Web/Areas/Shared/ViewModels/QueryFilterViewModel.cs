@@ -11,11 +11,16 @@ namespace R10.Web.Areas.Shared.ViewModels
         public string? Operator { get; set; }
 
         private string? propertyValue;
-        public string Value
+        public string? Value
         {
             get => propertyValue;
             set
             {
+                if (string.IsNullOrEmpty(value))
+                {
+                    propertyValue = value;
+                    return;
+                }
                 propertyValue = value.Replace("*", "%").Replace("?", "_");
                 if (propertyValue.Contains("["))
                 {

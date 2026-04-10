@@ -68,22 +68,11 @@ namespace R10.Web.Areas.Patent.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                if (systemName != null)
                 {
-                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                    mainSearchFilters.Remove(systemName);
-                }
-
-                foreach (var filter in mainSearchFilters)
-                {
-                    if (filter.Property == "Area" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.Area, filter.Value));
-                    else if (filter.Property == "AreaNew" && !string.IsNullOrEmpty(filter.Value))
-                        entities = entities.Where(a => EF.Functions.Like(a.AreaNew, filter.Value));
+                    entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
                 }
             }
-
+            entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
@@ -261,13 +250,14 @@ namespace R10.Web.Areas.Patent.Controllers
             return Ok();
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
+        }
+
+        public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text = "", FilterType filterType = FilterType.StartsWith, string requiredRelation = "")
+        {
+            return await GetPicklistData(_repository.PatAreaDeletes.AsNoTracking(), request, property, text, filterType, requiredRelation);
         }
 
         public IActionResult GetRecordStamps(string areaCode = "", string areaNewCode = "", string systems = "")

@@ -98,14 +98,17 @@ namespace R10.Web.Areas.Patent.Controllers
             if (ModelState.IsValid)
             {
                 var areas = _areaService.QueryableList;
-                if (mainSearchFilters.Count > 0)
+                if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                 {
                     var country = mainSearchFilters.FirstOrDefault(f => f.Property == "Country");
-                    if (country != null)
+                    if (country != null && !string.IsNullOrEmpty(country.Value))
                     {
-                        areas = areas.Where(w => w.PatAreaCountries.Any(a => EF.Functions.Like(a.Country, country.Value)));
-                        mainSearchFilters.Remove(country);
+                        var cVals = country.Value.StartsWith("[")
+                            ? Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(country.Value) ?? new List<string> { country.Value }
+                            : new List<string> { country.Value };
+                        areas = areas.Where(w => w.PatAreaCountries.Any(a => cVals.Any(v => EF.Functions.Like(a.Country, v))));
                     }
+                    if (country != null) mainSearchFilters.Remove(country);
 
                     var countryName = mainSearchFilters.FirstOrDefault(f => f.Property == "CountryName");
                     if (countryName != null)
@@ -113,11 +116,8 @@ namespace R10.Web.Areas.Patent.Controllers
                         mainSearchFilters.Remove(countryName);
                     }
 
-                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                    if (systemName != null)
                     {
-                        areas = areas.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                        mainSearchFilters.Remove(systemName);
+                    areas = Helpers.QueryHelper.ApplySystemsFilter(areas, mainSearchFilters, a => a.Systems);
                     }
                 }
                 areas = _viewModelService.AddCriteria(areas, mainSearchFilters);
@@ -540,13 +540,9 @@ namespace R10.Web.Areas.Patent.Controllers
 
         #endregion
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

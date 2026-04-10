@@ -109,7 +109,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (ModelState.IsValid)
             {
                 var countryLaws = this.TmkCountryLaws;
-                if (mainSearchFilters.Count > 0)
+                if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                 {
                     countryLaws = AddRelatedDataCriteria(countryLaws, mainSearchFilters);
                     countryLaws = _countryLawViewModelService.AddCriteria(countryLaws, mainSearchFilters);
@@ -508,13 +508,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return Json(list);
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public IActionResult GetBasedOnList(string property, string text, FilterType filterType)
@@ -938,21 +934,19 @@ namespace R10.Web.Areas.Trademark.Controllers
         private IQueryable<TmkCountryLaw> AddRelatedDataCriteria(IQueryable<TmkCountryLaw> countryLaws, List<QueryFilterViewModel> mainSearchFilters)
         {
             var countryName = mainSearchFilters.FirstOrDefault(f => f.Property == "CountryName");
-            if (countryName != null)
+            if (countryName != null && !string.IsNullOrEmpty(countryName.Value))
             {
-                var matchingCountries = _TmkCountryService.QueryableList
-                    .Where(pc => EF.Functions.Like(pc.CountryName, countryName.Value))
-                    .Select(pc => pc.Country);
-                countryLaws = countryLaws.Where(c => matchingCountries.Contains(c.Country));
-                mainSearchFilters.Remove(countryName);
+                var values = countryName.Value.StartsWith("[")
+                    ? Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(countryName.Value) ?? new List<string> { countryName.Value }
+                    : new List<string> { countryName.Value };
+                var countries = _TmkCountryService.QueryableList.AsQueryable();
+                countries = countries.Where(pc => values.Any(v => EF.Functions.Like(pc.CountryName, v)));
+                var matchingCodes = countries.Select(pc => pc.Country);
+                countryLaws = countryLaws.Where(c => matchingCodes.Contains(c.Country));
             }
+            if (countryName != null) mainSearchFilters.Remove(countryName);
 
-            var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-            if (systemName != null)
-            {
-                countryLaws = countryLaws.Where(c => c.Systems != null && EF.Functions.Like(c.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                mainSearchFilters.Remove(systemName);
-            }
+            countryLaws = Helpers.QueryHelper.ApplySystemsFilter(countryLaws, mainSearchFilters, a => a.Systems);
 
             return countryLaws;
         }

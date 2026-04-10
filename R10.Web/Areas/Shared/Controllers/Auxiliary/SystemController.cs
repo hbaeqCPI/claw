@@ -56,7 +56,7 @@ namespace R10.Web.Areas.Shared.Controllers
                 Page = PageType.Search,
                 PageId = "cpiSystemSearch",
                 Title = _localizer["System Search"].ToString(),
-                CanAddRecord = (await _authService.AuthorizeAsync(User, SharedAuthorizationPolicy.FullModify)).Succeeded
+                CanAddRecord = false // Systems are preset and cannot be added
             };
 
             if (Request.IsAjax())
@@ -74,7 +74,7 @@ namespace R10.Web.Areas.Shared.Controllers
                 Page = PageType.SearchResults,
                 PageId = "cpiSystemSearchResults",
                 Title = _localizer["System Search Results"].ToString(),
-                CanAddRecord = (await _authService.AuthorizeAsync(User, SharedAuthorizationPolicy.FullModify)).Succeeded
+                CanAddRecord = false // Systems are preset and cannot be added
             };
 
             return PartialView("Index", model);
@@ -287,6 +287,7 @@ namespace R10.Web.Areas.Shared.Controllers
 
                 viewModel.CanCopyRecord = false;
                 viewModel.CanEmail = false;
+                viewModel.CanDeleteRecord = false; // Systems are preset
 
                 this.AddDefaultNavigationUrls(viewModel);
 

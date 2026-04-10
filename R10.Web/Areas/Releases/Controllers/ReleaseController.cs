@@ -101,7 +101,7 @@ namespace R10.Web.Areas.Releases.Controllers
             {
                 var releases = _entityService.QueryableList;
 
-                if (mainSearchFilters.Count > 0)
+                if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                     releases = _viewModelService.AddCriteria(releases, mainSearchFilters);
 
                 var result = await _viewModelService.CreateViewModelForGrid(request, releases, "Name", "ReleaseId");
@@ -111,14 +111,10 @@ namespace R10.Web.Areas.Releases.Controllers
             return new JsonBadRequest(new { errors = ModelState.Errors() });
         }
 
-        private async Task LoadSystemsList()
+        private Task LoadSystemsList()
         {
-            var systems = await _systemService.QueryableList
-                .Select(s => s.SystemName)
-                .Distinct()
-                .OrderBy(s => s)
-                .ToListAsync();
-            ViewData["SystemsList"] = systems;
+            ViewData["SystemsList"] = Helpers.SystemsHelper.SystemNames.ToList();
+            return Task.CompletedTask;
         }
 
         private async Task<DetailPageViewModel<Release>> PrepareEditScreen(int id)
@@ -1007,13 +1003,9 @@ namespace R10.Web.Areas.Releases.Controllers
 
         #region MDB Generation
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _systemService.QueryableList.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         [HttpPost]

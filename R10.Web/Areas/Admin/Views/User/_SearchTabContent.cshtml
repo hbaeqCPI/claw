@@ -20,19 +20,19 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="FullName">@Localizer["Last Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "LastName" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "LastName", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="FullName">@Localizer["First Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "FirstName" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "FirstName", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Email">@Localizer["Email"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Email" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "Email", multiSelect = true })
                 </div>
             </div>
         </div>

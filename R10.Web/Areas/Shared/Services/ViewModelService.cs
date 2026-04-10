@@ -35,7 +35,7 @@ namespace R10.Web.Services
         public IQueryable<T> AddCriteria(IQueryable<T> list, List<QueryFilterViewModel> mainSearchFilters)
         {
            
-            if (mainSearchFilters.Count > 0)
+            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
                 list = QueryHelper.BuildCriteria(list, mainSearchFilters);
             }

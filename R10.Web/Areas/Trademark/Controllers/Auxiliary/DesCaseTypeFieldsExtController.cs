@@ -68,26 +68,11 @@ namespace R10.Web.Areas.Trademark.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                if (systemName != null)
                 {
-                    entities = entities.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                    mainSearchFilters.Remove(systemName);
-                }
-
-                foreach (var filter in mainSearchFilters)
-                {
-                    if (string.IsNullOrEmpty(filter.Value)) continue;
-                    var val = filter.Value;
-                    switch (filter.Property)
-                    {
-                        case "DesCaseType": entities = entities.Where(e => EF.Functions.Like(e.DesCaseType, val)); break;
-                        case "FromField": entities = entities.Where(e => EF.Functions.Like(e.FromField, val)); break;
-                        case "ToField": entities = entities.Where(e => EF.Functions.Like(e.ToField, val)); break;
-                    }
+                    entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
                 }
             }
-
+            entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
             return Json(data.ToDataSourceResult(request));
         }
@@ -255,13 +240,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return RedirectToAction("Add", new { fromSearch = true, copyDesCaseType = entity.DesCaseType, copyFromField = entity.FromField, copyToField = entity.ToField, copySystems = entity.Systems, copyInUse = entity.InUse });
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetRecordStamps(string desCaseType = "", string fromField = "", string toField = "", string systems = "")

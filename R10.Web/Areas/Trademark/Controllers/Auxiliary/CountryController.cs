@@ -93,19 +93,19 @@ namespace R10.Web.Areas.Trademark.Controllers
             if (ModelState.IsValid)
             {
                 var tmkCountries = _tmkCountryService.QueryableList;
-                if (mainSearchFilters.Count > 0)
+                if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                 {
                     var area = mainSearchFilters.FirstOrDefault(f => f.Property == "Area");
-                    if (area != null)
+                    if (area != null && !string.IsNullOrEmpty(area.Value))
                     {
-                        tmkCountries = tmkCountries.Where(w => w.TmkCountryAreas.Any(a => EF.Functions.Like(a.Area, area.Value)));
-                        mainSearchFilters.Remove(area);
+                        var aVals = area.Value.StartsWith("[")
+                            ? Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(area.Value) ?? new List<string> { area.Value }
+                            : new List<string> { area.Value };
+                        tmkCountries = tmkCountries.Where(w => w.TmkCountryAreas.Any(a => aVals.Any(v => EF.Functions.Like(a.Area, v))));
                     }
-                    var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                    if (systemName != null)
+                    if (area != null) mainSearchFilters.Remove(area);
                     {
-                        tmkCountries = tmkCountries.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                        mainSearchFilters.Remove(systemName);
+                    tmkCountries = Helpers.QueryHelper.ApplySystemsFilter(tmkCountries, mainSearchFilters, a => a.Systems);
                     }
                 }
                 tmkCountries = _viewModelService.AddCriteria(tmkCountries, mainSearchFilters);
@@ -446,13 +446,9 @@ namespace R10.Web.Areas.Trademark.Controllers
             return Ok();
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

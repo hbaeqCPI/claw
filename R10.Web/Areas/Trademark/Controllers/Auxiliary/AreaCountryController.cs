@@ -57,11 +57,8 @@ namespace R10.Web.Areas.Trademark.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                var systemName = mainSearchFilters.FirstOrDefault(f => f.Property == "SystemName");
-                if (systemName != null)
                 {
-                    data = data.Where(a => a.Systems != null && EF.Functions.Like(a.Systems, "%" + systemName.Value.Replace("%", "") + "%"));
-                    mainSearchFilters.Remove(systemName);
+                    data = Helpers.QueryHelper.ApplySystemsFilter(data, mainSearchFilters, a => a.Systems);
                 }
             }
 
@@ -245,13 +242,14 @@ namespace R10.Web.Areas.Trademark.Controllers
             return File(Convert.FromBase64String(base64), contentType, fileName);
         }
 
-        public async Task<IActionResult> GetSystemList()
+        public IActionResult GetSystemList()
         {
-            var systems = (await _repository.AppSystems.AsNoTracking()
-                .Select(s => s.SystemName)
-                .ToListAsync())
-                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Length).ToList();
-            return Json(systems);
+            return Json(Helpers.SystemsHelper.SystemNames);
+        }
+
+        public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text = "", FilterType filterType = FilterType.StartsWith, string requiredRelation = "")
+        {
+            return await GetPicklistData(_repository.TmkAreasCountries.AsNoTracking(), request, property, text, filterType, requiredRelation);
         }
 
         public async Task<IActionResult> GetAreaList()

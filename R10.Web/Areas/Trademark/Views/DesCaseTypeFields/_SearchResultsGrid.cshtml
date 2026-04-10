@@ -9,7 +9,7 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound("DesCaseType").Title(Localizer["Des Case Type"].Value).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", systems = "#: Systems#", fromSearch = true }), "DesCaseType")).Width(200);
+                    columns.Bound("DesCaseType").Title(Localizer["Des Case Type"].Value).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", fromSearch = true }), "DesCaseType")).Width(200);
                     columns.Bound("Systems").Title(Localizer["Systems"].Value).Width(300);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))

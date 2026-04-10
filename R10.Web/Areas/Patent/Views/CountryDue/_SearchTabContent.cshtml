@@ -10,7 +10,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Country">@Localizer["Country"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Country" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "Country", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -18,19 +18,19 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="CaseType">@Localizer["Case Type"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="ActionType">@Localizer["Action Type"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "ActionType" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "ActionType", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="ActionDue">@Localizer["Action Due"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "ActionDue" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "ActionDue", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -38,13 +38,13 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="BasedOn">@Localizer["Based On"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "BasedOn" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "BasedOn", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Indicator">@Localizer["Indicator"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "Indicator" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "Indicator", multiSelect = true })
                 </div>
             </div>
         </div>
@@ -52,13 +52,13 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="SystemName">@Localizer["Systems"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="UserID">@Localizer["User ID"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "UserID" })
+                    @await Component.InvokeAsync("ComboBox", new { name = "UserID", multiSelect = true })
                 </div>
             </div>
         </div>

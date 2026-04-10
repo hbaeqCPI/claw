@@ -57,6 +57,7 @@ namespace R10.Web.Services.Menu
                     ("Country Expiry", "CountryExp", "{\"area\":\"Patent\"}", 20),
                     ("Country Expiry Delete", "CountryExpDelete", "{\"area\":\"Patent\"}", 25),
                     ("Country Law", "CountryLaw", "{\"area\":\"Patent\"}", 30),
+                    ("Country Law Ext", "CountryLawExt", "{\"area\":\"Patent\"}", 40),
                 };
                 var patAuxiliary = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
                 {
@@ -67,7 +68,6 @@ namespace R10.Web.Services.Menu
                     ("Area Country Delete", "AreaCountryDelete", "{\"area\":\"Patent\"}", 23),
                     ("Case Type", "CaseType", "{\"area\":\"Patent\"}", 30),
                     ("Country", "Country", "{\"area\":\"Patent\"}", 40),
-                    ("Country Law Ext", "CountryLawExt", "{\"area\":\"Patent\"}", 60),
                     ("Indicator", "Indicator", "{\"area\":\"Patent\"}", 70)
                 };
                 var patDesignated = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>

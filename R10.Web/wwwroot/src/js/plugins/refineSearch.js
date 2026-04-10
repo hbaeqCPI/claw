@@ -23,12 +23,15 @@ import "./liveSearch";
 
                 if (proceed) {
                     const sort = grid.dataSource.sort();
-                    cpiLoadingSpinner.show("", 1);
-                    grid.dataSource.query({
-                        sort: { field: sort[0].field, dir: sort[0].dir },
+                    var queryOptions = {
                         page: 1,
                         pageSize: grid.dataSource.pageSize()
-                    }).then(function () {
+                    };
+                    if (sort && sort.length > 0) {
+                        queryOptions.sort = { field: sort[0].field, dir: sort[0].dir };
+                    }
+                    cpiLoadingSpinner.show("", 1);
+                    grid.dataSource.query(queryOptions).then(function () {
                         cpiLoadingSpinner.hide();
                         if (callback) {
                             callback(el);
