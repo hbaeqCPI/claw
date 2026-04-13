@@ -163,6 +163,12 @@
                 <a class="nav-link" id="countryLawDetailDesigCountriesTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailDesigCountriesTabContent" aria-selected="false" href="#countryLawDetailDesigCountriesTabContent">@Localizer["Designated Countries"]</a>
             </li>
         }
+        @if (!addMode)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="false" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
+            </li>
+        }
     </ul>
     <div class="tab-content">
         @if (!addMode)
@@ -174,6 +180,12 @@
         @if (!addMode)
         {
             <div class="tab-pane page-content" id="countryLawDetailExpirationTabContent" role="tabpanel" aria-labelledby="countryLawDetailExpirationTab">
+                <div id="patCountryExpValidationErrors" class="alert alert-dismissible fade show" style="display:none; margin: 4px 0; background-color:#fff; color:#dc3545; border:1px solid #dc3545;">
+                    <span class="patCountryExpValidationErrors-text"></span>
+                    <button type="button" class="close" aria-label="Close" onclick="$('#patCountryExpValidationErrors').hide().find('.patCountryExpValidationErrors-text').empty();">
+                        <span aria-hidden="true" style="color:#dc3545;">&times;</span>
+                    </button>
+                </div>
                 @await Html.PartialAsync("_GridCountryExp", childViewModel)
             </div>
         }
@@ -181,6 +193,16 @@
         {
             <div class="tab-pane page-content" id="countryLawDetailDesigCountriesTabContent" role="tabpanel" aria-labelledby="countryLawDetailDesigCountriesTab">
                 @await Html.PartialAsync("_GridDesignatedCountry", childViewModel)
+            </div>
+        }
+        @if (!addMode)
+        {
+            <div class="tab-pane page-content px-1 py-1" id="countryLawDetailLawHighlightsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawHighlightsTab">
+                <div class="form-row">
+                    <div class="col">
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
+                    </div>
+                </div>
             </div>
         }
     </div>
@@ -199,12 +221,67 @@
             pageHelper.openLink(result.redirectUrl, true);
         }
     };
+    // Check all dirty/new rows for missing required fields on the Exp grid.
+    // Returns a list of { rowIndex, fieldLabel } for any empty required cells.
+    patCountryLawPage.getExpMissingFields = function () {
+        var grid = $("#patCountryExpGrid").data("kendoGrid");
+        if (!grid) return [];
+        var requiredFields = [
+            { name: "Type", label: "Type" },
+            { name: "BasedOn", label: "Based On" },
+            { name: "EffBasedOn", label: "Eff Based On" }
+        ];
+        var missing = [];
+        var rowNum = 0;
+        grid.dataSource.data().forEach(function (row) {
+            rowNum++;
+            if (!(row.dirty || row.isNew())) return;
+            requiredFields.forEach(function (f) {
+                var val = row[f.name];
+                if (!val || String(val).trim() === "") {
+                    missing.push({ rowIndex: rowNum, field: f.label });
+                }
+            });
+        });
+        return missing;
+    };
+
+    // Show the error banner listing which fields are missing, or hide it if none.
+    patCountryLawPage.showExpValidationErrors = function (missing) {
+        var banner = $("#patCountryExpValidationErrors");
+        var msgEl = banner.find(".patCountryExpValidationErrors-text");
+        if (!missing || missing.length === 0) {
+            banner.hide();
+            msgEl.empty();
+            return;
+        }
+        // Group by field name for a concise message
+        var fieldsSet = {};
+        missing.forEach(function (m) { fieldsSet[m.field] = true; });
+        var fields = Object.keys(fieldsSet);
+        var msg = "The following required field" + (fields.length > 1 ? "s" : "") + " cannot be empty: " + fields.join(", ") + ".";
+        msgEl.text(msg);
+        banner.show();
+    };
+
+    // Validate Exp grid before save — blocks the save and shows an error banner
+    // listing which required fields are empty on dirty/new rows.
+    patCountryLawPage.validateExpGrid = function () {
+        var defer = $.Deferred();
+        var missing = patCountryLawPage.getExpMissingFields();
+        patCountryLawPage.showExpValidationErrors(missing);
+        if (missing.length > 0) defer.reject(); else defer.resolve();
+        return defer.promise();
+    };
+
     patCountryLawPage.editableGrids = [
         {
             name: 'patCountryDueGrid', isDirty: false, filter: patCountryLawPage.getKeyFields, afterSubmit: patCountryLawPage.updateRecordStamps
         },
         {
-            name: 'patCountryExpGrid', isDirty: false, filter: patCountryLawPage.getKeyFields, afterSubmit: patCountryLawPage.updateRecordStamps
+            name: 'patCountryExpGrid', isDirty: false, filter: patCountryLawPage.getKeyFields,
+            beforeSubmit: patCountryLawPage.validateExpGrid,
+            afterSubmit: patCountryLawPage.updateRecordStamps
         },
         {
             name: 'patDesCaseTypeGrid', isDirty: false, filter: patCountryLawPage.getKeyFields, afterSubmit: patCountryLawPage.updateRecordStamps

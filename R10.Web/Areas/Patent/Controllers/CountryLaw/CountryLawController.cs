@@ -659,23 +659,11 @@ namespace R10.Web.Areas.Patent.Controllers
                 var userName = User.GetUserName();
                 var now = DateTime.Now;
 
-                if (countryDue.CPIAction)
-                {
-                    var origCountryDue = await _countryLawService.PatCountryDues.AsNoTracking().FirstOrDefaultAsync(c => c.CDueId == countryDue.CDueId);
-                    origCountryDue.Calculate = countryDue.Calculate;
-                    origCountryDue.FollowupAction = countryDue.FollowupAction;
-                    origCountryDue.OldFollowupAction = countryDue.OldFollowupAction;
-                    origCountryDue.UserID = userName;
-                    origCountryDue.LastUpdate = now;
-                    await _countryLawService.CountryDueUpdate(origCountryDue);
-                }
-                else {
-                    countryDue.UserID = userName;
-                    countryDue.LastUpdate = now;
-                    if (countryDue.CDueId <= 0)
-                        countryDue.DateCreated = now;
-                    await _countryLawService.CountryDueUpdate(countryDue);
-                }
+                countryDue.UserID = userName;
+                countryDue.LastUpdate = now;
+                if (countryDue.CDueId <= 0)
+                    countryDue.DateCreated = now;
+                await _countryLawService.CountryDueUpdate(countryDue);
                 return Ok();
             }
             return BadRequest(ModelState);
@@ -774,6 +762,17 @@ namespace R10.Web.Areas.Patent.Controllers
             var canDelete = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.CountryLawCanDelete)).Succeeded;
             if (deleted.Any() && !canDelete)
                 return Forbid("Not authorized.");
+
+            // Validate required fields on added/updated records
+            var errors = new Dictionary<string, string[]>();
+            foreach (var e in updated.Concat(added))
+            {
+                if (string.IsNullOrWhiteSpace(e.Type)) errors["Type"] = new[] { "The Type field is required." };
+                if (string.IsNullOrWhiteSpace(e.BasedOn)) errors["BasedOn"] = new[] { "The Based On field is required." };
+                if (string.IsNullOrWhiteSpace(e.EffBasedOn)) errors["EffBasedOn"] = new[] { "The Eff Based On field is required." };
+            }
+            if (errors.Any())
+                return new JsonBadRequest(new { errors });
 
             // Get parent's Systems to ensure child records inherit it
             var parentSystems = (await _countryLawService.PatCountryLaws.AsNoTracking()

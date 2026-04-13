@@ -48,6 +48,7 @@ namespace R10.Core.Entities.Trademark
         [Display(Name = "Recurring")]
         public float Recurring { get; set; }
 
+        [Required(ErrorMessage = "The Eff Based On field is required.")]
         [StringLength(15)]
         [Display(Name = "Effective Period for")]
         public string? EffBasedOn { get; set; }

@@ -16,10 +16,12 @@ namespace R10.Core.Entities.Patent
         [StringLength(3)]
         public string? CaseType { get; set; }
 
+        [Required(ErrorMessage = "The Type field is required.")]
         [StringLength(30)]
         [Display(Name = "Type")]
         public string? Type { get; set; }
 
+        [Required(ErrorMessage = "The Based On field is required.")]
         [StringLength(12)]
         [Display(Name = "Based On")]
         public string? BasedOn { get; set; }
@@ -33,6 +35,7 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Dy")]
         public int Dy { get; set; }
 
+        [Required(ErrorMessage = "The Eff Based On field is required.")]
         [StringLength(15)]
         [Display(Name = "Eff Based On")]
         public string? EffBasedOn { get; set; }

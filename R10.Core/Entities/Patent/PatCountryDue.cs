@@ -48,6 +48,7 @@ namespace R10.Core.Entities.Patent
         [Display(Name = "Recurring")]
         public float Recurring { get; set; }
 
+        [Required(ErrorMessage = "The Eff Based On field is required.")]
         [StringLength(15)]
         [Display(Name = "Eff Based On")]
         public string? EffBasedOn { get; set; }

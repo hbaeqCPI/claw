@@ -21,6 +21,7 @@
               columns.Bound(d => d.Dy);
               columns.Bound(d => d.EffStartDate).Format("{0:dd-MMM-yyyy}").Width(150);
               columns.Bound(d => d.EffEndDate).Format("{0:dd-MMM-yyyy}").Width(150);
+              columns.Bound(d => d.EffBasedOn).Width(150);
               columns.Bound(d => d.Indicator);
               columns.Bound(d => d.Calculate).ClientTemplate("<i class='fa fal #: Calculate ? 'fa-check' : ''#'></i>")
                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
@@ -79,15 +80,6 @@
               {
                   model.Id(d => d.CDueId);
                   model.Field(d => d.Systems).DefaultValue(Model.Systems ?? "");
-                  model.Field(d => d.ActionDue).Editable(false);
-                  model.Field(d => d.BasedOn).Editable(false);
-                  model.Field(d => d.Yr).Editable(false);
-                  model.Field(d => d.Mo).Editable(false);
-                  model.Field(d => d.Dy).Editable(false);
-                  model.Field(d => d.EffStartDate).Editable(false);
-                  model.Field(d => d.EffEndDate).Editable(false);
-                  model.Field(d => d.Indicator).Editable(false);
-
               })
               .Read(create => create.Action("CountryDueRead", "CountryLaw").Data(childLinkParam))
               .Update(create => create.Action("CountryDuesUpdate", "CountryLaw").Data(childLinkParam))

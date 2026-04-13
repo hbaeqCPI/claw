@@ -145,6 +145,12 @@
                 <a class="nav-link" id="countryLawDetailDesigCountriesTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailDesigCountriesTabContent" aria-selected="false" href="#countryLawDetailDesigCountriesTabContent">@Localizer["Designated Countries"]</a>
             </li>
         }
+        @if (!addMode)
+        {
+            <li class="nav-item">
+                <a class="nav-link" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="false" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
+            </li>
+        }
     </ul>
     <div class="tab-content">
         @if (!addMode)
@@ -157,6 +163,16 @@
         {
             <div class="tab-pane page-content" id="countryLawDetailDesigCountriesTabContent" role="tabpanel" aria-labelledby="countryLawDetailDesigCountriesTab">
                 @await Html.PartialAsync("_GridDesignatedCountry", childViewModel)
+            </div>
+        }
+        @if (!addMode)
+        {
+            <div class="tab-pane page-content px-1 py-1" id="countryLawDetailLawHighlightsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawHighlightsTab">
+                <div class="form-row">
+                    <div class="col">
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
+                    </div>
+                </div>
             </div>
         }
     </div>

@@ -51,7 +51,7 @@
                             <div class="col-12 col-md-6">
                             @if (Model.CPIAction)
                             {
-                                <div class="dymo-alert">@Localizer["CPI Action: Limited Edit"]</div>
+                                <div class="dymo-alert">@Localizer["CPI Action"]</div>
                             }
                             </div>
                             <div class="col-12 col-md-6">
@@ -62,38 +62,25 @@
                             <div class="col-md-6">
                                 <div class="form-group float-label">
                                     <label class="required" asp-for="ActionDue"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" asp-for="ActionDue" readonly />
-                                    }
-                                    else
-                                    {
-                                        @await Component.InvokeAsync("ComboBox",
-                                            new
-                                                 {
-                                                     name = "ActionDue",
-                                                     action = "GetActionDues",
-                                                     controller = "CountryLaw",
-                                                     defaultValue = Model.ActionDue,
-                                                     textProperty = "Text",
-                                                validationMessage = requiredValidationMessages.Where(v => v.Name == "ActionDue").Select(v => v.ErrorMessage).FirstOrDefault()
-                                            })
-                                    }
+                                    @await Component.InvokeAsync("ComboBox",
+                                        new
+                                             {
+                                                 name = "ActionDue",
+                                                 action = "GetActionDues",
+                                                 controller = "CountryLaw",
+                                                 defaultValue = Model.ActionDue,
+                                                 textProperty = "Text",
+                                            validationMessage = requiredValidationMessages.Where(v => v.Name == "ActionDue").Select(v => v.ErrorMessage).FirstOrDefault()
+                                        })
                                     <span asp-validation-for="ActionDue"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group float-label">
                                     <label class="required" asp-for="ActionType"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" asp-for="ActionType" readonly />
-                                    }
-                                    else
-                                    {
-                                        @await Component.InvokeAsync("ComboBox",
-                                            new { name = "ActionType", action = "GetActionTypes", controller = "CountryLaw", defaultValue = Model.ActionType, textProperty = "Text" })
-                                    }
+                                    @await Component.InvokeAsync("ComboBox",
+                                        new { name = "ActionType", action = "GetActionTypes", controller = "CountryLaw", defaultValue = Model.ActionType, textProperty = "Text", required = true, validationMessage = requiredValidationMessages.Where(v => v.Name == "ActionType").Select(v => v.ErrorMessage).FirstOrDefault() ?? "The Action Type field is required." })
+                                    <span asp-validation-for="ActionType"></span>
                                 </div>
                             </div>
                         </div>
@@ -102,52 +89,31 @@
                             <div class="col-md-6">
                                 <div class="form-group float-label">
                                     <label class="required" asp-for="BasedOn"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" asp-for="BasedOn" readonly />
-                                    }
-                                    else
-                                    {
-                                        @*@await Component.InvokeAsync("ComboBox",
-                                new {name = "BasedOn", action = "GetBasedOnList", controller = "CountryLaw", defaultValue = Model.BasedOn, textProperty = "Text",
-                                    validationMessage = requiredValidationMessages.Where(v=>v.Name== "BasedOn").Select(v=>v.ErrorMessage).FirstOrDefault()
-                                })*@
-
-                                        @(Html.Kendo().ComboBox()
-                                                        .Name("BasedOn")
-                                                        .Value(Model.BasedOn)
-                                                        .BindTo(basedOnOptions)
-                                                        .Filter(FilterType.StartsWith)
-                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
-                                                        .HtmlAttributes(new { style = "width: 100%", id = $"BasedOn_{screen}" })
-                                        )
-
-                                    }
+                                    @(Html.Kendo().ComboBox()
+                                                    .Name("BasedOn")
+                                                    .Value(Model.BasedOn)
+                                                    .BindTo(basedOnOptions)
+                                                    .Filter(FilterType.StartsWith)
+                                                    .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                    .HtmlAttributes(new { style = "width: 100%", id = $"BasedOn_{screen}" })
+                                    )
                                     <span asp-validation-for="BasedOn"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group float-label">
                                     <label asp-for="Recurring"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" value="@(((RecurringOption)Model.Recurring).GetDisplayName())" disabled />
-                                    }
-                                    else
-                                    {
-                                        @(Html.Kendo().ComboBox()
-                                                        .Name("Recurring")
-                                                        .Text(((RecurringOption)Model.Recurring).GetDisplayName())
-                                                        .Value(Model.Recurring.ToString())
-                                                        .DataTextField("Text")
-                                                        .DataValueField("Value")
-                                                        .BindTo(Html.GetEnumSelectList<RecurringOption>())
-                                                        .Filter(FilterType.StartsWith)
-                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
-                                                        .HtmlAttributes(new { style = "width: 100%", id = $"Recurring_{screen}" })
-                                        )
-
-                                    }
+                                    @(Html.Kendo().ComboBox()
+                                                    .Name("Recurring")
+                                                    .Text(((RecurringOption)Model.Recurring).GetDisplayName())
+                                                    .Value(Model.Recurring.ToString())
+                                                    .DataTextField("Text")
+                                                    .DataValueField("Value")
+                                                    .BindTo(Html.GetEnumSelectList<RecurringOption>())
+                                                    .Filter(FilterType.StartsWith)
+                                                    .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                    .HtmlAttributes(new { style = "width: 100%", id = $"Recurring_{screen}" })
+                                    )
                                     <span asp-validation-for="Recurring"></span>
                                 </div>
                             </div>
@@ -160,43 +126,19 @@
                                 <div class="pr-1">
                                     <div class="form-group float-label">
                                         <label asp-for="Yr"></label>
-                                        @if (Model.CPIAction)
-                                        {
-                                            <input type="text" class="form-control form-control-sm" asp-for="Yr" readonly />
-                                        }
-                                        else
-                                        {
-                                            <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
-                                        }
-
+                                        <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
                                     </div>
                                 </div>
                                 <div class="pr-1">
                                     <div class="form-group float-label">
                                         <label asp-for="Mo"></label>
-                                        @if (Model.CPIAction)
-                                        {
-                                            <input type="text" class="form-control form-control-sm" asp-for="Mo" readonly />
-                                        }
-                                        else
-                                        {
-                                            <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
-                                        }
-
+                                        <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
                                     </div>
                                 </div>
                                 <div>
                                     <div class="form-group float-label">
                                         <label asp-for="Dy"></label>
-                                        @if (Model.CPIAction)
-                                        {
-                                            <input type="text" class="form-control form-control-sm" asp-for="Dy" readonly />
-                                        }
-                                        else
-                                        {
-                                            <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
-                                        }
-
+                                        <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
                                     </div>
                                 </div>
                             </div>
@@ -204,24 +146,16 @@
 
                                 <div class="form-group float-label">
                                     <label asp-for="Indicator"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" asp-for="Indicator" readonly />
-                                    }
-                                    else
-                                    {
-                                        @await Component.InvokeAsync("ComboBox",
-                                            new
-                                            {
-                                                name = "Indicator",
-                                                     action = "GetPicklistData",
-                                                     controller = "Indicator",
-                                                     defaultValue = Model.Indicator,
-                                                     textProperty = "Indicator",
-                                                validationMessage = requiredValidationMessages.Where(v => v.Name == "Indicator").Select(v => v.ErrorMessage).FirstOrDefault()
-                                            })
-
-                                    }
+                                    @await Component.InvokeAsync("ComboBox",
+                                        new
+                                        {
+                                            name = "Indicator",
+                                                 action = "GetPicklistData",
+                                                 controller = "Indicator",
+                                                 defaultValue = Model.Indicator,
+                                                 textProperty = "Indicator",
+                                            validationMessage = requiredValidationMessages.Where(v => v.Name == "Indicator").Select(v => v.ErrorMessage).FirstOrDefault()
+                                        })
                                     <span asp-validation-for="Indicator"></span>
                                 </div>
                             </div>
@@ -230,54 +164,28 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group float-label">
-                                    <label asp-for="EffBasedOn"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" asp-for="EffBasedOn" readonly />
-                                    }
-                                    else
-                                    {
-                                        @*@await Component.InvokeAsync("ComboBox",
-                                new {name = "EffBasedOn", action = "GetBasedOnList", controller = "CountryLaw", defaultValue = Model.EffBasedOn, textProperty = "Text"})*@
-
-                                        @(Html.Kendo().ComboBox()
-                                                        .Name("EffBasedOn")
-                                                        .Value(Model.EffBasedOn)
-                                                        .BindTo(basedOnOptions)
-                                                        .Filter(FilterType.StartsWith)
-                                                        .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
-                                                        .HtmlAttributes(new { style = "width: 100%", id = $"EffBasedOn_{screen}" })
-                                        )
-                                    }
+                                    <label class="required" asp-for="EffBasedOn"></label>
+                                    @(Html.Kendo().ComboBox()
+                                                    .Name("EffBasedOn")
+                                                    .Value(Model.EffBasedOn)
+                                                    .BindTo(basedOnOptions)
+                                                    .Filter(FilterType.StartsWith)
+                                                    .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
+                                                    .HtmlAttributes(new { style = "width: 100%", id = $"EffBasedOn_{screen}", required = "required", data_val = "true", data_val_required = requiredValidationMessages.Where(v => v.Name == "EffBasedOn").Select(v => v.ErrorMessage).FirstOrDefault() ?? "The Eff Based On field is required." })
+                                    )
+                                    <span asp-validation-for="EffBasedOn"></span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group float-label">
                                     <label asp-for="EffStartDate"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" value="@Model.EffStartDate.FormatToDisplay()" readonly />
-                                    }
-                                    else
-                                    {
-                                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
-                                    }
-
-
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group float-label">
                                     <label asp-for="EffEndDate"></label>
-                                    @if (Model.CPIAction)
-                                    {
-                                        <input type="text" class="form-control form-control-sm" value="@Model.EffEndDate.FormatToDisplay()" readonly />
-                                    }
-                                    else
-                                    {
-                                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
-                                    }
-
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
                                 </div>
                             </div>
                         </div>
