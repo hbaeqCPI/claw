@@ -225,20 +225,20 @@ namespace R10.Web.Helpers
                 if (!string.IsNullOrEmpty(filter.Operator))
                     continue;
 
-                var property = filter.Property.ToLower();
-                if ((property.EndsWith("from") || property.EndsWith("to")) && DateTime.TryParse(filter.Value, out dateTime))
+                var propertyLower = filter.Property.ToLower();
+                if ((propertyLower.EndsWith("from") || propertyLower.EndsWith("to")) && DateTime.TryParse(filter.Value, out dateTime))
                 {
-                    if (property.EndsWith("from"))
+                    if (propertyLower.EndsWith("from"))
                     {
-                        filter.Property = property.Substring(0, property.Length - 4);
+                        filter.Property = filter.Property.Substring(0, filter.Property.Length - 4);
                         filter.Operator = "gte";
                     }
                     else {
-                        filter.Property = property.Substring(0, property.Length - 2);
+                        filter.Property = filter.Property.Substring(0, filter.Property.Length - 2);
                         filter.Operator = "lte";
                         dateTime = dateTime.AddDays(1).AddSeconds(-1);
                     }
-                    filter.Value = dateTime.ToString();
+                    filter.Value = dateTime.ToString("o"); // ISO 8601 format for reliable parsing
                 }
                 else {
                     filter.Operator = "like";
