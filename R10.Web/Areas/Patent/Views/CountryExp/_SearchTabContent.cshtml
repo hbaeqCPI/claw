@@ -42,5 +42,33 @@
                 </div>
             </div>
         </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="EffStartDateFrom">@Localizer["Eff Start Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="EffStartDateTo">@Localizer["Eff Start Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="EffEndDateFrom">@Localizer["Eff End Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="EffEndDateTo">@Localizer["Eff End Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDateTo"))
+                </div>
+            </div>
+        </div>
     </div>
 </div>

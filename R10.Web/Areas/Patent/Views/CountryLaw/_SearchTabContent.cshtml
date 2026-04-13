@@ -6,6 +6,7 @@
 }
 
 <div class="tab-content search page-content">
+    @* ===== Main Tab: Country Law fields ===== *@
     <div class="tab-pane show active" id="countryLawSearchMainTabContent" role="tabpanel" aria-labelledby="countryLawSearchMainTab">
         <div class="form-row">
             <div class="col-md-4 col-lg-4 col-xl-3">
@@ -80,6 +81,182 @@
                         </label>
                         <label class="btn btn-outline active">
                             <input type="radio" name="CalcExpirBeforeIssue" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===== Law Actions Tab (mirrors CountryDue) ===== *@
+    <div class="tab-pane" id="countryLawSearchLawActionsTabContent" role="tabpanel" aria-labelledby="countryLawSearchLawActionsTab">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LawAction.ActionType">@Localizer["Action Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LawAction.ActionType", controller = "CountryDue", action = "GetPicklistData", textProperty = "ActionType", multiSelect = true })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LawAction.ActionDue">@Localizer["Action Due"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LawAction.ActionDue", controller = "CountryDue", action = "GetPicklistData", textProperty = "ActionDue", multiSelect = true })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LawAction.BasedOn">@Localizer["Based On"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LawAction.BasedOn", controller = "CountryDue", action = "GetPicklistData", textProperty = "BasedOn", multiSelect = true })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="LawAction.Indicator">@Localizer["Indicator"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LawAction.Indicator", controller = "CountryDue", action = "GetPicklistData", textProperty = "Indicator", multiSelect = true })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <label for="LawAction.CPIAction">@Localizer["CPI Action"]</label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.CPIAction" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.CPIAction" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="LawAction.CPIAction" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="LawAction.Calculate">@Localizer["Calculate"]</label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.Calculate" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.Calculate" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="LawAction.Calculate" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LawAction.EffStartDateFrom">@Localizer["Eff Start Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LawAction.EffStartDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LawAction.EffStartDateTo">@Localizer["Eff Start Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LawAction.EffStartDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LawAction.EffEndDateFrom">@Localizer["Eff End Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LawAction.EffEndDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="LawAction.EffEndDateTo">@Localizer["Eff End Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("LawAction.EffEndDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===== Expiration Terms Tab (mirrors CountryExp) ===== *@
+    <div class="tab-pane" id="countryLawSearchExpirationsTabContent" role="tabpanel" aria-labelledby="countryLawSearchExpirationsTab">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Expiration.Type">@Localizer["Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Expiration.Type", controller = "CountryExp", action = "GetPicklistData", textProperty = "Type", multiSelect = true })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="Expiration.BasedOn">@Localizer["Based On"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "Expiration.BasedOn", controller = "CountryExp", action = "GetPicklistData", textProperty = "BasedOn", multiSelect = true })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Expiration.EffStartDateFrom">@Localizer["Eff Start Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("Expiration.EffStartDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Expiration.EffStartDateTo">@Localizer["Eff Start Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("Expiration.EffStartDateTo"))
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Expiration.EffEndDateFrom">@Localizer["Eff End Date From"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("Expiration.EffEndDateFrom"))
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group float-label">
+                    <label for="Expiration.EffEndDateTo">@Localizer["Eff End Date To"]</label>
+                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("Expiration.EffEndDateTo"))
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===== Designated Countries Tab (mirrors DesCaseType) ===== *@
+    <div class="tab-pane" id="countryLawSearchDesCountriesTabContent" role="tabpanel" aria-labelledby="countryLawSearchDesCountriesTab">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DesCaseType.DesCountry">@Localizer["Des Country"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType.DesCountry", controller = "DesCaseType", action = "GetPicklistData", textProperty = "DesCountry", multiSelect = true })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group float-label">
+                    <label for="DesCaseType.DesCaseType">@Localizer["Des Case Type"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType.DesCaseType", controller = "DesCaseType", action = "GetPicklistData", textProperty = "DesCaseType", multiSelect = true })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <label for="DesCaseType.Default">@Localizer["Default?"]</label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="DesCaseType.Default" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="DesCaseType.Default" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="DesCaseType.Default" class="form-control" value="" data-role="option"> @Localizer["All"]
                         </label>
                     </div>
                 </div>

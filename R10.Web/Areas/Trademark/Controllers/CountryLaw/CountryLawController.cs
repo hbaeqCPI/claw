@@ -948,7 +948,123 @@ namespace R10.Web.Areas.Trademark.Controllers
 
             countryLaws = Helpers.QueryHelper.ApplySystemsFilter(countryLaws, mainSearchFilters, a => a.Systems);
 
+            // ----- Law Actions tab filters (prefix "LawAction.") -----
+            var lawActionFilters = mainSearchFilters.Where(f => f.Property != null && f.Property.StartsWith("LawAction.") && !string.IsNullOrEmpty(f.Value)).ToList();
+            if (lawActionFilters.Any())
+            {
+                var dueQuery = _repository.TmkCountryDues.AsNoTracking().AsQueryable();
+                foreach (var f in lawActionFilters)
+                {
+                    var propName = f.Property.Substring("LawAction.".Length);
+                    dueQuery = ApplyRelatedFilter(dueQuery, propName, f.Value);
+                }
+                var matchingKeys = dueQuery.Select(d => new { d.Country, d.CaseType }).Distinct();
+                countryLaws = countryLaws.Where(cl => matchingKeys.Any(k => k.Country == cl.Country && k.CaseType == cl.CaseType));
+            }
+            foreach (var f in lawActionFilters) mainSearchFilters.Remove(f);
+
+            // ----- Designated Countries tab filters (prefix "DesCaseType.") -----
+            var desFilters = mainSearchFilters.Where(f => f.Property != null && f.Property.StartsWith("DesCaseType.") && !string.IsNullOrEmpty(f.Value)).ToList();
+            if (desFilters.Any())
+            {
+                var desQuery = _repository.TmkDesCaseTypes.AsNoTracking().AsQueryable();
+                foreach (var f in desFilters)
+                {
+                    var propName = f.Property.Substring("DesCaseType.".Length);
+                    desQuery = ApplyRelatedFilter(desQuery, propName, f.Value);
+                }
+                var matchingKeys = desQuery.Select(d => new { IntlCode = d.IntlCode, d.CaseType }).Distinct();
+                countryLaws = countryLaws.Where(cl => matchingKeys.Any(k => k.IntlCode == cl.Country && k.CaseType == cl.CaseType));
+            }
+            foreach (var f in desFilters) mainSearchFilters.Remove(f);
+
             return countryLaws;
+        }
+
+        /// <summary>
+        /// Apply a single filter to a related-entity IQueryable. Handles From/To date suffixes,
+        /// bool Yes/No strings, multi-value JSON arrays, and LIKE for strings.
+        /// </summary>
+        private IQueryable<T> ApplyRelatedFilter<T>(IQueryable<T> query, string propertyName, string value)
+        {
+            // Date range (From/To suffix)
+            if (propertyName.EndsWith("From") || propertyName.EndsWith("To"))
+            {
+                if (DateTime.TryParse(value, out var dt))
+                {
+                    bool isFrom = propertyName.EndsWith("From");
+                    var baseName = isFrom ? propertyName.Substring(0, propertyName.Length - 4) : propertyName.Substring(0, propertyName.Length - 2);
+                    var param = System.Linq.Expressions.Expression.Parameter(typeof(T));
+                    var prop = System.Linq.Expressions.Expression.Property(param, baseName);
+                    var hasValue = System.Linq.Expressions.Expression.Property(prop, "HasValue");
+                    var propValue = System.Linq.Expressions.Expression.Property(prop, "Value");
+                    System.Linq.Expressions.Expression comparison;
+                    if (isFrom)
+                        comparison = System.Linq.Expressions.Expression.GreaterThanOrEqual(propValue, System.Linq.Expressions.Expression.Constant(dt));
+                    else
+                        comparison = System.Linq.Expressions.Expression.LessThanOrEqual(propValue, System.Linq.Expressions.Expression.Constant(dt.AddDays(1).AddSeconds(-1)));
+                    var body = System.Linq.Expressions.Expression.AndAlso(hasValue, comparison);
+                    var lambda = System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(body, param);
+                    return query.Where(lambda);
+                }
+                return query;
+            }
+
+            // Boolean
+            if (bool.TryParse(value, out var boolVal))
+            {
+                var propInfo = typeof(T).GetProperty(propertyName);
+                if (propInfo != null && (propInfo.PropertyType == typeof(bool) || propInfo.PropertyType == typeof(bool?)))
+                {
+                    var param = System.Linq.Expressions.Expression.Parameter(typeof(T));
+                    var prop = System.Linq.Expressions.Expression.Property(param, propertyName);
+                    var body = System.Linq.Expressions.Expression.Equal(prop, System.Linq.Expressions.Expression.Constant(boolVal, propInfo.PropertyType));
+                    var lambda = System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(body, param);
+                    return query.Where(lambda);
+                }
+            }
+
+            // Multi-value (JSON array) - build IN clause
+            if (value.StartsWith("[") && value.EndsWith("]"))
+            {
+                try
+                {
+                    var values = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(value) ?? new List<string>();
+                    if (values.Any())
+                    {
+                        var param = System.Linq.Expressions.Expression.Parameter(typeof(T));
+                        var prop = System.Linq.Expressions.Expression.Property(param, propertyName);
+                        var listExpr = System.Linq.Expressions.Expression.Constant(values);
+                        var containsCall = System.Linq.Expressions.Expression.Call(listExpr, typeof(List<string>).GetMethod("Contains", new[] { typeof(string) })!, prop);
+                        var lambda = System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(containsCall, param);
+                        return query.Where(lambda);
+                    }
+                }
+                catch { }
+            }
+
+            // Single value LIKE for strings, Equal for other types
+            var pi = typeof(T).GetProperty(propertyName);
+            if (pi != null)
+            {
+                var param = System.Linq.Expressions.Expression.Parameter(typeof(T));
+                var prop = System.Linq.Expressions.Expression.Property(param, propertyName);
+                System.Linq.Expressions.Expression body;
+                if (pi.PropertyType == typeof(string))
+                {
+                    var likeCall = System.Linq.Expressions.Expression.Call(
+                        typeof(DbFunctionsExtensions), "Like", Type.EmptyTypes,
+                        System.Linq.Expressions.Expression.Constant(EF.Functions), prop, System.Linq.Expressions.Expression.Constant(value));
+                    body = likeCall;
+                }
+                else
+                {
+                    body = System.Linq.Expressions.Expression.Equal(prop, System.Linq.Expressions.Expression.Constant(Convert.ChangeType(value, pi.PropertyType)));
+                }
+                var lambda = System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(body, param);
+                return query.Where(lambda);
+            }
+            return query;
         }
 
         private async Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<TmkCountryLaw> countryLaws)

@@ -92,8 +92,25 @@ namespace R10.Web.Areas.Patent.Controllers
                 var entities = _auxService.QueryableList;
                 if (mainSearchFilters != null && mainSearchFilters.Count > 0)
                 {
-                    {
                     entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
+
+                    foreach (var dateFilter in mainSearchFilters.Where(f =>
+                        (f.Property == "EffStartDateFrom" || f.Property == "EffStartDateTo" ||
+                         f.Property == "EffEndDateFrom" || f.Property == "EffEndDateTo") &&
+                        !string.IsNullOrEmpty(f.Value)).ToList())
+                    {
+                        if (DateTime.TryParse(dateFilter.Value, out var dt))
+                        {
+                            if (dateFilter.Property == "EffStartDateFrom")
+                                entities = entities.Where(e => e.EffStartDate >= dt);
+                            else if (dateFilter.Property == "EffStartDateTo")
+                                entities = entities.Where(e => e.EffStartDate <= dt.AddDays(1).AddSeconds(-1));
+                            else if (dateFilter.Property == "EffEndDateFrom")
+                                entities = entities.Where(e => e.EffEndDate >= dt);
+                            else if (dateFilter.Property == "EffEndDateTo")
+                                entities = entities.Where(e => e.EffEndDate <= dt.AddDays(1).AddSeconds(-1));
+                        }
+                        mainSearchFilters.Remove(dateFilter);
                     }
                 }
                 entities = _viewModelService.AddCriteria(entities, mainSearchFilters);
