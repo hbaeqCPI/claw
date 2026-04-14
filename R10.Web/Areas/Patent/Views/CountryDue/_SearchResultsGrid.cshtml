@@ -18,6 +18,7 @@
                     columns.Bound(m => m.Mo).Width(80);
                     columns.Bound(m => m.Dy).Width(80);
                     columns.Bound(m => m.Indicator).Width(150);
+                    columns.Bound(m => m.MultipleBasedOn).Width(130);
                     columns.Bound(m => m.Systems).Width(200);
                 })
                 .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))

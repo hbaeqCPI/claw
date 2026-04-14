@@ -13,6 +13,7 @@
                                                 .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { country = "#: Country#", caseType = "#: CaseType#", systems = "#: Systems#", fromSearch = true }), "CountryName"));
                                             columns.Bound(c => c.CaseType);
                                             columns.Bound(c => c.Systems);
+                                            columns.Bound(c => c.LabelTaxSched);
                                             columns.Bound(c => c.UserID).Hidden();
                                             columns.Bound(c => c.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
                                             columns.Bound(c => c.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();

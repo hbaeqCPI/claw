@@ -54,8 +54,11 @@
                                 <div class="dymo-alert">@Localizer["CPI Action"]</div>
                             }
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-3">
                                 @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
+                            </div>
+                            <div class="col-12 col-md-3">
+                                @(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn).Label(Localizer["Multiple Based On"].ToString()))
                             </div>
                         </div>
                         <div class="row">

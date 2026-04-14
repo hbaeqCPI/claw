@@ -95,6 +95,23 @@ namespace R10.Web.Areas.Patent.Controllers
                 {
                     entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
 
+                    // Handle boolean filters manually
+                    foreach (var boolFilter in mainSearchFilters.Where(f =>
+                        (f.Property == "CPIAction" || f.Property == "Calculate" || f.Property == "MultipleBasedOn") &&
+                        !string.IsNullOrEmpty(f.Value)).ToList())
+                    {
+                        if (bool.TryParse(boolFilter.Value, out var bv))
+                        {
+                            if (boolFilter.Property == "CPIAction")
+                                entities = entities.Where(e => e.CPIAction == bv);
+                            else if (boolFilter.Property == "Calculate")
+                                entities = entities.Where(e => e.Calculate == bv);
+                            else if (boolFilter.Property == "MultipleBasedOn")
+                                entities = entities.Where(e => e.MultipleBasedOn == bv);
+                        }
+                        mainSearchFilters.Remove(boolFilter);
+                    }
+
                     // Handle date range filters manually (they use From/To suffix)
                     foreach (var dateFilter in mainSearchFilters.Where(f =>
                         (f.Property == "EffStartDateFrom" || f.Property == "EffStartDateTo" ||
@@ -292,7 +309,7 @@ namespace R10.Web.Areas.Patent.Controllers
                             @"UPDATE tblPatCountryDue SET Country=@p0, CaseType=@p1, ActionType=@p2, ActionDue=@p3, BasedOn=@p4,
                               Yr=@p5, Mo=@p6, Dy=@p7, Indicator=@p8, Recurring=@p9,
                               EffBasedOn=@p10, EffStartDate=@p11, EffEndDate=@p12,
-                              CPIAction=@p13, Calculate=@p14, CPIPermanentID=@p17,
+                              CPIAction=@p13, Calculate=@p14, MultipleBasedOn=@p21, CPIPermanentID=@p17,
                               Systems=@p15, UserID=@p18, DateCreated=@p19, LastUpdate=@p20
                               WHERE CDueId=@p16",
                             new object[] {
@@ -315,7 +332,8 @@ namespace R10.Web.Areas.Patent.Controllers
                                 cpiPerm,
                                 new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
                                 new Microsoft.Data.SqlClient.SqlParameter("@p19", entity.DateCreated),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate)
+                                new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate),
+                                new Microsoft.Data.SqlClient.SqlParameter("@p21", entity.MultipleBasedOn)
                             });
                     }
                     else
@@ -352,9 +370,9 @@ namespace R10.Web.Areas.Patent.Controllers
                         @"INSERT INTO tblPatCountryDue (CDueId, Country, CaseType, ActionType, ActionDue, BasedOn,
                           Yr, Mo, Dy, Indicator, Recurring,
                           EffBasedOn, EffStartDate, EffEndDate,
-                          CPIAction, Calculate, CPIPermanentID,
+                          CPIAction, Calculate, MultipleBasedOn, CPIPermanentID,
                           Systems, UserID, DateCreated, LastUpdate)
-                          VALUES ((SELECT ISNULL(MAX(CDueId),0)+1 FROM tblPatCountryDue), @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p17, @p15, @p18, @p19, @p20)",
+                          VALUES ((SELECT ISNULL(MAX(CDueId),0)+1 FROM tblPatCountryDue), @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p21, @p17, @p15, @p18, @p19, @p20)",
                         new object[] {
                             new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
@@ -375,7 +393,8 @@ namespace R10.Web.Areas.Patent.Controllers
                             new Microsoft.Data.SqlClient.SqlParameter("@p17", System.Data.SqlDbType.Int) { Value = entity.CPIPermanentID.HasValue ? entity.CPIPermanentID.Value : DBNull.Value },
                             new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
                             new Microsoft.Data.SqlClient.SqlParameter("@p19", entity.DateCreated),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate)
+                            new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p21", entity.MultipleBasedOn)
                         });
 
                     // Retrieve the newly inserted CDueId

@@ -25,6 +25,8 @@
               columns.Bound(d => d.Indicator);
               columns.Bound(d => d.Calculate).ClientTemplate("<i class='fa fal #: Calculate ? 'fa-check' : ''#'></i>")
                                              .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align="center", style = "vertical-align:top; padding-top:0px !important" });
+              columns.Bound(d => d.MultipleBasedOn).ClientTemplate("<i class='fa fal #: MultipleBasedOn ? 'fa-check' : ''#'></i>")
+                                             .EditorTemplateName("CheckBox").Width(120).HtmlAttributes(new { align="center", style = "vertical-align:top; padding-top:0px !important" });
               columns.Command(command =>
               {
                   if (permission.CanEditRecord && !permission.CanEditRemarksOnly)

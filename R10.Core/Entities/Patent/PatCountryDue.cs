@@ -66,6 +66,9 @@ namespace R10.Core.Entities.Patent
 
         public int? CPIPermanentID { get; set; }
 
+        [Display(Name = "Multiple Based On")]
+        public bool MultipleBasedOn { get; set; }
+
         [StringLength(500)]
         [Required(ErrorMessage = "At least one system must be selected.")]
         [Display(Name = "Systems")]

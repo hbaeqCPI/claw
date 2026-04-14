@@ -358,20 +358,20 @@ namespace R10.Web.Areas.Patent.Controllers
                             "DELETE FROM tblPatCountryLaw WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
                             existing.Country ?? "", existing.CaseType ?? "", existing.Systems ?? "");
                         await _repository.Database.ExecuteSqlRawAsync(
-                            @"INSERT INTO tblPatCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesPatRecs, CalcExpirBeforeIssue, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
-                              VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)",
+                            @"INSERT INTO tblPatCountryLaw (Country, CaseType, Systems, DefaultAgent, LabelTaxSched, AutoGenDesCtry, AutoUpdtDesPatRecs, CalcExpirBeforeIssue, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
+                              VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12)",
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
-                            countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
+                            countryLaw.DefaultAgent ?? "", countryLaw.LabelTaxSched ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
                             countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     }
                     else
                     {
                         // Same systems — update in place
                         await _repository.Database.ExecuteSqlRawAsync(
-                            @"UPDATE tblPatCountryLaw SET DefaultAgent=@p0, AutoGenDesCtry=@p1, AutoUpdtDesPatRecs=@p2, CalcExpirBeforeIssue=@p3,
-                              Remarks=@p4, UserRemarks=@p5, UserID=@p6, LastUpdate=@p7
-                              WHERE Country=@p8 AND CaseType=@p9 AND Systems=@p10",
-                            countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
+                            @"UPDATE tblPatCountryLaw SET DefaultAgent=@p0, LabelTaxSched=@p1, AutoGenDesCtry=@p2, AutoUpdtDesPatRecs=@p3, CalcExpirBeforeIssue=@p4,
+                              Remarks=@p5, UserRemarks=@p6, UserID=@p7, LastUpdate=@p8
+                              WHERE Country=@p9 AND CaseType=@p10 AND Systems=@p11",
+                            countryLaw.DefaultAgent ?? "", countryLaw.LabelTaxSched ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
                             countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.LastUpdate,
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", existing.Systems ?? "");
                     }
@@ -407,10 +407,10 @@ namespace R10.Web.Areas.Patent.Controllers
                     countryLaw.DateCreated = now;
                     _repository.DetachAllEntities();
                     await _repository.Database.ExecuteSqlRawAsync(
-                        @"INSERT INTO tblPatCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesPatRecs, CalcExpirBeforeIssue, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
-                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)",
+                        @"INSERT INTO tblPatCountryLaw (Country, CaseType, Systems, DefaultAgent, LabelTaxSched, AutoGenDesCtry, AutoUpdtDesPatRecs, CalcExpirBeforeIssue, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12)",
                         countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
-                        countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
+                        countryLaw.DefaultAgent ?? "", countryLaw.LabelTaxSched ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesPatRecs, countryLaw.CalcExpirBeforeIssue,
                         countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
                         await CopyChildData(countryLaw);
@@ -1046,6 +1046,7 @@ namespace R10.Web.Areas.Patent.Controllers
                     page.Detail.CaseType = copyOptions.CaseType;
                     page.Detail.Systems = copyOptions.Systems ?? source.Systems ?? "";
                     page.Detail.DefaultAgent = source.DefaultAgent;
+                    page.Detail.LabelTaxSched = source.LabelTaxSched;
                     page.Detail.AutoGenDesCtry = source.AutoGenDesCtry;
                     page.Detail.AutoUpdtDesPatRecs = source.AutoUpdtDesPatRecs;
                     page.Detail.CalcExpirBeforeIssue = source.CalcExpirBeforeIssue;
@@ -1221,6 +1222,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 CountryName = c.CountryName,
                 CaseType = cl.CaseType,
                 Systems = cl.Systems,
+                LabelTaxSched = cl.LabelTaxSched,
                 UserID = cl.UserID,
                 DateCreated = cl.DateCreated,
                 LastUpdate = cl.LastUpdate

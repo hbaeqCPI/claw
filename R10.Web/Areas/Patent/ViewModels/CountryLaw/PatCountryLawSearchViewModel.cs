@@ -17,6 +17,9 @@ namespace R10.Web.Areas.Patent.ViewModels.CountryLaw
         [Display(Name = "Systems")]
         public string? Systems { get; set; }
 
+        [Display(Name = "Label Tax Sched")]
+        public string? LabelTaxSched { get; set; }
+
         [Display(Name = "User ID")]
         public string? UserID { get; set; }
 

@@ -254,6 +254,27 @@ const formDataToCriteriaList = function (form) {
         });
     }
 
+    // Extract btn-group-toggle radio values explicitly (serializeArray may not capture checked radios in Bootstrap toggles)
+    $(form).find('.btn-group-toggle input[type="radio"]:checked').each(function () {
+        const name = $(this).attr("name");
+        const value = $(this).val();
+        // Remove any existing entries for this field
+        combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+        if (value) {
+            combinedFields.push({ name: name, value: value });
+        }
+    });
+    if (formId !== undefined) {
+        $('div[form="' + formId + '"]').find('.btn-group-toggle input[type="radio"]:checked').each(function () {
+            const name = $(this).attr("name");
+            const value = $(this).val();
+            combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+            if (value) {
+                combinedFields.push({ name: name, value: value });
+            }
+        });
+    }
+
     $.each(combinedFields, function () {
         if (this.name === verificationTokenFormData) {
             verificationToken = this.value;

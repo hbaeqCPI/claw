@@ -35,6 +35,12 @@
                     @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
                 </div>
             </div>
+            <div class="col-md-4 col-lg-4 col-xl-3">
+                <div class="form-group float-label">
+                    <label for="LabelTaxSched">@Localizer["Label Tax Sched"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "LabelTaxSched", multiSelect = true })
+                </div>
+            </div>
         </div>
         <div class="form-row">
             <div class="col-md-4">
@@ -147,6 +153,22 @@
                         </label>
                         <label class="btn btn-outline active">
                             <input type="radio" name="LawAction.Calculate" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="LawAction.MultipleBasedOn">@Localizer["Multiple Based On"]</label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.MultipleBasedOn" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="LawAction.MultipleBasedOn" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="LawAction.MultipleBasedOn" class="form-control" value="" data-role="option"> @Localizer["All"]
                         </label>
                     </div>
                 </div>

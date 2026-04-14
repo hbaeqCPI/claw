@@ -1009,7 +1009,7 @@ namespace R10.Web.Areas.Releases.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GenerateMdb(int id)
+        public async Task<IActionResult> GenerateMdb(int id, string mdbArea = "")
         {
             var release = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == id);
             if (release == null)
@@ -1017,6 +1017,17 @@ namespace R10.Web.Areas.Releases.Controllers
 
             if (string.IsNullOrWhiteSpace(release.SystemType))
                 return BadRequest("No system type selected for this release. Please save the release with a system type first.");
+
+            // Determine which area(s) to generate based on the mdbArea parameter
+            bool generatePatent = string.IsNullOrEmpty(mdbArea)
+                ? release.GeneratePatent
+                : mdbArea.Equals("Patent", StringComparison.OrdinalIgnoreCase);
+            bool generateTrademark = string.IsNullOrEmpty(mdbArea)
+                ? release.GenerateTrademark
+                : mdbArea.Equals("Trademark", StringComparison.OrdinalIgnoreCase);
+
+            if (!generatePatent && !generateTrademark)
+                return BadRequest("Please specify Patent or Trademark to generate.");
 
             try
             {
@@ -1028,7 +1039,7 @@ namespace R10.Web.Areas.Releases.Controllers
 
                 // Generate to a temp folder first — filter by SystemType
                 var tempFolder = Path.Combine(Path.GetTempPath(), $"mdbgen_{Guid.NewGuid():N}");
-                var files = await mdbService.GenerateMdbFiles(release.SystemType, release.GeneratePatent, release.GenerateTrademark, tempFolder, release.Name);
+                var files = await mdbService.GenerateMdbFiles(release.SystemType, generatePatent, generateTrademark, tempFolder, release.Name);
 
                 if (!files.Any())
                     return BadRequest("MDB Generator completed but produced no files.");
@@ -1063,21 +1074,20 @@ namespace R10.Web.Areas.Releases.Controllers
                     var fileName = Path.GetFileName(filePath);
                     var fileExtension = Path.GetExtension(fileName);
                     var fileInfo = new FileInfo(filePath);
+                    var baseName = Path.GetFileNameWithoutExtension(fileName);
 
-                    // Check if a document with this name already exists in the folder — remove it first
-                    var existingDocs = await _documentService.DocDocuments
-                        .Where(d => d.FolderId == rootFolder.FolderId && d.DocName == Path.GetFileNameWithoutExtension(fileName))
+                    // If a document with this name already exists, append a number suffix
+                    var existingNames = await _documentService.DocDocuments
+                        .Where(d => d.FolderId == rootFolder.FolderId && d.DocName.StartsWith(baseName))
+                        .Select(d => d.DocName)
                         .ToListAsync();
-                    foreach (var existingDoc in existingDocs)
+                    if (existingNames.Any(n => n == baseName))
                     {
-                        DocFile existingFile = null;
-                        if (existingDoc.FileId.HasValue)
-                        {
-                            existingFile = await _documentService.GetFileById(existingDoc.FileId.Value);
-                            if (existingFile != null)
-                                _documentHelper.DeleteDocumentFile(existingFile.DocFileName, existingFile.ThumbFileName, false);
-                        }
-                        await _documentService.DeleteDoc(existingDoc, existingFile);
+                        int num = 1;
+                        while (existingNames.Contains($"{baseName} ({num})"))
+                            num++;
+                        baseName = $"{baseName} ({num})";
+                        fileName = $"{baseName}{fileExtension}";
                     }
 
                     // Create DocFile record

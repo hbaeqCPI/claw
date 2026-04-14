@@ -41,6 +41,10 @@ namespace R10.Core.Entities.Patent
 
         public string UserRemarks { get; set; } = "";
 
+        [StringLength(50)]
+        [Display(Name = "Label Tax Sched")]
+        public string? LabelTaxSched { get; set; }
+
         [StringLength(500)]
         [Display(Name = "Systems")]
         public string Systems { get; set; } = "";

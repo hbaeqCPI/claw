@@ -13,10 +13,12 @@ namespace R10.Web.Helpers
         /// </summary>
         public static readonly IReadOnlyList<string> SystemNames = new[]
         {
-            "97",
-            "R5-7",
-            "2000&Up",
-            "R8&Up"
+            "R4",
+            "PatR5-7",
+            "PatR8-10",
+            "PatR10v2.2",
+            "TmkR5-8",
+            "TmkR9-10v2.2"
         };
     }
 }

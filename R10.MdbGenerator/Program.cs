@@ -86,7 +86,7 @@ public class MdbGenerator
 {
     private readonly GeneratorConfig _config;
 
-    // Full patent tables (used by 97, R5-7, R8&Up)
+    // Full patent tables (used by 97, PatR5-7, PatR8-10)
     private static readonly string[] PatentTablesFull = new[]
     {
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
@@ -96,7 +96,7 @@ public class MdbGenerator
         "tblPatDesCaseTypeFields", "tblPatDesCaseTypeFields_Ext", "tblPatDesCaseTypeFieldsDelete", "tblPatDesCaseTypeFieldsDelete_Ext"
     };
 
-    // Full trademark tables (used by 97, R5-7, R8&Up)
+    // Full trademark tables (used by 97, TmkR5-8, TmkR9-10)
     private static readonly string[] TrademarkTablesFull = new[]
     {
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
@@ -107,7 +107,7 @@ public class MdbGenerator
         "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext"
     };
 
-    // 2000&Up patent tables (no _Ext tables)
+    // R4 patent tables (no _Ext tables)
     private static readonly string[] PatentTables2000 = new[]
     {
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
@@ -117,7 +117,7 @@ public class MdbGenerator
         "tblPatDesCaseTypeFields", "tblPatDesCaseTypeFieldsDelete"
     };
 
-    // 2000&Up trademark tables (no _Ext tables)
+    // R4 trademark tables (no _Ext tables)
     private static readonly string[] TrademarkTables2000 = new[]
     {
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
@@ -127,16 +127,26 @@ public class MdbGenerator
     };
 
     private static string[] GetPatentTables(string systemType) =>
-        systemType.Equals("2000&Up", StringComparison.OrdinalIgnoreCase) ? PatentTables2000 : PatentTablesFull;
+        systemType.Equals("R4", StringComparison.OrdinalIgnoreCase) ? PatentTables2000 : PatentTablesFull;
 
     private static string[] GetTrademarkTables(string systemType) =>
-        systemType.Equals("2000&Up", StringComparison.OrdinalIgnoreCase) ? TrademarkTables2000 : TrademarkTablesFull;
+        systemType.Equals("R4", StringComparison.OrdinalIgnoreCase) ? TrademarkTables2000 : TrademarkTablesFull;
 
     // Per-table column whitelist: only export these columns for the specified tables
     private static readonly Dictionary<string, HashSet<string>> TableColumnWhitelist = new(StringComparer.OrdinalIgnoreCase)
     {
         ["tblTmkCaseType"] = new(StringComparer.OrdinalIgnoreCase) { "CaseType", "Description" }
     };
+
+    // Columns that only exist for PatR10v2.2 — excluded from all other systems
+    private static readonly Dictionary<string, HashSet<string>> PatR10OnlyColumns = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["tblPatCountryLaw"] = new(StringComparer.OrdinalIgnoreCase) { "LabelTaxSched" },
+        ["tblPatCountryDue"] = new(StringComparer.OrdinalIgnoreCase) { "MultipleBasedOn" }
+    };
+
+    private static bool IsPatR10System(string systemType) =>
+        systemType.Equals("PatR10v2.2", StringComparison.OrdinalIgnoreCase);
 
     public MdbGenerator(GeneratorConfig config)
     {
@@ -162,7 +172,7 @@ public class MdbGenerator
         {
             var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Pat.mdb");
             if (File.Exists(path)) File.Delete(path);
-            await GenerateMdb(path, GetPatentTables(systemType), selectedSystems);
+            await GenerateMdb(path, GetPatentTables(systemType), selectedSystems, systemType);
             generatedFiles.Add(path);
         }
 
@@ -170,14 +180,14 @@ public class MdbGenerator
         {
             var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Tmk.mdb");
             if (File.Exists(path)) File.Delete(path);
-            await GenerateMdb(path, GetTrademarkTables(systemType), selectedSystems);
+            await GenerateMdb(path, GetTrademarkTables(systemType), selectedSystems, systemType);
             generatedFiles.Add(path);
         }
 
         return generatedFiles;
     }
 
-    private async Task GenerateMdb(string mdbPath, string[] tables, HashSet<string> selectedSystems)
+    private async Task GenerateMdb(string mdbPath, string[] tables, HashSet<string> selectedSystems, string systemType = "")
     {
         if (!File.Exists(_config.TemplatePath))
             throw new FileNotFoundException($"Blank Access template not found at: {_config.TemplatePath}");
@@ -223,6 +233,10 @@ public class MdbGenerator
                 // Apply per-table column whitelist if defined
                 if (TableColumnWhitelist.TryGetValue(tableName, out var whitelist))
                     exportColumns = exportColumns.Where(c => whitelist.Contains(c.Name)).ToList();
+
+                // Exclude PatR10v2.2-only columns for all other systems
+                if (!IsPatR10System(systemType) && PatR10OnlyColumns.TryGetValue(tableName, out var r10Only))
+                    exportColumns = exportColumns.Where(c => !r10Only.Contains(c.Name)).ToList();
 
                 // Create table in Access (without Systems column)
                 var createSql = BuildCreateTableSql(tableName, exportColumns);
