@@ -23,7 +23,8 @@
       "Bash(echo \"MISSING: $file\")",
       "Bash(fi)",
       "Bash(done)",
-      "Bash(for file in TradeSecretRequestMap.cs TradeSecretActivityMap.cs TradeSecretAuditLogMap.cs EmailTemplateMap.cs EmailTypeMap.cs EmailSetupMap.cs EmailDataModelMap.cs DataImportHistoryMap.cs DataImportTypeMap.cs DataImportMappingMap.cs DataImportTypeColumnMap.cs DataImportErrorMap.cs MailDownloadLogMap.cs MailDownloadLogDetailMap.cs MailDownloadRuleMap.cs MailDownloadRuleConditionMap.cs MailDownloadRuleResponsibleMap.cs MailDownloadActionMap.cs MailDownloadActionFilterMap.cs MailDownloadDataMapMap.cs MailDownloadDataMapPatternMap.cs MailDownloadDataAttributeMap.cs)"
+      "Bash(for file in TradeSecretRequestMap.cs TradeSecretActivityMap.cs TradeSecretAuditLogMap.cs EmailTemplateMap.cs EmailTypeMap.cs EmailSetupMap.cs EmailDataModelMap.cs DataImportHistoryMap.cs DataImportTypeMap.cs DataImportMappingMap.cs DataImportTypeColumnMap.cs DataImportErrorMap.cs MailDownloadLogMap.cs MailDownloadLogDetailMap.cs MailDownloadRuleMap.cs MailDownloadRuleConditionMap.cs MailDownloadRuleResponsibleMap.cs MailDownloadActionMap.cs MailDownloadActionFilterMap.cs MailDownloadDataMapMap.cs MailDownloadDataMapPatternMap.cs MailDownloadDataAttributeMap.cs)",
+      "Bash(dotnet publish:*)"
     ]
   }
 }
