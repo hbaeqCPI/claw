@@ -2,438 +2,788 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using iText.IO.Font.Constants;
 using iText.Kernel.Colors;
+using iText.Kernel.Events;
+using iText.Kernel.Font;
+using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
 using iText.Layout;
 using iText.Layout.Borders;
 using iText.Layout.Element;
 using iText.Layout.Properties;
-using iText.Kernel.Font;
-using iText.IO.Font.Constants;
 
 namespace LawPortal.Web.Services
 {
     public class MdbReportPdfService
     {
         private static readonly DeviceRgb Yellow = new(255, 255, 0);
-        private static readonly DeviceRgb Red = new(255, 0, 0);
-        private static readonly DeviceRgb HeaderBg = new(200, 200, 200);
-        private PdfFont _b = null!;
-        private PdfFont _bi = null!;
-        private PdfFont _r = null!;
-        private Dictionary<string, string> _cn = new();
-        private Dictionary<string, string> _ctd = new();
+        private static readonly DeviceRgb Red = new(220, 50, 50);
+        private static readonly DeviceRgb HdrBg = new(235, 235, 235);
 
-        public byte[] GenerateReport(MdbComparisonResult comparison, string releaseName, string year, string quarter,
-            Dictionary<string, string>? countryNames = null, Dictionary<string, string>? caseTypeDescs = null)
+        private PdfFont _b = null!, _bi = null!, _i = null!, _r = null!;
+        private Dictionary<string, string> _cn = new(), _ctd = new();
+
+        public byte[] GenerateReport(MdbComparisonResult comp, string name, string year, string qtr,
+            Dictionary<string, string>? cn = null, Dictionary<string, string>? ctd = null)
         {
-            _cn = countryNames ?? new(); _ctd = caseTypeDescs ?? new();
+            _cn = cn ?? new();
+            _ctd = ctd ?? new();
+
             using var ms = new MemoryStream();
-            using var writer = new PdfWriter(ms);
-            using var pdf = new PdfDocument(writer);
-            using var doc = new Document(pdf);
-            doc.SetMargins(36, 40, 36, 40);
+            using var w = new PdfWriter(ms);
+            using var pdf = new PdfDocument(w);
+
             _b = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
             _bi = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLDOBLIQUE);
+            _i = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_OBLIQUE);
             _r = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
 
-            var pfx = comparison.IsPatent ? "tblPat" : "tblTmk";
-            var title = comparison.IsPatent ? "Patent Law Update" : "Trademark Law Update";
+            var title = comp.IsPatent ? "Patent Law Update" : "Trademark Law Update";
+            pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new RunningHeader(title, _bi));
+
+            using var doc = new Document(pdf);
+            doc.SetMargins(60, 54, 45, 54);
+
+            var pfx = comp.IsPatent ? "tblPat" : "tblTmk";
             var dueT = $"{pfx}CountryDue";
             var clT = $"{pfx}CountryLaw";
-            var expT = comparison.IsPatent ? "tblPatCountryExp" : null;
+            var expT = comp.IsPatent ? "tblPatCountryExp" : null;
+            var expDelT = comp.IsPatent ? "tblPatCountryExpDelete" : null;
 
-            // ================================================================
-            // HEADER
-            // ================================================================
-            doc.Add(new Paragraph(title).SetFont(_bi).SetFontSize(14).SetUnderline());
-            doc.Add(new Paragraph("Country Law Updates").SetFont(_r).SetFontSize(11));
-            HLine(doc, 1.5f);
-            doc.Add(new Paragraph($"{year} — {quarter}").SetFont(_r).SetFontSize(11));
+            WriteTitle(doc, year, qtr);
 
-            // ================================================================
-            // NEW ACTIONS (added CountryDue records)
-            // ================================================================
-            if (H(comparison, dueT) && comparison.TableDiffs[dueT].AddedRows.Any())
-            {
-                doc.Add(new Paragraph("\nNew Actions").SetFont(_b).SetFontSize(12).SetUnderline().SetMarginTop(8));
-                WriteActionBlocks(doc, comparison.TableDiffs[dueT].AddedRows, comparison, clT, true, false);
-            }
+            if (comp.IsPatent)
+                WriteManualUpdates(doc, comp, dueT, clT);
+            else
+                WriteStructural(doc, comp, pfx);
 
-            // ================================================================
-            // MODIFIED ACTIONS (modified CountryDue records)
-            // ================================================================
-            if (H(comparison, dueT) && comparison.TableDiffs[dueT].ModifiedRows.Any())
-            {
-                doc.Add(new Paragraph(title).SetFont(_bi).SetFontSize(14).SetUnderline().SetMarginTop(15));
-                HLine(doc, 1.5f);
-                doc.Add(new Paragraph("Modified Actions").SetFont(_b).SetFontSize(12).SetUnderline().SetMarginTop(5));
-                WriteActionBlocks(doc, comparison.TableDiffs[dueT].ModifiedRows, comparison, clT, false, false);
-            }
+            WriteCountryLawAddedModified(doc, comp, year, qtr, clT, dueT, expT, expDelT);
 
-            // ================================================================
-            // DELETED ACTIONS (deleted CountryDue records)
-            // ================================================================
-            if (H(comparison, dueT) && comparison.TableDiffs[dueT].DeletedRows.Any())
-            {
-                doc.Add(new Paragraph(title).SetFont(_bi).SetFontSize(14).SetUnderline().SetMarginTop(15));
-                HLine(doc, 1.5f);
-                doc.Add(new Paragraph("Deleted Actions:").SetFont(_b).SetFontSize(12).SetUnderline().SetMarginTop(5));
-                WriteActionBlocks(doc, comparison.TableDiffs[dueT].DeletedRows, comparison, clT, false, true);
-            }
+            if (comp.IsPatent)
+                WriteStructural(doc, comp, pfx);
 
-            // ================================================================
-            // COUNTRY LAW ADDED/MODIFIED (per Country, per CaseType)
-            // ================================================================
-            var hasClChanges = (H(comparison, clT) && (comparison.TableDiffs[clT].AddedRows.Any() || comparison.TableDiffs[clT].ModifiedRows.Any()));
-            // Also include countries that have expiration changes
-            if (hasClChanges || (expT != null && H(comparison, expT) && (comparison.TableDiffs[expT].AddedRows.Any() || comparison.TableDiffs[expT].ModifiedRows.Any())))
-            {
-                doc.Add(new Paragraph(title).SetFont(_bi).SetFontSize(14).SetUnderline().SetMarginTop(15));
-                var hdr = new Paragraph().SetMarginTop(0);
-                hdr.Add(Tx("Country Law Updates", _b, 13));
-                hdr.Add(Tx($"                                                                        {year} - {quarter}", _r, 11));
-                doc.Add(hdr);
-                doc.Add(new Paragraph("Country Law Added/Modified").SetFont(_b).SetFontSize(12).SetUnderline());
-                HLine(doc, 1.5f);
-
-                // Collect all affected country+caseType
-                var keys = new HashSet<string>();
-                if (H(comparison, clT))
-                    foreach (var r in comparison.TableDiffs[clT].AddedRows.Concat(comparison.TableDiffs[clT].ModifiedRows))
-                        keys.Add($"{G(r, "Country")}|{G(r, "CaseType")}");
-                if (expT != null && H(comparison, expT))
-                    foreach (var r in comparison.TableDiffs[expT].AddedRows.Concat(comparison.TableDiffs[expT].ModifiedRows))
-                        keys.Add($"{G(r, "Country")}|{G(r, "CaseType")}");
-
-                var sorted = keys.Select(k => k.Split('|')).OrderBy(k => k[0]).ThenBy(k => k[1]);
-
-                foreach (var pair in sorted)
-                {
-                    var country = pair[0]; var caseType = pair[1];
-
-                    // Country: Albania (AL)
-                    doc.Add(Pp(10).SetMarginTop(8)
-                        .Add(Tx($"Country: {CN(country)} ({country})", _r, 10)));
-                    // ORD - Utility Patent Filing
-                    doc.Add(Pp(10).SetMarginLeft(5)
-                        .Add(Tx($"{caseType} — {CD(caseType)}", _r, 10)));
-
-                    // Expiration Terms Added
-                    if (expT != null && H(comparison, expT))
-                    {
-                        var addedExps = comparison.TableDiffs[expT].AddedRows
-                            .Where(e => G(e, "Country") == country && G(e, "CaseType") == caseType).ToList();
-                        if (addedExps.Any())
-                        {
-                            doc.Add(Pp(9).SetMarginTop(3).Add(Tx("Expiration and Tax Terms Added", _b, 9)));
-                            foreach (var e in addedExps)
-                                doc.Add(Pp(8).SetMarginLeft(10)
-                                    .Add(Tx($"Expiration   Based On: {G(e, "BasedOn")}   Terms: {G(e, "Yr")}-{G(e, "Mo")}   Effective: {G(e, "EffBasedOn")} {FD(e, "EffStartDate")} - {FD(e, "EffEndDate")}", _r, 8)));
-                        }
-                        var modExps = comparison.TableDiffs[expT].ModifiedRows
-                            .Where(e => G(e, "Country") == country && G(e, "CaseType") == caseType).ToList();
-                        if (modExps.Any())
-                        {
-                            doc.Add(Pp(9).SetMarginTop(3).Add(Tx("Expiration and Tax Terms Modified", _b, 9)));
-                            foreach (var e in modExps)
-                            {
-                                var line = Pp(8).SetMarginLeft(10);
-                                line.Add(Tx("Expiration   Based On: ", _r, 8));
-                                AddFV(line, e, "BasedOn", G(e, "BasedOn"));
-                                line.Add(Tx("   Terms: ", _r, 8));
-                                var termsChanged = e.ChangedColumns.Intersect(new[] { "Yr", "Mo", "Dy" }).Any();
-                                var terms = $"{G(e, "Yr")}-{G(e, "Mo")}-{G(e, "Dy")}";
-                                line.Add(termsChanged ? Tx(terms, _r, 8).SetBackgroundColor(Yellow) : Tx(terms, _r, 8));
-                                doc.Add(line);
-                            }
-                        }
-                    }
-
-                    // Law Actions for this country/caseType (from modified dues that match)
-                    if (H(comparison, dueT))
-                    {
-                        var relDues = comparison.TableDiffs[dueT].AddedRows.Concat(comparison.TableDiffs[dueT].ModifiedRows)
-                            .Where(d => G(d, "Country") == country && G(d, "CaseType") == caseType).ToList();
-                        if (relDues.Any())
-                        {
-                            doc.Add(Pp(9).SetMarginTop(3).Add(Tx("Law Actions", _b, 9)));
-                            foreach (var row in relDues.OrderBy(r => G(r, "ActionDue")))
-                            {
-                                var line = Pp(8).SetMarginLeft(10);
-                                line.Add(Tx("Action: ", _b, 8));
-                                var adChanged = row.ChangedColumns.Intersect(new[] { "ActionDue", "Indicator" }).Any() || row.OldValues == null;
-                                var adText = $"{G(row, "ActionDue")} ({G(row, "Indicator")})";
-                                line.Add(adChanged ? Tx(adText, _r, 8).SetBackgroundColor(Yellow) : Tx(adText, _r, 8));
-
-                                line.Add(Tx("   Based On: ", _b, 8));
-                                AddFV(line, row, "BasedOn", G(row, "BasedOn"));
-
-                                line.Add(Tx("   Terms: ", _b, 8));
-                                var terms = $"{G(row, "Yr")}-{G(row, "Mo")}-{G(row, "Dy")}";
-                                var tChanged = row.ChangedColumns.Intersect(new[] { "Yr", "Mo", "Dy" }).Any();
-                                line.Add(tChanged ? Tx(terms, _r, 8).SetBackgroundColor(Yellow) : Tx(terms, _r, 8));
-
-                                var from = FD(row, "EffStartDate"); var to = FD(row, "EffEndDate");
-                                if (!string.IsNullOrEmpty(from) || !string.IsNullOrEmpty(to) || !string.IsNullOrEmpty(G(row, "EffBasedOn")))
-                                {
-                                    line.Add(Tx($"   Eff: {G(row, "EffBasedOn")} ", _r, 8));
-                                    AddFV(line, row, "EffStartDate", from);
-                                    line.Add(Tx(" - ", _r, 8));
-                                    AddFV(line, row, "EffEndDate", to);
-                                }
-                                doc.Add(line);
-                            }
-                        }
-                    }
-
-                    // Law Highlights (Remarks)
-                    if (H(comparison, clT))
-                    {
-                        var clRow = comparison.TableDiffs[clT].AddedRows.Concat(comparison.TableDiffs[clT].ModifiedRows)
-                            .FirstOrDefault(r => G(r, "Country") == country && G(r, "CaseType") == caseType);
-                        if (clRow != null && !string.IsNullOrWhiteSpace(G(clRow, "Remarks")))
-                        {
-                            doc.Add(Pp(9).SetMarginTop(4).Add(Tx("Law Highlights ", _b, 9)));
-                            var remarks = G(clRow, "Remarks");
-                            bool isModified = clRow.OldValues != null && clRow.ChangedColumns.Contains("Remarks");
-                            if (isModified)
-                            {
-                                var old = clRow.OldValues!.ContainsKey("Remarks") ? clRow.OldValues["Remarks"]?.ToString() ?? "" : "";
-                                doc.Add(LineDiff(old, remarks).SetMarginLeft(10).SetMarginBottom(3));
-                            }
-                            else
-                            {
-                                doc.Add(Pp(8).SetMarginLeft(10).SetMarginBottom(3).Add(Tx(remarks, _r, 8)));
-                            }
-                        }
-                    }
-
-                    HLine(doc, 0.5f);
-                }
-            }
-
-            // ================================================================
-            // STRUCTURAL: Areas, CaseTypes, Designations
-            // ================================================================
-            AddStructural(doc, comparison, pfx);
-
-            // ================================================================
-            // COUNTRY LAW DELETED
-            // ================================================================
-            if (H(comparison, clT) && comparison.TableDiffs[clT].DeletedRows.Any())
-            {
-                doc.Add(new Paragraph("Country Law Deleted").SetFont(_b).SetFontSize(12).SetUnderline().SetMarginTop(12));
-                foreach (var r in comparison.TableDiffs[clT].DeletedRows.OrderBy(r => G(r, "Country")).ThenBy(r => G(r, "CaseType")))
-                    doc.Add(Pp(9).SetMarginLeft(10).Add(Tx($"Country: {CN(G(r, "Country"))} ({G(r, "Country")}) — {CD(G(r, "CaseType"))}", _r, 9)));
-            }
+            WriteCountryLawDeleted(doc, comp, clT);
 
             doc.Close();
             return ms.ToArray();
         }
 
-        // ================================================================
-        // Write Action Blocks (New / Modified / Deleted)
-        // Groups by Country → ActionType, shows table of ActionDue|Yr|Mo|Dy|Indicator
-        // ================================================================
-        private void WriteActionBlocks(Document doc, List<RowDiff> rows, MdbComparisonResult comparison, string clT, bool isNew, bool isDeleted)
+        // ═══════════════════════════════════════════════════════════════
+        // RUNNING HEADER — italic-bold title + underline on every page
+        // ═══════════════════════════════════════════════════════════════
+        private class RunningHeader : IEventHandler
         {
-            var byCountryAT = rows
-                .GroupBy(r => $"{G(r, "Country")}|{G(r, "ActionType")}")
-                .OrderBy(g => g.Key);
-
-            foreach (var group in byCountryAT)
+            private readonly string _title;
+            private readonly PdfFont _font;
+            public RunningHeader(string title, PdfFont font) { _title = title; _font = font; }
+            public void HandleEvent(Event ev)
             {
-                var first = group.First();
-                var country = G(first, "Country");
-                var actionType = G(first, "ActionType");
-                var cpi = first.Values.ContainsKey("CPIAction") && first.Values["CPIAction"] is bool bv && bv;
+                var de = (PdfDocumentEvent)ev;
+                var page = de.GetPage();
+                var size = page.GetPageSize();
+                var canvas = new PdfCanvas(page);
+                float left = 54f, right = size.GetWidth() - 54f, top = size.GetTop() - 36f;
+                canvas.BeginText()
+                    .SetFontAndSize(_font, 11)
+                    .MoveText(left, top)
+                    .ShowText(_title)
+                    .EndText();
+                canvas.SetLineWidth(0.8f)
+                    .MoveTo(left, top - 4)
+                    .LineTo(right, top - 4)
+                    .Stroke();
+            }
+        }
 
-                // Action Type: NAME          Office Action: No
-                var atP = Pp(10).SetMarginLeft(15).SetMarginTop(8);
-                atP.Add(Tx("Action Type: ", _r, 10));
-                if (isDeleted)
-                    atP.Add(Tx($"{actionType} - DELETE", _b, 10).SetBackgroundColor(Red).SetFontColor(ColorConstants.WHITE));
-                else
-                    atP.Add(Tx(actionType, _b, 10).SetBackgroundColor(isNew ? Yellow : null));
-                atP.Add(Tx($"          Office Action: {(cpi ? "Yes" : "No")}", _r, 10));
-                doc.Add(atP);
+        // ═══════════════════════════════════════════════════════════════
+        // TITLE: "Country Law Updates" + "2026 – 1"
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteTitle(Document doc, string year, string qtr)
+        {
+            var t = new Table(UnitValue.CreatePercentArray(new float[] { 60, 40 }))
+                .UseAllAvailableWidth().SetMarginTop(8);
+            t.AddCell(new Cell().Add(
+                P(22).SetFont(_b).Add(T("Country Law Updates", _b, 22))
+            ).SetBorder(Border.NO_BORDER));
+            t.AddCell(new Cell().Add(
+                P(18).SetTextAlignment(TextAlignment.RIGHT).SetPaddingTop(6)
+                    .Add(T($"{year} – {qtr}", _r, 18))
+            ).SetBorder(Border.NO_BORDER));
+            doc.Add(t);
+        }
 
-                // Country: EP    European Patent Convention
-                doc.Add(Pp(10).SetMarginLeft(25)
-                    .Add(Tx($"Country: {country}     {CN(country)}", _r, 10)));
+        // ═══════════════════════════════════════════════════════════════
+        // PATENT: MANUAL UPDATES (Action Type changes)
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteManualUpdates(Document doc, MdbComparisonResult comp, string dueT, string clT)
+        {
+            if (!H(comp, dueT)) return;
+            var diff = comp.TableDiffs[dueT];
+            if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
 
-                // Action Due table
-                var table = new Table(UnitValue.CreatePercentArray(new float[] { 40, 8, 8, 8, 18 }))
-                    .UseAllAvailableWidth().SetFontSize(9).SetMarginLeft(20).SetMarginTop(5);
-                table.AddHeaderCell(HC("Action Due")); table.AddHeaderCell(HC("Yr")); table.AddHeaderCell(HC("Mo")); table.AddHeaderCell(HC("Dy")); table.AddHeaderCell(HC("Indicator"));
+            doc.Add(P(18).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(20)
+                .Add(T("Manual Updates", _r, 18)));
 
-                foreach (var row in group.OrderBy(r => G(r, "ActionDue")))
+            doc.Add(P(10).SetMarginTop(14)
+                .Add(T("Records in the Action Type table under the Auxiliary or Maintenance Menu in your system are not automatically modified. They will need to be adjusted by a person responsible for data entry.", _r, 10)));
+            doc.Add(P(10).SetMarginTop(6)
+                .Add(T("Go to the Auxiliary or Maintenance Menu in your system and add, modify, or delete the Action Types below as applicable.", _r, 10)));
+            doc.Add(P(10).SetMarginTop(6)
+                .Add(T("Please contact CPi at ", _r, 10))
+                .Add(T("countrylaw@computerpackages.com", _r, 10).SetFontColor(ColorConstants.BLUE).SetUnderline())
+                .Add(T(" with any questions.", _r, 10)));
+
+            if (diff.AddedRows.Any())
+            {
+                doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("New Actions", _b, 11)));
+                WriteActionTypeSection(doc, diff.AddedRows, comp, clT, "new");
+            }
+            if (diff.ModifiedRows.Any())
+            {
+                doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("Modified Actions", _b, 11)));
+                WriteActionTypeSection(doc, diff.ModifiedRows, comp, clT, "mod");
+            }
+            if (diff.DeletedRows.Any())
+            {
+                doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("Deleted Actions:", _b, 11)));
+                WriteActionTypeSection(doc, diff.DeletedRows, comp, clT, "del");
+            }
+        }
+
+        // One Action Type block (ActionType → Country → rows)
+        private void WriteActionTypeSection(Document doc, List<RowDiff> rows, MdbComparisonResult comp, string clT, string mode)
+        {
+            bool isNew = mode == "new", isDel = mode == "del";
+
+            foreach (var atGrp in rows.GroupBy(r => G(r, "ActionType")).OrderBy(g => g.Key))
+            {
+                var at = atGrp.Key;
+
+                var ap = P(10).SetMarginLeft(40).SetMarginTop(10);
+                ap.Add(T("Action Type: ", _r, 10));
+                if (isDel) ap.Add(T($"{at} - DELETE", _b, 10).SetBackgroundColor(Red).SetFontColor(ColorConstants.WHITE));
+                else ap.Add(T(at, _b, 10).SetBackgroundColor(isNew ? Yellow : (Color?)null));
+                doc.Add(ap);
+
+                foreach (var cGrp in atGrp.GroupBy(r => G(r, "Country")).OrderBy(g => CN(g.Key)))
                 {
-                    bool highlight = isNew; // New actions: all yellow. Modified/Deleted: only changed fields
-                    if (!isNew && !isDeleted)
-                    {
-                        // Modified: highlight only changed fields
-                        AC(table, G(row, "ActionDue"), row.ChangedColumns.Contains("ActionDue"));
-                        AC(table, G(row, "Yr"), row.ChangedColumns.Contains("Yr"));
-                        AC(table, G(row, "Mo"), row.ChangedColumns.Contains("Mo"));
-                        AC(table, G(row, "Dy"), row.ChangedColumns.Contains("Dy"));
-                        AC(table, G(row, "Indicator"), row.ChangedColumns.Contains("Indicator"));
-                    }
-                    else
-                    {
-                        AC(table, G(row, "ActionDue"), highlight);
-                        AC(table, G(row, "Yr"), highlight);
-                        AC(table, G(row, "Mo"), highlight);
-                        AC(table, G(row, "Dy"), highlight);
-                        AC(table, G(row, "Indicator"), highlight);
-                    }
-                }
-                doc.Add(table);
-
-                // Remarks
-                string remarks = "";
-                if (H(comparison, clT))
-                {
-                    var clRow = comparison.TableDiffs[clT].AddedRows.Concat(comparison.TableDiffs[clT].ModifiedRows)
-                        .FirstOrDefault(r => G(r, "Country") == country && G(r, "CaseType") == G(first, "CaseType"));
-                    if (clRow != null) remarks = G(clRow, "Remarks");
-                }
-                if (string.IsNullOrWhiteSpace(remarks))
-                    remarks = G(first, "Remarks"); // fallback to the due record if available
-
-                if (!string.IsNullOrWhiteSpace(remarks))
-                {
-                    var rp = Pp(8).SetMarginLeft(20).SetMarginTop(3);
-                    rp.Add(Tx("Remarks: ", _b, 8));
+                    var country = cGrp.Key;
+                    var cp = P(10).SetMarginLeft(60).SetMarginTop(2);
+                    cp.Add(T("Country: ", _r, 10));
                     if (isNew)
-                        rp.Add(Tx(remarks, _r, 8).SetBackgroundColor(Yellow));
-                    else
-                        rp.Add(Tx(remarks, _r, 8));
-                    doc.Add(rp);
-                }
-
-                // Follow Up
-                var effBasedOn = G(first, "EffBasedOn");
-                if (!string.IsNullOrWhiteSpace(effBasedOn))
-                {
-                    doc.Add(Pp(8).SetMarginLeft(20).SetMarginTop(2)
-                        .Add(Tx($"Follow Up Term: {G(first, "Mo")} Month(s) / {G(first, "Dy")} Day(s)  Follow Up Based On: {effBasedOn}", _r, 8)));
-                }
-
-                // Created/Updated dates for modified
-                if (!isNew && !isDeleted)
-                {
-                    var created = G(first, "DateCreated"); var updated = G(first, "LastUpdate");
-                    if (!string.IsNullOrEmpty(created) || !string.IsNullOrEmpty(updated))
                     {
-                        var dates = Pp(8).SetMarginLeft(20).SetMarginTop(2);
-                        if (!string.IsNullOrEmpty(created))
-                        {
-                            if (DateTime.TryParse(created, out var cd)) dates.Add(Tx($"Created: {cd:d-MMM-yyyy}", _r, 8));
-                        }
-                        if (!string.IsNullOrEmpty(updated))
-                        {
-                            if (DateTime.TryParse(updated, out var ud)) dates.Add(Tx($"     Updated: {ud:d-MMM-yyyy}", _r, 8));
-                        }
-                        doc.Add(dates);
+                        cp.Add(T(country, _r, 10).SetBackgroundColor(Yellow));
+                        cp.Add(T($"     ", _r, 10));
+                        cp.Add(T(CN(country), _r, 10).SetBackgroundColor(Yellow));
                     }
-                }
+                    else cp.Add(T($"{country}     {CN(country)}", _r, 10));
+                    doc.Add(cp);
 
-                HLine(doc, 0.5f);
+                    // 5-col table: Action Due | Yr | Mo | Dy | Indicator
+                    var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 40, 8, 8, 8, 20 }))
+                        .UseAllAvailableWidth().SetMarginLeft(60).SetMarginTop(6).SetFontSize(9);
+                    tbl.AddHeaderCell(HC("Action Due"));
+                    tbl.AddHeaderCell(HC("Yr"));
+                    tbl.AddHeaderCell(HC("Mo"));
+                    tbl.AddHeaderCell(HC("Dy"));
+                    tbl.AddHeaderCell(HC("Indicator"));
+
+                    foreach (var row in cGrp.OrderBy(r => G(r, "ActionDue")))
+                    {
+                        if (isNew)
+                        {
+                            YC(tbl, G(row, "ActionDue")); YC(tbl, G(row, "Yr")); YC(tbl, G(row, "Mo"));
+                            YC(tbl, G(row, "Dy")); YC(tbl, G(row, "Indicator"));
+                        }
+                        else if (isDel)
+                        {
+                            DC(tbl, G(row, "ActionDue")); DC(tbl, G(row, "Yr")); DC(tbl, G(row, "Mo"));
+                            DC(tbl, G(row, "Dy")); DC(tbl, G(row, "Indicator"));
+                        }
+                        else
+                        {
+                            MC(tbl, row, "ActionDue"); MC(tbl, row, "Yr"); MC(tbl, row, "Mo");
+                            MC(tbl, row, "Dy"); MC(tbl, row, "Indicator");
+                        }
+                    }
+                    doc.Add(tbl);
+
+                    // Remarks
+                    var cf = cGrp.First();
+                    string rem = G(cf, "Remarks");
+                    if (string.IsNullOrWhiteSpace(rem) && H(comp, clT))
+                    {
+                        var cl = comp.TableDiffs[clT].AddedRows.Concat(comp.TableDiffs[clT].ModifiedRows)
+                            .FirstOrDefault(r => G(r, "Country") == country && G(r, "CaseType") == G(cf, "CaseType"));
+                        if (cl != null) rem = G(cl, "Remarks");
+                    }
+                    if (!string.IsNullOrWhiteSpace(rem))
+                    {
+                        var rt = new Table(UnitValue.CreatePercentArray(new float[] { 12, 88 }))
+                            .UseAllAvailableWidth().SetMarginLeft(60).SetMarginTop(6);
+                        rt.AddCell(new Cell().Add(P(9).Add(T("Remarks:", _r, 9)))
+                            .SetBorder(Border.NO_BORDER).SetTextAlignment(TextAlignment.RIGHT).SetPaddingRight(4));
+                        var remCell = new Cell().SetBorder(Border.NO_BORDER);
+                        var remP = P(9);
+                        if (isNew) remP.Add(T(rem, _r, 9).SetBackgroundColor(Yellow));
+                        else remP.Add(T(rem, _r, 9));
+                        remCell.Add(remP);
+                        rt.AddCell(remCell);
+                        doc.Add(rt);
+                    }
+
+                    // Follow-up
+                    var eff = G(cf, "EffBasedOn");
+                    if (!string.IsNullOrWhiteSpace(eff))
+                    {
+                        doc.Add(P(9).SetMarginLeft(90).SetMarginTop(4)
+                            .Add(T("Follow Up Action:", _r, 9)));
+                        doc.Add(P(9).SetMarginLeft(90)
+                            .Add(T($"Follow Up Term: {G(cf, "Mo")} Month(s) / {G(cf, "Dy")} Day(s)", _r, 9)));
+                        doc.Add(P(9).SetMarginLeft(90)
+                            .Add(T($"Follow Up Based On: {eff}", _r, 9)));
+                    }
+                    HL(doc, 0.3f);
+                }
             }
         }
 
-        // ================================================================
-        // STRUCTURAL CHANGES
-        // ================================================================
-        private void AddStructural(Document doc, MdbComparisonResult c, string pfx)
+        // ═══════════════════════════════════════════════════════════════
+        // TRADEMARK STRUCTURAL: Areas, Case Types, Designations
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteStructural(Document doc, MdbComparisonResult c, string pfx)
         {
-            void Sec(string tbl, string label, bool added)
+            var acTbl = $"{pfx}AreaCountry";
+            var acDelTbl = $"{pfx}AreaCountryDelete";
+            var ctTbl = $"{pfx}CaseType";
+            var desTbl = $"{pfx}DesCaseType";
+            var desDelTbl = $"{pfx}DesCaseTypeDelete";
+
+            // Area Countries Deleted
+            var acDel = new List<RowDiff>();
+            if (H(c, acTbl)) acDel.AddRange(c.TableDiffs[acTbl].DeletedRows);
+            if (H(c, acDelTbl)) acDel.AddRange(c.TableDiffs[acDelTbl].AddedRows);
+            if (acDel.Any())
             {
-                if (!H(c, tbl)) return;
-                var rows = added ? c.TableDiffs[tbl].AddedRows : c.TableDiffs[tbl].DeletedRows;
-                if (!rows.Any()) return;
-                doc.Add(new Paragraph(label).SetFont(_b).SetFontSize(11).SetMarginTop(8));
-                if (tbl.Contains("AreaCountry"))
-                    foreach (var g in rows.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
-                        doc.Add(Pp(9).SetMarginLeft(10).Add(Tx($"{g.Key}: {string.Join(", ", g.Select(r => $"{CN(G(r, "Country"))} ({G(r, "Country")})").OrderBy(x => x))}", _r, 9)));
-                else if (tbl.Contains("CaseType") && !tbl.Contains("Des"))
-                    foreach (var r in rows.OrderBy(r => G(r, "CaseType")))
-                        doc.Add(Pp(9).SetMarginLeft(10).Add(Tx($"{G(r, "CaseType")} — {G(r, "Description")}", _r, 9)));
-                else if (tbl.Contains("DesCaseType"))
-                    foreach (var g in rows.GroupBy(r => G(r, "IntlCode")).OrderBy(g => g.Key))
-                    {
-                        doc.Add(Pp(9).SetMarginLeft(10).Add(Tx($"Organization/Union: {g.Key}", _b, 9)));
-                        foreach (var r in g)
-                            doc.Add(Pp(8).SetMarginLeft(20).Add(Tx($"{(added ? "Can be designated in" : "designated in")} {CN(G(r, "DesCountry"))} ({G(r, "DesCountry")})  Type: {G(r, "CaseType")} as {G(r, "DesCaseType")}", _r, 8)));
-                    }
+                SectionHeader(doc, "Area Countries Deleted");
+                foreach (var g in acDel.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
+                {
+                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
+                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
+                        doc.Add(P(9).SetMarginLeft(30).Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)));
+                }
             }
-            Sec($"{pfx}AreaCountryDelete", "Area Countries Deleted", true);
-            Sec($"{pfx}AreaCountry", "Area Countries Added", true);
-            Sec($"{pfx}AreaCountry", "Area Countries Removed", false);
-            Sec($"{pfx}CaseType", "Case Types Added", true);
-            Sec($"{pfx}CaseType", "Case Types Deleted", false);
-            Sec($"{pfx}DesCaseType", "Designation Deleted", false);
-            Sec($"{pfx}DesCaseType", "Designation Added", true);
+
+            // Area Countries Added
+            if (H(c, acTbl) && c.TableDiffs[acTbl].AddedRows.Any())
+            {
+                SectionHeader(doc, "Area Countries Added");
+                foreach (var g in c.TableDiffs[acTbl].AddedRows.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
+                {
+                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
+                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
+                        doc.Add(P(9).SetMarginLeft(30).Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)));
+                }
+            }
+
+            // Case Types Added
+            if (H(c, ctTbl) && c.TableDiffs[ctTbl].AddedRows.Any())
+            {
+                SectionHeader(doc, "Case Types Added");
+                foreach (var r in c.TableDiffs[ctTbl].AddedRows.OrderBy(r => G(r, "CaseType")))
+                {
+                    var t = new Table(UnitValue.CreatePercentArray(new float[] { 15, 85 })).UseAllAvailableWidth();
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9))).SetBorder(Border.NO_BORDER));
+                    doc.Add(t);
+                }
+            }
+
+            // Case Types Deleted
+            if (H(c, ctTbl) && c.TableDiffs[ctTbl].DeletedRows.Any())
+            {
+                SectionHeader(doc, "Case Types Deleted");
+                foreach (var r in c.TableDiffs[ctTbl].DeletedRows.OrderBy(r => G(r, "CaseType")))
+                {
+                    var t = new Table(UnitValue.CreatePercentArray(new float[] { 15, 85 })).UseAllAvailableWidth();
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9))).SetBorder(Border.NO_BORDER));
+                    doc.Add(t);
+                }
+            }
+
+            // Designation Deleted
+            var desDel = new List<RowDiff>();
+            if (H(c, desTbl)) desDel.AddRange(c.TableDiffs[desTbl].DeletedRows);
+            if (H(c, desDelTbl)) desDel.AddRange(c.TableDiffs[desDelTbl].AddedRows);
+            if (desDel.Any())
+            {
+                SectionHeader(doc, "Designation Deleted");
+                WriteDesignations(doc, desDel, added: false);
+            }
+
+            // Designation Added
+            if (H(c, desTbl) && c.TableDiffs[desTbl].AddedRows.Any())
+            {
+                SectionHeader(doc, "Designation Added");
+                WriteDesignations(doc, c.TableDiffs[desTbl].AddedRows, added: true);
+            }
         }
 
-        // ================================================================
-        // LINE DIFF for Law Highlights
-        // ================================================================
-        private Paragraph LineDiff(string old, string nw)
+        private void WriteDesignations(Document doc, List<RowDiff> rows, bool added)
         {
-            var p = Pp(8);
-            var oL = (old ?? "").Split('\n');
-            var nL = (nw ?? "").Split('\n');
-            int c = 0;
-            while (c < oL.Length && c < nL.Length && oL[c].TrimEnd() == nL[c].TrimEnd()) c++;
-            for (int i = 0; i < c; i++) { if (i > 0) p.Add(Tx("\n", _r, 8)); p.Add(Tx(nL[i], _r, 8)); }
-            for (int i = c; i < nL.Length; i++) { if (i > 0 || c > 0) p.Add(Tx("\n", _r, 8)); p.Add(Tx(nL[i], _r, 8).SetBackgroundColor(Yellow)); }
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 50, 50 }))
+                .UseAllAvailableWidth().SetMarginTop(4);
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Organization/Union", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Type of filing (Case Type)", _b, 9))).SetBorder(Border.NO_BORDER));
+
+            foreach (var ioGrp in rows.GroupBy(r => G(r, "IntlCode")).OrderBy(g => CN(g.Key)))
+            {
+                foreach (var ctGrp in ioGrp.GroupBy(r => G(r, "CaseType")).OrderBy(g => g.Key))
+                {
+                    var ct = ctGrp.Key;
+                    tbl.AddCell(new Cell().Add(P(9).SetFont(_b).SetMarginTop(4)
+                        .Add(T($"{CN(ioGrp.Key)} ({ioGrp.Key})", _b, 9))).SetBorder(Border.NO_BORDER));
+                    tbl.AddCell(new Cell().Add(P(9).SetFont(_b).SetMarginTop(4)
+                        .Add(T($"{ct} - {CD(ct)}", _b, 9))).SetBorder(Border.NO_BORDER));
+                    tbl.AddCell(new Cell().Add(P(9).Add(T(added ? "Can be designated in" : "designated in", _r, 9)))
+                        .SetBorder(Border.NO_BORDER));
+                    tbl.AddCell(new Cell().Add(P(9).Add(T("as", _r, 9))).SetBorder(Border.NO_BORDER));
+                    foreach (var r in ctGrp.OrderBy(r => CN(G(r, "DesCountry"))))
+                    {
+                        tbl.AddCell(new Cell().Add(P(9).Add(T($"{CN(G(r, "DesCountry"))} ({G(r, "DesCountry")})", _r, 9)))
+                            .SetBorder(Border.NO_BORDER));
+                        tbl.AddCell(new Cell().Add(P(9).Add(T(G(r, "DesCaseType"), _r, 9)))
+                            .SetBorder(Border.NO_BORDER));
+                    }
+                }
+            }
+            doc.Add(tbl);
+        }
+
+        private void SectionHeader(Document doc, string text) =>
+            doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T(text, _b, 11)));
+
+        // ═══════════════════════════════════════════════════════════════
+        // COUNTRY LAW ADDED/MODIFIED
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteCountryLawAddedModified(Document doc, MdbComparisonResult comp, string year, string qtr,
+            string clT, string dueT, string? expT, string? expDelT)
+        {
+            var keys = new HashSet<(string, string)>();
+            void Add(IEnumerable<RowDiff>? rows)
+            {
+                if (rows == null) return;
+                foreach (var r in rows) keys.Add((G(r, "Country"), G(r, "CaseType")));
+            }
+            if (H(comp, clT)) { Add(comp.TableDiffs[clT].AddedRows); Add(comp.TableDiffs[clT].ModifiedRows); }
+            if (H(comp, dueT)) { Add(comp.TableDiffs[dueT].AddedRows); Add(comp.TableDiffs[dueT].ModifiedRows); }
+            if (expT != null && H(comp, expT)) { Add(comp.TableDiffs[expT].AddedRows); Add(comp.TableDiffs[expT].ModifiedRows); }
+            if (expDelT != null && H(comp, expDelT)) Add(comp.TableDiffs[expDelT].AddedRows);
+
+            if (!keys.Any()) return;
+
+            doc.Add(new AreaBreak());
+            WriteTitle(doc, year, qtr);
+            doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(6)
+                .Add(T("Country Law Added/Modified", _b, 11)));
+
+            var newClKeys = new HashSet<(string, string)>();
+            if (H(comp, clT))
+                foreach (var r in comp.TableDiffs[clT].AddedRows)
+                    newClKeys.Add((G(r, "Country"), G(r, "CaseType")));
+
+            foreach (var (country, caseType) in keys.OrderBy(k => CN(k.Item1)).ThenBy(k => k.Item2))
+            {
+                bool isNewBlock = newClKeys.Contains((country, caseType));
+                WriteCountryBlock(doc, comp, country, caseType, isNewBlock, clT, dueT, expT, expDelT);
+            }
+        }
+
+        private void WriteCountryBlock(Document doc, MdbComparisonResult comp,
+            string country, string caseType, bool isNewBlock,
+            string clT, string dueT, string? expT, string? expDelT)
+        {
+            // Country + CaseType header line
+            var hdr = new Table(UnitValue.CreatePercentArray(new float[] { 55, 45 }))
+                .UseAllAvailableWidth().SetMarginTop(12);
+            var lp = P(11).Add(T($"Country: {CN(country)} ({country})", _bi, 11));
+            if (isNewBlock) lp.SetBackgroundColor(Yellow);
+            hdr.AddCell(new Cell().Add(lp).SetBorder(Border.NO_BORDER));
+            var rp = P(11).SetTextAlignment(TextAlignment.RIGHT)
+                .Add(T($"{caseType} - {CD(caseType)}", _bi, 11));
+            if (isNewBlock) rp.SetBackgroundColor(Yellow);
+            hdr.AddCell(new Cell().Add(rp).SetBorder(Border.NO_BORDER));
+            doc.Add(hdr);
+
+            // Expiration & Tax Terms (patents only)
+            if (expT != null && H(comp, expT))
+            {
+                var ed = comp.TableDiffs[expT];
+                var added = ed.AddedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
+                var modified = ed.ModifiedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
+                if (added.Any())
+                {
+                    doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
+                        .Add(T("Expiration and Tax Terms Added", _b, 10)));
+                    WriteExpTable(doc, added, mode: "add");
+                }
+                if (modified.Any())
+                {
+                    doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
+                        .Add(T("Expiration and Tax Terms Modified", _b, 10)));
+                    WriteExpTable(doc, modified, mode: "mod");
+                }
+            }
+            if (expDelT != null && H(comp, expDelT))
+            {
+                var del = comp.TableDiffs[expDelT].AddedRows
+                    .Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
+                if (del.Any())
+                {
+                    doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
+                        .Add(T("Expiration and Tax Terms Deleted", _b, 10)));
+                    WriteExpTable(doc, del, mode: "del");
+                }
+            }
+
+            // Law Actions
+            if (H(comp, dueT))
+            {
+                var dd = comp.TableDiffs[dueT];
+                var rel = dd.AddedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType)
+                    .Concat(dd.ModifiedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType))
+                    .ToList();
+                if (rel.Any())
+                {
+                    doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6).Add(T("Law Actions", _b, 10)));
+                    if (comp.IsPatent) WritePatentLawActions(doc, rel, isNewBlock);
+                    else WriteTrademarkLawActions(doc, rel, isNewBlock);
+                }
+            }
+
+            // Law Highlights (Remarks)
+            if (H(comp, clT))
+            {
+                var cd = comp.TableDiffs[clT];
+                var clRow = cd.AddedRows.Concat(cd.ModifiedRows)
+                    .FirstOrDefault(r => G(r, "Country") == country && G(r, "CaseType") == caseType);
+                if (clRow != null && !string.IsNullOrWhiteSpace(G(clRow, "Remarks")))
+                {
+                    doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(8)
+                        .Add(T("Law Highlights", _b, 10)));
+                    var remarks = G(clRow, "Remarks");
+                    if (isNewBlock || clRow.OldValues == null || !clRow.ChangedColumns.Contains("Remarks"))
+                    {
+                        var rP = P(9).SetMarginLeft(20).SetMarginTop(3);
+                        if (isNewBlock) rP.Add(T(remarks, _r, 9).SetBackgroundColor(Yellow));
+                        else rP.Add(T(remarks, _r, 9));
+                        doc.Add(rP);
+                    }
+                    else
+                    {
+                        var old = clRow.OldValues.ContainsKey("Remarks")
+                            ? clRow.OldValues["Remarks"]?.ToString() ?? "" : "";
+                        doc.Add(InlineDiff(old, remarks).SetMarginLeft(20).SetMarginTop(3));
+                    }
+                }
+            }
+        }
+
+        // Expiration & Tax Terms table
+        private void WriteExpTable(Document doc, List<RowDiff> rows, string mode)
+        {
+            bool isMod = mode == "mod", isDel = mode == "del";
+            float[] cols = isMod
+                ? new float[] { 10, 18, 15, 12, 17, 15, 13 }
+                : new float[] { 20, 17, 15, 18, 15, 15 };
+            var tbl = new Table(UnitValue.CreatePercentArray(cols))
+                .UseAllAvailableWidth().SetMarginTop(3).SetMarginLeft(10).SetFontSize(9);
+
+            if (isMod) tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Changed", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Based On", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Terms (y-m)", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("For", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T(isMod ? "" : "Effective For", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("from", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("to", _b, 9))).SetBorder(Border.NO_BORDER));
+
+            foreach (var row in rows.OrderBy(r => G(r, "Type")))
+            {
+                if (isMod)
+                {
+                    // To row — new values
+                    tbl.AddCell(NB(P(9).SetFont(_b).Add(T("To", _b, 9))));
+                    NBCell(tbl, G(row, "Type"));
+                    MC(tbl, row, "BasedOn", noBorder: true);
+                    NBCell(tbl, $"{G(row, "Yr")} {G(row, "Mo")}");
+                    MC(tbl, row, "EffBasedOn", noBorder: true);
+                    MC(tbl, row, "EffStartDate", noBorder: true, dateFmt: true);
+                    MC(tbl, row, "EffEndDate", noBorder: true, dateFmt: true);
+                    // From row — old values
+                    tbl.AddCell(NB(P(9).SetFont(_b).Add(T("From", _b, 9))));
+                    var ov = row.OldValues ?? new Dictionary<string, object?>();
+                    NBCell(tbl, Val(ov, "Type"));
+                    NBCell(tbl, Val(ov, "BasedOn"));
+                    NBCell(tbl, $"{Val(ov, "Yr")} {Val(ov, "Mo")}");
+                    NBCell(tbl, Val(ov, "EffBasedOn"));
+                    NBCell(tbl, FmtD(Val(ov, "EffStartDate")));
+                    NBCell(tbl, FmtD(Val(ov, "EffEndDate")));
+                }
+                else
+                {
+                    var typ = G(row, "Type");
+                    var bon = G(row, "BasedOn");
+                    var terms = $"{G(row, "Yr")} {G(row, "Mo")}";
+                    var eff = G(row, "EffBasedOn");
+                    var from = FD(row, "EffStartDate");
+                    var to = FD(row, "EffEndDate");
+                    if (isDel)
+                    {
+                        NBCellDel(tbl, typ); NBCellDel(tbl, bon); NBCellDel(tbl, terms);
+                        NBCellDel(tbl, eff); NBCellDel(tbl, from); NBCellDel(tbl, to);
+                    }
+                    else
+                    {
+                        NBCellY(tbl, typ); NBCellY(tbl, bon); NBCellY(tbl, terms);
+                        NBCellY(tbl, eff); NBCellY(tbl, from); NBCellY(tbl, to);
+                    }
+                }
+            }
+            doc.Add(tbl);
+        }
+
+        // Trademark Law Actions — combined table
+        private void WriteTrademarkLawActions(Document doc, List<RowDiff> rows, bool isNewBlock)
+        {
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 26, 13, 5, 5, 5, 16, 14, 16 }))
+                .UseAllAvailableWidth().SetMarginTop(3).SetFontSize(9);
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Action Due/Indicator", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Based On", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell(1, 3).Add(P(9).SetFont(_b).SetTextAlignment(TextAlignment.CENTER).Add(T("Terms (y-m-d)", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Effective For", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("From", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("To", _b, 9))).SetBorder(Border.NO_BORDER));
+
+            foreach (var row in rows.OrderBy(r => G(r, "ActionDue")))
+            {
+                bool added = row.OldValues == null;
+                var adInd = $"{G(row, "ActionDue")} ({G(row, "Indicator")})";
+                if (added || isNewBlock)
+                {
+                    NBCellY(tbl, adInd);
+                    NBCellY(tbl, G(row, "BasedOn"));
+                    NBCellY(tbl, G(row, "Yr")); NBCellY(tbl, G(row, "Mo")); NBCellY(tbl, G(row, "Dy"));
+                    NBCellY(tbl, G(row, "EffBasedOn"));
+                    NBCellY(tbl, FD(row, "EffStartDate"));
+                    NBCellY(tbl, FD(row, "EffEndDate"));
+                }
+                else
+                {
+                    // Show old row as being phased out (highlight end-date), new row highlighted fully
+                    var ov = row.OldValues!;
+                    // Old/terminated row
+                    NB2(tbl, $"{Val(ov, "ActionDue")} ({Val(ov, "Indicator")})", false);
+                    NB2(tbl, Val(ov, "BasedOn"), false);
+                    NB2(tbl, Val(ov, "Yr"), false); NB2(tbl, Val(ov, "Mo"), false); NB2(tbl, Val(ov, "Dy"), false);
+                    NB2(tbl, Val(ov, "EffBasedOn"), false);
+                    NB2(tbl, FmtD(Val(ov, "EffStartDate")), false);
+                    // terminal date gets highlighted to show action was ended
+                    NB2(tbl, FD(row, "EffEndDate"), true);
+
+                    // New row — all highlighted
+                    NBCellY(tbl, adInd);
+                    NBCellY(tbl, G(row, "BasedOn"));
+                    NBCellY(tbl, G(row, "Yr")); NBCellY(tbl, G(row, "Mo")); NBCellY(tbl, G(row, "Dy"));
+                    NBCellY(tbl, G(row, "EffBasedOn"));
+                    NBCellY(tbl, FD(row, "EffStartDate"));
+                    NBCellY(tbl, FD(row, "EffEndDate"));
+                }
+            }
+            doc.Add(tbl);
+        }
+
+        // Patent Law Actions — "Action:" label before each group
+        private void WritePatentLawActions(Document doc, List<RowDiff> rows, bool isNewBlock)
+        {
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 26, 13, 5, 5, 5, 16, 14, 16 }))
+                .UseAllAvailableWidth().SetMarginTop(3).SetFontSize(9);
+            tbl.AddHeaderCell(new Cell().Add(P(9).Add(T("", _r, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Based On", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell(1, 3).Add(P(9).SetFont(_b).SetTextAlignment(TextAlignment.CENTER).Add(T("Terms (y-m-d)", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Effective for", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("from", _b, 9))).SetBorder(Border.NO_BORDER));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("to", _b, 9))).SetBorder(Border.NO_BORDER));
+
+            foreach (var grp in rows.GroupBy(r => G(r, "ActionDue")).OrderBy(g => g.Key))
+            {
+                // "Action:" label row
+                tbl.AddCell(new Cell(1, 8).Add(P(9).SetFont(_b).SetUnderline().Add(T("Action:", _b, 9)))
+                    .SetBorder(Border.NO_BORDER).SetPaddingTop(3));
+
+                foreach (var row in grp)
+                {
+                    bool added = row.OldValues == null;
+                    var name = $"{G(row, "ActionDue")} ({G(row, "Indicator")})";
+                    if (added || isNewBlock)
+                    {
+                        NBCellY(tbl, name); NBCellY(tbl, G(row, "BasedOn"));
+                        NBCellY(tbl, G(row, "Yr")); NBCellY(tbl, G(row, "Mo")); NBCellY(tbl, G(row, "Dy"));
+                        NBCellY(tbl, G(row, "EffBasedOn"));
+                        NBCellY(tbl, FD(row, "EffStartDate"));
+                        NBCellY(tbl, FD(row, "EffEndDate"));
+                    }
+                    else
+                    {
+                        var ov = row.OldValues!;
+                        // Old (terminated) row
+                        NB2(tbl, $"{Val(ov, "ActionDue")} ({Val(ov, "Indicator")})", false);
+                        NB2(tbl, Val(ov, "BasedOn"), false);
+                        NB2(tbl, Val(ov, "Yr"), false); NB2(tbl, Val(ov, "Mo"), false); NB2(tbl, Val(ov, "Dy"), false);
+                        NB2(tbl, Val(ov, "EffBasedOn"), false);
+                        NB2(tbl, FmtD(Val(ov, "EffStartDate")), false);
+                        NB2(tbl, FD(row, "EffEndDate"), true);
+
+                        // New row
+                        NBCellY(tbl, name); NBCellY(tbl, G(row, "BasedOn"));
+                        NBCellY(tbl, G(row, "Yr")); NBCellY(tbl, G(row, "Mo")); NBCellY(tbl, G(row, "Dy"));
+                        NBCellY(tbl, G(row, "EffBasedOn"));
+                        NBCellY(tbl, FD(row, "EffStartDate"));
+                        NBCellY(tbl, FD(row, "EffEndDate"));
+                    }
+                }
+            }
+            doc.Add(tbl);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // COUNTRY LAW DELETED
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteCountryLawDeleted(Document doc, MdbComparisonResult comp, string clT)
+        {
+            if (!H(comp, clT) || !comp.TableDiffs[clT].DeletedRows.Any()) return;
+            doc.Add(P(12).SetFont(_b).SetUnderline().SetMarginTop(16).Add(T("Country Law Deleted", _b, 12)));
+            foreach (var r in comp.TableDiffs[clT].DeletedRows
+                .OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")))
+            {
+                doc.Add(P(10).SetMarginLeft(10)
+                    .Add(T($"Country: {CN(G(r, "Country"))} ({G(r, "Country")})     {G(r, "CaseType")} - {CD(G(r, "CaseType"))}", _r, 10)));
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // INLINE REMARKS DIFF — line-level, whole-line highlight for new
+        // or edited lines. A new line matches an old line by normalized
+        // whitespace comparison (exact match after trimming/collapsing
+        // spaces), so minor reflow doesn't trigger false highlights.
+        // ═══════════════════════════════════════════════════════════════
+        private Paragraph InlineDiff(string oldText, string newText)
+        {
+            var p = P(9);
+            var oldLines = SplitLines(oldText);
+            var newLines = SplitLines(newText);
+            var oldSet = new HashSet<string>(oldLines.Select(NormalizeForCompare));
+
+            for (int i = 0; i < newLines.Count; i++)
+            {
+                var line = newLines[i];
+                if (i > 0) p.Add(T("\n", _r, 9));
+                var norm = NormalizeForCompare(line);
+                if (string.IsNullOrWhiteSpace(norm) || oldSet.Contains(norm))
+                    p.Add(T(line, _r, 9));
+                else
+                    p.Add(T(line, _r, 9).SetBackgroundColor(Yellow));
+            }
             return p;
         }
 
-        // ================================================================
+        private static List<string> SplitLines(string? s) =>
+            (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n")
+                .Split('\n').Select(l => l.TrimEnd()).ToList();
+
+        private static string NormalizeForCompare(string s) =>
+            System.Text.RegularExpressions.Regex.Replace((s ?? "").Trim(), @"\s+", " ");
+
+        // ═══════════════════════════════════════════════════════════════
         // HELPERS
-        // ================================================================
-        private static string G(RowDiff r, string c) => r.Values.ContainsKey(c) ? r.Values[c]?.ToString() ?? "" : "";
+        // ═══════════════════════════════════════════════════════════════
+        private static string G(RowDiff r, string c) =>
+            r.Values.ContainsKey(c) ? r.Values[c]?.ToString() ?? "" : "";
+        private static string Val(Dictionary<string, object?> d, string c) =>
+            d.ContainsKey(c) ? d[c]?.ToString() ?? "" : "";
         private string CN(string c) => _cn.ContainsKey(c) ? _cn[c] : c;
         private string CD(string c) => _ctd.ContainsKey(c) ? _ctd[c] : c;
-        private static string FD(RowDiff r, string c) { var v = G(r, c); return DateTime.TryParse(v, out var d) ? d.ToString("M/d/yyyy") : v; }
-        private static bool H(MdbComparisonResult c, string t) => c.TableDiffs.ContainsKey(t);
-        private Paragraph Pp(float sz) => new Paragraph().SetFont(_r).SetFontSize(sz);
-        private Text Tx(string s, PdfFont f, float sz) => new Text(s ?? "").SetFont(f).SetFontSize(sz);
-        private void HLine(Document d, float w) => d.Add(new Paragraph("").SetBorderBottom(new SolidBorder(ColorConstants.BLACK, w)).SetMarginTop(1).SetMarginBottom(1));
-
-        private Cell HC(string text) => new Cell().Add(new Paragraph(text).SetFont(_b).SetFontSize(8))
-            .SetBackgroundColor(HeaderBg).SetBorder(new SolidBorder(0.5f)).SetPadding(3);
-
-        private void AC(Table t, string text, bool highlight)
+        private static string FD(RowDiff r, string c)
         {
-            var cell = new Cell().Add(new Paragraph(text ?? "").SetFont(_r).SetFontSize(8))
-                .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
-            if (highlight) cell.SetBackgroundColor(Yellow);
-            t.AddCell(cell);
+            var v = G(r, c);
+            return DateTime.TryParse(v, out var d) ? d.ToString("M/d/yyyy") : v;
+        }
+        private static string FmtD(string v) =>
+            DateTime.TryParse(v, out var d) ? d.ToString("M/d/yyyy") : v;
+        private static bool H(MdbComparisonResult c, string t) => c.TableDiffs.ContainsKey(t);
+
+        private Paragraph P(float sz) => new Paragraph().SetFont(_r).SetFontSize(sz);
+        private Text T(string s, PdfFont f, float sz) => new Text(s ?? "").SetFont(f).SetFontSize(sz);
+        private void HL(Document d, float w) =>
+            d.Add(new Paragraph("").SetBorderBottom(new SolidBorder(ColorConstants.LIGHT_GRAY, w))
+                .SetMarginTop(4).SetMarginBottom(4));
+
+        // Plain header cell with gray background
+        private Cell HC(string t) =>
+            new Cell().Add(P(8).SetFont(_b).Add(T(t, _b, 8)))
+                .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(3);
+
+        // Plain (bordered) cell
+        private void PC(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(8).Add(T(v ?? "", _r, 8)))
+                .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2));
+
+        // Yellow bordered cell (new item)
+        private void YC(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(8).Add(T(v ?? "", _r, 8)).SetBackgroundColor(Yellow))
+                .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2));
+
+        // Deleted (red strike-through style) bordered cell
+        private void DC(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(8).Add(T(v ?? "", _r, 8).SetLineThrough().SetFontColor(Red)))
+                .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2));
+
+        // Bordered cell — yellow if column changed, else plain
+        private void MC(Table t, RowDiff row, string col)
+        {
+            var v = G(row, col);
+            if (row.ChangedColumns.Contains(col)) YC(t, v); else PC(t, v);
         }
 
-        private void AddFV(Paragraph line, RowDiff row, string col, string val)
+        // No-border cell (used in the Expiration / Law Actions tables)
+        private Cell NB(Paragraph p) => new Cell().Add(p).SetBorder(Border.NO_BORDER).SetPadding(2);
+        private void NBCell(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(9).Add(T(v ?? "", _r, 9))).SetBorder(Border.NO_BORDER).SetPadding(2));
+        private void NBCellY(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(9).Add(T(v ?? "", _r, 9)).SetBackgroundColor(Yellow))
+                .SetBorder(Border.NO_BORDER).SetPadding(2));
+        private void NBCellDel(Table t, string v) =>
+            t.AddCell(new Cell().Add(P(9).Add(T(v ?? "", _r, 9).SetLineThrough().SetFontColor(Red)))
+                .SetBorder(Border.NO_BORDER).SetPadding(2));
+        private void NB2(Table t, string v, bool highlight)
         {
-            if (row.ChangedColumns.Contains(col))
-            {
-                if (row.OldValues != null && row.OldValues.ContainsKey(col))
-                {
-                    var old = row.OldValues[col]?.ToString() ?? "";
-                    if (DateTime.TryParse(old, out var dt)) old = dt.ToString("M/d/yyyy");
-                    if (!string.IsNullOrEmpty(old) && old != val)
-                    {
-                        line.Add(Tx(old, _r, 8).SetFontColor(ColorConstants.GRAY).SetLineThrough());
-                        line.Add(Tx(" → ", _r, 8));
-                    }
-                }
-                line.Add(Tx(val, _r, 8).SetBackgroundColor(Yellow));
-            }
-            else
-                line.Add(Tx(val, _r, 8));
+            var c = new Cell().Add(P(9).Add(T(v ?? "", _r, 9))).SetBorder(Border.NO_BORDER).SetPadding(2);
+            if (highlight) c.SetBackgroundColor(Yellow);
+            t.AddCell(c);
+        }
+
+        // Modified cell with optional no-border and date formatting
+        private void MC(Table t, RowDiff row, string col, bool noBorder = false, bool dateFmt = false)
+        {
+            var v = dateFmt ? FD(row, col) : G(row, col);
+            bool changed = row.ChangedColumns.Contains(col);
+            var cell = new Cell().Add(P(9).Add(T(v ?? "", _r, 9)));
+            if (changed) cell.SetBackgroundColor(Yellow);
+            if (noBorder) cell.SetBorder(Border.NO_BORDER).SetPadding(2);
+            else cell.SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
+            t.AddCell(cell);
         }
     }
 }

@@ -1,0 +1,3046 @@
+Patent Law Update
+Country Law Updates
+
+___________________
+2026 ­ 1
+
+PCT Deadline Changes
+In this update, we are adjusting PCT Deadlines for better clarity and flexibility.
+Notably, National Phase filing deadlines have now been added to generate on the designated PCT applications, in addition to the international WO applications. The actions on the WO international applications are also being renamed.
+The 30-month filing deadlines "Chapter I Due (Extended)" and "Chapter II Due (Nat. Filing)" have been consolidated into "Nat. Filing Due - 30 Months," in keeping with the existing "Nat. Filing Due - 31 Months."
+Going forward, the action "Chapter II/Exam Fee Due" will be "Demand Due (Chapter II)."
+The 20-month action "Chapter I Due (Nat. Filing)" has been removed from the international WO record, as this earlier requirement can now be handled directly on Luxembourg and Tanzania if desired.
+
+Manual Updates
+
+Records in the Action Type table under the Auxiliary or Maintenance Menu in your system are not automatically modified. They will need to be adjusted by a person responsible for data entry. Go to the Auxiliary or Maintenance Menu in your system and make the changes to the Action Types below if you do not already have them.
+Please contact CPi at countrylaw@computerpackages.com with any questions.
+
+New Actions
+
+Action Type: EP-Rule 161/162 Amendment and Claims
+
+Country:
+
+EP
+
+European Patent Convention
+
+Action Due 3 Months to Due Date 2 Months to Due Date 1 Month to Due Date Comment/Amend Application Claims Fee Due
+
+Yr
+
+Mo
+
+0
+
+3
+
+0
+
+4
+
+0
+
+5
+
+0
+
+6
+
+0
+
+6
+
+Office Action: No
+
+Dy
+
+Indicator
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Due Date
+
+0
+
+Final
+
+Remarks: Rule 161 - Amendment of the application 1. If the European Patent Office has acted as the International Searching Authority (ISA) and,
+
+Patent Law Update
+
+___________________
+
+where a demand under Article 31 PCT was filed, as the International Preliminary Examining Authority for a Euro-PCT application, it shall give the applicant the opportunity to comment on the written opinion of the ISA or the International Preliminary Examination Report and may invite the applicant to amend the description, claims and drawings within a period of 6 months from the invitation. If the applicant does not comply with or comment on either invitation, the application will be withdrawn. 2. Prior to a supplementary European search report, the application may be amended once within a period of six months from a communication informing the applicant accordingly, which will be sent at the entry into National Phase (Guidelines for Examination E-VIII 3.1). The amended application shall serve as the basis for the supplementary European search.
+
+Rule 162 - Claims incurring fees 1. If the application documents on which the European grant procedure is to be based comprise more than fifteen claims, claims fees shall be paid for the sixteenth and each subsequent claim as laid down in the Rules relating to Fees within the period under Rule 159, paragraph 1. 2. If the claims fees are not paid in due time, they may still be paid within the period under Rule 161, paragraph 1 or paragraph 2, as the case may be. If within this period amended claims are filed, the claims fees due shall be computed on the basis of such amended claims and shall be paid within this period.
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date
+
+Action Type: US-Deposit of Biological Material
+
+Country: US
+
+United States of America
+
+Action Due
+
+Yr
+
+Mo
+
+Deposit or Information of Biological Material Due 0
+
+3
+
+Office Action: No
+
+Dy
+
+Indicator
+
+0
+
+Final
+
+Remarks: MPEP Sec. 2411 Examination Procedures [R-07.2015] 37 CFR 1.809 (c) If an application for patent is otherwise in condition for allowance except for a needed deposit and the Office has received a written assurance that an acceptable deposit will be made, the Office may notify the applicant in a notice of allowability and set a 3-month period of time from the mailing date of the notice of allowability within which the deposit must be made in order to avoid abandonment. This time period is not extendable under Sec. 1.136.
+
+Follow Up Term: 0 Month(s) / 0 Day(s) Follow Up Based On: Don't Generate
+
+Patent Law Update
+
+Action Type: US-Ex Parte Quayle
+
+Country: US
+
+United States of America
+
+Action Due 1 Month to Due Date Response Due 1st Extension 2nd Extension 3rd Extension 2 Weeks To Final Date 6 Month Final Date
+
+Yr
+
+Mo
+
+0
+
+1
+
+0
+
+2
+
+0
+
+3
+
+0
+
+4
+
+0
+
+5
+
+0
+
+6
+
+0
+
+6
+
+___________________ Office Action: Yes
+
+Dy
+
+Indicator
+
+0
+
+Reminder
+
+0
+
+Due Date
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+-14
+
+Due Date
+
+0
+
+Final
+
+Remarks: The USPTO may issue an Ex Parte Quayle Office action if the application is in condition for allowance except for certain formal matters. An Ex Parte Quayle action has a shortened statutory period for reply of 2 months from the mailing date. Extensions of time may be granted up to four additional months, or 6 months from the mailing date. (Manual of Patent Examining Procedure § 714.14)
+The Action Base date should be the PTO Mailing Date.
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date
+
+Action Type: US-Ex Parte Reexamination
+
+Country: US
+
+United States of America
+
+Action Due Patent Owners Statement (Optional)
+
+Yr
+
+Mo
+
+0
+
+2
+
+Office Action: No
+
+Dy
+
+Indicator
+
+0
+
+Due Date
+
+Remarks: A Patent Owner's Statement may be submitted within 2 months of the mailing date of an Order Granting Request For Ex Parte Reexamination. Extensions of time may be requested before the deadlines in accordance with 37 CFR 1.550(c).
+The Base Date is the mailing date of an Order Granting Request For Ex Parte Reexamination.
+
+Follow Up Term: 0 Month(s) / 0 Day(s) Follow Up Based On: Don't Generate
+
+Patent Law Update
+
+Action Type: US-Inventors Oath
+
+Country: US
+
+United States of America
+
+Action Due Inventors Oath or Declaration Due
+
+Yr
+
+Mo
+
+0
+
+3
+
+___________________ Office Action: Yes
+
+Dy
+
+Indicator
+
+0
+
+Final
+
+Remarks: Effective 16 September 2012, if an application is in condition for allowance but does not include an oath or declaration, the Office will issue a "Notice Requiring Inventor's Oath or Declaration" (PTOL-2306), along with the Notice of Allowance and Notice of Allowability, requiring the applicant to file an oath or declaration no later than the date of payment of the issue fee, 3 months from the Notice of Allowance mailing date. This deadline cannot be extended. (MPEP Chapter 1303 Notice of Allowance [R-01.2024])
+
+Follow Up Term: 0 Month(s) / 0 Day(s) Follow Up Based On: Don't Generate
+
+Action Type: US-Missing Requirements
+
+Country: US
+
+United States of America
+
+Action Due Response Due 1st Extension 2nd Extension 3rd Extension 4th Extension Final Deadline
+
+Yr
+
+Mo
+
+0
+
+2
+
+0
+
+3
+
+0
+
+4
+
+0
+
+5
+
+0
+
+6
+
+0
+
+7
+
+Office Action: Yes
+
+Dy
+
+Indicator
+
+0
+
+Due Date
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Final
+
+Remarks: MPEP Sec.1893 National Stage (U.S. National Application Filed Under 35 U.S.C. 371) [R07.2022]
+1893.01(d) Translation If applicant has timely paid the basic national fee and submitted the copy of the international application but the translation is missing or is defective, a Notification of Missing Requirements (PCT/DO/EO/905) will be sent to applicant setting a period to correct any missing or defective requirements. The time period is 32 months from the priority date or 2 months from the date of the notice, whichever expires later. The time period may be extended for up to five additional months as provided in 37 CFR 1.136(a). A processing fee is required for accepting a translation after 30 months from the priority date. See 37 CFR 1.492(i).
+1893.01(e) Inventor's Oath or Declaration If the basic national fee and copy of the international application have been received by the
+
+Patent Law Update
+
+___________________
+
+expiration of 30 months from the priority date, but applicant has not submitted 1) the required inventor's oath or declaration, or 2) an application data sheet in compliance with 37 CFR 1.495(c)(3), the Office will send applicant a Notification of Missing Requirements (Form PCT/DO/EO/905) setting a time period to submit the required inventor's oath or declaration or application data sheet and surcharge fee under 37 CFR 1.492(h) unless previously paid. Failure to timely file the required reply will result in abandonment of the application.
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date
+
+Modified Actions
+
+Action Type: EP-PCT Rule 161 Amendment
+
+Country: EP
+
+European Patent Convention
+
+Action Due 3 Months to Due Date 2 Months to Due Date 1 Month to Due Date Comment/Amend Application
+
+Yr
+
+Mo
+
+0
+
+3
+
+0
+
+4
+
+0
+
+5
+
+0
+
+6
+
+Office No Action:
+
+Dy
+
+Indicator
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Reminder
+
+0
+
+Due Date
+
+Remarks: Rule 161 - Amendment of the application 1. If the European Patent Office has acted as the International Searching Authority (ISA) and, where a demand under Article 31 PCT was filed, as the International Preliminary Examining Authority for a Euro-PCT application, it shall give the applicant the opportunity to comment on the written opinion of the ISA or the International Preliminary Examination Report and may invite the applicant to amend the description, claims and drawings within a period of 6 months from the invitation. If the applicant does not comply with or comment on either invitation, the application will be withdrawn. 2. Prior to a supplementary European search report, the application may be amended once within a period of six months from a communication informing the applicant accordingly, which will be sent at the entry into National Phase (Guidelines for Examination E-VIII 3.1). The amended application shall serve as the basis for the supplementary European search.
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date Created: 02-Nov-2009
+
+Updated: 13-Feb-2026
+
+Patent Law Update
+
+Action Type: EP-Rule 141 and 70b Priority Search
+
+Country: EP
+
+European Patent Convention
+
+Action Due File Search Results
+
+Yr
+
+Mo
+
+0
+
+2
+
+___________________ Office Action: Yes
+
+Dy
+
+Indicator
+
+0
+
+Final
+
+Remarks: Where a European patent claims priority to a previous application, a copy of any search results for the priority application must be submitted with the European Patent Office upon filing or entry to the European regional phase. If the search results are not available, they must be filed as soon as they become available. (Rule 141(1))
+If the search results are not submitted, the applicant will be notified and asked to submit within 2 months either the search results or a declaration that the results are not available. (Rule 141(3)) (Rule 70(b))
+Exceptions apply if the EPO drew up the search report, or the priority application was filed in certain countries, including the US, UK, and Japan. (Rule 141, Amended by multiple Presidential Decisions beginning 9 Dec 2010)
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Response Sent Date Based On: Created: 6-May-2011
+
+Updated: 13-Feb-2026
+
+Action Type: EP-Rule 71 Grant Fees and Translation
+
+Country: EP
+
+European Patent Convention
+
+Action Due Grant Fees Translation Due Claims Fee
+
+Yr
+
+Mo
+
+0
+
+4
+
+0
+
+4
+
+0
+
+4
+
+Office Action: No
+
+Dy
+
+Indicator
+
+0
+
+Due Date
+
+0
+
+Due Date
+
+0
+
+Due Date
+
+Remarks: Rule 71 3. (Grant Fees and Translation) Before the Examining Division decides to grant the European patent, it shall inform the applicant of the text in which it intends to grant it and of the related bibliographic data. In this communication the Examining Division shall invite the applicant to pay the fee for grant and publishing and to file a translation of the claims in the two official languages of the European Patent Office other than the language of the proceedings within four months. 4. (Claims Fee) If the European patent application in the text intended for grant comprises more than fifteen claims, the Examining Division shall invite the applicant to pay claims fees in
+
+Patent Law Update
+
+___________________
+
+respect of the sixteenth and each subsequent claim within the period under paragraph 3 unless the said fees have already been paid under Rule 45 or Rule 162. 5. If the applicant, within the period laid down in paragraph 3, pays the fees under paragraph 3 and, where applicable, paragraph 4 and files the translations under paragraph 3, they shall be deemed to have approved the text communicated to them under paragraph 3 and verified the bibliographic data. 6. (Amendments and Extensions) If the applicant, within the period under paragraph 3, requests reasoned amendments or corrections to the communicated text or keeps to the latest text submitted by them, the Examining Division shall issue a new communication under paragraph 3 if it gives its consent; otherwise it shall resume the examination proceedings. 7. If the fee for grant and publishing or the claims fees are not paid in due time, or if the translations are not filed in due time, the European patent application shall be deemed to be withdrawn.
+
+The Base Date is the date of the Rule 71 communication.
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date Created: 4-May-2009
+
+Updated: 13-Feb-2026
+
+Action Type: US-Allowability
+
+Country: US
+
+United States of America
+
+Action Due 1 Month to Due Date Corrected Drawings Due Response to Notice of Allowability Due
+
+Yr
+
+Mo
+
+0
+
+2
+
+0
+
+3
+
+0
+
+3
+
+Office Action: No
+
+Dy
+
+Indicator
+
+0
+
+Reminder
+
+0
+
+Final
+
+0
+
+Final
+
+Remarks: A Notice of Allowability (form PTOL-37) is used whenever an application has been placed in condition for allowance.
+The applicant has 3 months (non-extendible) to submit any Corrected Drawings, and any changes required by Examiner's Amendment/Comment
+The Base Date is the Mailing Date of the Notice.
+MPEP 1302.03 [R-07.2015]
+
+Follow Up Term: 6 Month(s) / 0 Day(s) Follow Up Based On: Response Sent Date Created: 15-Aug-1997
+
+Updated: 13-Feb-2026
+
+Patent Law Update
+
+Deleted Actions:
+
+Action Type: EP-Rule 71(6) - DELETE
+
+Country: EP
+
+European Patent Convention
+
+Action Due
+
+Yr
+
+Mo
+
+___________________
+
+Dy
+
+Indicator
+
+Remarks: Base Date is from date of Rule 71(6) communication.
+
+Created: 4-May-2009
+
+Patent Law Update
+Country Law Updates
+Country Law Added/Modified
+
+___________________
+2026 - 1
+
+Country: Albania (AL)
+
+ORD - Utility Patent Filing
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, Patent Law Treaty, European Patent Convention
+Filing Requirements: 1. Request for the grant of a patent with applicant and inventor details 2. Specification with description and claims 3. Formal drawings 4. Power of Attorney may be requested by the Office. (Kluwer IP Law; retrieved 22 Sep 2021) (Katzarov Manual of Industrial Property; retrieved 22 Sep 2021) Documents should be in Albanian or have an Albanian translation submitted within 2 months of the filing date. (Kluwer; 22 Sep 2021)
+Priority: Paris Convention priority may be claimed on filing. A priority document must be submitted within 3 months of the filing date. (Kluwer; 22 Sep 2021)
+Opposition: Effective 16 August 2025, opposition is no longer available, but objections and invalidation actions may be submitted. (CWB, "New Trade Mark and Patent Laws Enter into Force in Albania"; 9 Sep 2025) Previously, within 9 months of the publication of the grant of the patent. (Katzarov; 22 Sep 2021)
+Examination: The applicant must submit an examination report from an authorized examining authority to the Albanian Office within 10 years of the filing date. (Katzarov; 22 Sep 2021)
+Duration: 20 years from the filing date. (Katzarov; 24 Sep 2021)
+Working: A patent should be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Kluwer; 24 Sep 2021)
+
+Patent Law Update
+
+___________________
+
+Country: Albania (AL)
+
+PRI - Priority Application
+
+Law Highlights Became a member of the Paris Convention on 4 October 1995.
+Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, Patent Law Treaty, European Patent Convention
+Filing Requirements: 1. Request for the grant of a patent with applicant and inventor details 2. Specification with description and claims 3. Formal drawings 4. Power of Attorney may be requested by the Office. (Kluwer IP Law; retrieved 22 Sep 2021) (Katzarov Manual of Industrial Property; retrieved 22 Sep 2021) Documents should be in Albanian or have an Albanian translation submitted within 2 months of the filing date. (Kluwer; 22 Sep 2021)
+Priority: Paris Convention priority may be claimed on filing. A priority document must be submitted within 3 months of the filing date. (Kluwer; 22 Sep 2021)
+Opposition: Effective 16 August 2025, opposition is no longer available, but objections and invalidation actions may be submitted. (CWB, "New Trade Mark and Patent Laws Enter into Force in Albania"; 9 Sep 2025) Previously, within 9 months of the publication of the grant of the patent. (Katzarov; 22 Sep 2021)
+Examination: The applicant must submit an examination report from an authorized examining authority to the Albanian Office within 10 years of the filing date. (Katzarov; 22 Sep 2021)
+Duration: 20 years from the filing date. (Katzarov; 24 Sep 2021)
+Working: A patent should be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Kluwer; 24 Sep 2021)
+
+Patent Law Update
+
+___________________
+
+Country: Armenia (AM)
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Parent/PCT
+
+EXT - Extension for pharmaceuticals and agricultural chemicals
+
+Terms (y-m) For 25 0
+
+from
+
+to
+
+Law Highlights Patent term extensions are possible in Armenia for certain pharmaceutical and agricultural patents. The extension is available for Eurasian patents.
+
+The term corresponds to the period between the filing date and the date marketing authorization was granted, but no more than 5 years. Extension must be applied for within the later of 6 months from the grant of the patent or 6 months from the marketing authorization. (Eurasian Patent Office, "Procedures on Extending the Term of a Eurasian Patent"; 17 Dec 2013)
+
+Patent Law Update
+
+___________________
+
+Country: Bahamas (BS)
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Issue
+
+Expiration and Tax Terms Modified
+
+Changed
+
+Based On
+
+To Expiration From Expiration
+
+Filing Filing
+
+Law Actions
+
+Action: Design Renewal
+
+Based On
+
+Design Term Extension (Due Date) Final Term Extension (Due Date) 1st Term Extension (Due Date)
+Action:
+
+Issue Filing Filing
+
+Priority Document (Final)
+
+Filing
+
+Law Highlights Conventions: Paris Convention, WIPO
+
+DES - Design
+
+Terms (y-m) For 10 0 Filing
+
+from 5/21/2025
+
+Terms (y-m) For
+
+15 0 15 0
+
+Filing
+
+from
+
+Terms (y-m-d)
+
+Effective for
+
+500 10 0 0 500
+
+Filing Filing Filing
+
+030
+
+from 5/21/2025
+
+to
+to 5/20/2025
+to
+5/20/2025 5/20/2025
+
+Filing Requirements: 1. Power of Attorney, to be submitted when filing the application. (Kluwer IP Law; retrieved 4 Feb 2026) 2. Application on prescribed form 3. 3 representations or specimens (Katzarov Manual of Industrial Property; last retrieved 29 Dec 2016)
+
+Priority: Paris Convention priority may be claimed on filing; a certified copy of the priority document and a representation of the design must be filed within 3 months. (Katzarov; 29 Dec 2016)
+
+Opposition: A third party may apply for cancellation at any time. (Kluwer; 29 Dec 2016)
+
+Duration: Effective 2025, 5 years from the date of registration, with one 5-year extension. (Copyright Bill, 2024; Sec.141 (1-2)) The Bahamian IPO announced retroactive effect of the new IP laws from 1 February 2025 and regulations from 21 May 2025. Transitional effects are unclear. (Caribbean IP, "Secondary IP Legislation for Bahamas Released," 17 Aug 2025) Previously, 5 years from the filing date (or priority), renewable for two 5-year periods. 6 months grace for late renewal. (Katzarov; 29 Dec 2016)
+
+Working: No provision
+
+Patent Law Update
+
+___________________
+
+Country: Bahamas (BS)
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Issue
+
+Expiration and Tax Terms Modified
+
+Changed
+
+Based On
+
+To Expiration From Expiration
+
+Filing Filing
+
+Law Actions
+
+Action: Design Renewal
+
+Based On
+
+Design Term Extension (Due Date)
+
+Issue
+
+Final Term Extension (Due Date)
+
+Filing
+
+1st Term Extension (Due Date)
+
+Filing
+
+Law Highlights Conventions: Paris Convention, WIPO
+
+PDS - Priority Design Application
+
+Terms (y-m) For 10 0 Filing
+
+from
+
+to
+
+5/21/2025
+
+Terms (y-m) For
+
+15 0 15 0
+
+Filing
+
+from
+
+to 5/20/2025
+
+Terms (y-m-d)
+
+Effective for
+
+500 10 0 0 500
+
+Filing Filing Filing
+
+from 5/21/2025
+
+to
+5/20/2025 5/20/2025
+
+Filing Requirements: 1. Power of Attorney, to be submitted when filing the application. (Kluwer IP Law; retrieved 4 Feb 2026) 2. Application on prescribed form 3. 3 representations or specimens (Katzarov Manual of Industrial Property; last retrieved 29 Dec 2016)
+
+Priority: Paris Convention priority may be claimed on filing; a certified copy of the priority document and a representation of the design must be filed within 3 months. (Katzarov; 29 Dec 2016)
+
+Opposition: A third party may apply for cancellation at any time. (Kluwer; 29 Dec 2016)
+
+Duration: Effective 2025, 5 years from the date of registration, with one 5-year extension. (Copyright Bill, 2024; Sec.141 (1-2)) The Bahamian IPO announced retroactive effect of the new IP laws from 1 February 2025 and regulations from 21 May 2025. Transitional effects are unclear. (Caribbean IP, "Secondary IP Legislation for Bahamas Released," 17 Aug 2025) Previously, 5 years from the filing date (or priority), renewable for two 5-year periods. 6 months grace for late renewal. (Katzarov; 29 Dec 2016)
+
+Working: No provision
+
+Patent Law Update
+
+___________________
+
+Country: Belarus (BY)
+
+EXT - Extension for pharmaceuticals and agricultural chemicals
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Parent/PCT
+
+Terms (y-m) For 25 0
+
+from
+
+to
+
+Law Highlights Patent term extensions are possible in Belarus for drugs and certain agricultural patents. The extension is available for Eurasian patents.
+
+The term corresponds to the period between the filing date and the date approval for the patent was granted, but no more than 5 years. Extension must be applied for in the last year of the patent's term. (Eurasian Patent Office, "Procedures on Extending the Term of a Eurasian Patent"; 17 Dec 2013)
+
+Patent Law Update
+
+___________________
+
+Country: Belarus (BY)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+020
+
+Priority Document (Final)
+
+Priority
+
+0 16 0
+
+Law Highlights Formerly the Soviet Republic of Byelorussia, Belarus is one of the former USSR Republics. The USSR ceased to exist from 25 December 1991, and Belarus became an independent state.
+
+Conventions: Paris Convention, Eurasian Patent Convention, PCT, WIPO, Strasbourg Agreement, Budapest Treaty, Patent Law Treaty, Eurasian Economic Union
+
+Filing Requirements: 1. Power of attorney, to be submitted within 2 months of the filing date. 2. Specification with abstract 3. Drawings 4. Deed of assignment if the inventor is not the applicant If documents are not in Russian or Belarusian, a translation must be submitted within 2 months of the filing date. (Katzarov Manual of Industrial Property; last retrieved 26 Jun 2020) (Kluwer IP Law; last retrieved 30 Dec 2025)
+
+Priority: Paris Convention priority may be claimed on filing or within 2 months of filing the application in Belarus. A priority document must be submitted within 16 months of the priority date. The Office may request a translation of the priority document. (Kluwer; 26 Jun 2020)
+
+Examination: Substantial examination must be requested within 3 years of the filing date, or the patent will be refused. Restoration may be possible within 12 months. (Kluwer; 26 Jun 2020)
+
+Duration: 20 years from the filing date. (Manual Industrial Property, No. Supplement 68, June 1993)
+
+Transitional Provisions: The deadline for re-registering USSR patents was 5 February 1996.
+
+Working: Effective 7 July 2018, if a patent is not used sufficiently for 3 years from the publication of the patent it risks compulsory license. Previously 5 years. (Petosevic, "Belarus Amends Law on Patents for Inventions, Utility Models and Industrial Designs"; 26 Jul 2018)
+
+Patent Law Update
+
+___________________
+
+Country: Belarus (BY)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+
+Filing
+
+020
+
+Law Highlights Became a member of the Paris Convention on 25 December 1991 with the dissolution of the USSR.
+
+Formerly the Soviet Republic of Byelorussia, Belarus is one of the former USSR Republics. The USSR ceased to exist from 25 December 1991, and Belarus became an independent state.
+
+Conventions: Paris Convention, Eurasian Patent Convention, PCT, WIPO, Strasbourg Agreement, Budapest Treaty, Patent Law Treaty, Eurasian Economic Union
+
+Filing Requirements: 1. Power of attorney, to be submitted within 2 months of the filing date. 2. Specification with abstract 3. Drawings 4. Deed of assignment if the inventor is not the applicant If documents are not in Russian or Belarusian, a translation must be submitted within 2 months of the filing date. (Katzarov Manual of Industrial Property; last retrieved 26 Jun 2020) (Kluwer IP Law; last retrieved 30 Dec 2025)
+
+Priority: Paris Convention priority may be claimed on filing or within 2 months of filing the application in Belarus. A priority document must be submitted within 16 months of the priority date. The Office may request a translation of the priority document. (Kluwer; 26 Jun 2020)
+
+Examination: Substantial examination must be requested within 3 years of the filing date, or the patent will be refused. Restoration may be possible within 12 months. (Kluwer; 26 Jun 2020)
+
+Duration: 20 years from the filing date. (Manual Industrial Property, No. Supplement 68, June 1993)
+
+Transitional Provisions: The deadline for re-registering USSR patents was 5 February 1996.
+
+Working: Effective 7 July 2018, if a patent is not used sufficiently for 3 years from the publication of the patent it risks compulsory license. Previously 5 years. (Petosevic, "Belarus Amends Law on Patents for Inventions, Utility Models and Industrial Designs"; 26 Jul 2018)
+
+Patent Law Update
+
+___________________
+
+Country: Belgium (BE) ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Translation Due (Final)
+
+Filing
+
+030
+
+Law Highlights Conventions: Paris Convention, PCT (Can only be designated through an EPC application), European Patent Convention, WIPO, Community Patent Convention, Strasbourg Agreement, Budapest Treaty
+
+Filing Requirements: 1. Specification, claims and abstract in French or Dutch 2. Drawings 3. Name and address of the inventors (Katzarov Manual of Industrial Property; last retrieved 10 Oct 2016) Power of Attorney is not usually required, but may be requested by the office. (Kluwer IP Law; retrieved 19 Jun 2023)
+
+Priority: Priority may be claimed and a priority document filed within 16 months of the priority date. WIPO DAS may be used. (Kluwer; 19 Jun 2023)
+
+Translation: If the application is not in Dutch, French or German, a translation into one of those languages must be submitted within 3 months of the filing date. (Kluwer; 31 Dec 2025)
+
+Examination: Prior to 8 January 2009, if a search report was not requested, the patent duration would be limited to 6 years from the filing date. The search is now required, and the Patent Office will notify the applicant to pay the search fee. (Kluwer IP Law; last retrieved 10 Oct 2016)
+
+Opposition: No provision
+
+Duration: 20 years from the filing date. Prior to 8 January 2009, a 6-year patent was also possible. (Kluwer; 10 Oct 2016)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest.
+
+Patent Law Update
+
+___________________
+
+Country: Belgium (BE)
+
+PRI - Priority Application
+
+Law Highlights Became a member of the Paris Convention on 7 July 1884.
+Conventions: Paris Convention, PCT (Can only be designated through an EPC application), European Patent Convention, WIPO, Community Patent Convention, Strasbourg Agreement, Budapest Treaty
+Filing Requirements: 1. Specification, claims and abstract in French or Dutch 2. Drawings 3. Name and address of the inventors (Katzarov Manual of Industrial Property; last retrieved 10 Oct 2016) Power of Attorney is not usually required, but may be requested by the office. (Kluwer IP Law; retrieved 19 Jun 2023)
+Priority: Priority may be claimed and a priority document filed within 16 months of the priority date. WIPO DAS may be used. (Kluwer; 19 Jun 2023)
+Translation: If the application is not in Dutch, French or German, a translation into one of those languages must be submitted within 3 months of the filing date. (Kluwer; 31 Dec 2025)
+Examination: Prior to 8 January 2009, if a search report was not requested, the patent duration would be limited to 6 years from the filing date. The search is now required, and the Patent Office will notify the applicant to pay the search fee. (Kluwer IP Law; last retrieved 10 Oct 2016)
+Opposition: No provision
+Duration: 20 years from the filing date. Prior to 8 January 2009, a 6-year patent was also possible. (Kluwer; 10 Oct 2016)
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest.
+
+Patent Law Update
+
+___________________
+
+Country: Bosnia and Herzegovina (BA)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+030
+
+Priority Document (Final)
+Action:
+
+Filing
+
+030
+
+Request Examination (Final)
+Action:
+
+Publication
+
+060
+
+Translation Due (Due Date)
+
+Filing
+
+020
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, European Patent Convention (EPC), Strasbourg Agreement, Patent Law Treaty
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Application form with applicant and inventor information 3. Description, claims, abstract, and any drawings If the application is not in Bosnian, Serbian, or Croatian, a translation into one of those languages should be submitted within 2 months of the filing date or 1 month from a notification from the Office. (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed when filing. A priority document must be submitted within 3 months of the filing date. (Kluwer; 2 Jan 2026)
+
+Examination: Within 6 months of the publication date, the applicant must either request substantive examination, submit the results of a substantive examination from another country, or request a petty patent. If none of these actions are taken, the patent application will be withdrawn. (Kluwer; 2 Jan 2026)
+
+Duration: 20 years from the filing date. (Manual Industrial Property, Supplement No. 77, April 1997)
+
+Transitional Provisions: In 1992, Bosnia and Herzegovina declared independence from Yugoslavia. All Yugoslav patents that were granted and applied for before 1 March 1992 could be re-registered or applied for in Bosnia by 31 May 1998.
+
+Patent Law Update
+
+___________________
+
+Country: Bosnia and Herzegovina (BA)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+030
+
+Request Examination (Final)
+
+Publication
+
+060
+
+Law Highlights Became a member of the Paris Convention on 1 March 1992.
+
+Conventions: Paris Convention, PCT, WIPO, European Patent Convention (EPC), Strasbourg Agreement, Patent Law Treaty
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Application form with applicant and inventor information 3. Description, claims, abstract, and any drawings If the application is not in Bosnian, Serbian, or Croatian, a translation into one of those languages should be submitted within 2 months of the filing date or 1 month from a notification from the Office. (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed when filing. A priority document must be submitted within 3 months of the filing date. (Kluwer; 2 Jan 2026)
+
+Examination: Within 6 months of the publication date, the applicant must either request substantive examination, submit the results of a substantive examination from another country, or request a petty patent. If none of these actions are taken, the patent application will be withdrawn. (Kluwer; 2 Jan 2026)
+
+Duration: 20 years from the filing date. (Manual Industrial Property, Supplement No. 77, April 1997)
+
+Transitional Provisions: In 1992, Bosnia and Herzegovina declared independence from Yugoslavia. All Yugoslav patents that were granted and applied for before 1 March 1992 could be re-registered or applied for in Bosnia by 31 May 1998.
+
+Patent Law Update
+
+___________________
+
+Country: Bulgaria (BG)
+
+ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+030
+
+Priority Document (Final)
+Action:
+
+Filing
+
+030
+
+Translation Due (Final)
+
+Filing
+
+030
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, Strasbourg Agreement, European Patent Convention, European Union, Unified Patent Court (UPC).
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Specification, claims, abstract 3. Drawings, if any Specification and claims may be filed in any language, but a translation into Bulgarian must be submitted within 3 months of the filing date. (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed when filing the application. A priority document must be submitted within 3 months of the filing date. Multiple and partial priorities are allowed. (Kluwer; 2 Jan 2026)
+
+Opposition: Within 3 months of the publication of the patent application. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026)
+
+Duration: 20 years from the filing date. Under the law prior to June 1, 1993, the duration was 15 years from the filing date. (Manual Industrial Property, Supplement No. 69, December 1993)
+
+Working: A patent should be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest, or it risks compulsory license. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Bulgaria (BG)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+
+Filing
+
+030
+
+Law Highlights Became a member of the Paris Convention on 13 June 1921.
+
+Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, Strasbourg Agreement, European Patent Convention, European Union, Unified Patent Court (UPC).
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Specification, claims, abstract 3. Drawings, if any Specification and claims may be filed in any language, but a translation into Bulgarian must be submitted within 3 months of the filing date. (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed when filing the application. A priority document must be submitted within 3 months of the filing date. Multiple and partial priorities are allowed. (Kluwer; 2 Jan 2026)
+
+Opposition: Within 3 months of the publication of the patent application. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026)
+
+Duration: 20 years from the filing date. Under the law prior to June 1, 1993, the duration was 15 years from the filing date. (Manual Industrial Property, Supplement No. 69, December 1993)
+
+Working: A patent should be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest, or it risks compulsory license. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Cyprus, Republic of (CY) ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+010
+
+Translation Due (Final)
+
+Filing
+
+040
+
+Law Highlights Conventions: Paris Convention, PCT (cannot be designated nationally in a PCT application, only through an EPC application), WIPO, European Patent Convention, WTO
+
+Filing Requirements: 1. Power of Attorney, to be submitted within 1 month of the filing date. 2. Applicant and inventor details If the application is not in Greek, a Greek translation must be submitted within 4 months of the filing date. (Katzarov Manual of Industrial property; retrieved 23 Oct 2017) (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Priority may be claimed on filing or within 16 months of the priority date. If requested by the Registrar, a certified copy of the priority application must be filed within 3 months of the Registrar's request, with a Greek translation to be filed within 6 months of the Registrar's request. Multiple and partial priority is allowed. (Kluwer; 2 Jan 2026)
+
+Search Report: The applicant must pay the fees for a search report drawn up by the European Patent Office within 16 months of the priority date, failing which the application will be rejected. (Kluwer; 31 Oct 2017)
+
+Opposition: No provision; however, any interested party may apply to the Supreme Court for the invalidation of a patent. (Kluwer; 31 Oct 2017)
+
+Duration: 20 years from the filing date. In practice, patents expire 1 day before the anniversary of the filing date. (SABA Intellectual Property; August 2017)
+
+Transitional Provisions: Prior to 1 April 1998 patent protection could only be obtained by re-registering a UK patent or an European patent (UK). Any registrations made under the former law are considered to be patents granted under the new law, and will remain in force for the remainder of their term provided that the required annual fees are paid.
+
+Working: Within 4 years from the date of grant. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Cyprus, Republic of (CY)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+
+Filing
+
+010
+
+Law Highlights Became a member of the Paris Convention on 16 January 1966.
+
+Conventions: Paris Convention, PCT (cannot be designated nationally in a PCT application, only through an EPC application), WIPO, European Patent Convention, WTO
+
+Filing Requirements: 1. Power of Attorney, to be submitted within 1 month of the filing date. 2. Applicant and inventor details If the application is not in Greek, a Greek translation must be submitted within 4 months of the filing date. (Katzarov Manual of Industrial property; retrieved 23 Oct 2017) (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Priority may be claimed on filing or within 16 months of the priority date. If requested by the Registrar, a certified copy of the priority application must be filed within 3 months of the Registrar's request, with a Greek translation to be filed within 6 months of the Registrar's request. Multiple and partial priority is allowed. (Kluwer; 2 Jan 2026)
+
+Search Report: The applicant must pay the fees for a search report drawn up by the European Patent Office within 16 months of the priority date, failing which the application will be rejected. (Kluwer; 31 Oct 2017)
+
+Opposition: No provision; however, any interested party may apply to the Supreme Court for the invalidation of a patent. (Kluwer; 31 Oct 2017)
+
+Duration: 20 years from the filing date. In practice, patents expire 1 day before the anniversary of the filing date. (SABA Intellectual Property; August 2017)
+
+Transitional Provisions: Prior to 1 April 1998 patent protection could only be obtained by re-registering a UK patent or an European patent (UK). Any registrations made under the former law are considered to be patents granted under the new law, and will remain in force for the remainder of their term provided that the required annual fees are paid.
+
+Working: Within 4 years from the date of grant. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Czech Republic (CZ)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+020
+
+Translation Due (Due Date)
+
+Filing
+
+020
+
+Law Highlights Effective 1 January 1993, the former Czechoslovakia split into two independent states, the Czech Republic and Slovakia.
+
+Conventions: Paris Convention, PCT, Strasbourg Agreement, WIPO, WTO TRIPS, European Patent Convention
+
+Filing Requirements: 1. Application with applicant and inventor details 2. Power of Attorney, to be submitted within 2 months of the filing date. 3. Inventor's declaration, which may be submitted after the filing date. 4. Specification and abstract 5. Drawings (Katzarov Manual of Industrial Property; retrieved 13 Apr 2020) (Kluwer IP Law; last retrieved 2 Jan 2026)
+
+Priority: Paris Convention or WTO priority may be claimed when filing the application. The Office may request a priority document with Czech translation. (Kluwer IP Law; last retrieved 13 Apr 2020)
+
+Translation: The application should be in Czech. In practice, the Office may permit applications in English, German, French or Russian if a Czech translation is submitted within 2 months of the filing date. (Kluwer; 2 Jan 2026)
+
+Examination: Examination must be requested within 36 months from the filing date. No extension is possible. Third parties may request examination. (Vsetecka Zeleny Svorik and Partners; October 2020) (Kluwer; 13 Apr 2020)
+
+Opposition: No provision, but third parties may file observations concerning the patentability of the invention after the application is published. (Kluwer; 13 Apr 2020)
+
+Duration: 20 years from the filing date. (Kluwer; 13 Apr 2020)
+
+Transitional Provisions: Patents granted in the former Czechoslovakia before 1 January 1993 remained in force in the Czech Republic. Pending patent applications filed in Czechoslovakia before 1 January 1993 could be further processed in the Czech Republic. Patents granted in former Czechoslovakia before 1 January 1991 had a duration of 15 years from the date of application. (Manual Industrial Property, Supplement No. 81, August 1998)
+
+Working: A patent must be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Katzarov; 13 Apr 2020)
+
+Patent Law Update
+
+___________________
+
+Country: Czech Republic (CZ)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+
+Filing
+
+020
+
+Law Highlights Became a member of the Paris Convention on 1 January 1993.
+
+Effective 1 January 1993, the former Czechoslovakia split into two independent states, the Czech Republic and Slovakia.
+
+Conventions: Paris Convention, PCT, Strasbourg Agreement, WIPO, WTO TRIPS, European Patent Convention
+
+Filing Requirements: 1. Application with applicant and inventor details 2. Power of Attorney, to be submitted within 2 months of the filing date. 3. Inventor's declaration, which may be submitted after the filing date. 4. Specification and abstract 5. Drawings (Katzarov Manual of Industrial Property; retrieved 13 Apr 2020) (Kluwer IP Law; last retrieved 2 Jan 2026)
+
+Priority: Paris Convention or WTO priority may be claimed when filing the application. The Office may request a priority document with Czech translation. (Kluwer IP Law; last retrieved 13 Apr 2020)
+
+Translation: The application should be in Czech. In practice, the Office may permit applications in English, German, French or Russian if a Czech translation is submitted within 2 months of the filing date. (Kluwer; 2 Jan 2026)
+
+Examination: Examination must be requested within 36 months from the filing date. No extension is possible. Third parties may request examination. (Vsetecka Zeleny Svorik and Partners; October 2020) (Kluwer; 13 Apr 2020)
+
+Opposition: No provision, but third parties may file observations concerning the patentability of the invention after the application is published. (Kluwer; 13 Apr 2020)
+
+Duration: 20 years from the filing date. (Kluwer; 13 Apr 2020)
+
+Transitional Provisions: Patents granted in the former Czechoslovakia before 1 January 1993 remained in force in the Czech Republic. Pending patent applications filed in Czechoslovakia before 1 January 1993 could be further processed in the Czech Republic. Patents granted in former Czechoslovakia before 1 January 1991 had a duration of 15 years from the date of application. (Manual Industrial Property, Supplement No. 81, August 1998)
+
+Working: A patent must be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Katzarov; 13 Apr 2020)
+
+Patent Law Update
+
+___________________
+
+Country: Estonia (EE) ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Priority Document (Final)
+Action:
+
+Priority
+
+0 16 0
+
+Translation Due (Due Date)
+
+Filing
+
+020
+
+Law Highlights On 20 August 1991, Estonia declared full independence from the USSR.
+
+Conventions: WIPO, Paris Convention, PCT, Strasbourg Agreement, WTO TRIPS, European Patent Convention (EPC), Patent Law Treaty, European Union, Unified Patent Court (UPC)
+
+Filing Requirements: 1. Application with applicant details 2. Specification and claims. If not in Estonian, a translation must be submitted within 2 months of the filing date or a request from the Office. 3. Abstract 4. Information regarding the right of the applicant to apply Power of Attorney is not usually required, but may be requested. If any documents are not in Estonian, the Office will request an Estonian translation be submitted. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026) (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority must be claimed on filing or within 16 months of the filing date. A priority document is required within 16 months of the priority date. (Kluwer; 2 Jan 2026)
+
+Duration: 20 years from the filing date. (Patents Throughout the World, Release #63, 11/1999)
+
+Working: Patents that are not worked within the later of 3 years from the issue date or 4 years from the filing date risk compulsory license. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Estonia (EE)
+
+PRI - Priority Application
+
+Law Highlights Became a member of the Paris Convention on 24 August 1994.
+On 20 August 1991, Estonia declared full independence from the USSR.
+Conventions: WIPO, Paris Convention, PCT, Strasbourg Agreement, WTO TRIPS, European Patent Convention (EPC), Patent Law Treaty, European Union, Unified Patent Court (UPC)
+Filing Requirements: 1. Application with applicant details 2. Specification and claims. If not in Estonian, a translation must be submitted within 2 months of the filing date or a request from the Office. 3. Abstract 4. Information regarding the right of the applicant to apply Power of Attorney is not usually required, but may be requested. If any documents are not in Estonian, the Office will request an Estonian translation be submitted. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026) (Kluwer IP Law; retrieved 2 Jan 2026)
+Priority: Paris Convention priority must be claimed on filing or within 16 months of the filing date. A priority document is required within 16 months of the priority date. (Kluwer; 2 Jan 2026)
+Duration: 20 years from the filing date. (Patents Throughout the World, Release #63, 11/1999)
+Working: Patents that are not worked within the later of 3 years from the issue date or 4 years from the filing date risk compulsory license. (Kluwer; 2 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: France (FR) ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Declaration of Inventor (Final)
+Action:
+
+Priority
+
+0 16 0
+
+Translation Due (Final)
+
+Filing
+
+020
+
+Law Highlights Conventions: Paris Convention, PCT (Cannot be designated nationally in a PCT application, only through an EPC application), European Patent Convention, WIPO, Budapest Convention, Strasbourg Agreement
+
+Filing Requirements: 1. Application form 2. Specification with claims in French 3. Drawings 4. Abstract (Katzarov Manual of Industrial Property; retrieved 25 Oct 2017) 4. Designation of the inventor must be filed within 16 months of the filing date, or the priority date if claimed. Power of Attorney is not usually required, but may be requested. (Kluwer IP Law; retrieved 31 Dec 2025)
+
+Priority: Paris Convention or WTO priority may be claimed. A certified priority document must be submitted within 16 months of the priority date. WIPO DAS is possible (Kluwer; 29 Mar 2023)
+
+Translation: If the application is not filed in French, a French translation must be submitted within 2 months of the filing date. (Kluwer; 31 Dec 2025)
+
+Examination: A search report must be requested on filing of the application. (Kluwer; 25 Oct 2017) Prior to 12 December 2008, the search report could be delayed up to 18 months of the priority date. (INPI, November 2017)
+
+Opposition: Opposition against the grant of a national French patent is not provided for. But third parties may file observations within three months after the publication of the French Search Report; (Manual of Industrial Property (Kluwer Law International 1927, Supplement No. 131 August 2010))
+
+Duration: 20 years from the filing date. (Manual Industrial Property, Supplement No. 84, August 1999)
+
+Extension to French Polynesia: From 1 February 2014, in order to obtain protection in French Polynesia, a request for extension has to be made and a fee paid when filing a patent or design application in France at the INPI. If these requirements are not completed, the French patent or design application does not take effect in French Polynesia. (Regimbeau, February 2014)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest.
+
+Patent Law Update
+
+___________________
+
+Country: France (FR)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+
+Filing
+
+0 16 0
+
+Law Highlights Became a member of the Paris Convention on 7 July 1884.
+
+Conventions: Paris Convention, PCT (Cannot be designated nationally in a PCT application, only through an EPC application), European Patent Convention, WIPO, Budapest Convention, Strasbourg Agreement
+
+Filing Requirements: 1. Application form 2. Specification with claims in French 3. Drawings 4. Abstract (Katzarov Manual of Industrial Property; retrieved 25 Oct 2017) 4. Designation of the inventor must be filed within 16 months of the filing date, or the priority date if claimed. Power of Attorney is not usually required, but may be requested. (Kluwer IP Law; retrieved 31 Dec 2025)
+
+Priority: Paris Convention or WTO priority may be claimed. A certified priority document must be submitted within 16 months of the priority date. WIPO DAS is possible (Kluwer; 29 Mar 2023)
+
+Translation: If the application is not filed in French, a French translation must be submitted within 2 months of the filing date. (Kluwer; 31 Dec 2025)
+
+Examination: A search report must be requested on filing of the application. (Kluwer; 25 Oct 2017) Prior to 12 December 2008, the search report could be delayed up to 18 months of the priority date. (INPI, November 2017)
+
+Opposition: Opposition against the grant of a national French patent is not provided for. But third parties may file observations within three months after the publication of the French Search Report; (Manual of Industrial Property (Kluwer Law International 1927, Supplement No. 131 August 2010))
+
+Duration: 20 years from the filing date. (Manual Industrial Property, Supplement No. 84, August 1999)
+
+Extension to French Polynesia: From 1 February 2014, in order to obtain protection in French Polynesia, a request for extension has to be made and a fee paid when filing a patent or design application in France at the INPI. If these requirements are not completed, the French patent or design application does not take effect in French Polynesia. (Regimbeau, February 2014)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest.
+
+Patent Law Update Country: Georgia (GE) PCT - Patent Cooperation Treaty -
+
+National Phase
+
+___________________
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action: National Filing Due
+
+Nat. Filing - 31 Months (Final)
+Action:
+
+Priority
+
+0 31 0
+
+Power of Attorney (Final)
+
+Filing
+
+020
+
+Law Highlights Became a member of the PCT on 25 December 1991 with the dissolution of the Soviet Union. Georgia declared that the PCT continues to be applicable to its territory since 18 January 1994.
+
+Filing Requirements: The deadline for entering into the National Phase is 31 months from the priority date for both Chapter I and Chapter II. A translation into Georgian is required within 2 months from the National Phase entry date. Power of Attorney must also be submitted within 2 months of the National Phase entry date. (PCT Applicant's Guide Georgia; last update 7 Nov 2025)
+
+Duration: 20 years from the international filing date. (Manual Industrial Property, Supplement No. 67, January 1993)
+
+Patent Law Update
+
+___________________
+
+Country: Germany (DE)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+Action: Translation Due
+
+Priority
+
+0 15 0
+
+Translation - Priority (Due Date) Translation Due (Due Date)
+
+Priority Filing
+
+0 15 0 030
+
+Law Highlights Conventions: Paris Convention, PCT, WTO TRIPS, WIPO, Strasbourg Agreement, European Patent Convention
+
+Filing Requirements: 1. Application with applicant details 2. Abstract 3. Specification and claims 4. Drawings 5. Power of Attorney may be requested by the Office 6. Designation of the inventor must be submitted within 15 months of the filing date, or the priority date if priority is claimed. (Kluwer IP Law; last retrieved 31 Dec 2025) (Katzarov Manual of Industrial Property; retrieved 14 Apr 2020)
+
+Priority: Paris Convention priority may be claimed within 16 months of the priority date. A priority document must be submitted within the same time. The Office may require a German translation. (Kluwer; 14 Apr 2020)
+
+Translation: Documents should be in German, or with German translation. Translations from English or French may be submitted within 15 months of priority, or within 3 months from filing. (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Examination: The request for substantive examination must be made within 7 years from the date of filing the application, or the application will lapse. The request may be made by the applicant or a third party. (Kluwer; 14 Apr 2020)
+
+Opposition: 9 months after the publication of the grant of the German patent, no extension possible. For oppositions prior to 1 April 2014, within 3 months of the date of issue. (Katzarov; 14 Apr 2020)
+
+Duration: 20 years from day following the filing date of the application. (Kluwer; 14 Apr 2020)
+
+Transitional Provisions: Patents granted on applications filed prior to 1 January 1978 had a term of 18 years from the day following the filing date. (Manual Industrial Property, Supplement No. 88, May 2001) Applicants who filed during 1977 could apply under the old law or the new law. West and East Germany achieved reunification on 3 October 1990. On 1 May 1992 the Industrial Property law entered into force, providing that all rights obtained in either the Federal Republic of Germany (West Germany) or the former German Democratic Republic (East Germany) before 3 October 1990 are effective through the entire country.
+
+Working: Not required, but a compulsory license may be granted in the public interest. (Katzarov; 14 Apr 2020)
+
+Patent Law Update
+
+___________________
+
+Country: Germany (DE)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+
+Filing
+
+0 15 0
+
+Law Highlights Became a member of the Paris Convention on 1 May 1903.
+
+Conventions: Paris Convention, PCT, WTO TRIPS, WIPO, Strasbourg Agreement, European Patent Convention
+
+Filing Requirements: 1. Application with applicant details 2. Abstract 3. Specification and claims 4. Drawings 5. Power of Attorney may be requested by the Office 6. Designation of the inventor must be submitted within 15 months of the filing date, or the priority date if priority is claimed. (Kluwer IP Law; last retrieved 31 Dec 2025) (Katzarov Manual of Industrial Property; retrieved 14 Apr 2020)
+
+Priority: Paris Convention priority may be claimed within 16 months of the priority date. A priority document must be submitted within the same time. The Office may require a German translation. (Kluwer; 14 Apr 2020)
+
+Translation: Documents should be in German, or with German translation. Translations from English or French may be submitted within 15 months of priority, or within 3 months from filing. (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Examination: The request for substantive examination must be made within 7 years from the date of filing the application, or the application will lapse. The request may be made by the applicant or a third party. (Kluwer; 14 Apr 2020)
+
+Opposition: 9 months after the publication of the grant of the German patent, no extension possible. For oppositions prior to 1 April 2014, within 3 months of the date of issue. (Katzarov; 14 Apr 2020)
+
+Duration: 20 years from day following the filing date of the application. (Kluwer; 14 Apr 2020)
+
+Transitional Provisions: Patents granted on applications filed prior to 1 January 1978 had a term of 18 years from the day following the filing date. (Manual Industrial Property, Supplement No. 88, May 2001) Applicants who filed during 1977 could apply under the old law or the new law. West and East Germany achieved reunification on 3 October 1990. On 1 May 1992 the Industrial Property law entered into force, providing that all rights obtained in either the Federal Republic of Germany (West Germany) or the former German Democratic Republic (East Germany) before 3 October 1990 are effective through the entire country.
+
+Working: Not required, but a compulsory license may be granted in the public interest. (Katzarov; 14 Apr 2020)
+
+Patent Law Update
+
+___________________
+
+Country: Iceland (IS)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Priority Document (Final)
+Action: Translation Due
+
+Priority
+
+0 14 0
+
+Translation - Priority (Final)
+
+Priority
+
+0 14 0
+
+Translation Due (Due Date)
+
+Filing
+
+020
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, European Patent Convention (EPC)
+
+Filing Requirements: 1. Specification, abstract and claims 2. Any drawings Power of Attorney is not usually required. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed. A priority document must be submitted within 14 months of the priority date. (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Translation: The application may be filed in Icelandic, English, Danish, Swedish or Norwegian, but translation of the claims into Icelandic is required within 14 months of the priority date or within 2 months of the filing date. (Kluwer; 2 Jan 2026)
+
+Opposition: Within 9 months of the publication of the grant of a patent. (Kluwer; 2 Jan 2026)
+
+Duration: 20 years from the filing date. (Katzarov; 2 Jan 2026)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest, or risk compulsory license. (Kluwer; 2 Jan 2026)
+
+Transitional Provisions: The duration of patents granted on applications filed between 1 January 1982 and 1 January 1992, was 20 years from the filing date if the patent was granted less than 5 years from filing, or 15 years from the date of issue if the patent was granted more than 5 years from filing. The duration of patents granted prior to 1 January 1982 was 15 years from issue. (Manual Industrial Property, Supplement No. 83, April 1999)
+
+Patent Law Update
+
+___________________
+
+Country: Iceland (IS)
+
+PRI - Priority Application
+
+Law Highlights Became a member of the Paris Convention on 5 May 1962.
+Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, European Patent Convention (EPC)
+Filing Requirements: 1. Specification, abstract and claims 2. Any drawings Power of Attorney is not usually required. (Katzarov Manual of Industrial Property; retrieved 2 Jan 2026)
+Priority: Paris Convention priority may be claimed. A priority document must be submitted within 14 months of the priority date. (Kluwer IP Law; retrieved 2 Jan 2026)
+Translation: The application may be filed in Icelandic, English, Danish, Swedish or Norwegian, but translation of the claims into Icelandic is required within 14 months of the priority date or within 2 months of the filing date. (Kluwer; 2 Jan 2026)
+Opposition: Within 9 months of the publication of the grant of a patent. (Kluwer; 2 Jan 2026)
+Duration: 20 years from the filing date. (Katzarov; 2 Jan 2026)
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest, or risk compulsory license. (Kluwer; 2 Jan 2026)
+Transitional Provisions: The duration of patents granted on applications filed between 1 January 1982 and 1 January 1992, was 20 years from the filing date if the patent was granted less than 5 years from filing, or 15 years from the date of issue if the patent was granted more than 5 years from filing. The duration of patents granted prior to 1 January 1982 was 15 years from issue. (Manual Industrial Property, Supplement No. 83, April 1999)
+
+Patent Law Update
+
+___________________
+
+Country: Ireland (IE) ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Declaration of Inventor (Final)
+Action:
+
+Priority
+
+0 16 0
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+030
+
+Priority Document (Due Date)
+
+Priority
+
+0 16 0
+
+Law Highlights Conventions: Paris Convention, WIPO, PCT, European Patent Convention, Strasbourg Agreement, Budapest Treaty, WTO TRIPS, Patent Law Treaty
+
+Filing Requirements: 1. Power of Attorney, within 3 months of the filing date. 2. Specification and claims 3. Abstract and any drawings 4. Declaration of Inventorship, within 16 months of the priority filing date 5. Statement with regards to novelty, within 21 months of priority (Katzarov Manual of Industrial Property; retrieved 28 Aug 2020)
+
+Priority: Paris Convention priority may be claimed within 14 months of the priority date. A priority document must be filed within 16 months from the priority date, with a possible 1-month extension. (Kluwer IP Law; 28 Aug 2020)
+
+Search Report: A search report must be requested within 21 months of the priority filing date. Alternatively, if a corresponding application has been filed with the PCT, EPO, UK, or Germany, the applicant may instead submit a statement that evidence of novelty will be submitted. The search report and written opinion for the corresponding applications must be submitted within 2 months of the publication of those search reports. (Kluwer; 28 Aug 2020) (Intellectual Property Office of Ireland, "Requesting a Search Report and Opinion or submission of Evidence of Novelty"; retrieved 25 Sep 2020)
+
+Duration: 20 years from the filing date. (Katzarov; 28 Aug 2020)
+
+Working: A patent should be worked within 3 years from the publication of the notice of grant. (Kluwer; 28 Aug 2020)
+
+Transitional Provisions: Prior to 1 August 1992 the duration was 16 years from the filing of the complete specification, which could be extended for 5 or exceptionally 10 years. (Manual Industrial Property, Supplement No. 79, November 1997)
+
+Patent Law Update
+
+___________________
+
+Country: Ireland (IE)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+Action:
+
+Filing
+
+0 16 0
+
+Power of Attorney (Final)
+
+Filing
+
+030
+
+Law Highlights Became a member of the Paris Convention on 4 December 1925.
+
+Conventions: Paris Convention, WIPO, PCT, European Patent Convention, Strasbourg Agreement, Budapest Treaty, WTO TRIPS, Patent Law Treaty
+
+Filing Requirements: 1. Power of Attorney, within 3 months of the filing date. 2. Specification and claims 3. Abstract and any drawings 4. Declaration of Inventorship, within 16 months of the priority filing date 5. Statement with regards to novelty, within 21 months of priority (Katzarov Manual of Industrial Property; retrieved 28 Aug 2020)
+
+Priority: Paris Convention priority may be claimed within 14 months of the priority date. A priority document must be filed within 16 months from the priority date, with a possible 1-month extension. (Kluwer IP Law; 28 Aug 2020)
+
+Search Report: A search report must be requested within 21 months of the priority filing date. Alternatively, if a corresponding application has been filed with the PCT, EPO, UK, or Germany, the applicant may instead submit a statement that evidence of novelty will be submitted. The search report and written opinion for the corresponding applications must be submitted within 2 months of the publication of those search reports. (Kluwer; 28 Aug 2020) (Intellectual Property Office of Ireland, "Requesting a Search Report and Opinion or submission of Evidence of Novelty"; retrieved 25 Sep 2020)
+
+Duration: 20 years from the filing date. (Katzarov; 28 Aug 2020)
+
+Working: A patent should be worked within 3 years from the publication of the notice of grant. (Kluwer; 28 Aug 2020)
+
+Transitional Provisions: Prior to 1 August 1992 the duration was 16 years from the filing of the complete specification, which could be extended for 5 or exceptionally 10 years. (Manual Industrial Property, Supplement No. 79, November 1997)
+
+Patent Law Update
+
+___________________
+
+Country: Italy (IT)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Due Date)
+Action:
+
+Filing
+
+020
+
+Translation Due (Final)
+
+Filing
+
+020
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, European Patent Convention, Strasbourg Agreement
+
+Filing Requirements: 1. Applicant and inventor details. Designation of the inventor should be submitted within 2 months of the filing date. An extension of time may be granted. 2. Power of Attorney, to be submitted within 2 months of filing. Extension is possible, and a general power of attorney may be kept on file. 3. Specification and abstract, with Italian translation 4. Claims (Katzarov Manual of Industrial Property; last retrieved 1 Aug 2019) (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Priority: Paris Convention priority may be claimed on filing, or within 16 months of the priority date. A priority document must be filed within the later of 16 months of the priority date or 6 months of the Italian filing date. An Italian translation of the priority document is also due within 6 months of the filing date. (Kluwer; 1 Aug 2019)
+
+Translation: If not filed in Italian, an Italian translation must be submitted within 2 months of the filing date. Where the Italian patent is the first filed patent in the family, an English translation must also be submitted within 2 months of the filing date. (Kluwer; 31 Dec 2025)
+
+Oppositions: Third parties may submit petitions during the examination process. (Gualeni, Nadia; Lexology, "Patent Opposition Procedure in Italy - Coming Soon?"; 17 Dec 2014)
+
+Response to Search Report: Effective 1 July 2008, if the application is the first filing of the patent, the applicant has 21 months from the filing date to reply to the Search Report (the end of the 18-month secrecy period plus 3 months). 2 months grace, with fee. (Bungnion Udine; July 2019) The search report is sent out at around 9 months from filing. (Botti and Ferrari, "Italian Patent"; retrieved 1 Aug 2019)
+
+Duration: 20 years from the filing date. Prior to 21 August 1979, 15 years. Patents still valid at the time of the law change were automatically extended from to 20 years. (Manual Industrial Property, Supplement No. 78, August 1997)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest. (Katzarov; 1 Aug 2019)
+
+Patent Law Update
+
+___________________
+
+Country: Italy (IT)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Due Date)
+Action:
+
+Filing
+
+020
+
+Translation Due (Final)
+
+Filing
+
+020
+
+Law Highlights Became a member of the Paris Convention on 7 July 1884.
+
+Conventions: Paris Convention, PCT, WIPO, WTO TRIPS, European Patent Convention, Strasbourg Agreement
+
+Filing Requirements: 1. Applicant and inventor details. Designation of the inventor should be submitted within 2 months of the filing date. An extension of time may be granted. 2. Power of Attorney, to be submitted within 2 months of filing. Extension is possible, and a general power of attorney may be kept on file. 3. Specification and abstract, with Italian translation 4. Claims (Katzarov Manual of Industrial Property; last retrieved 1 Aug 2019) (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Priority: Paris Convention priority may be claimed on filing, or within 16 months of the priority date. A priority document must be filed within the later of 16 months of the priority date or 6 months of the Italian filing date. An Italian translation of the priority document is also due within 6 months of the filing date. (Kluwer; 1 Aug 2019)
+
+Translation: If not filed in Italian, an Italian translation must be submitted within 2 months of the filing date. Where the Italian patent is the first filed patent in the family, an English translation must also be submitted within 2 months of the filing date. (Kluwer; 31 Dec 2025)
+
+Oppositions: Third parties may submit petitions during the examination process. (Gualeni, Nadia; Lexology, "Patent Opposition Procedure in Italy - Coming Soon?"; 17 Dec 2014)
+
+Response to Search Report: Effective 1 July 2008, if the application is the first filing of the patent, the applicant has 21 months from the filing date to reply to the Search Report (the end of the 18-month secrecy period plus 3 months). 2 months grace, with fee. (Bungnion Udine; July 2019) The search report is sent out at around 9 months from filing. (Botti and Ferrari, "Italian Patent"; retrieved 1 Aug 2019)
+
+Duration: 20 years from the filing date. Prior to 21 August 1979, 15 years. Patents still valid at the time of the law change were automatically extended from to 20 years. (Manual Industrial Property, Supplement No. 78, August 1997)
+
+Working: A patent must be worked within 3 years from the issue date or 4 years from the filing date, whichever period expires latest. (Katzarov; 1 Aug 2019)
+
+Patent Law Update
+
+___________________
+
+Country: Kazakhstan (KZ)
+
+EXT - Extension for pharmaceuticals and agricultural chemicals
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Parent/PCT
+
+Terms (y-m) For 25 0
+
+from
+
+to
+
+Law Highlights Patent term extensions of up to 5 years are possible in Kazakhstan for pharmaceutical or agrochemical patents that require marketing authorization. (Kluwer IP Law; retrieved 30 Dec 2025) The extension is available for Eurasian patents. (Eurasian Patent Office, "Procedures on Extending the Term of a Eurasian Patent"; 17 Dec 2013)
+
+Patent Law Update
+
+___________________
+
+Country: Luxembourg (LU)
+
+PCT - Patent Cooperation Treaty National Phase
+
+Law Actions Action: Demand Due
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Demand Due (Chapter II) (Due Date)
+Action: National Filing Due
+
+Priority
+
+0 19 0
+
+Nat. Filing - 30 Months (Final) Nat. Filing - 20 Months (Final)
+Action: Translation Due
+
+Priority Priority
+
+0 30 0 0 20 0
+
+Translation Due (Chapter II) (Due Date) Priority
+
+0 31 0
+
+Law Highlights Became a member of the PCT on 30 April 1978. Luxembourg may also be designated via the regional European Patent Office.
+
+Filing Requirements: The deadline for entering into the National Phase is 20 months from the priority date for Chapter I and 30 months from the priority date for Chapter II. Luxembourg is one of the last countries to retain the 20-month deadline for Chapter I. A translation into English, French or German is required within 1 month of the Chapter I or Chapter II deadlines. If the translation is in English, the claims must be translated into French or German. (PCT Applicant's Guide Luxembourg; last update 22 May 2020)
+
+Duration: 20 years from the international filing date. (CPi Annuity Service Country Law; last update 30 Jul 2019)
+
+Demand Due/Chapter II: When a country still using the 20-month term for national filing is elected, the 19-month deadline is still in effect for that country. The national filing deadline will only be extended in that country if the demand is filed within the 19-month time limit. (PCT Newsletter No. 10/2003) Regional applications for Luxembourg can still be filed through the EPC within the 31-month term. (WIPO, PCT System, "Time Limits for Entering National/Region Phase under PCT Chapters I and II," last retrieved 20 Feb 2015)
+
+Patent Law Update
+
+___________________
+
+Country: Moldova (MD)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+030
+
+Priority Document (Final)
+Action:
+
+Filing
+
+020
+
+Translation Due (Final)
+
+Filing
+
+030
+
+Law Highlights Moldova is one of the former USSR Republics. The USSR ceased to exist from 25 December 1991, and Moldova became an independent state.
+
+Conventions: Paris Convention, WIPO, WTO TRIPS, PCT, Strasbourg Agreement, Budapest Treaty. European Patents may be validated in Moldova. Moldova was a member of the Eurasian Patent Convention, but withdrew effective 26 April 2012.
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Applicant and inventor details 3. Specifications, claims, abstracts, and drawings 4. Declaration of inventorship If the application is not in Romanian, a Romanian translation is required within 3 months of filing. (Katzarov Manual of Industrial Property; retrieved 28 Mar 2018) (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Priority: Priority may be claimed on filing or within 2 months of filing. A priority document must be submitted within 2 months of the filing date. A translation must be submitted on request from the Office. (Kluwer; 31 Dec 2025)
+
+Examination: Substantive examination must be requested within 30 months of the filing date. If the request is not made, the application will be considered withdrawn. (Kluwer IP Law; last retrieved 2 Jul 2020)
+
+Opposition: Opposition can be submitted within 6 months from the date the decision to grant is published. (Kluwer; 28 Mar 2018)
+
+Duration: 20 years from filing. (Kluwer; 28 Mar 2018)
+
+Transitional Provisions: Regulations for protecting industrial properties came in force on 26 July 1993. USSR patents and applications could be re-registered until 31 December 1994.
+
+Patent Law Update
+
+___________________
+
+Country: Moldova (MD)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Final)
+
+Filing
+
+030
+
+Law Highlights Became a member of the Paris Convention on 25 December 1991.
+
+Moldova is one of the former USSR Republics. The USSR ceased to exist from 25 December 1991, and Moldova became an independent state.
+
+Conventions: Paris Convention, WIPO, WTO TRIPS, PCT, Strasbourg Agreement, Budapest Treaty. European Patents may be validated in Moldova. Moldova was a member of the Eurasian Patent Convention, but withdrew effective 26 April 2012.
+
+Filing Requirements: 1. Power of attorney, to be submitted within 3 months of the filing date. 2. Applicant and inventor details 3. Specifications, claims, abstracts, and drawings 4. Declaration of inventorship If the application is not in Romanian, a Romanian translation is required within 3 months of filing. (Katzarov Manual of Industrial Property; retrieved 28 Mar 2018) (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Priority: Priority may be claimed on filing or within 2 months of filing. A priority document must be submitted within 2 months of the filing date. A translation must be submitted on request from the Office. (Kluwer; 31 Dec 2025)
+
+Examination: Substantive examination must be requested within 30 months of the filing date. If the request is not made, the application will be considered withdrawn. (Kluwer IP Law; last retrieved 2 Jul 2020)
+
+Opposition: Opposition can be submitted within 6 months from the date the decision to grant is published. (Kluwer; 28 Mar 2018)
+
+Duration: 20 years from filing. (Kluwer; 28 Mar 2018)
+
+Transitional Provisions: Regulations for protecting industrial properties came in force on 26 July 1993. USSR patents and applications could be re-registered until 31 December 1994.
+
+Patent Law Update
+
+___________________
+
+Country: Nauru (NR)
+
+Expiration and Tax Terms Added
+Based On
+
+Expiration
+
+Parent/PCT
+
+Law Highlights Conventions: WIPO
+
+CFM - Confirmation of a Foreign Patent
+
+Terms (y-m) For 16 0
+
+from
+
+to
+
+Filing Requirements: A patentee of an Australia, United Kingdom or United States patent may apply in Nauru within 3 years of grant. (Katzarov Manual of Industrial Property; retrieved 1 Feb 2026)
+
+Duration: 16 years from the filing date of the parent application. (Kluwer IP Law; retrieved 1 Feb 2026)
+
+Country: Nauru (NR)
+
+RBP - Registration of British Patent
+
+Expiration and Tax Terms Modified
+
+Changed
+
+Based On
+
+To Expiration From Expiration
+
+Parent/PCT Parent/PCT
+
+Law Highlights Conventions: WIPO
+
+Terms (y-m) For
+16 0 20 0
+
+from
+
+to
+
+Filing Requirements: A patentee of an Australia, United Kingdom or United States patent may apply in Nauru within 3 years of grant. (Katzarov Manual of Industrial Property; retrieved 1 Feb 2026)
+
+Duration: 16 years from the filing date of the parent application. (Kluwer IP Law; retrieved 1 Feb 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Patent Cooperation Treaty (WO)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Demand Due (Chapter II) (Final)
+Action:
+
+Priority
+
+0 22 0
+
+Previously, "Chapter II/Exam Fee Due"
+
+Nat. Filing Due - 30 Months (Final)
+
+Priority
+
+0 30 0
+
+Combined from "Chapter I Due (Extended)" and "Chapter II Due (Nat. Filing)"
+
+Note: The 20-month action "Chapter I Due (Nat. Filing)" has been removed from this record, but corresponding actions have been added to Luxembourg (LU-PCT) and Tanzania (TZ-PCT), the only two countries that have not yet extended the Chapter I deadline.
+
+Law Highlights The Patent Cooperation Treaty was signed on 19 June 1970 and entered into force on 24 January 1978.
+The International Application: 1. An international PCT application should be filed through a Receiving Office within 12 months of the priority local application. It may also be filed without a local priority. 2. An International Searching Authority (ISA) will conduct a search and issue the International Search Report (ISR) and written opinion 16 months from the priority filing date. 3. The application is published at 18 months from the priority date. 4. The applicant may optionally "demand" an International Preliminary Examination (IPE) be conducted by an International Preliminary Examining Authority (IPEA). This demand triggers the Chapter II National Phase schedule. When an IPE is not demanded, the Chapter I National Phase schedule is followed.
+Priority: Priority may be claimed when filing an international application. A priority document should be submitted to the International Bureau within 16 months of the priority date. The applicant may request the Receiving Office transmit the priority document directly to the International Bureau. The priority document will be considered timely filed if it is received before the date of international publication. (Regulations under the PCT, Rule 17; retrieved 18 Apr 2023) Effective 1 April 2007, applicants may restore the right of priority of an earlier filed application (PCT Rule 2.4), provided that the international application was filed within 2 months of the expiration of the 12-month priority period. (PCT Newsletter No. 4/2007 April 2007)
+Article 19 Amendments: Amendments may be made until the later of 16 months from the priority date or 2 months from the mailing date of the ISR and written opinion. Amendments may be accepted after the time limit if they are received before the technical preparations for international publication have been completed. (WIPO, PCT System FAQ, "Guidance on how to file amendments under Articles 19 and 34" 1.01; retrieved 24 Apr 2020)
+Filing Procedure (National Phase): Effective for applications with a priority date of 1 April 2002 or later, Article 22 allows each country to extend the Chapter I National Filing deadline from the original 20 months to 30 months or longer from the earliest priority date. Most countries have extended the deadline to 30 or 31 months. Where a demand for International Preliminary Examination was filed and Chapter II was elected, National Phase entry may be made within 30 months from the priority filing date. Article 39 (1)(b) also allows for each country to set a longer deadline. Many countries have extended the deadline to 31 months.
+Demand Due (Chapter II): If the applicant files a "demand" for International Preliminary Examination, entering the National Phase is based on the Chapter II schedule. As of 1 January 2004, the demand may be filed by the later of a) 3 months from receipt of the international search report and opinion or b) 22 months from the priority date. To add the 3-month demand deadline, use WO-Demand Due (Transmittal Dt) from the Action Type table.
+Transitional Provisions:
+
+Patent Law Update
+
+___________________
+
+Initially, the Demand for International Preliminary Examination was due 19 months from priority. The original term for entering the National Phase was 20 months from the priority date for Chapter I, and 30 months from the priority date for Chapter II. When a country still using the 20-month term for national filing is elected, the 19-month deadline is still in effect for that country. The national filing deadline will only be extended in that country if the demand is filed within the 19-month time limit. (PCT Newsletter No. 10/2003) Luxembourg and Tanzania have not yet adjusted their national law to conform to the 30-month deadline, and still use the 20-month term for entering the National Phase. See the country law records for Luxembourg and Tanzania for these deadlines. Regional applications in these countries can still be filed through the EPC or ARIPO within the 31-month term. (WIPO, PCT System, "Time Limits for Entering National/Region Phase under PCT Chapters I and II," last retrieved 20 Feb 2015)
+
+Patent Law Update
+
+___________________
+
+Country: Patent Cooperation Treaty (WO)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Demand Due (Chapter II) (Final)
+Action:
+
+Filing
+
+0 22 0
+
+Previously, "Chapter II/Exam Fee Due"
+
+Nat. Filing Due - 30 Months (Final)
+
+Filing
+
+0 30 0
+
+Combined from "Chapter I Due (Extended)" and "Chapter II Due (Nat. Filing)"
+
+Note: The 20-month action "Chapter I Due (Nat. Filing)" has been removed from this record, but has been added as "Nat. Filing - 20 Months (Ch. I)" to Luxembourg (LU-PCT) and as "Nat. Filing - 21 Months (Ch. I)" to Tanzania (TZ-PCT), the only two countries that have yet to extend the Chapter I deadline.
+
+Law Highlights The Patent Cooperation Treaty was signed on 19 June 1970 and entered into force on 24 January 1978.
+The International Application: 1. An international PCT application should be filed through a Receiving Office within 12 months of the priority local application. It may also be filed without a local priority. 2. An International Searching Authority (ISA) will conduct a search and issue the International Search Report (ISR) and written opinion 16 months from the priority filing date. 3. The application is published at 18 months from the priority date. 4. The applicant may optionally "demand" an International Preliminary Examination (IPE) be conducted by an International Preliminary Examining Authority (IPEA). This demand triggers the Chapter II National Phase schedule. When an IPE is not demanded, the Chapter I National Phase schedule is followed.
+Priority: Priority may be claimed when filing an international application. A priority document should be submitted to the International Bureau within 16 months of the priority date. The applicant may request the Receiving Office transmit the priority document directly to the International Bureau. The priority document will be considered timely filed if it is received before the date of international publication. (Regulations under the PCT, Rule 17; retrieved 18 Apr 2023) Effective 1 April 2007, applicants may restore the right of priority of an earlier filed application (PCT Rule 2.4), provided that the international application was filed within 2 months of the expiration of the 12-month priority period. (PCT Newsletter No. 4/2007 April 2007)
+Article 19 Amendments: Amendments may be made until the later of 16 months from the priority date or 2 months from the mailing date of the ISR and written opinion. Amendments may be accepted after the time limit if they are received before the technical preparations for international publication have been completed. (WIPO, PCT System FAQ, "Guidance on how to file amendments under Articles 19 and 34" 1.01; retrieved 24 Apr 2020)
+Filing Procedure (National Phase): Effective for applications with a priority date of 1 April 2002 or later, Article 22 allows each country to extend the Chapter I National Filing deadline from the original 20 months to 30 months or longer from the earliest priority date. Most countries have extended the deadline to 30 or 31 months. Where a demand for International Preliminary Examination was filed and Chapter II was elected, National Phase entry may be made within 30 months from the priority filing date. Article 39 (1)(b) also allows for each country to set a longer deadline. Many countries have extended the deadline to 31 months.
+Demand Due (Chapter II): If the applicant files a "demand" for International Preliminary Examination, entering the National Phase is based on the Chapter II schedule. As of 1 January 2004, the demand may be filed by the later of a) 3 months from receipt of the international search report and opinion or b) 22 months from the priority date. To add the 3-month demand deadline, use WO-Demand Due (Transmittal Dt) from the Action Type table.
+
+Patent Law Update
+
+___________________
+
+Transitional Provisions: Initially, the Demand for International Preliminary Examination was due 19 months from priority. The original term for entering the National Phase was 20 months from the priority date for Chapter I, and 30 months from the priority date for Chapter II. When a country still using the 20-month term for national filing is elected, the 19-month deadline is still in effect for that country. The national filing deadline will only be extended in that country if the demand is filed within the 19-month time limit. (PCT Newsletter No. 10/2003) Luxembourg and Tanzania have not yet adjusted their national law to conform to the 30-month deadline, and still use the 20-month term for entering the National Phase. See the country law records for Luxembourg and Tanzania for these deadlines. Regional applications in these countries can still be filed through the EPC or ARIPO within the 31-month term. (WIPO, PCT System, "Time Limits for Entering National/Region Phase under PCT Chapters I and II," last retrieved 20 Feb 2015)
+
+Patent Law Update
+
+___________________
+
+Country: Romania (RO)
+
+ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action:
+
+Power of Attorney (Due Date)
+Action:
+
+Filing
+
+040
+
+Priority Document (Due Date) Priority Document - Filing (Final)
+Action:
+
+Priority Filing
+
+0 16 0 040
+
+Translation Due (Final)
+
+Filing
+
+020
+
+Law Highlights Conventions: Paris Convention, WIPO, PCT, WTO TRIPS, Patent Law Treaty, Budapest Treaty, Strasbourg Agreement, European Patent Convention
+
+Filing Requirements: 1. Power of Attorney, to be filed within 4 months of filing or when requested by the Office 2. Application on prescribed form with applicant details 3. Description with claims and abstract 4. Inventor details and declaration of the inventor 5. Drawings Documents should be in Romanian. If filed in another language for "justified reasons," a Romanian translation must be submitted within 2 months of filing. (Katzarov Manual of Industrial Property; retrieved 14 Oct 2020) (Kluwer IP Law; retrieved 14 Oct 2020)
+
+Priority: Paris Convention priority may be claimed on filing or within 2 months of filing the application. A priority document must be submitted no later than 4 months from filing or 16 months from the priority date. Translation may be requested by the Office. (Kluwer IP Law; last retrieved 14 Oct 2020)
+
+Examination: The request for substantive examination may be made on filing or within 30 months after the filing date. If the examination is not requested, the application will be rejected. (ROMINVENT S.A.; October 2020)
+
+Opposition: Within 6 months of the publication of the decision to grant a patent. (Kluwer; 14 Oct 2020)
+
+Duration: 20 years from the filing date. (Katzarov; 14 Oct 2020)
+
+Working: A patent must be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Katzarov; 14 Oct 2020)
+
+Transitional Provisions: Patents granted before 21 January 1992 retain the former duration of 15 years from the filing date.
+
+Patent Law Update
+
+___________________
+
+Country: Romania (RO)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Due Date)
+
+Filing
+
+040
+
+Law Highlights Became a member of the Paris Convention on 6 October 1920.
+
+Conventions: Paris Convention, WIPO, PCT, WTO TRIPS, Patent Law Treaty, Budapest Treaty, Strasbourg Agreement, European Patent Convention
+
+Filing Requirements: 1. Power of Attorney, to be filed within 4 months of filing or when requested by the Office 2. Application on prescribed form with applicant details 3. Description with claims and abstract 4. Inventor details and declaration of the inventor 5. Drawings Documents should be in Romanian. If filed in another language for "justified reasons," a Romanian translation must be submitted within 2 months of filing. (Katzarov Manual of Industrial Property; retrieved 14 Oct 2020) (Kluwer IP Law; retrieved 14 Oct 2020)
+
+Priority: Paris Convention priority may be claimed on filing or within 2 months of filing the application. A priority document must be submitted no later than 4 months from filing or 16 months from the priority date. Translation may be requested by the Office. (Kluwer IP Law; last retrieved 14 Oct 2020)
+
+Examination: The request for substantive examination may be made on filing or within 30 months after the filing date. If the examination is not requested, the application will be rejected. (ROMINVENT S.A.; October 2020)
+
+Opposition: Within 6 months of the publication of the decision to grant a patent. (Kluwer; 14 Oct 2020)
+
+Duration: 20 years from the filing date. (Katzarov; 14 Oct 2020)
+
+Working: A patent must be worked within the later of 3 years from the issue date or 4 years from the filing date, or risk compulsory license. (Katzarov; 14 Oct 2020)
+
+Transitional Provisions: Patents granted before 21 January 1992 retain the former duration of 15 years from the filing date.
+
+Patent Law Update
+
+___________________
+
+Country: Saudi Arabia (SA)
+
+ID - International Design - Hague Agreement
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Priority Document (Final)
+
+Publication
+
+030
+
+Law Highlights Saudi Arabia became a member of the Hague Agreement (Geneva Act) effective 7 April 2025. (Hague System News; 20 Jan 2025)
+
+Priority: A priority document must be submitted within 3 months of the date of publication of the international registration in the International Designs Bulletin. (Hague Member Profiles - Saudi Arabia; last updated 30 Sep 2025)
+
+Duration: 15 years, subject to 5-year renewals. International registrations should be renewed directly with WIPO.
+
+Patent Law Update
+
+___________________
+
+Country: Serbia (RS)
+
+ORD - Utility Patent Filing
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action: Priority Document
+
+Priority Document - Filing (Final) Priority Document (Final)
+
+Filing Priority
+
+030 0 16 0
+
+Law Highlights The state union of Serbia and Montenegro ceased to exist on 3 June 2006. Its successors are two independent states: The Republic of Serbia (RS) and The Republic of Montenegro (ME).
+
+Conventions: Paris Convention, WIPO, Budapest Treaty, PCT, European Patent Convention
+
+Filing Requirements: 1. Application with applicant and inventor details. 2. Specification with claims and abstract 3. Drawings 4. Power of attorney, to be submitted on filing or within 2 months of a notification from the Office. If documents are not filed in Serbian, the Office will request a Serbian translation to be submitted within 2 months of the notice from the Office. (Kluwer IP Law; last retrieved 31 Dec 2025)
+
+Priority: Must be claimed within 2 months of filing. A certified copy of priority document is due within 3 months of filing or 16 months from priority. Multiple and partial priorities are allowed. (Kluwer; 28 Jul 2017)
+
+Examination: Examination must be requested and the examination fee be paid within 6 months from the publication of the search report. (Katzarov Manual of Intellectual Property; last retrieved 27 Dec 2019) Between 18 December 1981 and 26 July 1990, the term was 4 years from the publication date. (Manual Industrial Property, Supplement No. 69, December 1993)
+
+Opposition: Opposition procedures are not available, but third parties may submit observations after publication. (Kluwer IP Law; retrieved 27 Dec 2019)
+
+Duration: 20 years from the filing date.
+
+Transitional Provisions: For patents applied for prior to 27 July 1990, the duration was 7 years from the publication date, renewable for an additional 7 years. For patents granted before 28 December 1981, the duration was 15 years from publication of the application. Rights obtained in Serbia and Montenegro passed to Serbia with no additional formalities needed. For Montenegro, re-registration was necessary. (Mikijelj, Jankovic & Bodanovic; Serbia)
+
+Working: A patent must be worked within the later of 4 years from the filing date, or 3 years from the issue date, or risk compulsory licensing. (Katzarov; 27 Dec 2019)
+
+Patent Law Update
+
+___________________
+
+Country: Serbia (RS)
+
+PRI - Priority Application
+
+Law Highlights The state union of Serbia and Montenegro ceased to exist on 3 June 2006. Its successors are two independent states: The Republic of Serbia (RS) and The Republic of Montenegro (ME).
+Conventions: Paris Convention, WIPO, Budapest Treaty, PCT, European Patent Convention
+Filing Requirements: 1. Application with applicant and inventor details. 2. Specification with claims and abstract 3. Drawings 4. Power of attorney, to be submitted on filing or within 2 months of a notification from the Office. If documents are not filed in Serbian, the Office will request a Serbian translation to be submitted within 2 months of the notice from the Office. (Kluwer IP Law; last retrieved 31 Dec 2025)
+Priority: Must be claimed within 2 months of filing. A certified copy of priority document is due within 3 months of filing or 16 months from priority. Multiple and partial priorities are allowed. (Kluwer; 28 Jul 2017)
+Examination: Examination must be requested and the examination fee be paid within 6 months from the publication of the search report. (Katzarov Manual of Intellectual Property; last retrieved 27 Dec 2019) Between 18 December 1981 and 26 July 1990, the term was 4 years from the publication date. (Manual Industrial Property, Supplement No. 69, December 1993)
+Opposition: Opposition procedures are not available, but third parties may submit observations after publication. (Kluwer IP Law; retrieved 27 Dec 2019)
+Duration: 20 years from the filing date.
+Transitional Provisions: For patents applied for prior to 27 July 1990, the duration was 7 years from the publication date, renewable for an additional 7 years. For patents granted before 28 December 1981, the duration was 15 years from publication of the application. Rights obtained in Serbia and Montenegro passed to Serbia with no additional formalities needed. For Montenegro, re-registration was necessary. (Mikijelj, Jankovic & Bodanovic; Serbia)
+Working: A patent must be worked within the later of 4 years from the filing date, or 3 years from the issue date, or risk compulsory licensing. (Katzarov; 27 Dec 2019)
+
+Patent Law Update
+
+___________________
+
+Country: Spain (ES)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+
+Filing
+
+040
+
+Law Highlights Spanish patents and European patents granted in Spain cover the entire territory of Spain including the provinces of the Balearic and the Canary Islands and the municipalities of Ceuta and Melilla.
+
+Conventions: Paris Convention, PCT, European Patent Convention, WIPO, Strasbourg Agreement, Budapest Treaty, WTO TRIPS
+
+Filing Requirements: 1. Applicant details on official form 2. Description, claims, and abstract 3. Drawings 4. A declaration from the inventor should be submitted on filing, or at the latest within 4 months of the filing date. From 6 November 2013, appointing a Spanish agent is optional, and Power of Attorney is only required when requested by the office. If the application is not in Spanish, a translation must be submitted within 2 months of a notification from the Office. (Katzarov Manual of Industrial Property; 27 Jul 2018) (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed. The Office may request a certified priority document and a translation. (Kluwer; 27 Jul 2018)
+
+Examination: Effective 1 April 2017, a report of the state of the art must be requested when filing the application. (ABG Patentes, May 2017) Previously, the report had to be requested by the applicant within 15 months from the filing date or priority date if priority was claimed. Following the publication of the search report with the application, the applicant has 3 months to request substantive examination. (Katzarov; retrieved 27 Jul 2018)
+
+Opposition: For applications filed on or after 1 April 2017, within 6 months of the publication of grant. (Kluwer; 27 Jul 2018) Previously, within 2 months of the publication of the application.
+
+Duration: 20 years from the filing date. Applications filed prior to 26 June 1986 retain the duration of 20 years from the issue date. (Manual Industrial Property, Supplement No. 89, August 2001)
+
+Working: Must be worked within 4 years from the filing date or 3 years from the publication of grant date, whichever term is later. (Kluwer; 27 Jul 2018)
+
+Patent Law Update
+
+___________________
+
+Country: Spain (ES)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Declaration of Inventor (Final)
+
+Filing
+
+040
+
+Law Highlights Became a member of the Paris Convention on 7 July 1884.
+
+Spanish patents and European patents granted in Spain cover the entire territory of Spain including the provinces of the Balearic and the Canary Islands and the municipalities of Ceuta and Melilla.
+
+Conventions: Paris Convention, PCT, European Patent Convention, WIPO, Strasbourg Agreement, Budapest Treaty, WTO TRIPS
+
+Filing Requirements: 1. Applicant details on official form 2. Description, claims, and abstract 3. Drawings 4. A declaration from the inventor should be submitted on filing, or at the latest within 4 months of the filing date. From 6 November 2013, appointing a Spanish agent is optional, and Power of Attorney is only required when requested by the office. If the application is not in Spanish, a translation must be submitted within 2 months of a notification from the Office. (Katzarov Manual of Industrial Property; 27 Jul 2018) (Kluwer IP Law; retrieved 2 Jan 2026)
+
+Priority: Paris Convention priority may be claimed. The Office may request a certified priority document and a translation. (Kluwer; 27 Jul 2018)
+
+Examination: Effective 1 April 2017, a report of the state of the art must be requested when filing the application. (ABG Patentes, May 2017) Previously, the report had to be requested by the applicant within 15 months from the filing date or priority date if priority was claimed. Following the publication of the search report with the application, the applicant has 3 months to request substantive examination. (Katzarov; retrieved 27 Jul 2018)
+
+Opposition: For applications filed on or after 1 April 2017, within 6 months of the publication of grant. (Kluwer; 27 Jul 2018) Previously, within 2 months of the publication of the application.
+
+Duration: 20 years from the filing date. Applications filed prior to 26 June 1986 retain the duration of 20 years from the issue date. (Manual Industrial Property, Supplement No. 89, August 2001)
+
+Working: Must be worked within 4 years from the filing date or 3 years from the publication of grant date, whichever term is later. (Kluwer; 27 Jul 2018)
+
+Patent Law Update
+
+___________________
+
+Country: Taiwan (TW)
+
+DES - Design
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Due Date)
+Action:
+
+Filing
+
+040
+
+Priority Document (Final)
+Action:
+
+Priority
+
+0 10 0
+
+Request Deferred Examination (Final)
+Law Highlights Conventions: WTO
+
+Filing
+
+2 0 0 Filing
+
+1/1/2026
+
+Filing Requirements: 1. Application form 2. Power of attorney, to be submitted within 4 months of the filing date. A 2-month extension is possible. 3. Assignment, simply signed by creator 4. Specification, with Chinese translation 5. Drawings (Kluwer IP Law; last retrieved 4 Feb 2026)
+
+Priority: Taiwan is not a member of the Paris Convention. Priority claims are available at the time of filing only for countries with reciprocal agreements with Taiwan, including WTO members as of 1 January 2002. If priority is claimed, the certified priority document must be submitted within 10 months of priority. (Kluwer; 18 Oct 2017)
+
+Opposition: Not available (Kluwer; 18 Oct 2017)
+
+Examination: Substantive examination of design patents is conducted automatically. (IPO Ministry of Economic Affairs ROC, Patent FAQs, last updated 28 Nov 2025) Effective 1 January 2026, substantive examination for designs may be deferred up to 2 years from the filing date. Previously, 1 year. (Lexology, "A More Flexible Deferred Patent Examination System to Take Effect on January 1 2026"; 19 Dec 2025)
+
+Duration: Effective for all active designs on 1 November 2019, 15 years from filing. (Lee and Li; September 2019) Previously, 12 years from filing. In practice, the duration is considered 1 day less than 12 years. (Wenping and Co., August 2017)
+
+Transitional Provisions: Between 1 January 2002 and 23 January 1994, design patents had a term of 10 years from the filing date. All patents still valid on 1 January 2002 were extended to the 12-year term. (Lee and Li Bulletin, May 2001, p.8) Designs published before 23 January 1994 had a duration of 5 years from the publication date, not exceeding 6 years from the filing date. (Manual Industrial Property, Supplement No. 72, January 1995)
+
+Working: No provision
+
+Patent Law Update
+
+___________________
+
+Country: Taiwan (TW)
+
+ORD - Utility Patent Filing
+
+Law Actions
+Action:
+Request Deferred Examination (Final)
+Action:
+Request Examination (Final)
+Law Highlights Conventions: WTO
+
+Based On Filing Filing
+
+Terms
+
+(y-m-d) Effective for
+
+from
+
+to
+
+5 0 0 Filing
+
+1/1/2026
+
+3 0 0 Filing
+
+10/26/2002
+
+Filing Requirements: 1. Power of Attorney, to be submitted within 4 months of the filing date. A 2-month extension is possible. 2. Applicant and inventor details 3. Assignment from inventor 4. Specification 5. Drawings 6. Translation into traditional Chinese should be submitted within 4 months of the filing date. A 2-month extension is possible. A certificate of corporation and/or a certificate of nationality may be requested by the Office. (Kluwer IP Law; last retrieved 19 Jun 2023)
+
+Priority: Taiwan is not a member of the Paris Convention. Priority claims are available at the time of filing only for countries with reciprocal agreements with Taiwan, including WTO members as of 1 January 2002. If priority is claimed, the certified priority document must be submitted within 16 months of priority. (Kluwer; 18 Oct 2017)
+
+Examination: Effective 26 October 2002, a request for substantive examination must be filed within 3 years of filing the application. Under the prior law substantive examination was automatic. (Patent Act, Section 3, Article 36-2) Effective 1 January 2026, applicants may request substantive examination be deferred within 5 years from the filing date. (Lexology, "A More Flexible Deferred Patent Examination System to Take Effect on January 1 2026"; 19 Dec 2025) Between 1 April 2015 and 31 December 2025, applicants could request to defer examination within 3 years of the filing date. (Jaw-Hwa International, "TIPO Beginning to Accept a Request for Postponement," What's New, May 2015)
+
+Opposition: No longer available as of 1 July 2004. (Kluwer; 18 Oct 2017)
+
+Duration: 20 years from the filing date. In practice, the duration is considered 1 day less than 20 years. (Wenping and Co., August 2017)
+
+Transitional Provisions: Prior to 23 January 1994, the duration was 15 years from the publication, but not to exceed 18 years from filing. (Manual Industrial Property, Supplement No. 72, January 1995) Patents granted under the old law but still in force on 1 January 2002 could have their term retroactively extended to 20 years upon payment of annuities and submission of the original patent certificate. (World Intellectual Property Report, Vol. 16, No. 4, April 2002, p.7). Prior to 16 April 1979, 15 years from filing.
+
+Patent Law Update
+
+___________________
+
+Country: Taiwan (TW)
+
+PDS - Priority Design Application
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Power of Attorney (Due Date)
+Action:
+
+Filing
+
+040
+
+Request Deferred Examination (Final)
+Law Highlights Conventions: WTO
+
+Filing
+
+2 0 0 Filing
+
+1/1/2026
+
+Filing Requirements: 1. Application form 2. Power of attorney, to be submitted within 4 months of the filing date. A 2-month extension is possible. 3. Assignment, simply signed by creator 4. Specification, with Chinese translation 5. Drawings (Kluwer IP Law; last retrieved 4 Feb 2026)
+
+Priority: Taiwan is not a member of the Paris Convention. Priority claims are available at the time of filing only for countries with reciprocal agreements with Taiwan, including WTO members as of 1 January 2002. If priority is claimed, the certified priority document must be submitted within 10 months of priority. (Kluwer; 18 Oct 2017)
+
+Opposition: Not available (Kluwer; 18 Oct 2017)
+
+Examination: Substantive examination of design patents is conducted automatically. (IPO Ministry of Economic Affairs ROC, Patent FAQs, last updated 28 Nov 2025) Effective 1 January 2026, substantive examination for designs may be deferred up to 2 years from the filing date. Previously, 1 year. (Lexology, "A More Flexible Deferred Patent Examination System to Take Effect on January 1 2026"; 19 Dec 2025)
+
+Duration: Effective for all active designs on 1 November 2019, 15 years from filing. (Lee and Li; September 2019) Previously, 12 years from filing. In practice, the duration is considered 1 day less than 12 years. (Wenping and Co., August 2017)
+
+Transitional Provisions: Between 1 January 2002 and 23 January 1994, design patents had a term of 10 years from the filing date. All patents still valid on 1 January 2002 were extended to the 12-year term. (Lee and Li Bulletin, May 2001, p.8) Designs published before 23 January 1994 had a duration of 5 years from the publication date, not exceeding 6 years from the filing date. (Manual Industrial Property, Supplement No. 72, January 1995)
+
+Working: No provision
+
+Patent Law Update
+
+___________________
+
+Country: Taiwan (TW) PRI - Priority Application
+
+Law Actions
+Action:
+Request Deferred Examination (Final)
+Action:
+Request Examination (Final)
+Law Highlights Conventions: WTO
+
+Based On Filing Filing
+
+Terms
+
+(y-m-d) Effective for
+
+from
+
+to
+
+5 0 0 Filing
+
+1/1/2026
+
+3 0 0 Filing
+
+10/26/2002
+
+Filing Requirements: 1. Power of Attorney, to be submitted within 4 months of the filing date. A 2-month extension is possible. 2. Applicant and inventor details 3. Assignment from inventor 4. Specification 5. Drawings 6. Translation into traditional Chinese should be submitted within 4 months of the filing date. A 2-month extension is possible. A certificate of corporation and/or a certificate of nationality may be requested by the Office. (Kluwer IP Law; last retrieved 19 Jun 2023)
+
+Priority: Taiwan is not a member of the Paris Convention. Priority claims are available at the time of filing only for countries with reciprocal agreements with Taiwan, including WTO members as of 1 January 2002. If priority is claimed, the certified priority document must be submitted within 16 months of priority. (Kluwer; 18 Oct 2017)
+
+Examination: Effective 26 October 2002, a request for substantive examination must be filed within 3 years of filing the application. Under the prior law substantive examination was automatic. (Patent Act, Section 3, Article 36-2) Effective 1 January 2026, applicants may request substantive examination be deferred within 5 years from the filing date. (Lexology, "A More Flexible Deferred Patent Examination System to Take Effect on January 1 2026"; 19 Dec 2025) Between 1 April 2015 and 31 December 2025, applicants could request to defer examination within 3 years of the filing date. (Jaw-Hwa International, "TIPO Beginning to Accept a Request for Postponement," What's New, May 2015)
+
+Opposition: No longer available as of 1 July 2004. (Kluwer; 18 Oct 2017)
+
+Duration: 20 years from the filing date. In practice, the duration is considered 1 day less than 20 years. (Wenping and Co., August 2017)
+
+Transitional Provisions: Prior to 23 January 1994, the duration was 15 years from the publication, but not to exceed 18 years from filing. (Manual Industrial Property, Supplement No. 72, January 1995) Patents granted under the old law but still in force on 1 January 2002 could have their term retroactively extended to 20 years upon payment of annuities and submission of the original patent certificate. (World Intellectual Property Report, Vol. 16, No. 4, April 2002, p.7). Prior to 16 April 1979, 15 years from filing.
+
+Patent Law Update Country: Tanzania, United Republic of (TZ)
+
+Law Actions
+Action: Demand Due
+Demand Due (Chapter II) (Due Date)
+Action: National Filing Due
+Nat. Filing - 31 Months (Final) Nat. Filing - 21 Months (Final)
+
+Based On
+Priority
+Priority Priority
+
+___________________
+PCT - Patent Cooperation Treaty National Phase
+
+Terms
+
+(y-m-d) Effective for
+
+from
+
+to
+
+0 19 0
+
+0 31 0 0 21 0
+
+Law Highlights Became a member of the PCT on 14 September 1999.
+Filing Requirements: The deadline for entering into the National Phase is 21 months from the priority date for Chapter I and 31 months from the priority date for Chapter II. A translation into English is required at the same time. (PCT Applicant's Guide - Tanzania; last update 7 Jun 2007)
+Duration: 20 years from the international filing date. (Cpi Annuity Service Country Law; retrieved 6 May 2019)
+Demand Due/Chapter II: When a country still using the 20-month term for national filing is elected, the 19-month deadline is still in effect for that country. The national filing deadline will only be extended in that country if the demand is filed within the 19-month time limit. (PCT Newsletter No. 10/2003) Regional applications for Tanzania can still be filed through ARIPO within the 31-month term. (WIPO, PCT System, "Time Limits for Entering National/Region Phase under PCT Chapters I and II," last retrieved 20 Feb 2015)
+
+Patent Law Update Country: United Arab Emirates (AE)
+
+Action: National Filing Due
+Nat. Filing - 30 Months (Final)
+Action:
+Translation Due (Final)
+
+Priority Priority
+
+0 30 0 0 30 0
+
+___________________
+PCT - Patent Cooperation Treaty National Phase
+
+Law Highlights Became a member of the PCT on 10 March 1999.
+Filing Requirements: The deadline for entering into the National Phase is 30 months from the priority date for both Chapter I and Chapter II. Documents should be in both Arabic and English. (PCT Applicant's Guide - United Arab Emirates; last update 15 Sep 2023)
+Duration: 20 years from the PCT international filing date, subject to annual fees. (Kluwer IP Law; retrieved 23 Jan 2026)
+
+Patent Law Update
+
+___________________
+
+Country: United States of America (US)
+
+ID - International Design - Hague Agreement
+
+Law Highlights On 13 February 2015, the US ratified the Geneva 1999 Act of the Hague Agreement. Effective 13 May 2015, applicants of international designs can designate the US as a contracting party.
+International applications designating the US must contain: 1. A claim 2. An oath or declaration by the inventor 3. Only one design
+An Information Disclosure Statement is optional, and may be filed with the international design application. An Application Data Sheet may be submitted after the publication of the international application. (USPTO)
+Priority: A priority document must be submitted on or before the payment of the second part of the individual designation fee. Electronic submissions via WIPO DAS are also accepted. (Hague Member Profiles - United States of America; last updated 1 Sep 2025)
+Duration: A single term of 15 years from issue. No renewals are necessary for the US designation, but if the US is the only designation a basic renewal fee is still due to WIPO. (WIPO Information Notice No. 2/2015) (Cpi Annuity Country Law; 16 Dec 2016)
+Continuing and divisional design applications are possible.
+Continuation Fees: Effective for continuing applications filed after 19 January 2025, the filing fee is increased if filed more than 6 years and 9 years after the "earliest benefit date." (USPTO News Brief, 20 Nov 2024) (USPTO Application Assistance Unit, January 2025)
+
+Patent Law Update
+
+___________________
+
+Country: United States of America (US)
+
+PCT - Patent Cooperation Treaty National Phase
+
+Law Actions
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Action: National Filing Due
+
+Nat. Filing - 30 Months (Final)
+Action:
+
+Priority
+
+0 30 0
+
+Priority Document (Due Date)
+
+Priority
+
+0 16 0
+
+Priority Document - Filing (Due Date)
+
+Filing
+
+040
+
+Law Highlights The US became a member of the PCT on 24 January 1978. Patent protection includes the territories of Guam, Puerto Rico, Samoa and the Virgin Islands.
+
+Filing Requirements: 1. The deadline for entering into the National Phase is 30 months from the priority date for both Chapter I and Chapter II. If not in English, an English translation must be submitted. Late submission is possible with an additional fee. 2. An oath or declaration of the inventor must be filed while the application is pending. Note that if the USPTO receives a Request for Continued Examination on a National Phase of a PCT application before receiving the Inventor's Oath/Declaration, it may issue a Notice of Abandonment. (Foley and Lardner LLP, "Can You File an RCE in That U.S. National Stage Application?"; 28 Jul 2015) 3. An Information Disclosure Statement is recommended. (PCT Applicant's Guide - United States; last update 20 Aug 2020)
+
+Priority: A priority claim should be made via an Application Data Sheet within the later of 4 months from filing the application or 16 months from the priority application. For applications with a foreign priority, a certified copy of the foreign application is required within the same time period. (37 CFR 1.55) Effective 18 December 2013, a 2-month grace period is available for a missed priority claim. (MPEP 1828.01)
+
+Examination: Deferred examination cannot be requested for applications resulting from entry of an international application into the national stage.
+
+Duration: 20 years from the international filing date.
+
+Continuation Fees: Effective for continuing applications filed after 19 January 2025, the filing fee is increased if filed more than 6 years and 9 years after the "earliest benefit date." (USPTO News Brief, 20 Nov 2024) (USPTO Application Assistance Unit, January 2025)
+
+Transitional Provisions: For applications filed before 8 June 1995, the later of 17 years from issue or 20 years from the international filing date. (Manual Industrial Property, Supplement No. 87, September 2000)
+
+Patent Law Update
+
+___________________
+
+Country: Uzbekistan (UZ)
+
+ID - International Design - Hague Agreement
+
+Law Actions Action:
+
+Terms
+
+Based On
+
+(y-m-d) Effective for
+
+from
+
+to
+
+Priority Document (Final)
+
+Publication
+
+030
+
+Law Highlights Uzbekistan became a member of the Hague Agreement (Geneva Act) effective 10 January 2025 (Hague Notification No. 153; 5 Nov 2024)
+
+Priority: A priority document must be submitted to the Uzbek IP Office within 3 months of the publication date. (Hague Member Profiles - Uzbekistan; last updated 2 Oct 2025)
+
+Duration: 15 years from filing, subject to 5-year renewals. International registrations should be renewed directly with WIPO.
+
+Patent Law Update
+
+___________________
+
+Country: Vietnam (VN)
+
+ORD - Utility Patent Filing
+
+Law Actions Action:
+
+Based On
+
+Terms (y-m-d)
+
+Effective for
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+010
+
+Priority Document (Final)
+Action:
+
+Filing
+
+030
+
+Request Examination (Final) Request Examination (Final)
+
+Priority Priority
+
+0 36 0 Filing 0 42 0 Filing
+
+Law Highlights Conventions: Paris Convention, PCT, WIPO, WTO TRIPS
+
+from 4/1/2026
+
+to 3/31/2026
+
+Filing Requirements: 1. Applicant and inventor details 2. Power of Attorney, to be submitted within 1 month of the filing date. 3. Deed of Assignment 4. Specification and claims 5. Drawings Documents must be in Vietnamese. (Katzarov Manual of Industrial Property; retrieved 24 Oct 2017) (Kluwer IP Law; retrieved 4 Feb 2026)
+
+Priority: Paris Convention priority must be claimed on filing. A certified priority document must be submitted within 3 months of the filing date. A translation in Vietnamese may be required. If assignee applies, assignment of priority rights must be filed. Multiple and partial priorities are allowed. (Kluwer IP Law; 24 Oct 2017)
+
+Examination: Effective 1 April 2026, examination must be requested and the examination fee paid within 36 months of the filing or priority date. (Rouse, "Major Reforms Effective from April 2026"; 19 Jan 2026) Previously, within 42 months of the priority date. If no request for examination is made, the application will be deemed withdrawn. (Kluwer; last retrieved 24 Oct 2017)
+
+Opposition: May be filed at any time between publication and grant. (Kluwer; 24 Oct 2017)
+
+Duration: 20 years from the filing date. (Katzarov; retrieved 4 Feb 2026) Patents granted prior to 1 July 1996 retain their duration of 15 years from the priority date.
+
+Working: A patent should be worked within the later of 3 years from grant or 4 years from filing, or risk compulsory license. (Kluwer; 4 Feb 2026)
+
+Patent Law Update
+
+___________________
+
+Country: Vietnam (VN)
+
+PCT - Patent Cooperation Treaty National Phase
+
+Law Actions
+Action: National Filing Due
+Nat. Filing - 31 Months (Final)
+Action:
+Power of Attorney (Final)
+Action:
+Request Examination (Final) Request Examination (Final)
+Action:
+Translation Due (Final)
+
+Based On Priority Priority Priority Priority Priority
+
+Terms (y-m-d)
+
+Effective for
+
+0 31 0
+
+0 34 0
+
+0 36 0 Parent/PCT 0 42 0 Parent/PCT
+
+0 31 0
+
+from 4/1/2026
+
+to 3/31/2026
+
+Law Highlights Became a member of the PCT on 10 March 1993.
+Filing Requirements The deadlines for entry into the National Phase in Vietnam are 31 months for both Chapter I and Chapter II. Translation into Vietnamese must be provided at the same time. (PCT Applicants Guide - National Phase Vietnam; retrieved 30 Jul 2018) Power of Attorney should be submitted within 34 months of the priority date. (Kluwer IP Law; retrieved 4 Feb 2026)
+Examination: Effective 1 April 2026, examination must be requested and the examination fee paid within 36 months of the filing or priority date. (Rouse, "Major Reforms Effective from April 2026"; 19 Jan 2026) Previously, within 42 months of the priority date. If no request for examination is made, the application will be deemed withdrawn. (Kluwer; last retrieved 24 Oct 2017)
+An international application for an invention patent can be converted to a utility solution patent after substantive examination, if the application is refused and a request is made within 3 months of refusal. (PCT Applicant's Guide - National Phase - VN; last retrieved 30 Jul 2018)
+
+Patent Law Update
+
+___________________
+
+Country: Vietnam (VN)
+
+PRI - Priority Application
+
+Law Actions Action:
+
+Based On
+
+Terms (y-m-d)
+
+Effective for
+
+Power of Attorney (Final)
+Action:
+
+Filing
+
+010
+
+Request Examination (Final) Request Examination (Final)
+
+Filing Filing
+
+0 36 0 Filing 0 42 0 Filing
+
+Law Highlights Became a member of the Paris Convention on 8 March 1949.
+
+from 4/1/2026
+
+to 3/31/2026
+
+Conventions: Paris Convention, PCT, WIPO, WTO TRIPS
+
+Filing Requirements: 1. Applicant and inventor details 2. Power of Attorney, to be submitted within 1 month of the filing date. 3. Deed of Assignment 4. Specification and claims 5. Drawings Documents must be in Vietnamese. (Katzarov Manual of Industrial Property; retrieved 24 Oct 2017) (Kluwer IP Law; retrieved 4 Feb 2026)
+
+Priority: Paris Convention priority must be claimed on filing. A certified priority document must be submitted within 3 months of the filing date. A translation in Vietnamese may be required. If assignee applies, assignment of priority rights must be filed. Multiple and partial priorities are allowed. (Kluwer IP Law; 24 Oct 2017)
+
+Examination: Effective 1 April 2026, examination must be requested and the examination fee paid within 36 months of the filing or priority date. (Rouse, "Major Reforms Effective from April 2026"; 19 Jan 2026) Previously, within 42 months of the priority date. If no request for examination is made, the application will be deemed withdrawn. (Kluwer; last retrieved 24 Oct 2017)
+
+Opposition: May be filed at any time between publication and grant. (Kluwer; 24 Oct 2017)
+
+Duration: 20 years from the filing date. (Katzarov; retrieved 4 Feb 2026) Patents granted prior to 1 July 1996 retain their duration of 15 years from the priority date.
+
+Working: A patent should be worked within the later of 3 years from grant or 4 years from filing, or risk compulsory license. (Kluwer; 4 Feb 2026)
+
+

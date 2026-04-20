@@ -1150,5 +1150,168 @@ namespace R10.Web.Areas.Releases.Controllers
         }
 
         #endregion
+
+        #region Reports
+
+        public async Task<IActionResult> GetCompareMdbFiles(int releaseId, bool isPat)
+        {
+            var current = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == releaseId);
+            if (current == null) return Json(new List<object>());
+
+            var otherReleases = await _entityService.QueryableList.AsNoTracking()
+                .Where(r => r.ReleaseId != releaseId && r.SystemType == current.SystemType)
+                .ToListAsync();
+
+            var results = new List<object>();
+            foreach (var rel in otherReleases.OrderByDescending(r => r.Year).ThenByDescending(r => r.Quarter))
+            {
+                var sysType = ToDocSystemType(rel.SystemType);
+                var folder = await _documentService.GetFolder(sysType, "ReleaseId", rel.ReleaseId, TruncateFolderName(rel.Name), 0);
+                if (folder == null) continue;
+
+                var docs = await _documentService.DocDocuments
+                    .Where(d => d.FolderId == folder.FolderId && d.DocFile != null && d.DocFile.FileExt == "mdb")
+                    .Select(d => new { d.DocId, d.DocName })
+                    .ToListAsync();
+
+                foreach (var doc in docs)
+                {
+                    bool docIsPat = doc.DocName.Contains("Pat", StringComparison.OrdinalIgnoreCase);
+                    if (docIsPat == isPat)
+                        results.Add(new { doc.DocId, Text = doc.DocName, ReleaseId = rel.ReleaseId });
+                }
+            }
+            return Json(results);
+        }
+
+        public async Task<IActionResult> GetMdbFiles(int releaseId)
+        {
+            var release = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == releaseId);
+            if (release == null) return Json(new List<object>());
+
+            var systemType = ToDocSystemType(release.SystemType);
+            var rootFolder = await _documentService.GetFolder(
+                systemType, "ReleaseId", releaseId, TruncateFolderName(release.Name), 0);
+            if (rootFolder == null) return Json(new List<object>());
+
+            var docs = await _documentService.DocDocuments
+                .Where(d => d.FolderId == rootFolder.FolderId && d.DocFile != null && d.DocFile.FileExt == "mdb")
+                .Select(d => new { d.DocId, d.DocName, d.FileId, UserFileName = d.DocFile != null ? d.DocFile.UserFileName : "" })
+                .ToListAsync();
+            return Json(docs);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GenerateReport(int releaseId, int docId, int compareDocId)
+        {
+            try
+            {
+                var release = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == releaseId);
+                if (release == null) return BadRequest("Release not found.");
+
+                var currentDoc = await _documentService.GetDocumentById(docId);
+                if (currentDoc == null || !currentDoc.FileId.HasValue) return BadRequest("Current document not found.");
+                var currentFile = await _documentService.GetFileById(currentDoc.FileId.Value);
+                if (currentFile == null) return BadRequest("Current file not found.");
+                var currentMdbPath = _documentHelper.GetDocumentPath(currentFile.DocFileName);
+
+                bool isPat = currentDoc.DocName.Contains("Pat", StringComparison.OrdinalIgnoreCase);
+                var compareDoc = await _documentService.GetDocumentById(compareDocId);
+                if (compareDoc == null || !compareDoc.FileId.HasValue) return BadRequest("Comparison document not found.");
+                var compareFile = await _documentService.GetFileById(compareDoc.FileId.Value);
+                if (compareFile == null) return BadRequest("Comparison file not found.");
+                var compareMdbPath = _documentHelper.GetDocumentPath(compareFile.DocFileName);
+
+                if (!System.IO.File.Exists(currentMdbPath)) return BadRequest("Current MDB file not found on disk.");
+                if (!System.IO.File.Exists(compareMdbPath)) return BadRequest("Comparison MDB file not found on disk.");
+
+                var env = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+                var comparisonService = new LawPortal.Web.Services.MdbComparisonService(
+                    env.WebRootPath,
+                    HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Web.Services.MdbComparisonService>>());
+                var diff = await comparisonService.CompareMdbFiles(currentMdbPath, compareMdbPath);
+
+                // Build lookups
+                var countryNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var caseTypeDescs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var countryTable = isPat ? "tblPatCountry" : "tblTmkCountry";
+                var ctTable = isPat ? "tblPatCaseType" : "tblTmkCaseType";
+                using (var lookupConn = new Microsoft.Data.SqlClient.SqlConnection(
+                    HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>().GetConnectionString("DefaultConnection")))
+                {
+                    await lookupConn.OpenAsync();
+                    using var cCmd = new Microsoft.Data.SqlClient.SqlCommand($"SELECT Country, CountryName FROM [{countryTable}]", lookupConn);
+                    using var cReader = await cCmd.ExecuteReaderAsync();
+                    while (await cReader.ReadAsync())
+                    {
+                        var code = cReader["Country"]?.ToString() ?? "";
+                        var name = cReader["CountryName"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(code)) countryNames[code] = name;
+                    }
+                    cReader.Close();
+                    using var ctCmd = new Microsoft.Data.SqlClient.SqlCommand($"SELECT CaseType, Description FROM [{ctTable}]", lookupConn);
+                    using var ctReader = await ctCmd.ExecuteReaderAsync();
+                    while (await ctReader.ReadAsync())
+                    {
+                        var code = ctReader["CaseType"]?.ToString() ?? "";
+                        var desc = ctReader["Description"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(code)) caseTypeDescs[code] = desc;
+                    }
+                }
+
+                var pdfService = new LawPortal.Web.Services.MdbReportPdfService();
+                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs);
+
+                // Store PDF
+                var userName = User.GetUserName();
+                var sysType = ToDocSystemType(release.SystemType);
+                var rootFolder = await _documentService.GetFolder(sysType, "ReleaseId", releaseId, TruncateFolderName(release.Name), 0);
+                if (rootFolder == null)
+                    rootFolder = await _documentService.AddFolder(sysType, "ReleaseId", "Rel", releaseId, TruncateFolderName(release.Name), 0, false);
+
+                var reportName = $"{release.Name}-{(isPat ? "Pat" : "Tmk")}-Report";
+                var existingNames = await _documentService.DocDocuments
+                    .Where(d => d.FolderId == rootFolder.FolderId && d.DocName.StartsWith(reportName))
+                    .Select(d => d.DocName).ToListAsync();
+                if (existingNames.Any(n => n == reportName))
+                {
+                    int num = 1;
+                    while (existingNames.Contains($"{reportName} ({num})")) num++;
+                    reportName = $"{reportName} ({num})";
+                }
+
+                var docFile = new DocFile
+                {
+                    FileExt = "pdf", UserFileName = $"{reportName}.pdf", FileSize = pdfBytes.Length,
+                    IsImage = false, CreatedBy = userName, UpdatedBy = userName,
+                    DateCreated = DateTime.Now, LastUpdate = DateTime.Now
+                };
+                docFile = await _documentService.AddDocFile(docFile);
+
+                var docDocument = new DocDocument
+                {
+                    FolderId = rootFolder.FolderId, DocName = reportName, FileId = docFile.FileId,
+                    Author = userName, CreatedBy = userName, UpdatedBy = userName,
+                    DateCreated = DateTime.Now, LastUpdate = DateTime.Now
+                };
+                await _documentService.UpdateDocuments(userName,
+                    Enumerable.Empty<DocDocument>(), new[] { docDocument }, Enumerable.Empty<DocDocument>(), null, false);
+
+                var docBasePath = _documentHelper.GetDocumentBasePath();
+                Directory.CreateDirectory(docBasePath);
+                var destPath = Path.Combine(docBasePath, docFile.DocFileName);
+                var destDir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
+                await System.IO.File.WriteAllBytesAsync(destPath, pdfBytes);
+
+                return Ok(new { success = $"Report generated: {reportName}.pdf", fileId = docFile.FileId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error generating report: {ex.Message}");
+            }
+        }
+
+        #endregion
     }
 }

@@ -85,10 +85,11 @@ namespace LawPortal.Web.Services
             ["tblTmkDesCaseTypeFieldsDelete_Ext"] = new[] { "DesCaseType", "FromField" },
         };
 
-        // Columns to ignore when comparing (audit fields)
+        // Columns to ignore when comparing (audit fields, identity columns, computed fields)
         private static readonly HashSet<string> IgnoreColumns = new(StringComparer.OrdinalIgnoreCase)
         {
-            "UserID", "DateCreated", "LastUpdate", "tStamp", "Systems"
+            "UserID", "CreatedBy", "UpdatedBy", "DateCreated", "LastUpdate", "tStamp", "Systems",
+            "CDueId", "CExpId", "CountryLawID", "CPIPermanentID"
         };
 
         public MdbComparisonService(string webRootPath, ILogger<MdbComparisonService> logger)
@@ -217,8 +218,8 @@ namespace LawPortal.Web.Services
                     foreach (var col in newRow.Keys)
                     {
                         if (IgnoreColumns.Contains(col)) continue;
-                        var newVal = newRow[col].ToString();
-                        var oldVal = oldRow.ContainsKey(col) ? oldRow[col].ToString() : "";
+                        var newVal = NormalizeValue(newRow[col]);
+                        var oldVal = oldRow.ContainsKey(col) ? NormalizeValue(oldRow[col]) : "";
                         if (newVal != oldVal)
                             changedCols.Add(col);
                     }
@@ -236,6 +237,43 @@ namespace LawPortal.Web.Services
             }
 
             return diff;
+        }
+
+        /// <summary>
+        /// Normalize a JsonElement value for comparison — handles type differences,
+        /// whitespace, date formatting, number precision, boolean casing.
+        /// </summary>
+        private string NormalizeValue(JsonElement el)
+        {
+            switch (el.ValueKind)
+            {
+                case JsonValueKind.Null:
+                case JsonValueKind.Undefined:
+                    return "";
+                case JsonValueKind.True:
+                    return "true";
+                case JsonValueKind.False:
+                    return "false";
+                case JsonValueKind.Number:
+                    // Normalize all numbers to the same format
+                    if (el.TryGetInt64(out var l)) return l.ToString();
+                    return el.GetDouble().ToString("G");
+                case JsonValueKind.String:
+                    var s = el.GetString() ?? "";
+                    // Normalize dates: strip time component if it's midnight
+                    if (DateTime.TryParse(s, out var dt))
+                    {
+                        if (dt.TimeOfDay == TimeSpan.Zero)
+                            return dt.ToString("yyyy-MM-dd");
+                        return dt.ToString("yyyy-MM-dd HH:mm:ss");
+                    }
+                    // Normalize whitespace: trim, collapse multiple spaces, normalize line endings
+                    s = s.Trim().Replace("\r\n", "\n").Replace("\r", "\n");
+                    while (s.Contains("  ")) s = s.Replace("  ", " ");
+                    return s;
+                default:
+                    return el.ToString().Trim();
+            }
         }
 
         private Dictionary<string, object?> ConvertRow(Dictionary<string, JsonElement> row)

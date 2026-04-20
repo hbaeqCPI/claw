@@ -24,7 +24,16 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(for file in TradeSecretRequestMap.cs TradeSecretActivityMap.cs TradeSecretAuditLogMap.cs EmailTemplateMap.cs EmailTypeMap.cs EmailSetupMap.cs EmailDataModelMap.cs DataImportHistoryMap.cs DataImportTypeMap.cs DataImportMappingMap.cs DataImportTypeColumnMap.cs DataImportErrorMap.cs MailDownloadLogMap.cs MailDownloadLogDetailMap.cs MailDownloadRuleMap.cs MailDownloadRuleConditionMap.cs MailDownloadRuleResponsibleMap.cs MailDownloadActionMap.cs MailDownloadActionFilterMap.cs MailDownloadDataMapMap.cs MailDownloadDataMapPatternMap.cs MailDownloadDataAttributeMap.cs)",
-      "Bash(dotnet publish:*)"
+      "Bash(dotnet publish:*)",
+      "Bash(grep -rn \"Database=CLAW\" D:/Projects/Claw/Claw-Claude/R10.Web/appsettings*.json D:/Projects/Claw/Claw-Claude/R10.Web/appsettings*.Development.json)",
+      "Bash(pdftotext \"//DevFS/CtryLaw/2026/1st_Quarter/2000&Up/2026_1_Pat2000.pdf\" \"D:/Projects/Claw/Claw-Claude/temp_mdbs/pat_report_full.txt\")",
+      "Bash(pdftotext \"//DevFS/CtryLaw/2026/1st_Quarter/2000&Up/2026_1_Tmk2000.pdf\" \"D:/Projects/Claw/Claw-Claude/temp_mdbs/tmk_report_full.txt\")",
+      "Bash(pdftotext \"//DevFS/CtryLaw/2026/1st_Quarter/2000&Up/2026_1_Pat2000.pdf\" -)",
+      "Bash(sqlcmd -S \"\\(local\\)\" -d LawPortalCPiR10 -Q \"SELECT ReleaseId, Name, SystemType, Year, Quarter FROM tblRelease WHERE SystemType='R4' ORDER BY ReleaseId\")",
+      "Bash(sqlcmd -S '\\(local\\)' -d LawPortalCPiR10 -Q ':*)",
+      "Bash(D:/Projects/Claw/Claw-Claude/R10.MdbReader/bin/Debug/net8.0/R10.MdbReader.exe \"D:/Projects/Claw/Claw-Claude/R10.Web/UserFiles/Documents/56.mdb\" \"D:/Projects/Claw/Claw-Claude/R10.Web/UserFiles/Documents/48.mdb\")",
+      "Bash(git -C /d/Projects/Claw/Claw-Claude log --oneline -20)",
+      "Bash(git -C /d/Projects/Claw/Claw-Claude diff --stat HEAD)"
     ]
   }
 }
