@@ -37,5 +37,13 @@ namespace R10.Core.Entities
 
         [Display(Name = "Generate Trademark")]
         public bool GenerateTrademark { get; set; } = true;
+
+        /// <summary>
+        /// Free-form notes rendered at the top of the generated release report PDF.
+        /// Used for authoring-time announcements (e.g. "all Opposition actions renamed
+        /// to Opposition Period Ends") that aren't driven by MDB diffs.
+        /// </summary>
+        [Display(Name = "Report Notes")]
+        public string? ReportNotes { get; set; }
     }
 }

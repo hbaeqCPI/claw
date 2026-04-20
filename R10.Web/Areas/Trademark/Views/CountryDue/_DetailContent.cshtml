@@ -25,7 +25,7 @@
         <input type="hidden" asp-for="Country" />
         <input type="hidden" asp-for="CaseType" />
     }
-    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">

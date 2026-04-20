@@ -13,7 +13,7 @@
 }
 <form cpi-detail-form action="Save">
     <input type="hidden" asp-for="ReleaseId" />
-    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
@@ -92,6 +92,17 @@
                         )
                     }
                     <span asp-validation-for="SystemType"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-12">
+                <div class="form-group float-label">
+                    <label asp-for="ReportNotes"></label>
+                    <textarea class="form-control form-control-sm" rows="3"
+                              asp-for="ReportNotes" asp-is-readonly="@isReadOnly"
+                              placeholder="@Localizer["Free-form notes rendered at the top of the generated report PDF"]"></textarea>
+                    <span asp-validation-for="ReportNotes"></span>
                 </div>
             </div>
         </div>

@@ -44,6 +44,10 @@ namespace LawPortal.Web.Services
         // Composite key definitions per table
         private static readonly Dictionary<string, string[]> TableKeys = new(StringComparer.OrdinalIgnoreCase)
         {
+            // ActionType tables — keyed on the unique index (ActionType name + Country + CDueId).
+            // The Manual Updates section of the report diffs these tables.
+            ["tblPatActionType"] = new[] { "ActionType", "Country", "CDueId" },
+            ["tblTmkActionType"] = new[] { "ActionType", "Country", "CDueId" },
             // Patent tables
             ["tblPatCountryLaw"] = new[] { "Country", "CaseType" },
             ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn" },
@@ -89,7 +93,9 @@ namespace LawPortal.Web.Services
         private static readonly HashSet<string> IgnoreColumns = new(StringComparer.OrdinalIgnoreCase)
         {
             "UserID", "CreatedBy", "UpdatedBy", "DateCreated", "LastUpdate", "tStamp", "Systems",
-            "CDueId", "CExpId", "CountryLawID", "CPIPermanentID"
+            "CDueId", "CExpId", "CountryLawID", "CPIPermanentID",
+            // ActionType identity column and a FK link-table-ish field that varies by release
+            "ActionTypeID", "ResponsibleID"
         };
 
         public MdbComparisonService(string webRootPath, ILogger<MdbComparisonService> logger)

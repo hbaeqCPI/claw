@@ -16,7 +16,7 @@
 <form cpi-detail-form action="@(detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" :"Save")">
     <input type="hidden" asp-for="ActionTypeID" />
     <input type="hidden" name="CopyOptions" value="@(ViewBag.CopyOptions ?? "")" />
-    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">

@@ -89,6 +89,7 @@ public class MdbGenerator
     // Full patent tables (used by 97, PatR5-7, PatR8-10)
     private static readonly string[] PatentTablesFull = new[]
     {
+        "tblPatActionType",
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
         "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
         "tblPatCountryExpDelete", "tblPatCountryLaw", "tblPatCountryLaw_Ext", "tblPatCountryLawUpdate",
@@ -99,6 +100,7 @@ public class MdbGenerator
     // Full trademark tables (used by 97, TmkR5-8, TmkR9-10)
     private static readonly string[] TrademarkTablesFull = new[]
     {
+        "tblTmkActionType",
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseType_Ext",
@@ -110,6 +112,7 @@ public class MdbGenerator
     // R4 patent tables (no _Ext tables)
     private static readonly string[] PatentTables2000 = new[]
     {
+        "tblPatActionType",
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
         "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
         "tblPatCountryExpDelete", "tblPatCountryLaw", "tblPatCountryLawUpdate",
@@ -120,6 +123,7 @@ public class MdbGenerator
     // R4 trademark tables (no _Ext tables)
     private static readonly string[] TrademarkTables2000 = new[]
     {
+        "tblTmkActionType",
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseTypeDelete",

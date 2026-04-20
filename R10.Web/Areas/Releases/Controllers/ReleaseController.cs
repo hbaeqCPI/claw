@@ -1260,7 +1260,7 @@ namespace R10.Web.Areas.Releases.Controllers
                 }
 
                 var pdfService = new LawPortal.Web.Services.MdbReportPdfService();
-                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs);
+                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs, release.ReportNotes);
 
                 // Store PDF
                 var userName = User.GetUserName();

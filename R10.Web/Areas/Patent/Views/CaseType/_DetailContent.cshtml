@@ -16,7 +16,7 @@
         <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
     }
     <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
-    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     <div class="page-content detail cpiMainEntry">
         <div class="form-row">
