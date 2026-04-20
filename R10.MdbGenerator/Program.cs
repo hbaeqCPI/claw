@@ -106,7 +106,8 @@ public class MdbGenerator
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseType_Ext",
         "tblTmkDesCaseTypeDelete", "tblTmkDesCaseTypeDelete_Ext",
         "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFields_Ext",
-        "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext"
+        "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext",
+        "tblTmkStandardGood"
     };
 
     // R4 patent tables (no _Ext tables)
@@ -127,7 +128,8 @@ public class MdbGenerator
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseTypeDelete",
-        "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFieldsDelete"
+        "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFieldsDelete",
+        "tblTmkStandardGood"
     };
 
     private static string[] GetPatentTables(string systemType) =>

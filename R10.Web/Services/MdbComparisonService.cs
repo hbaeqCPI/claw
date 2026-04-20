@@ -50,6 +50,9 @@ namespace LawPortal.Web.Services
             // The Manual Updates section of the report diffs these tables.
             ["tblPatActionType"] = new[] { "ActionType", "Country" },
             ["tblTmkActionType"] = new[] { "ActionType", "Country" },
+            // Standard Goods — trademark only. Natural key is (Class, ClassType);
+            // ClassId is an identity that changes per MDB export.
+            ["tblTmkStandardGood"] = new[] { "Class", "ClassType" },
             // Patent tables
             ["tblPatCountryLaw"] = new[] { "Country", "CaseType" },
             ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn" },
@@ -97,7 +100,9 @@ namespace LawPortal.Web.Services
             "UserID", "CreatedBy", "UpdatedBy", "DateCreated", "LastUpdate", "tStamp", "Systems",
             "CDueId", "CExpId", "CountryLawID", "CPIPermanentID",
             // ActionType identity column and a FK link-table-ish field that varies by release
-            "ActionTypeID", "ResponsibleID"
+            "ActionTypeID", "ResponsibleID",
+            // StandardGood identity column
+            "ClassId"
         };
 
         public MdbComparisonService(string webRootPath, ILogger<MdbComparisonService> logger)

@@ -57,14 +57,14 @@ namespace LawPortal.Web.Services
             WriteTitle(doc, year, qtr);
             WriteReportNotes(doc, reportNotes);
 
-            // Patent manual-updates (ActionType diffs) appear before country law;
-            // trademark structural changes (areas, case types, designations) go first
-            // for trademarks. Patent structural changes render after country law.
-            if (comp.IsPatent)
-                WriteManualUpdates(doc, comp, atT, dueT);
-            else
+            // Manual Updates (Action Type diffs) always come first — for both patent
+            // and trademark. Patent stops there until country law; trademark follows
+            // with Standard Goods (green underline, no yellow highlight — these are
+            // manual reference-data updates) and then structural changes.
+            WriteManualUpdates(doc, comp, atT, dueT);
+            if (!comp.IsPatent)
             {
-                WriteManualUpdates(doc, comp, atT, dueT);
+                WriteStandardGoods(doc, comp);
                 WriteStructural(doc, comp, pfx);
             }
 
@@ -100,6 +100,124 @@ namespace LawPortal.Web.Services
                 box.Add(T("\n", _r, 10));
             }
             doc.Add(box);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STANDARD GOODS — trademark only. Renders at the very top of the
+        // report (after the title / notes, before Manual Updates). Unlike
+        // the rest of the report this uses GREEN UNDERLINED text for new /
+        // modified / deleted entries instead of yellow highlight — these are
+        // reference-data updates the user applies manually.
+        // ═══════════════════════════════════════════════════════════════
+        private static readonly DeviceRgb Green = new(0, 130, 0);
+
+        private void WriteStandardGoods(Document doc, MdbComparisonResult comp)
+        {
+            const string sgT = "tblTmkStandardGood";
+            if (!H(comp, sgT)) return;
+            var diff = comp.TableDiffs[sgT];
+            if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
+
+            doc.Add(new AreaBreak());
+            doc.Add(P(16).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(10)
+                .Add(T("Nice Classification – Standard Goods Update", _r, 16)));
+
+            doc.Add(P(10).SetMarginTop(10)
+                .Add(T("Records in the Standard Goods table under the Auxiliary Menu in your system are not added automatically. They will need to be adjusted by a person responsible for data entry.", _r, 10)));
+
+            // Numbered steps
+            doc.Add(P(10).SetMarginTop(8).SetMarginLeft(20)
+                .Add(T("1. Under the ", _r, 10)).Add(T("Auxiliary", _b, 10)).Add(T(" menu, select ", _r, 10)).Add(T("Standard Goods", _b, 10)));
+            doc.Add(P(10).SetMarginLeft(20)
+                .Add(T("2. Search and select each of the Classes below.", _r, 10)));
+            doc.Add(P(10).SetMarginLeft(20)
+                .Add(T("3. Click Edit, then paste the new description into the ", _r, 10)).Add(T("Goods", _b, 10)).Add(T(" field.", _r, 10)));
+            doc.Add(P(10).SetMarginLeft(20)
+                .Add(T("4. Click ", _r, 10)).Add(T("Save.", _b, 10)));
+
+            // Two-column table: Class | Standard Goods
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 10, 90 }))
+                .UseAllAvailableWidth().SetMarginTop(10).SetFontSize(9);
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Class", _b, 9)))
+                .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(4));
+            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Standard Goods", _b, 9)))
+                .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(4));
+
+            // Union of all changed rows, sorted by class code
+            var rows = diff.AddedRows.Select(r => (row: r, mode: "new"))
+                .Concat(diff.ModifiedRows.Select(r => (row: r, mode: "mod")))
+                .Concat(diff.DeletedRows.Select(r => (row: r, mode: "del")))
+                .OrderBy(x => G(x.row, "Class")).ThenBy(x => G(x.row, "ClassType"))
+                .ToList();
+
+            foreach (var (row, mode) in rows)
+            {
+                var cls = G(row, "Class");
+                var goods = G(row, "StandardGoods");
+
+                // Class cell
+                var clsCell = new Cell().Add(P(9).Add(StyleChange(cls, mode, _r, 9)))
+                    .SetBorder(new SolidBorder(0.5f)).SetPadding(4).SetVerticalAlignment(VerticalAlignment.TOP);
+                tbl.AddCell(clsCell);
+
+                // Goods cell
+                var goodsP = P(9);
+                if (mode == "new" || mode == "del")
+                {
+                    goodsP.Add(StyleChange(goods, mode, _r, 9));
+                }
+                else if (row.OldValues != null && row.ChangedColumns.Contains("StandardGoods"))
+                {
+                    var old = row.OldValues.ContainsKey("StandardGoods") ? row.OldValues["StandardGoods"]?.ToString() ?? "" : "";
+                    AppendGreenLineDiff(goodsP, old, goods);
+                }
+                else
+                {
+                    goodsP.Add(T(goods, _r, 9));
+                }
+                var goodsCell = new Cell().Add(goodsP)
+                    .SetBorder(new SolidBorder(0.5f)).SetPadding(4).SetVerticalAlignment(VerticalAlignment.TOP);
+                tbl.AddCell(goodsCell);
+            }
+
+            doc.Add(tbl);
+        }
+
+        // Style a Text run to reflect Standard-Goods change modes: green+underlined
+        // for new/modified, red strikethrough for deleted.
+        private Text StyleChange(string s, string mode, PdfFont font, float size)
+        {
+            var t = T(s, font, size);
+            switch (mode)
+            {
+                case "new":
+                case "mod":
+                    t.SetFontColor(Green).SetUnderline();
+                    break;
+                case "del":
+                    t.SetFontColor(Red).SetLineThrough();
+                    break;
+            }
+            return t;
+        }
+
+        // Like InlineDiff but renders new / changed lines in green+underline
+        // instead of yellow background.
+        private void AppendGreenLineDiff(Paragraph p, string oldText, string newText)
+        {
+            var oldLines = SplitLines(oldText);
+            var newLines = SplitLines(newText);
+            var oldSet = new HashSet<string>(oldLines.Select(NormalizeForCompare));
+            for (int i = 0; i < newLines.Count; i++)
+            {
+                var line = newLines[i];
+                if (i > 0) p.Add(T("\n", _r, 9));
+                var norm = NormalizeForCompare(line);
+                if (string.IsNullOrWhiteSpace(norm) || oldSet.Contains(norm))
+                    p.Add(T(line, _r, 9));
+                else
+                    p.Add(T(line, _r, 9).SetFontColor(Green).SetUnderline());
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════

@@ -191,29 +191,30 @@
                                     else tmkDocs.push(doc);
                                 });
 
-                                var html = '';
-                                if (patDocs.length > 0) {
-                                    var latestPat = patDocs[patDocs.length - 1];
-                                    html += '<div class="mb-4 report-section" data-doc-id="' + latestPat.DocId + '" data-is-pat="true">';
-                                    html += '<h6 class="font-weight-bold mb-2">Patent</h6>';
-                                    html += '<div class="form-row align-items-end">';
-                                    html += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
-                                    html += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
-                                    html += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport" data-doc-id="' + latestPat.DocId + '">';
-                                    html += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
-                                    html += '</div></div>';
+                                function renderSection(label, isPat, docs) {
+                                    if (!docs.length) return '';
+                                    var section = '<div class="mb-4 report-section" data-is-pat="' + isPat + '">';
+                                    section += '<h6 class="font-weight-bold mb-2">' + label + '</h6>';
+                                    section += '<div class="form-row align-items-end">';
+                                    section += '<div class="col-md-4"><label class="small text-muted">Current MDB:</label>';
+                                    section += '<select class="form-control form-control-sm currentMdbSelect">';
+                                    // Newest first — most recent generation is likely the one the author wants.
+                                    for (var i = docs.length - 1; i >= 0; i--) {
+                                        var d = docs[i];
+                                        var selected = i === docs.length - 1 ? ' selected' : '';
+                                        section += '<option value="' + d.DocId + '"' + selected + '>' + d.DocName + '</option>';
+                                    }
+                                    section += '</select></div>';
+                                    section += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
+                                    section += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
+                                    section += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport">';
+                                    section += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                    section += '</div></div>';
+                                    return section;
                                 }
-                                if (tmkDocs.length > 0) {
-                                    var latestTmk = tmkDocs[tmkDocs.length - 1];
-                                    html += '<div class="mb-4 report-section" data-doc-id="' + latestTmk.DocId + '" data-is-pat="false">';
-                                    html += '<h6 class="font-weight-bold mb-2">Trademark</h6>';
-                                    html += '<div class="form-row align-items-end">';
-                                    html += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
-                                    html += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
-                                    html += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport" data-doc-id="' + latestTmk.DocId + '">';
-                                    html += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
-                                    html += '</div></div>';
-                                }
+
+                                var html = renderSection('Patent', 'true', patDocs)
+                                         + renderSection('Trademark', 'false', tmkDocs);
                                 mdbListDiv.html(html);
 
                                 // Populate each compare dropdown with MDB files from other releases
@@ -237,12 +238,16 @@
                             e.preventDefault();
                             e.stopPropagation();
                             var section = $(this).closest('.report-section');
+                            var docId = section.find('.currentMdbSelect').val();
                             var compareDocId = section.find('.compareMdbSelect').val();
+                            if (!docId) {
+                                pageHelper.showErrors('Please select the current MDB to generate the report from.');
+                                return;
+                            }
                             if (!compareDocId) {
                                 pageHelper.showErrors('Please select an MDB file to compare against.');
                                 return;
                             }
-                            var docId = $(this).data('doc-id');
                             var btn = $(this);
                             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Generating...');
                             statusDiv.hide();
