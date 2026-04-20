@@ -33,7 +33,8 @@
       "Bash(sqlcmd -S '\\(local\\)' -d LawPortalCPiR10 -Q ':*)",
       "Bash(D:/Projects/Claw/Claw-Claude/R10.MdbReader/bin/Debug/net8.0/R10.MdbReader.exe \"D:/Projects/Claw/Claw-Claude/R10.Web/UserFiles/Documents/56.mdb\" \"D:/Projects/Claw/Claw-Claude/R10.Web/UserFiles/Documents/48.mdb\")",
       "Bash(git -C /d/Projects/Claw/Claw-Claude log --oneline -20)",
-      "Bash(git -C /d/Projects/Claw/Claw-Claude diff --stat HEAD)"
+      "Bash(git -C /d/Projects/Claw/Claw-Claude diff --stat HEAD)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

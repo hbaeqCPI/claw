@@ -1,0 +1,646 @@
+@model Release
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.ReleaseId;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var noDocMsg = Localizer["This document does not have any link or file."].ToString();
+    var grid = $"imageGridView_{id}";
+}
+
+@* === Templates — must be defined before Kendo widgets initialize === *@
+<script id="documentTree-template-@id" type="text/kendo-ui-template">
+    # if (!item.isReadOnly || item.id.includes("|doc|")) { #
+    <span class="node-menu">
+        # } #
+
+        #: item.text #
+
+        # if (!item.isReadOnly || item.id.includes("|doc|")) { #
+    </span>
+    # } #
+</script>
+
+<input type="hidden" id="treeNodeAddName_@id" value="" />
+
+<script id="treeNodeAddTemplate_@id" type="text/x-kendo-template">
+    <input class="k-textbox tree-node-input" value="#= folderName.val() #" />
+    <button class="k-button k-primary">#=getSaveLabel_@(id)()#</button>
+</script>
+
+<script id="treeNodeRenameTemplate_@id" type="text/x-kendo-template">
+    <input class="k-textbox tree-node-input" value="#= node.text #" />
+    <button class="k-button k-primary">#=getSaveLabel_@(id)()#</button>
+</script>
+
+@* === IIFE — must be defined BEFORE Kendo widgets so event handlers exist === *@
+<script>
+    function getSaveLabel_@(id)() {
+        return '@Localizer["Save"].ToString()';
+    }
+
+    var releaseDocTree_@(id) = (function () {
+        var releaseId = @id;
+        var isReadOnly = @(isReadOnly ? "true" : "false");
+        var treeSelector = "#documentTree_" + releaseId;
+        var treeContainerSelector = "#documentTreeContainer_" + releaseId;
+        var gridName = "@grid";
+        var selectedFolderId = 0;
+
+        function getAntiForgeryToken() {
+            return $('input[name="__RequestVerificationToken"]').val();
+        }
+
+        function getTreeView() {
+            return $(treeSelector).data("kendoTreeView");
+        }
+
+        function getGrid() {
+            return $("#" + gridName).data("kendoGrid");
+        }
+
+        function getSelectedFolderId() {
+            return selectedFolderId;
+        }
+
+        function treeNodeSelect(e) {
+            var dataItem = e.sender.dataItem(e.node);
+            if (!dataItem) return;
+            var nodeId = dataItem.id;
+            if (nodeId && nodeId.includes("|doc|")) return;
+            if (nodeId && nodeId.indexOf("|") > -1) {
+                var parts = nodeId.split("|");
+                if (parts.length >= 7) selectedFolderId = parseInt(parts[6]) || 0;
+            } else {
+                selectedFolderId = parseInt(nodeId) || 0;
+            }
+            if (selectedFolderId > 0) {
+                var grid = getGrid();
+                if (grid) grid.dataSource.read();
+            }
+        }
+
+        function treeNodeDragStart(e) {
+            if ($(e.sourceNode).parentsUntil(".k-treeview", ".k-item").length === 0) e.preventDefault();
+        }
+
+        function treeNodeDrop(e) {
+            var treeView = getTreeView();
+            var sourceItem = treeView.dataItem(e.sourceNode);
+            var sourceId = sourceItem.id;
+            var destItem = treeView.dataItem(e.destinationNode);
+            if (e.dropPosition !== "over") destItem = destItem.parentNode();
+            var destId = destItem.id;
+            if (destId.includes("|doc|") || (sourceId.includes("|doc|") && destId.includes("|root|"))) { e.setValid(false); return; }
+            var url = $(treeContainerSelector).data("drop-url");
+            $.post(url, { sourceId: sourceId, destId: destId, __RequestVerificationToken: getAntiForgeryToken() })
+                .fail(function (error) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(error); else alert("Error moving item."); });
+        }
+
+        function treeMenuOpen(e) {
+            var currentTreeNode = $(e.target);
+            var treeView = $(this.target).data("kendoTreeView");
+            var currentNodeId = treeView.dataItem(currentTreeNode).id;
+            var newlyAddedFolder = !currentNodeId.includes("|");
+            var showFolderOption = !currentNodeId.includes("doc");
+            var showUploadOption = !currentNodeId.includes("doc") && !currentNodeId.includes("|root|");
+            var showRenameOption = currentNodeId.includes("user") || newlyAddedFolder;
+            var showDeleteOption = currentNodeId.includes("user") || newlyAddedFolder;
+            var tc = $(treeContainerSelector);
+            var items = [];
+            if (showFolderOption) items.push({ text: "<span class='fal fa-folder-plus fa-fw'></span> " + tc.data("label-new"), attr: { "data-action": "add" }, encoded: false });
+            if (showUploadOption) items.push({ text: "<span class='fal fa-upload fa-fw'></span> " + tc.data("label-upload"), attr: { "data-action": "upload" }, encoded: false });
+            if (showRenameOption) items.push({ text: "<span class='fal fa-pen fa-fw'></span> " + tc.data("label-rename"), attr: { "data-action": "rename" }, encoded: false });
+            if (showDeleteOption) items.push({ text: "<span class='fal fa-trash-alt fa-fw'></span> " + tc.data("label-delete"), attr: { "data-action": "delete" }, encoded: false });
+            this.setOptions({ dataSource: items });
+        }
+
+        function treeMenuSelect(e) {
+            var action = $(e.item).data("action");
+            var treeView = getTreeView();
+            if (!treeView) return;
+            var selectedNode = treeView.select();
+            if (!selectedNode || !selectedNode.length) return;
+            var dataItem = treeView.dataItem(selectedNode);
+            if (!dataItem) return;
+            var currentTreeNode = selectedNode;
+            var currentNodeId = dataItem.id;
+            switch (action) {
+                case "add": treeNodeAdd(currentNodeId, currentTreeNode, treeView); break;
+                case "upload": treeNodeUpload(currentNodeId, currentTreeNode, treeView); break;
+                case "rename": treeNodeRename(currentNodeId, currentTreeNode, treeView); break;
+                case "delete": e.preventDefault(); treeNodeDelete(currentNodeId, currentTreeNode, treeView); break;
+            }
+        }
+
+        function treeNodeAdd(nodeId, currentTreeNode, treeView) {
+            var tc = $(treeContainerSelector);
+            var url = tc.data("add-folder-url");
+            var folderName = $("#treeNodeAddName_" + releaseId);
+            var tmpl = kendo.template($($("#treeNodeAddTemplate_" + releaseId)[0]).html());
+            var create = function (e) {
+                e.preventDefault();
+                var dialog = $(e.currentTarget).closest("[data-role=window]").getKendoWindow();
+                var name = dialog.element.find(".k-textbox").val();
+                if (!name) { dialog.close(); return; }
+                $.ajax({ url: url, type: "POST", data: { id: nodeId, releaseId: releaseId, folderName: name, __RequestVerificationToken: getAntiForgeryToken() },
+                    success: function (d) { treeView.append({ id: d.id, text: d.text, iconClass: d.iconClass, hasChildren: d.hasChildren || false }, currentTreeNode); },
+                    error: function (e) { if (e.responseJSON) (typeof pageHelper !== 'undefined' ? pageHelper.showErrors(e.responseJSON) : alert(JSON.stringify(e.responseJSON))); else alert(e.responseText); }
+                });
+                dialog.close();
+            };
+            $("<div />").html(tmpl({ folderName: folderName })).appendTo("body").kendoWindow({ modal: true, visible: false, title: tc.data("add-folder-label"), deactivate: function () { this.destroy(); } })
+                .on("click", ".k-primary", create).on("keyup", ".tree-node-input", function (e) { if (e.key === "Enter" || e.keyCode === 13) create(e); }).getKendoWindow().center().open();
+        }
+
+        function treeNodeUpload(nodeId, currentTreeNode, treeView) {
+            var url = $(treeContainerSelector).data("upload-url");
+            var folderId = 0;
+            if (nodeId && nodeId.indexOf("|") > -1) { var parts = nodeId.split("|"); if (parts.length >= 7) folderId = parseInt(parts[6]) || 0; } else { folderId = parseInt(nodeId) || 0; }
+            if (folderId <= 0) { alert("@Localizer["Please select a folder to upload to."]"); return; }
+            var fi = $('<input type="file" style="display:none" />');
+            $("body").append(fi);
+            fi.on("change", function () {
+                var file = this.files[0]; if (!file) { fi.remove(); return; }
+                var fd = new FormData(); fd.append("file", file); fd.append("releaseId", releaseId); fd.append("folderId", folderId); fd.append("__RequestVerificationToken", getAntiForgeryToken());
+                $.ajax({ url: url, type: "POST", data: fd, processData: false, contentType: false,
+                    success: function () { var di = treeView.dataItem(currentTreeNode); if (di) { di.loaded(false); di.load(); treeView.expand(currentTreeNode); } if (selectedFolderId === folderId) { var g = getGrid(); if (g) g.dataSource.read(); } },
+                    error: function (xhr) { var msg = "Error uploading file."; try { msg = JSON.parse(xhr.responseText).errors; } catch (ex) { } alert(msg); }
+                });
+                fi.remove();
+            });
+            fi.trigger("click");
+        }
+
+        function treeNodeRename(nodeId, currentTreeNode, treeView) {
+            var tc = $(treeContainerSelector);
+            var url = tc.data("rename-url");
+            var tmpl = kendo.template($($("#treeNodeRenameTemplate_" + releaseId)[0]).html());
+            var node = treeView.dataItem(currentTreeNode.closest(".k-item"));
+            var rename = function (e) {
+                e.preventDefault();
+                var dialog = $(e.currentTarget).closest("[data-role=window]").getKendoWindow();
+                var newName = dialog.element.find(".k-textbox").val();
+                if (!newName) { dialog.close(); return; }
+                node.set("text", newName);
+                $.post(url, { id: nodeId, newName: newName, __RequestVerificationToken: getAntiForgeryToken() })
+                    .fail(function (error) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(error); else alert("Error renaming."); });
+                dialog.close();
+            };
+            $("<div />").html(tmpl({ node: node })).appendTo("body").kendoWindow({ modal: true, visible: false, title: tc.data("rename-label"), deactivate: function () { this.destroy(); } })
+                .on("click", ".k-primary", rename).on("keyup", ".tree-node-input", function (e) { if (e.key === "Enter" || e.keyCode === 13) rename(e); }).getKendoWindow().center().open();
+        }
+
+        function treeNodeDelete(nodeId, currentTreeNode, treeView) {
+            var tc = $(treeContainerSelector);
+            var content = tc.data("delete-message");
+            var url = tc.data("delete-url");
+            var confirmHtml = '<div class="row message-wrap"><div class="col-2 text-center pl-md-4 pt-1"><i class="text-danger far fa-exclamation-triangle fa-2x"></i></div><div class="col-10"><p>' + content + '</p></div></div>';
+            var doDelete = function () {
+                cpiLoadingSpinner.show();
+                $.post(url, { id: nodeId, __RequestVerificationToken: getAntiForgeryToken() })
+                    .done(function () { cpiLoadingSpinner.hide(); treeView.remove(currentTreeNode); var g = getGrid(); if (g) g.dataSource.data([]); selectedFolderId = 0; })
+                    .fail(function (error) { cpiLoadingSpinner.hide(); if (typeof pageHelper !== 'undefined') pageHelper.showErrors(error); else alert("Error deleting."); });
+            };
+            if (typeof cpiConfirm !== 'undefined') cpiConfirm.delete(tc.data("delete-title"), confirmHtml, doDelete);
+            else if (confirm(content)) doDelete();
+        }
+
+        function deleteDocument(e) {
+            e.preventDefault();
+            var grid = getGrid();
+            var dataItem = grid.dataItem($(e.currentTarget).closest("tr"));
+            if (!dataItem) return;
+            var tc = $(treeContainerSelector);
+            var content = tc.data("delete-message");
+            var url = tc.data("grid-delete-url");
+            var confirmHtml = '<div class="row message-wrap"><div class="col-2 text-center pl-md-4 pt-1"><i class="text-danger far fa-exclamation-triangle fa-2x"></i></div><div class="col-10"><p>' + content + '</p></div></div>';
+            var doDelete = function () {
+                cpiLoadingSpinner.show();
+                $.post(url, { docId: dataItem.DocId, __RequestVerificationToken: getAntiForgeryToken() })
+                    .done(function () { cpiLoadingSpinner.hide(); grid.dataSource.read(); var tv = getTreeView(); if (tv) { var sn = tv.select(); if (sn.length) { var item = tv.dataItem(sn); if (item) { item.loaded(false); item.load(); } } } })
+                    .fail(function (error) { cpiLoadingSpinner.hide(); if (typeof pageHelper !== 'undefined') pageHelper.showErrors(error); else alert("Error deleting document."); });
+            };
+            if (typeof cpiConfirm !== 'undefined') cpiConfirm.delete(tc.data("delete-title"), confirmHtml, doDelete);
+            else if (confirm(content)) doDelete();
+        }
+
+        function resolveCurrentFolderId() {
+            if (selectedFolderId > 0) return selectedFolderId;
+            // Auto-resolve from tree's first node (root folder)
+            var tv = getTreeView();
+            if (tv) {
+                var items = tv.dataSource.data();
+                if (items && items.length > 0) {
+                    var nodeId = items[0].id;
+                    if (nodeId && nodeId.indexOf("|") > -1) {
+                        var parts = nodeId.split("|");
+                        if (parts.length >= 7) selectedFolderId = parseInt(parts[6]) || 0;
+                    } else {
+                        selectedFolderId = parseInt(nodeId) || 0;
+                    }
+                }
+            }
+            return selectedFolderId;
+        }
+
+        function addDocument() {
+            var fid = resolveCurrentFolderId();
+            var url = "@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + fid + "&releaseId=" + releaseId;
+            $.get(url).done(function (html) {
+                var container = $(".site-content .popup");
+                if (!container.length) { container = $('<div class="popup"></div>'); $(".site-content").append(container); }
+                container.empty().html(html);
+                $(document).off("releaseDocSaved.docTree").on("releaseDocSaved.docTree", function () {
+                    var g = getGrid(); if (g) g.dataSource.read();
+                    var tv = getTreeView(); if (tv) { var sn = tv.select(); if (sn.length) { var item = tv.dataItem(sn); if (item) { item.loaded(false); item.load(); } } }
+                });
+            }).fail(function (e) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(e); else alert("Error loading document dialog."); });
+        }
+
+        function editDocument(e) {
+            e.preventDefault();
+            var grid = getGrid();
+            var dataItem = grid.dataItem($(e.currentTarget).closest("tr"));
+            if (!dataItem) return;
+            var url = "@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + selectedFolderId + "&docId=" + dataItem.DocId;
+            $.get(url).done(function (html) {
+                var container = $(".site-content .popup");
+                if (!container.length) { container = $('<div class="popup"></div>'); $(".site-content").append(container); }
+                container.empty().html(html);
+                $(document).off("releaseDocSaved.docTree").on("releaseDocSaved.docTree", function () {
+                    var g = getGrid(); if (g) g.dataSource.read();
+                });
+            }).fail(function (e) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(e); else alert("Error loading document dialog."); });
+        }
+
+        function viewDocument(fileId, docFileName) {
+            if (!docFileName) { alert($(treeContainerSelector).data("doc-msg")); return; }
+            window.open($(treeContainerSelector).data("download-url") + "?fileId=" + fileId, "_blank");
+        }
+
+        function viewDocumentFromGrid(e) {
+            e.preventDefault();
+            var grid = getGrid();
+            var dataItem = grid.dataItem($(e.currentTarget).closest("tr"));
+            if (!dataItem) return;
+            viewDocument(dataItem.FileId, dataItem.DocFileName);
+        }
+
+        function downloadSelected() {
+            var grid = getGrid(); if (!grid) return;
+            var rows = grid.select();
+            if (rows.length === 0) { alert("@Localizer["Please select files to download."]"); return; }
+            var url = $(treeContainerSelector).data("download-url");
+            rows.each(function () { var d = grid.dataItem(this); if (d && d.FileId) window.open(url + "?fileId=" + d.FileId, "_blank"); });
+        }
+
+        function searchDocuments() { }
+
+        function fallbackFolderClick() {
+            // Try to get folderId from tree data source if loaded
+            var tv = getTreeView();
+            if (tv) {
+                var items = tv.dataSource.data();
+                if (items && items.length > 0) {
+                    var firstNode = items[0];
+                    var nodeId = firstNode.id;
+                    if (nodeId && nodeId.indexOf("|") > -1) {
+                        var parts = nodeId.split("|");
+                        if (parts.length >= 7) selectedFolderId = parseInt(parts[6]) || 0;
+                    } else {
+                        selectedFolderId = parseInt(nodeId) || 0;
+                    }
+                }
+            }
+            if (selectedFolderId > 0) {
+                var fb = $("#docTreeFallback_" + releaseId);
+                fb.css("background-color", "#e0e8f0");
+                var grid = getGrid();
+                if (grid) grid.dataSource.read();
+            }
+        }
+
+        // Hide fallback if tree has real data; auto-select first node.
+        // Registered via the Kendo helper's .Events().DataBound() below so
+        // it attaches BEFORE widget init — avoiding a race where the initial
+        // dataBound fires before jQuery ready can bind a late listener.
+        function onTreeDataBound() {
+            var tv = getTreeView();
+            if (!tv) return;
+            var items = tv.dataSource.data();
+            if (items && items.length > 0) {
+                $("#docTreeFallback_" + releaseId).hide();
+                $(treeSelector).show();
+                // Initialize context menu on first load (deferred to avoid visible box on page load)
+                var menuEl = $("#documentTreeMenu_" + releaseId);
+                if (menuEl.length && !menuEl.data("kendoContextMenu")) {
+                    menuEl.kendoContextMenu({
+                        target: treeSelector,
+                        filter: ".k-in .node-menu",
+                        orientation: "horizontal",
+                        animation: { open: { effects: "fadeIn", duration: 500 } },
+                        open: treeMenuOpen,
+                        select: treeMenuSelect
+                    });
+                }
+
+                // Auto-select the first tree node and load grid.
+                // Defer one tick to ensure the DOM is painted before selecting.
+                setTimeout(function () {
+                    var firstItem = tv.wrapper.find(".k-item:first");
+                    if (firstItem.length && !tv.select().length) {
+                        tv.select(firstItem);
+                        tv.trigger("select", { node: firstItem[0] });
+                    }
+                }, 0);
+            }
+        }
+
+        $(document).ready(function () {
+
+            // Set dynamic max-height on tree
+            var maxHeight = ($(window).height() - $(".site-header").height()) * 0.4;
+            $(treeSelector).closest("div.k-treeview").css("max-height", maxHeight);
+
+            // When the Documents tab is shown, re-read the tree and auto-select
+            $('a[href="#releaseDetailDocumentsTabContent"]').on('shown.bs.tab', function () {
+                var tv = getTreeView();
+                if (tv) {
+                    tv.dataSource.read();
+                    setTimeout(function () { fallbackFolderClick(); }, 300);
+                }
+            });
+        });
+
+        function onUploadStart(e) {
+            if (selectedFolderId <= 0) { e.preventDefault(); alert("@Localizer["Please select a folder to upload to."]"); return; }
+            e.data = { folderId: selectedFolderId, releaseId: releaseId };
+        }
+
+        function onUploadDocFail(e) { alert("@Localizer["Error uploading file. Please try again."]"); }
+
+        function refreshFolderAfterUpload(e) {
+            var grid = getGrid(); if (grid) grid.dataSource.read();
+            var tv = getTreeView(); if (tv) { var sn = tv.select(); if (sn.length) { var item = tv.dataItem(sn); if (item) { item.loaded(false); item.load(); } } }
+        }
+
+        return {
+            treeNodeSelect: treeNodeSelect, treeNodeDragStart: treeNodeDragStart, treeNodeDrop: treeNodeDrop,
+            treeMenuOpen: treeMenuOpen, treeMenuSelect: treeMenuSelect, getSelectedFolderId: getSelectedFolderId,
+            deleteDocument: deleteDocument, addDocument: addDocument, editDocument: editDocument,
+            viewDocument: viewDocument, viewDocumentFromGrid: viewDocumentFromGrid,
+            downloadSelected: downloadSelected, searchDocuments: searchDocuments, fallbackFolderClick: fallbackFolderClick,
+            onUploadStart: onUploadStart, onUploadDocFail: onUploadDocFail, refreshFolderAfterUpload: refreshFolderAfterUpload,
+            onTreeDataBound: onTreeDataBound
+        };
+    })();
+</script>
+
+@* === Layout from _ImageViewer.cshtml (non-SharePoint path, lines 95-128) === *@
+<div id="imageDataContainer_@id">
+    <div class="form-row document-viewer">
+        @* LEFT: Tree — from _DocumentTree.cshtml (lines 1-58) *@
+        <div class="col-md-3 col-lg-2 pt-1 folder-tree">
+            <div id="documentTreeContainer_@id"
+                 data-release-id="@id"
+                 data-doc-msg="@noDocMsg"
+                 data-tree-url="@Url.Action("DocumentTreeRead", "Release", new { area = "Releases" })"
+                 data-add-folder-url="@Url.Action("DocumentAddFolder", "Release", new { area = "Releases" })"
+                 data-add-folder-label="@Localizer["Enter Folder Name"]"
+                 data-rename-url="@Url.Action("DocumentRenameNode", "Release", new { area = "Releases" })"
+                 data-rename-label="@Localizer["Enter New Name"]"
+                 data-delete-title="@Localizer["Confirm Delete"]"
+                 data-delete-message="@Localizer["You are about to delete this record and all its related information. This operation cannot be undone."]"
+                 data-delete-url="@Url.Action("DocumentDeleteNode", "Release", new { area = "Releases" })"
+                 data-drop-url="@Url.Action("DocumentDropNode", "Release", new { area = "Releases" })"
+                 data-upload-url="@Url.Action("DocumentUpload", "Release", new { area = "Releases" })"
+                 data-grid-delete-url="@Url.Action("DocumentGridDelete", "Release", new { area = "Releases" })"
+                 data-download-url="@Url.Action("DocumentDownload", "Release", new { area = "Releases" })"
+                 data-label-new="@Localizer["New Folder"]"
+                 data-label-rename="@Localizer["Rename"]"
+                 data-label-delete="@Localizer["Delete"]"
+                 data-label-upload="@Localizer["Upload File"]">
+                <div id="docTreeFallback_@id" style="padding:4px; cursor:pointer;" onclick="releaseDocTree_@(id).fallbackFolderClick()">
+                    <span class="fal fa-folder" style="margin-right:4px;"></span> @Model.Name
+                </div>
+                @(Html.Kendo().TreeView()
+                    .Name($"documentTree_{id}")
+                    .DataTextField("text")
+                    .DataSpriteCssClassField("iconClass")
+                    .TemplateId($"documentTree-template-{id}")
+                    .LoadOnDemand(true)
+                    .DragAndDrop(!isReadOnly)
+                    .DataSource(dataSource => dataSource
+                        .Read(read => read
+                            .Action("DocumentTreeRead", "Release", new { area = "Releases" })
+                            .Data($"function() {{ return {{ releaseId: {id} }}; }}")
+                        )
+                    )
+                    .Events(events =>
+                    {
+                        events.Select($"releaseDocTree_{id}.treeNodeSelect");
+                        events.DataBound($"releaseDocTree_{id}.onTreeDataBound");
+                        if (!isReadOnly)
+                        {
+                            events.Drop($"releaseDocTree_{id}.treeNodeDrop");
+                            events.DragStart($"releaseDocTree_{id}.treeNodeDragStart");
+                        }
+                    })
+                )
+                @if (!isReadOnly)
+                {
+                    <ul id="documentTreeMenu_@id" style="display:none;"></ul>
+                }
+            </div>
+        </div>
+
+        @* RIGHT: Grid options + Grid — from _ImageViewer.cshtml + _ImageGrid.cshtml *@
+        <div class="col-md-9 col-lg-10 documents">
+            <div class="grid-options">
+                <div class="display-type d-flex">
+                    <label class="mr-2">@Localizer["Display"]</label>
+                    @(Html.Kendo().DropDownList()
+                        .AutoWidth(true)
+                        .Name($"ImageViewOption_{id}")
+                        .DataTextField("Text")
+                        .DataValueField("Value")
+                        .BindTo(new List<SelectListItem>()
+                        {
+                            new SelectListItem() { Text = Localizer["Grid View"], Value = "GridView" }
+                        })
+                    )
+                </div>
+            </div>
+            <div class="image-container">
+                @(Html.Kendo().Grid<dynamic>()
+                    .Name(grid)
+                    .Columns(columns =>
+                    {
+                        columns.Bound("DocName").Title(Localizer["Title"].Value).Width(280);
+                        columns.Bound("UserFileName").Title(Localizer["User File Name"].Value);
+                        columns.Bound("FolderName").Title(Localizer["Folder"].Value).Width(200);
+                        columns.Bound("DateCreated").Title(Localizer["Date"].Value)
+                            .ClientTemplate("#= (DateCreated == null) ? '' : kendo.toString(DateCreated,'dd-MMM-yyyy')#")
+                            .Width(150).Sortable(true);
+                        columns.Bound("DocTypeName").Title(Localizer["Type"].Value).Width(100);
+                        columns.Bound("IconClass").Title(Localizer["Image"].Value).Width(75)
+                            .ClientTemplate($"# if (data.IsDocViewable) {{ #<a role='button' href='javascript:void(0)' onclick='releaseDocTree_{id}.viewDocument(#=data.FileId#, \"#=data.DocFileName#\")'><span class='#=data.IconClass#'></span></a># }} else {{ #<span class='#=data.IconClass#'></span># }} #")
+                            .HtmlAttributes(new { @class = "text-center" })
+                            .HeaderHtmlAttributes(new { @class = "text-center" });
+                        columns.Command(command =>
+                        {
+                            command.Custom("View").Text(Localizer["View"]).Click($"function(e) {{ releaseDocTree_{id}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-search-plus").HtmlAttributes(new { style = "width:80px;" });
+                            if (!isReadOnly)
+                            {
+                                command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{id}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
+                            }
+                            if (!isReadOnly && detailPagePermission.CanDeleteRecord)
+                            {
+                                command.Custom("Delete").Text(Localizer["Delete"]).Click($"function(e) {{ releaseDocTree_{id}.deleteDocument(e,this) }}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { style = "width:80px;" });
+                            }
+                        });
+                    })
+                    .PersistSelection()
+                    .Sortable(sort => sort.AllowUnsort(false))
+                    .ToolBar(toolbar =>
+                    {
+                        if (!isReadOnly)
+                        {
+                            toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{id}.addDocument()" });
+                        }
+                        toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{id}.downloadSelected()" });
+                        toolbar.Custom().Name("DocumentsSearch").IconClass("k-icon fal fa-search").Text(Localizer["Search"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{id}.searchDocuments()" });
+                    })
+                    .AutoBind(false)
+                    .HtmlAttributes(new { @class = "imageGridView kendo-Grid" })
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .PageSize(5)
+                        .Read(read => read
+                            .Action("DocumentGridRead", "Release", new { area = "Releases" })
+                            .Data($"function() {{ return {{ folderId: releaseDocTree_{id}.getSelectedFolderId() }}; }}"))
+                        .Sort(sort => sort.Add("DocName").Ascending())
+                        .Events(events => events.Error("pageHelper.onGridError"))
+                    )
+                    .Pageable(pageable => pageable.Responsive(false).Refresh(true).PageSizes(true).ButtonCount(5))
+                )
+            </div>
+
+            @if (!isReadOnly)
+            {
+                <div id="DropZone_@id" class="drop-zone">
+                    <div class="dropZoneEl" id="dropZoneElement_@id">
+                        <div class="textWrapper">
+                            <p class="dropImageHereText">@Localizer["Drop files here"]</p>
+                        </div>
+                    </div>
+                    <div id="UploadZoneDoc_@id">
+                        @(Html.Kendo().Upload()
+                            .Name("droppedDocs")
+                            .Async(a => a
+                                .Save("SaveDocuments", "Release", new { area = "Releases" })
+                                .AutoUpload(true)
+                                .Batch(true)
+                            )
+                            .DropZone($"#dropZoneElement_{id}")
+                            .ShowFileList(false)
+                            .Multiple(true)
+                            .Events(e => e
+                                .Upload($"releaseDocTree_{id}.onUploadStart")
+                                .Error($"releaseDocTree_{id}.onUploadDocFail")
+                                .Success($"releaseDocTree_{id}.refreshFolderAfterUpload")
+                            )
+                        )
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* === CSS === *@
+<style>
+    #documentTree_@(id) {
+        display: none;
+        overflow-y: scroll !important;
+    }
+
+    #documentTreeMenu_@(id) {
+        display: none;
+    }
+
+    .k-treeview .k-item {
+        font-size: small;
+    }
+
+    .k-treeview .k-state-selected {
+        border-color: #0072c6;
+    }
+
+    .fa.k-sprite,
+    .fa.k-sprite::before,
+    .fad.k-sprite,
+    .fad.k-sprite::before,
+    .fas.k-sprite,
+    .fas.k-sprite::before,
+    .far.k-sprite,
+    .far.k-sprite::before,
+    .fal.k-sprite,
+    .fal.k-sprite::before,
+    .fab.k-sprite,
+    .fab.k-sprite::before {
+        font-size: 12px;
+        line-height: 14px;
+        vertical-align: middle;
+    }
+
+    #UploadZoneDoc_@(id) .k-dropzone {
+        display: none;
+    }
+
+    #UploadZoneDoc_@(id) .k-upload-button {
+        display: none;
+    }
+
+    #UploadZoneDoc_@(id) .k-upload {
+        border: none;
+        background: none;
+        padding: 0;
+    }
+
+    #DropZone_@(id) .dropZoneEl {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 70px;
+        text-align: center;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    #DropZone_@(id) .textWrapper {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        font-size: 24px;
+        font-family: Arial,Helvetica,sans-serif;
+    }
+
+    #DropZone_@(id) .dropImageHereText {
+        color: black;
+        text-transform: uppercase;
+        font-size: 12px;
+        white-space: pre-line;
+    }
+
+    .document-viewer .documents {
+        padding-left: 0;
+    }
+
+    .document-viewer .folder-tree {
+        padding-right: 0;
+    }
+</style>

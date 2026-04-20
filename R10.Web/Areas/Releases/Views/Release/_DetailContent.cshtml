@@ -1,0 +1,277 @@
+@model Release
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.ReleaseId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+
+    var systemsList = (List<string>)ViewData["SystemsList"] ?? new List<string>();
+    var systemItems = systemsList.Select(s => new SelectListItem { Text = s, Value = s }).ToList();
+}
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="ReleaseId" />
+    <vc:detail-page-nav-links page-permission="detailPagePermission" title="" add-mode="addMode"></vc:detail-page-nav-links>
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                <div class="form-group float-label">
+                    <label asp-for="Name"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Name" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Name"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Year"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Year" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>()
+                            .Name("Year")
+                            .Value(DateTime.Now.Year)
+                            .Format("####")
+                            .Decimals(0)
+                            .Min(2000)
+                            .Max(2100)
+                            .HtmlAttributes(new { style = "width: 100%", placeholder = " " })
+                        )
+                    }
+                    <span asp-validation-for="Year"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Quarter"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Quarter" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("Quarter")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(new List<SelectListItem>
+                            {
+                                new SelectListItem { Text = "Q1", Value = "Q1" },
+                                new SelectListItem { Text = "Q2", Value = "Q2" },
+                                new SelectListItem { Text = "Q3", Value = "Q3" },
+                                new SelectListItem { Text = "Q4", Value = "Q4" }
+                            })
+                            .Value(Model.Quarter ?? "Q1")
+                            .HtmlAttributes(new { style = "width: 100%" })
+                        )
+                    }
+                    <span asp-validation-for="Quarter"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label for="SystemType">@Localizer["System"]</label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="SystemType" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("SystemType")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(systemItems)
+                            .Value(Model.SystemType ?? systemItems.FirstOrDefault()?.Value)
+                            .HtmlAttributes(new { style = "width: 100%" })
+                        )
+                    }
+                    <span asp-validation-for="SystemType"></span>
+                </div>
+            </div>
+        </div>
+        @if (!addMode)
+        {
+            var sysType = Model.SystemType ?? "";
+            var showPatentBtn = !sysType.StartsWith("Tmk", StringComparison.OrdinalIgnoreCase);
+            var showTmkBtn = !sysType.StartsWith("Pat", StringComparison.OrdinalIgnoreCase);
+            <div class="form-row">
+                <div class="col-auto">
+                    @if (showPatentBtn)
+                    {
+                        <button type="button" class="btn btn-primary btn-sm mr-2 btnGenerateMdb"
+                                data-area="Patent"
+                                data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Patent" })">
+                            <i class="fal fa-database pr-1"></i> @Localizer["Generate Patent MDB"]
+                        </button>
+                    }
+                    @if (showTmkBtn)
+                    {
+                        <button type="button" class="btn btn-primary btn-sm btnGenerateMdb"
+                                data-area="Trademark"
+                                data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Trademark" })">
+                            <i class="fal fa-database pr-1"></i> @Localizer["Generate Trademark MDB"]
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="releaseDetailDocumentsTab" href="#releaseDetailDocumentsTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="releaseDetailDocumentsTabContent" title="@Localizer["Documents"]">@Localizer["Documents"]</a>
+            </li>
+            <li class="nav-item">
+                <a id="releaseDetailReportsTab" href="#releaseDetailReportsTabContent" class="nav-link" data-toggle="tab" role="tab" aria-controls="releaseDetailReportsTabContent" title="@Localizer["Reports"]">@Localizer["Reports"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="releaseDetailDocumentsTabContent" role="tabpanel" aria-labelledby="releaseDetailDocumentsTab">
+                @await Html.PartialAsync("_DocumentTree", Model)
+            </div>
+            <div class="tab-pane" id="releaseDetailReportsTabContent" role="tabpanel" aria-labelledby="releaseDetailReportsTab">
+                <div class="p-3">
+                    <div id="reportMdbList_@id"><p class="text-muted">Loading...</p></div>
+                    <div id="reportStatus_@id" class="mt-2" style="display:none;"></div>
+                </div>
+                <script>
+                    $(document).ready(function () {
+                        var releaseId = @id;
+                        var mdbListDiv = $('#reportMdbList_' + releaseId);
+                        var statusDiv = $('#reportStatus_' + releaseId);
+
+                        // Load MDB files, group by Pat/Tmk, one section per type
+                        function loadMdbFiles() {
+                            $.get('@Url.Action("GetMdbFiles")', { releaseId: releaseId }, function (data) {
+                                if (!data || data.length === 0) {
+                                    mdbListDiv.html('<p class="text-muted">No MDB files found. Generate MDB files first.</p>');
+                                    return;
+                                }
+                                // Group by Pat/Tmk — pick the latest (last) MDB per type as the current
+                                var patDocs = [], tmkDocs = [];
+                                $.each(data, function (i, doc) {
+                                    if (doc.DocName.toLowerCase().indexOf('pat') >= 0) patDocs.push(doc);
+                                    else tmkDocs.push(doc);
+                                });
+
+                                var html = '';
+                                if (patDocs.length > 0) {
+                                    var latestPat = patDocs[patDocs.length - 1];
+                                    html += '<div class="mb-4 report-section" data-doc-id="' + latestPat.DocId + '" data-is-pat="true">';
+                                    html += '<h6 class="font-weight-bold mb-2">Patent</h6>';
+                                    html += '<div class="form-row align-items-end">';
+                                    html += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
+                                    html += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
+                                    html += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport" data-doc-id="' + latestPat.DocId + '">';
+                                    html += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                    html += '</div></div>';
+                                }
+                                if (tmkDocs.length > 0) {
+                                    var latestTmk = tmkDocs[tmkDocs.length - 1];
+                                    html += '<div class="mb-4 report-section" data-doc-id="' + latestTmk.DocId + '" data-is-pat="false">';
+                                    html += '<h6 class="font-weight-bold mb-2">Trademark</h6>';
+                                    html += '<div class="form-row align-items-end">';
+                                    html += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
+                                    html += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
+                                    html += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport" data-doc-id="' + latestTmk.DocId + '">';
+                                    html += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                    html += '</div></div>';
+                                }
+                                mdbListDiv.html(html);
+
+                                // Populate each compare dropdown with MDB files from other releases
+                                mdbListDiv.find('.report-section').each(function () {
+                                    var section = $(this);
+                                    var isPat = section.data('is-pat');
+                                    var sel = section.find('.compareMdbSelect');
+                                    $.get('@Url.Action("GetCompareMdbFiles")', { releaseId: releaseId, isPat: isPat }, function (mdbFiles) {
+                                        sel.empty().append('<option value="">-- Select an MDB --</option>');
+                                        $.each(mdbFiles, function (j, f) {
+                                            sel.append('<option value="' + f.DocId + '">' + f.Text + '</option>');
+                                        });
+                                    });
+                                });
+                            });
+                        }
+                        loadMdbFiles();
+
+                        // Generate report
+                        mdbListDiv.on('click', '.btnGenReport', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            var section = $(this).closest('.report-section');
+                            var compareDocId = section.find('.compareMdbSelect').val();
+                            if (!compareDocId) {
+                                pageHelper.showErrors('Please select an MDB file to compare against.');
+                                return;
+                            }
+                            var docId = $(this).data('doc-id');
+                            var btn = $(this);
+                            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Generating...');
+                            statusDiv.hide();
+
+                            $.post('@Url.Action("GenerateReport")', {
+                                releaseId: releaseId,
+                                compareDocId: compareDocId,
+                                docId: docId,
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            }).done(function (result) {
+                                btn.prop('disabled', false).html('<i class="fal fa-file-pdf pr-1"></i> Generate Report');
+                                statusDiv.html('<div class="alert alert-success">' + (result.success || 'Report generated.') + '</div>').show();
+                                // Switch to Documents tab and refresh
+                                var docsTab = $('#releaseDetailDocumentsTab');
+                                if (docsTab.length) docsTab.tab('show');
+                                var treeEl = $('#documentTree_' + releaseId);
+                                if (treeEl.length) {
+                                    var tv = treeEl.data('kendoTreeView');
+                                    if (tv) { tv.select($()); tv.dataSource.read(); }
+                                    setTimeout(function() { releaseDocTree_@(id).fallbackFolderClick(); }, 500);
+                                }
+                            }).fail(function (e) {
+                                btn.prop('disabled', false).html('<i class="fal fa-file-pdf pr-1"></i> Generate Report');
+                                var msg = 'Error generating report.';
+                                try { msg = JSON.parse(e.responseText); } catch (ex) { msg = e.responseText || msg; }
+                                statusDiv.html('<div class="alert alert-danger">' + msg + '</div>').show();
+                            });
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+        <div class="content-stamp">
+            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@(new byte[0])"></vc:record-stamps>
+        </div>
+    }
+</form>
+
+<script>
+    $(document).ready(function() {
+        $('.btnGenerateMdb').on('click', function() {
+            var btn = $(this);
+            var url = btn.data('url');
+            var area = btn.data('area');
+            cpiConfirm.confirm('Generate ' + area + ' MDB', 'Generate ' + area + ' MDB file for this release? This may take a moment.', function() {
+                cpiLoadingSpinner.show();
+                $.post(url).done(function(result) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showSuccess(result.success || 'MDB files generated successfully.');
+                    // Reload the detail page to show the new MDB in Documents
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                }).fail(function(e) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showErrors(e);
+                });
+            });
+        });
+    });
+</script>

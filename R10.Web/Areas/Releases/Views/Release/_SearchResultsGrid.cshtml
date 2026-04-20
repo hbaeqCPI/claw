@@ -1,0 +1,36 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<Release>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Name).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: ReleaseId#", fromSearch = true }), "Name")).Width(200);
+                    columns.Bound(m => m.Year);
+                    columns.Bound(m => m.Quarter);
+                    columns.Bound(m => m.SystemType);
+                    columns.Bound(m => m.CreatedBy).Hidden();
+                    columns.Bound(m => m.CreatedBy).Hidden();
+                    columns.Bound(m => m.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
+                    columns.Bound(m => m.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("ReleaseList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Release")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("releasePage.searchResultGridError"))
+                .Events(events => events.RequestEnd("releasePage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "Release")
+                .Data("releasePage.gridMainSearchFilters")
+                )
+                .Sort(sort => sort.Add(m => m.Name))
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

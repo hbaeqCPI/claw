@@ -1,0 +1,206 @@
+@model R10.Core.Entities.Documents.DocDocument
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = (bool)ViewBag.IsAddMode;
+    var folderId = (int)ViewBag.FolderId;
+    var userFileName = (string)ViewBag.UserFileName;
+    var dialogId = "releaseDocDetailDialog";
+    var formId = "releaseDocDetailForm";
+}
+
+<div id="@dialogId" style="display:none;">
+    <form id="@formId" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="DocId" value="@Model.DocId" />
+        <input type="hidden" name="FolderId" value="@folderId" />
+        <div class="cpiMainEntry px-3 pt-3">
+            @* Document Name — full width at top *@
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label for="DocName">@Localizer["Document Name"]</label>
+                        <input type="text" class="form-control form-control-sm" name="DocName" value="@Model.DocName" required />
+                    </div>
+                </div>
+            </div>
+
+            @* Details / Tags tabs *@
+            <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal mt-1" id="docDetailTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="docDetailDetailsTab" data-toggle="tab" role="tab" href="#docDetailDetailsContent" aria-selected="true">@Localizer["Details"]</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="docDetailTagsTab" data-toggle="tab" role="tab" href="#docDetailTagsContent" aria-selected="false">@Localizer["Tags"]</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                @* Details tab *@
+                <div class="tab-pane show active pt-2" id="docDetailDetailsContent" role="tabpanel">
+                    @* Document Type + Author on same row *@
+                    <div class="form-row">
+                        <div class="col-3">
+                            <div class="form-group float-label">
+                                <label for="DocTypeId">@Localizer["Document Type"]</label>
+                                @(Html.Kendo().DropDownList()
+                                    .Name("DocTypeId")
+                                    .DataTextField("DocTypeName")
+                                    .DataValueField("DocTypeId")
+                                    .OptionLabel(Localizer["-- Select --"].Value)
+                                    .AutoWidth(true)
+                                    .DataSource(source => source.Read(read =>
+                                        read.Action("GetDocTypes", "Release", new { area = "Releases" })))
+                                    .Value(Model.DocTypeId?.ToString() ?? "")
+                                    .HtmlAttributes(new { style = "width:100%;" })
+                                )
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label for="Author">@Localizer["Author"]</label>
+                                <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* File upload *@
+                    @if (addMode || Model.FileId == null || Model.FileId == 0)
+                    {
+                        <div class="form-row pt-1 pb-1" style="font-size: small">
+                            <div class="col-12">
+                                @(Html.Kendo().Upload()
+                                    .Name("UploadedFile")
+                                    .Messages(m => m.Select(Localizer["Select a file to upload..."]))
+                                    .Multiple(false)
+                                    .Validation(validation => validation.MaxFileSize(1500000))
+                                )
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-row pt-1 pb-1" style="font-size:small">
+                            <div class="col-12">
+                                <span class="fal fa-file mr-1"></span> @userFileName
+                            </div>
+                        </div>
+                    }
+
+                    @* Checkboxes — all 4 on one row *@
+                    <div class="form-row pt-2 pb-2">
+                        <div class="col-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="IsPrintOnReport" value="true" class="mr-1" @(Model.IsPrintOnReport ? "checked" : "") />
+                                <label class="mb-0">@Localizer["Print on Reports?"]</label>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="IsDefault" value="true" class="mr-1" @(Model.IsDefault ? "checked" : "") />
+                                <label class="mb-0">@Localizer["Default?"]</label>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="IsPrivate" value="true" class="mr-1" @(Model.IsPrivate ? "checked" : "") />
+                                <label class="mb-0">@Localizer["Private?"]</label>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="IncludeInWorkflow" value="true" class="mr-1" @(Model.IncludeInWorkflow ? "checked" : "") />
+                                <label class="mb-0 text-nowrap">@Localizer["Include in Workflow?"]</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Responsible (Docketing) + Responsible (Reporting) *@
+                    <div class="form-row">
+                        <div class="col-6">
+                            <div class="form-group float-label">
+                                <label for="ResponsibleDocketing">@Localizer["Responsible (Docketing)"]</label>
+                                <input type="text" class="form-control form-control-sm" name="ResponsibleDocketing" value="" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group float-label">
+                                <label for="ResponsibleReporting">@Localizer["Responsible (Reporting)"]</label>
+                                <input type="text" class="form-control form-control-sm" name="ResponsibleReporting" value="" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Remarks *@
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label for="Remarks">@Localizer["Remarks"]</label>
+                                <textarea class="form-control form-control-sm" rows="4" name="Remarks" style="padding-top:20px;">@Model.Remarks</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Tags tab *@
+                <div class="tab-pane pt-2" id="docDetailTagsContent" role="tabpanel">
+                    <div class="form-row">
+                        <div class="col">
+                            <div class="form-group float-label">
+                                <label for="Tags">@Localizer["Tags"]</label>
+                                <textarea class="form-control form-control-sm" rows="4" name="Tags" style="padding-top:20px;">@Model.Tags</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Save / Close buttons *@
+        <div class="form-row px-3 pb-2 pt-1">
+            <div class="col d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-sm mr-2"><i class="fal fa-check mr-1"></i>@Localizer["Save"]</button>
+                <button type="button" class="btn btn-light btn-sm border" onclick="$('#@dialogId').data('kendoWindow').close()"><i class="fal fa-undo mr-1"></i>@Localizer["Close"]</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var dialog = $("#@dialogId");
+        dialog.kendoWindow({
+            width: "850px",
+            title: "@Localizer["Document Detail"]",
+            visible: false,
+            modal: true,
+            actions: ["Close"],
+            close: function () { this.destroy(); dialog.remove(); }
+        });
+        dialog.data("kendoWindow").center().open();
+
+        var form = $("#@formId");
+        form.on("submit", function (e) {
+            e.preventDefault();
+            var formData = new FormData(form[0]);
+            if (typeof cpiLoadingSpinner !== 'undefined') cpiLoadingSpinner.show();
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("SaveDocumentDetail", "Release", new { area = "Releases" })",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (result) {
+                    if (typeof cpiLoadingSpinner !== 'undefined') cpiLoadingSpinner.hide();
+                    dialog.data("kendoWindow").close();
+                    if (typeof pageHelper !== 'undefined') pageHelper.showSuccess("@Localizer["Document saved successfully."]");
+                    $(document).trigger("releaseDocSaved");
+                },
+                error: function (xhr) {
+                    if (typeof cpiLoadingSpinner !== 'undefined') cpiLoadingSpinner.hide();
+                    if (typeof pageHelper !== 'undefined') pageHelper.showErrors(xhr);
+                    else alert("Error saving document.");
+                }
+            });
+        });
+    });
+</script>
