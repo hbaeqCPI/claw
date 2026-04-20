@@ -38,28 +38,9 @@
                 }
             </div>
         </div>
-        <div class="form-row">
-            <div class="col-md-4 col-lg-3 col-xl-2">
-                <div class="form-group float-label">
-                    <label asp-for="Country"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="Country" disabled />
-                    }
-                    else
-                    {
-                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country))
-                        <span asp-validation-for="Country"></span>
-                    }
-                </div>
-            </div>
-            <div class="col-md-8 col-lg-9 col-xl-7">
-                <div class="form-group float-label">
-                    <label for="Country_@(screen)_Name">@Localizer["Country Name"]</label>
-                    <input type="text" class="form-control form-control-sm" id="Country_@(screen)_Name" disabled="disabled" asp-for="CountryName" />
-                </div>
-            </div>
-        </div>
+        @* Action Types are not country-specific — keep Country persisted as empty
+           string without exposing the field for edit. *@
+        <input type="hidden" name="Country" value="" />
         <div class="form-row">
             <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
@@ -215,7 +196,7 @@
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate"></vc:record-stamps>
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.CreatedBy, dateCreated = Model.DateCreated, updatedBy = Model.UpdatedBy, lastUpdate = Model.LastUpdate })
         </div>
     }
 </form>

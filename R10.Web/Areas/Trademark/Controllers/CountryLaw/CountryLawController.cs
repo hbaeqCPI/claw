@@ -287,6 +287,7 @@ namespace R10.Web.Areas.Trademark.Controllers
                 countryLaw.DefaultAgent ??= "";
                 countryLaw.Remarks ??= "";
                 countryLaw.UserRemarks ??= "";
+                countryLaw.InternalRemarks ??= "";
                 countryLaw.Systems ??= "";
 
                 // Require at least one system
@@ -348,20 +349,20 @@ namespace R10.Web.Areas.Trademark.Controllers
                             "DELETE FROM tblTmkCountryLaw WHERE Country=@p0 AND CaseType=@p1 AND Systems=@p2",
                             existing.Country ?? "", existing.CaseType ?? "", existing.Systems ?? "");
                         await _repository.Database.ExecuteSqlRawAsync(
-                            @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
-                              VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10)",
+                            @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, InternalRemarks, UserID, DateCreated, LastUpdate)
+                              VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)",
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
                             countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
-                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
+                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     }
                     else
                     {
                         await _repository.Database.ExecuteSqlRawAsync(
                             @"UPDATE tblTmkCountryLaw SET DefaultAgent=@p0, AutoGenDesCtry=@p1, AutoUpdtDesTmkRecs=@p2,
-                              Remarks=@p3, UserRemarks=@p4, UserID=@p5, LastUpdate=@p6
-                              WHERE Country=@p7 AND CaseType=@p8 AND Systems=@p9",
+                              Remarks=@p3, UserRemarks=@p4, InternalRemarks=@p5, UserID=@p6, LastUpdate=@p7
+                              WHERE Country=@p8 AND CaseType=@p9 AND Systems=@p10",
                             countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
-                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.LastUpdate,
+                            countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.LastUpdate,
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", existing.Systems ?? "");
                     }
 
@@ -394,11 +395,11 @@ namespace R10.Web.Areas.Trademark.Controllers
                     countryLaw.DateCreated = now;
                     _repository.DetachAllEntities();
                     await _repository.Database.ExecuteSqlRawAsync(
-                        @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, UserID, DateCreated, LastUpdate)
-                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10)",
+                        @"INSERT INTO tblTmkCountryLaw (Country, CaseType, Systems, DefaultAgent, AutoGenDesCtry, AutoUpdtDesTmkRecs, Remarks, UserRemarks, InternalRemarks, UserID, DateCreated, LastUpdate)
+                          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)",
                         countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
                         countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
-                        countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
+                        countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
                     if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
                         await CopyChildData(countryLaw);
                 }

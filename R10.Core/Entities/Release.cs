@@ -39,11 +39,17 @@ namespace R10.Core.Entities
         public bool GenerateTrademark { get; set; } = true;
 
         /// <summary>
-        /// Free-form notes rendered at the top of the generated release report PDF.
-        /// Used for authoring-time announcements (e.g. "all Opposition actions renamed
-        /// to Opposition Period Ends") that aren't driven by MDB diffs.
+        /// Free-form notes rendered at the top of the patent release-report PDF.
+        /// Used for authoring-time announcements that aren't driven by MDB diffs
+        /// (e.g. "all Opposition actions renamed to Opposition Period Ends").
         /// </summary>
-        [Display(Name = "Report Notes")]
-        public string? ReportNotes { get; set; }
+        [Display(Name = "Patent Report Notes")]
+        public string? ReportNotesPatent { get; set; }
+
+        /// <summary>
+        /// Free-form notes rendered at the top of the trademark release-report PDF.
+        /// </summary>
+        [Display(Name = "Trademark Report Notes")]
+        public string? ReportNotesTrademark { get; set; }
     }
 }

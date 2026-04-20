@@ -210,39 +210,38 @@ namespace LawPortal.Web.Services
             ap.Add(T($"          Office Action: {oaText}", _r, 10));
             doc.Add(ap);
 
-            // Country line
+            // Country line — rendered as "Name (Code)" to match the rest of the report.
             if (!string.IsNullOrEmpty(country))
             {
                 var cp = P(10).SetMarginLeft(50).SetMarginTop(2);
                 cp.Add(T("Country: ", _r, 10));
-                if (isNew)
-                {
-                    cp.Add(T(country, _r, 10).SetBackgroundColor(Yellow));
-                    cp.Add(T("     ", _r, 10));
-                    cp.Add(T(CN(country), _r, 10).SetBackgroundColor(Yellow));
-                }
-                else cp.Add(T($"{country}     {CN(country)}", _r, 10));
+                var label = $"{CN(country)} ({country})";
+                if (isNew) cp.Add(T(label, _r, 10).SetBackgroundColor(Yellow));
+                else cp.Add(T(label, _r, 10));
                 doc.Add(cp);
             }
 
             // Matching CountryDue diff rows — show any CountryDue adds/mods/deletes
-            // that reference this ActionType name + country.
+            // that reference this ActionType name + country. When the ActionType isn't
+            // country-specific, rows span multiple countries so the table renders an
+            // extra Country column to disambiguate.
             if (H(comp, dueT) && !isDel)
             {
+                bool multiCountry = string.IsNullOrEmpty(country);
                 var dd = comp.TableDiffs[dueT];
                 var relevant = dd.AddedRows.Concat(dd.ModifiedRows)
                     .Where(r => G(r, "ActionType") == name
                              && (string.IsNullOrEmpty(country) || G(r, "Country") == country))
                     .ToList();
                 if (relevant.Any())
-                    WriteActionDueTable(doc, relevant, treatAllAsNew: isNew, marginLeft: 50);
+                    WriteActionDueTable(doc, relevant, treatAllAsNew: isNew, marginLeft: 50, includeCountry: multiCountry);
 
                 var deletedRelevant = dd.DeletedRows
                     .Where(r => G(r, "ActionType") == name
                              && (string.IsNullOrEmpty(country) || G(r, "Country") == country))
                     .ToList();
                 if (deletedRelevant.Any())
-                    WriteActionDueTable(doc, deletedRelevant, treatAllAsDeleted: true, marginLeft: 50);
+                    WriteActionDueTable(doc, deletedRelevant, treatAllAsDeleted: true, marginLeft: 50, includeCountry: multiCountry);
             }
 
             // Remarks (with inline line-diff for modified action types)
@@ -289,32 +288,47 @@ namespace LawPortal.Web.Services
         }
 
         // Short 5-col Action Due table (shared by Manual Updates + Country Law).
+        // When includeCountry is true, a leading Country column is added so long
+        // multi-country lists show which country each row applies to.
         private void WriteActionDueTable(Document doc, List<RowDiff> rows,
-            bool treatAllAsNew = false, bool treatAllAsDeleted = false, float marginLeft = 20)
+            bool treatAllAsNew = false, bool treatAllAsDeleted = false, float marginLeft = 20,
+            bool includeCountry = false)
         {
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 40, 8, 8, 8, 20 }))
+            float[] cols = includeCountry
+                ? new float[] { 22, 32, 6, 6, 6, 18 }
+                : new float[] { 40, 8, 8, 8, 20 };
+            var tbl = new Table(UnitValue.CreatePercentArray(cols))
                 .UseAllAvailableWidth().SetMarginLeft(marginLeft).SetMarginTop(6).SetFontSize(9);
+            if (includeCountry) tbl.AddHeaderCell(HC("Country"));
             tbl.AddHeaderCell(HC("Action Due"));
             tbl.AddHeaderCell(HC("Yr"));
             tbl.AddHeaderCell(HC("Mo"));
             tbl.AddHeaderCell(HC("Dy"));
             tbl.AddHeaderCell(HC("Indicator"));
 
-            foreach (var row in rows.OrderBy(r => G(r, "ActionDue")))
+            foreach (var row in rows
+                .OrderBy(r => includeCountry ? CN(G(r, "Country")) : "")
+                .ThenBy(r => G(r, "ActionDue")))
             {
                 bool isAdd = row.OldValues == null;
+                string countryLabel = includeCountry
+                    ? $"{CN(G(row, "Country"))} ({G(row, "Country")})"
+                    : "";
                 if (treatAllAsDeleted)
                 {
+                    if (includeCountry) DC(tbl, countryLabel);
                     DC(tbl, G(row, "ActionDue")); DC(tbl, G(row, "Yr")); DC(tbl, G(row, "Mo"));
                     DC(tbl, G(row, "Dy")); DC(tbl, G(row, "Indicator"));
                 }
                 else if (treatAllAsNew || isAdd)
                 {
+                    if (includeCountry) YC(tbl, countryLabel);
                     YC(tbl, G(row, "ActionDue")); YC(tbl, G(row, "Yr")); YC(tbl, G(row, "Mo"));
                     YC(tbl, G(row, "Dy")); YC(tbl, G(row, "Indicator"));
                 }
                 else
                 {
+                    if (includeCountry) PC(tbl, countryLabel);
                     MC(tbl, row, "ActionDue"); MC(tbl, row, "Yr"); MC(tbl, row, "Mo");
                     MC(tbl, row, "Dy"); MC(tbl, row, "Indicator");
                 }

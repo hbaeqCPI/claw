@@ -62,7 +62,13 @@
       "Bash(grep -n 'Views/Shared/\\\\|Views\\\\\\\\Shared\\\\\\\\' /d/Projects/Claw/Claw-Claude/R10.Web/R10.Web.csproj)",
       "Bash(cat)",
       "Bash(chmod +x /tmp/fix-nav.sh)",
-      "Bash(xargs sed *)"
+      "Bash(xargs sed *)",
+      "Bash(sqlcmd -S \"\\(local\\)\" -d \"LawPortalCPiR10\" -Q \"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='tblRelease' AND COLUMN_NAME LIKE 'ReportNotes%'\")",
+      "Bash(sqlcmd -S \"\\(local\\)\" -d \"LawPortalCPiR10\" -Q \"SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN \\('tblPatCountryLaw','tblTmkCountryLaw'\\) AND COLUMN_NAME='InternalRemarks'\")",
+      "Bash(dotnet /d/Projects/Claw/Claw-Claude/R10.Web/bin/Debug/net8.0/R10.Web.dll)",
+      "Bash(tasklist //FI \"IMAGENAME eq R10.Web.exe\")",
+      "Bash(tasklist //FI \"IMAGENAME eq LawPortal.Web.exe\")",
+      "Bash(tasklist //FI \"IMAGENAME eq dotnet.exe\")"
     ]
   }
 }

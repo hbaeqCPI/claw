@@ -30,6 +30,13 @@ namespace R10.Core.Entities.Trademark
 
         public string UserRemarks { get; set; } = "";
 
+        /// <summary>
+        /// Free-form internal notes for the editor's own use. Never exported to
+        /// MDB, never rendered in release PDFs — purely informational.
+        /// </summary>
+        [Display(Name = "Internal Remarks")]
+        public string? InternalRemarks { get; set; }
+
         [Display(Name = "Auto Gen Des Ctry")]
         public bool AutoGenDesCtry { get; set; }
 

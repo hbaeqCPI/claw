@@ -226,37 +226,58 @@ namespace R10.Web.Areas.Releases.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] Release release)
         {
-            if (ModelState.IsValid)
-            {
-                bool isNew = release.ReleaseId == 0;
-                UpdateEntityStamps(release, release.ReleaseId);
+            if (release == null)
+                return new JsonBadRequest(new { errors = new[] { "Save: posted body deserialized to null — check form fields match Release model." } });
 
-                if (!isNew)
-                    await _entityService.Update(release);
-                else
-                    await _entityService.Add(release);
-
-                // Auto-create root document folder for new releases
-                if (isNew && release.ReleaseId > 0)
-                {
-                    try
-                    {
-                        await _documentService.AddFolder(
-                            ToDocSystemType(release.SystemType), "ReleaseId", "Rel", release.ReleaseId,
-                            TruncateFolderName(release.Name), 0, false);
-                    }
-                    catch (Exception)
-                    {
-                        // Don't fail the save if folder creation fails
-                    }
-                }
-
-                return Json(release.ReleaseId);
-            }
-            else
-            {
+            if (!ModelState.IsValid)
                 return new JsonBadRequest(new { errors = ModelState.Errors() });
+
+            bool isNew = release.ReleaseId == 0;
+
+            // For existing records, re-load from DB and copy editable fields onto
+            // the tracked entity. This avoids sending a NULL UpdatedBy / CreatedBy
+            // / DateCreated (which triggers "Value cannot be null. (Parameter
+            // 'entity')" when the hidden record-stamp inputs aren't posted) and
+            // gives EF Core a full non-null tracked entity to persist.
+            if (!isNew)
+            {
+                var existing = await _entityService.GetByIdAsync(release.ReleaseId);
+                if (existing == null)
+                    return new JsonBadRequest(new { errors = new[] { $"Release {release.ReleaseId} no longer exists." } });
+
+                existing.Name = release.Name;
+                existing.Year = release.Year;
+                existing.Quarter = release.Quarter;
+                existing.SystemType = release.SystemType;
+                existing.Systems = release.Systems ?? existing.Systems;
+                existing.GeneratePatent = release.GeneratePatent;
+                existing.GenerateTrademark = release.GenerateTrademark;
+                existing.ReportNotesPatent = release.ReportNotesPatent;
+                existing.ReportNotesTrademark = release.ReportNotesTrademark;
+                UpdateEntityStamps(existing, existing.ReleaseId);
+                await _entityService.Update(existing);
+                return Json(existing.ReleaseId);
             }
+
+            UpdateEntityStamps(release, release.ReleaseId);
+            await _entityService.Add(release);
+
+            // Auto-create root document folder for new releases
+            if (release.ReleaseId > 0)
+            {
+                try
+                {
+                    await _documentService.AddFolder(
+                        ToDocSystemType(release.SystemType), "ReleaseId", "Rel", release.ReleaseId,
+                        TruncateFolderName(release.Name), 0, false);
+                }
+                catch (Exception)
+                {
+                    // Don't fail the save if folder creation fails
+                }
+            }
+
+            return Json(release.ReleaseId);
         }
 
         [HttpPost, Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryCanDelete)]
@@ -1260,7 +1281,8 @@ namespace R10.Web.Areas.Releases.Controllers
                 }
 
                 var pdfService = new LawPortal.Web.Services.MdbReportPdfService();
-                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs, release.ReportNotes);
+                var notes = isPat ? release.ReportNotesPatent : release.ReportNotesTrademark;
+                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs, notes);
 
                 // Store PDF
                 var userName = User.GetUserName();

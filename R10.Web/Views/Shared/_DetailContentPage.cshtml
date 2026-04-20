@@ -15,6 +15,16 @@
 
 <script>
     $(document).ready(function () {
+        // Show any pending post-save toast handed off by the previous page
+        // (full redirect after save would otherwise discard it).
+        try {
+            var pending = sessionStorage.getItem('cpiPostSaveMessage');
+            if (pending && typeof cpiStatusMessage !== 'undefined') {
+                cpiStatusMessage.success(pending, 3000);
+                sessionStorage.removeItem('cpiPostSaveMessage');
+            }
+        } catch (e) { /* ignore */ }
+
         var pageReady = function () {
             @*if (typeof @ViewBag.ActivePage === 'undefined') {
                 setTimeout(pageReady, 50);
@@ -46,6 +56,14 @@
                         if (result && result.redirectUrl) {
                             cpiBreadCrumbs.markLastNode({ dirty: false });
                             $(window).off('beforeunload');
+                            // The save success toast was just queued on this page;
+                            // a full navigation tears it down before it renders.
+                            // Hand the message to the next page via sessionStorage
+                            // so it can be shown after the redirect completes.
+                            try {
+                                var msg = $('form[data-save-message]').data('save-message');
+                                if (msg) sessionStorage.setItem('cpiPostSaveMessage', msg);
+                            } catch (e) { /* sessionStorage unavailable — ignore */ }
                             window.location.href = result.redirectUrl;
                         } else {
                             var id = result && result.id ? result.id : (result || 0);

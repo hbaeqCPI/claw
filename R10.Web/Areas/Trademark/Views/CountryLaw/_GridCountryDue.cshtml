@@ -15,16 +15,20 @@
           .Columns(columns =>
           {
               columns.Bound(d => d.ActionDue).Width(400);
+              columns.Bound(d => d.ActionType).Width(250);
               columns.Bound(d => d.BasedOn);
               columns.Bound(d => d.Yr);
               columns.Bound(d => d.Mo);
               columns.Bound(d => d.Dy);
+              columns.Bound(d => d.Indicator);
+              columns.Bound(d => d.Recurring).Width(150).ClientTemplate(
+                  "# if (data.Recurring == 0) { # Non Recurring " +
+                  "# } else if (data.Recurring == 1) { # Based on Taken Date " +
+                  "# } else if (data.Recurring == -1) { # Based on Due Date " +
+                  "# } else { ##= data.Recurring## } #");
+              columns.Bound(d => d.EffBasedOn).Width(150);
               columns.Bound(d => d.EffStartDate).Format("{0:dd-MMM-yyyy}").Width(150);
               columns.Bound(d => d.EffEndDate).Format("{0:dd-MMM-yyyy}").Width(150);
-              columns.Bound(d => d.EffBasedOn).Width(150);
-              columns.Bound(d => d.Indicator);
-              columns.Bound(d => d.Calculate).ClientTemplate("<i class='fa fal #: Calculate ? 'fa-check' : ''#'></i>")
-                                             .EditorTemplateName("CheckBox").Width(100).HtmlAttributes(new { align = "center", style = "vertical-align:top; padding-top:0px !important" });
               columns.Command(command =>
               {
                   if (permission.CanEditRecord && !permission.CanEditRemarksOnly)

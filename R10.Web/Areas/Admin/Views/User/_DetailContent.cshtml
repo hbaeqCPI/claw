@@ -237,7 +237,7 @@ data-label-cancel="@Localizer["Cancel"]"
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.CreatedBy" date-created="@Model.DateCreated" updated-by="@Model.UpdatedBy" last-update="@Model.LastUpdate" t-stamp="@Model.tStamp"></vc:record-stamps>
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.CreatedBy, dateCreated = Model.DateCreated, updatedBy = Model.UpdatedBy, lastUpdate = Model.LastUpdate, tStamp = Model.tStamp })
         </div>
     }
 </form>

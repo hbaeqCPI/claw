@@ -55,7 +55,7 @@
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate"></vc:record-stamps>
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.UserID, dateCreated = Model.DateCreated, updatedBy = Model.UserID, lastUpdate = Model.LastUpdate })
         </div>
     }
 </form>

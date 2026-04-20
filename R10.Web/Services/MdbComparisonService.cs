@@ -44,10 +44,12 @@ namespace LawPortal.Web.Services
         // Composite key definitions per table
         private static readonly Dictionary<string, string[]> TableKeys = new(StringComparer.OrdinalIgnoreCase)
         {
-            // ActionType tables — keyed on the unique index (ActionType name + Country + CDueId).
+            // ActionType tables — key on (ActionType, Country) only. CDueId is an
+            // identity FK into CountryDue that regenerates per MDB export, so including
+            // it in the key makes unchanged ActionType rows appear as deleted+added.
             // The Manual Updates section of the report diffs these tables.
-            ["tblPatActionType"] = new[] { "ActionType", "Country", "CDueId" },
-            ["tblTmkActionType"] = new[] { "ActionType", "Country", "CDueId" },
+            ["tblPatActionType"] = new[] { "ActionType", "Country" },
+            ["tblTmkActionType"] = new[] { "ActionType", "Country" },
             // Patent tables
             ["tblPatCountryLaw"] = new[] { "Country", "CaseType" },
             ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn" },

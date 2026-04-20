@@ -541,6 +541,13 @@ namespace R10.Web
                 options.ValueCountLimit = int.MaxValue;
             });
 
+            // The JS client (pageHelper.postJson) sends the anti-forgery token
+            // as a "RequestVerificationToken" header for JSON POSTs. Default
+            // antiforgery only reads from the form field, so without this line
+            // every JSON POST ([ValidateAntiForgeryToken]) returns 400 with
+            // an empty body.
+            services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
+
             services.AddMvc(options =>
             {
                 options.EnableEndpointRouting = false;

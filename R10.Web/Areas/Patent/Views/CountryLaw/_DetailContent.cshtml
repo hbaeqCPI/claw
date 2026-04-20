@@ -20,7 +20,16 @@
     var saveAction = detailPagePermission.CanEditRemarksOnly ? "SaveRemarks" : fullModify ? "Save" : "";
 }
 
-<form cpi-detail-form action="@saveAction">
+<form id="detailForm" method="post" cpi-detail-form
+      action="@(string.IsNullOrEmpty(saveAction) ? "" : Url.Action(saveAction, "CountryLaw", new { area = "Patent" }))"
+      data-error-message="@Localizer["An error occurred. No updates were made."]"
+      data-save-message="@Localizer["Record has been saved successfully."]"
+      data-cancel-title="@Localizer["Confirm Cancel Changes"]"
+      data-cancel-message="@Localizer["Changes will not be saved. Do you want to continue?"]"
+      data-delete-title="@Localizer["Confirm Delete"]"
+      data-delete-message="@Localizer["You are about to delete this record. This operation cannot be undone."]"
+      data-delete-success="@Localizer["Record has been deleted successfully."]">
+    @Html.AntiForgeryToken()
     @if (!addMode)
     {
         <input type="hidden" asp-for="Country" />
@@ -176,6 +185,9 @@
             <li class="nav-item">
                 <a class="nav-link" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="false" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="countryLawDetailInternalRemarksTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailInternalRemarksTabContent" aria-selected="false" href="#countryLawDetailInternalRemarksTabContent">@Localizer["Internal Remarks"]</a>
+            </li>
         }
     </ul>
     <div class="tab-content">
@@ -212,12 +224,20 @@
                     </div>
                 </div>
             </div>
+            <div class="tab-pane page-content px-1 py-1" id="countryLawDetailInternalRemarksTabContent" role="tabpanel" aria-labelledby="countryLawDetailInternalRemarksTab">
+                <div class="form-row">
+                    <div class="col">
+                        <p class="text-muted small mb-1">@Localizer["Internal notes — not exported to MDB, not rendered in release reports."]</p>
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="InternalRemarks" asp-is-readonly="@isReadOnly"></textarea>
+                    </div>
+                </div>
+            </div>
         }
     </div>
     @if (!addMode)
     {
         <div class="content-stamp">
-            <vc:record-stamps created-by="@Model.UserID" date-created="@Model.DateCreated" updated-by="@Model.UserID" last-update="@Model.LastUpdate" t-stamp="null"></vc:record-stamps>
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.UserID, dateCreated = Model.DateCreated, updatedBy = Model.UserID, lastUpdate = Model.LastUpdate, tStamp = (byte[])null })
         </div>
     }
 </form>

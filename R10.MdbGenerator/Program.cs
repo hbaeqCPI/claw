@@ -228,11 +228,13 @@ public class MdbGenerator
                 bool hasSystemsColumn = columns.Any(c =>
                     c.Name.Equals("Systems", StringComparison.OrdinalIgnoreCase));
 
-                // Filter out timestamp/rowversion columns and the Systems column itself
+                // Filter out timestamp/rowversion columns, the Systems column itself,
+                // and InternalRemarks (which is author-time notes persisted to SQL only).
                 var exportColumns = columns.Where(c =>
                     !c.DataType.Equals("timestamp", StringComparison.OrdinalIgnoreCase) &&
                     !c.DataType.Equals("rowversion", StringComparison.OrdinalIgnoreCase) &&
-                    !c.Name.Equals("Systems", StringComparison.OrdinalIgnoreCase)).ToList();
+                    !c.Name.Equals("Systems", StringComparison.OrdinalIgnoreCase) &&
+                    !c.Name.Equals("InternalRemarks", StringComparison.OrdinalIgnoreCase)).ToList();
 
                 // Apply per-table column whitelist if defined
                 if (TableColumnWhitelist.TryGetValue(tableName, out var whitelist))
