@@ -66,3 +66,52 @@ BEGIN
     ALTER TABLE tblTmkCountryLaw ADD InternalRemarks NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblTmkCountryLaw_InternalRemarks DEFAULT '';
 END;
 GO
+
+-- ActionParameter tables — per-ActionType templates (Yr/Mo/Dy offsets + Indicator)
+-- used to generate action dues retroactively. Exported to MDB as a temp comparison
+-- target so we can diff parameter changes between releases. Ported from R10v22.
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_NAME = 'tblPatActionParameter'
+)
+BEGIN
+    CREATE TABLE tblPatActionParameter (
+        ActParamId   INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_tblPatActionParameter PRIMARY KEY,
+        ActionTypeID INT NOT NULL,
+        ActionDue    NVARCHAR(60) NOT NULL,
+        Yr           INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Yr DEFAULT 0,
+        Mo           INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Mo DEFAULT 0,
+        Dy           INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Dy DEFAULT 0,
+        Indicator    NVARCHAR(20) NOT NULL CONSTRAINT DF_tblPatActionParameter_Indicator DEFAULT 'Reminder',
+        CreatedBy    NVARCHAR(20) NULL,
+        UpdatedBy    NVARCHAR(20) NULL,
+        DateCreated  DATETIME NULL,
+        LastUpdate   DATETIME NULL
+    );
+    CREATE UNIQUE INDEX UX_tblPatActionParameter
+        ON tblPatActionParameter (ActionTypeID, ActionDue, Yr, Mo, Dy);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_NAME = 'tblTmkActionParameter'
+)
+BEGIN
+    CREATE TABLE tblTmkActionParameter (
+        ActParamId   INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_tblTmkActionParameter PRIMARY KEY,
+        ActionTypeID INT NOT NULL,
+        ActionDue    NVARCHAR(60) NOT NULL,
+        Yr           INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Yr DEFAULT 0,
+        Mo           INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Mo DEFAULT 0,
+        Dy           INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Dy DEFAULT 0,
+        Indicator    NVARCHAR(20) NOT NULL CONSTRAINT DF_tblTmkActionParameter_Indicator DEFAULT 'Reminder',
+        CreatedBy    NVARCHAR(20) NULL,
+        UpdatedBy    NVARCHAR(20) NULL,
+        DateCreated  DATETIME NULL,
+        LastUpdate   DATETIME NULL
+    );
+    CREATE UNIQUE INDEX UX_tblTmkActionParameter
+        ON tblTmkActionParameter (ActionTypeID, ActionDue, Yr, Mo, Dy);
+END;
+GO

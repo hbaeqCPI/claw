@@ -45,21 +45,15 @@ namespace R10.Web.Areas.Patent.Controllers
             return p;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            var model = new PageViewModel { Page = PageType.Search, PageId = "patDesCaseTypeDeleteExtSearch", Title = _localizer["Des Case Type Delete Ext Search"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return Request.IsAjax() ? PartialView("Index", model) : View(model);
-        }
+        // Redirect to unified DesCaseTypeDelete search screen.
+        public IActionResult Index() => RedirectToAction("Index", "DesCaseTypeDelete");
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Search([FromBody] List<QueryFilterViewModel> mainSearchFilters)
-        {
-            var model = new PageViewModel { Page = PageType.SearchResults, PageId = "patDesCaseTypeDeleteExtSearchResults", Title = _localizer["Des Case Type Delete Ext Search Results"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return PartialView("Index", model);
-        }
+        public IActionResult Search([FromBody] List<QueryFilterViewModel> mainSearchFilters) =>
+            RedirectToAction("Index", "DesCaseTypeDelete");
 
         [HttpGet]
-        public IActionResult Search() => RedirectToAction("Index");
+        public IActionResult Search() => RedirectToAction("Index", "DesCaseTypeDelete");
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {

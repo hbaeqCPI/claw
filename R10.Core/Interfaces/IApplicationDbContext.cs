@@ -30,6 +30,7 @@ namespace R10.Core.Interfaces
         DbSet<PatCountryExp> PatCountryExpirations { get; set; }
         DbSet<PatCaseType> PatCaseTypes { get; set; }
         DbSet<PatActionType> PatActionTypes { get; set; }
+        DbSet<PatActionParameter> PatActionParameters { get; set; }
         DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
         DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
 
@@ -60,6 +61,7 @@ namespace R10.Core.Interfaces
         DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         DbSet<TmkCountryDue> TmkCountryDues { get; set; }
         DbSet<TmkActionType> TmkActionTypes { get; set; }
+        DbSet<TmkActionParameter> TmkActionParameters { get; set; }
         DbSet<TmkDesignatedCountry> TmkDesignatedCountries { get; set; }
 
         DbSet<TmkCountryLawUpdate> TmkCountryLawUpdate { get; set; }

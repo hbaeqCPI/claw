@@ -34,6 +34,8 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IViewModelService<TmkActionType>, ViewModelService<TmkActionType>>();
             services.AddScoped<IEntityService<TmkActionType>, AuxService<TmkActionType>>();
+            services.AddScoped<IChildEntityService<TmkActionType, TmkActionParameter>, ChildEntityService<TmkActionType, TmkActionParameter>>();
+            services.AddScoped<IEntityService<TmkActionParameter>, AuxService<TmkActionParameter>>();
 
             services.AddScoped<IBaseService<TmkDesCaseType>, BaseService<TmkDesCaseType>>();
             services.AddScoped<IViewModelService<TmkDesCaseType>, ViewModelService<TmkDesCaseType>>();

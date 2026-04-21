@@ -41,21 +41,14 @@
         @* Action Types are not country-specific — keep Country persisted as empty
            string without exposing the field for edit. *@
         <input type="hidden" name="Country" value="" />
+        @* Responsible Attorney is read-only on this screen — preserve the stored
+           ResponsibleID via a hidden input so the posted form round-trips it. *@
+        <input type="hidden" asp-for="ResponsibleID" />
         <div class="form-row">
             <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="ResponsibleID"></label>
-                    @if (isReadOnly)
-                    {
-                        <input type="text" class="form-control form-control-sm" asp-for="ResponsibleName" disabled />
-                    }
-                    else
-                    {
-                        var attorneyLabel = Localizer["Attorney"];
-                        var attorneyNameLabel = Localizer["Attorney Name"];
-                        @await Component.InvokeAsync("ComboBox", ComboBoxHelper.AttorneyWithLink("ResponsibleID", attorneyLabel, attorneyNameLabel, Model.ResponsibleID, Model.ResponsibleCode))
-                        <span asp-validation-for="ResponsibleID"></span>
-                    }
+                    <input type="text" class="form-control form-control-sm" value="@Model.ResponsibleCode" disabled />
                 </div>
             </div>
             <div class="col-md-8 col-lg-9 col-xl-7">
@@ -67,8 +60,14 @@
         </div>
     </div>
     <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+        @if (!addMode)
+        {
+            <li class="nav-item">
+                <a class="nav-link active" id="actionTypeDetailActionParametersTab" data-toggle="tab" role="tab" aria-controls="actionTypeDetailActionParametersTabContent" aria-selected="true" href="#actionTypeDetailActionParametersTabContent">@Localizer["Action Parameters"]</a>
+            </li>
+        }
         <li class="nav-item">
-            <a class="nav-link active" id="actionTypeDetailMainTab" data-toggle="tab" role="tab" aria-controls="actionTypeDetailMainTabContent" aria-selected="true" href="#actionTypeDetailMainTabContent">@Localizer["Follow Up Action"] </a>
+            <a class="nav-link @(addMode ? "active" : "")" id="actionTypeDetailMainTab" data-toggle="tab" role="tab" aria-controls="actionTypeDetailMainTabContent" aria-selected="@(addMode ? "true" : "false")" href="#actionTypeDetailMainTabContent">@Localizer["Follow Up Action"] </a>
         </li>
         @if (!detailPagePermission.HasLimitedRead)
         {
@@ -78,7 +77,13 @@
         }
     </ul>
     <div class="tab-content">
-        <div class="tab-pane page-content cpiMainEntry show active" id="actionTypeDetailMainTabContent" role="tabpanel" aria-labelledby="actionTypeDetailMainTab">
+        @if (!addMode)
+        {
+            <div class="tab-pane show active" id="actionTypeDetailActionParametersTabContent" role="tabpanel" aria-labelledby="actionTypeDetailActionParametersTab">
+                @await Html.PartialAsync("_GridActionParameters", id)
+            </div>
+        }
+        <div class="tab-pane page-content cpiMainEntry @(addMode ? "show active" : "")" id="actionTypeDetailMainTabContent" role="tabpanel" aria-labelledby="actionTypeDetailMainTab">
             <div class="form-row">
                 <div class="col-md-6 col-lg-6 col-xl-4">
                     <div class="form-group float-label">

@@ -50,6 +50,11 @@ namespace LawPortal.Web.Services
             // The Manual Updates section of the report diffs these tables.
             ["tblPatActionType"] = new[] { "ActionType", "Country" },
             ["tblTmkActionType"] = new[] { "ActionType", "Country" },
+            // ActionParameter tables — per-ActionType templates. The ActionTypeID FK
+            // is stable across MDB exports from the same source database, so we key
+            // on it along with the business values (ActionDue + Yr/Mo/Dy).
+            ["tblPatActionParameter"] = new[] { "ActionTypeID", "ActionDue", "Yr", "Mo", "Dy" },
+            ["tblTmkActionParameter"] = new[] { "ActionTypeID", "ActionDue", "Yr", "Mo", "Dy" },
             // Standard Goods — trademark only. Natural key is (Class, ClassType);
             // ClassId is an identity that changes per MDB export.
             ["tblTmkStandardGood"] = new[] { "Class", "ClassType" },

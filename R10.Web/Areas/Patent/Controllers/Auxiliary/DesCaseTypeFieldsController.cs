@@ -63,20 +63,57 @@ namespace R10.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var entities = _repository.PatDesCaseTypeFields.AsNoTracking().AsQueryable();
+            string? Bool(string name) => mainSearchFilters?.FirstOrDefault(f =>
+                string.Equals(f.Property, name, StringComparison.OrdinalIgnoreCase))?.Value;
+            var extFilter = Bool("IsExt");
+            var inUseFilter = Bool("InUse");
+            var otherFilters = mainSearchFilters?.Where(f =>
+                !string.Equals(f.Property, "IsExt", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(f.Property, "InUse", StringComparison.OrdinalIgnoreCase)).ToList();
 
-            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+            var baseItems = new List<DesCaseTypeFieldsSearchItem>();
+            // Base has no InUse column — if the user narrowed on InUse we skip base.
+            if (extFilter != "true" && string.IsNullOrEmpty(inUseFilter))
             {
-                entities = entities.BuildCriteria(mainSearchFilters);
+                var baseEntities = _repository.PatDesCaseTypeFields.AsNoTracking().AsQueryable();
+                if (otherFilters != null && otherFilters.Count > 0)
+                    baseEntities = baseEntities.BuildCriteria(otherFilters);
+                var baseRows = await baseEntities
+                    .Select(e => new { e.DesCaseType, e.Systems })
+                    .Distinct()
+                    .ToListAsync();
+                baseItems = baseRows.Select(b => new DesCaseTypeFieldsSearchItem
+                {
+                    DesCaseType = b.DesCaseType,
+                    InUse = null,
+                    Systems = b.Systems,
+                    IsExt = false
+                }).ToList();
             }
 
-            // Return distinct (DesCaseType, Systems) for the search grid
-            var data = await entities
-                .Select(e => new { e.DesCaseType, e.Systems })
-                .Distinct()
-                .OrderBy(d => d.DesCaseType)
-                .ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            var extItems = new List<DesCaseTypeFieldsSearchItem>();
+            if (extFilter != "false")
+            {
+                var extEntities = _repository.PatDesCaseTypeFieldsExts.AsNoTracking().AsQueryable();
+                if (otherFilters != null && otherFilters.Count > 0)
+                    extEntities = extEntities.BuildCriteria(otherFilters);
+                extItems = await extEntities
+                    .Select(e => new DesCaseTypeFieldsSearchItem
+                    {
+                        DesCaseType = e.DesCaseType,
+                        FromField = e.FromField,
+                        ToField = e.ToField,
+                        InUse = e.InUse,
+                        Systems = e.Systems,
+                        IsExt = true
+                    }).ToListAsync();
+            }
+
+            var combined = baseItems.Concat(extItems).AsQueryable();
+            if (inUseFilter == "true") combined = combined.Where(x => x.InUse == true);
+            else if (inUseFilter == "false") combined = combined.Where(x => x.InUse == false);
+
+            return Json(combined.OrderBy(x => x.DesCaseType).ToList().ToDataSourceResult(request));
         }
 
         public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems = "")

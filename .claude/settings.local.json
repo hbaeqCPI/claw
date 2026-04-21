@@ -68,7 +68,12 @@
       "Bash(dotnet /d/Projects/Claw/Claw-Claude/R10.Web/bin/Debug/net8.0/R10.Web.dll)",
       "Bash(tasklist //FI \"IMAGENAME eq R10.Web.exe\")",
       "Bash(tasklist //FI \"IMAGENAME eq LawPortal.Web.exe\")",
-      "Bash(tasklist //FI \"IMAGENAME eq dotnet.exe\")"
+      "Bash(tasklist //FI \"IMAGENAME eq dotnet.exe\")",
+      "Bash(awk '/CREATE TABLE.*tblPatActionParameter|CREATE TABLE.*tblPatActionParameter/,/^GO$/' \"D:\\\\Base\\\\R10v22\\\\R10v22_20260225/dbupdates.sql\")",
+      "Bash(sqlcmd -S \"\\(local\\)\" -d LawPortalCPiR10 -E -Q \"IF NOT EXISTS \\(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatActionParameter'\\) BEGIN CREATE TABLE tblPatActionParameter \\(ActParamId INT IDENTITY\\(1,1\\) NOT NULL CONSTRAINT PK_tblPatActionParameter PRIMARY KEY, ActionTypeID INT NOT NULL, ActionDue NVARCHAR\\(60\\) NOT NULL, Yr INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Yr DEFAULT 0, Mo INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Mo DEFAULT 0, Dy INT NOT NULL CONSTRAINT DF_tblPatActionParameter_Dy DEFAULT 0, Indicator NVARCHAR\\(20\\) NOT NULL CONSTRAINT DF_tblPatActionParameter_Indicator DEFAULT 'Reminder', CreatedBy NVARCHAR\\(20\\) NULL, UpdatedBy NVARCHAR\\(20\\) NULL, DateCreated DATETIME NULL, LastUpdate DATETIME NULL\\); CREATE UNIQUE INDEX UX_tblPatActionParameter ON tblPatActionParameter \\(ActionTypeID, ActionDue, Yr, Mo, Dy\\); END; IF NOT EXISTS \\(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkActionParameter'\\) BEGIN CREATE TABLE tblTmkActionParameter \\(ActParamId INT IDENTITY\\(1,1\\) NOT NULL CONSTRAINT PK_tblTmkActionParameter PRIMARY KEY, ActionTypeID INT NOT NULL, ActionDue NVARCHAR\\(60\\) NOT NULL, Yr INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Yr DEFAULT 0, Mo INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Mo DEFAULT 0, Dy INT NOT NULL CONSTRAINT DF_tblTmkActionParameter_Dy DEFAULT 0, Indicator NVARCHAR\\(20\\) NOT NULL CONSTRAINT DF_tblTmkActionParameter_Indicator DEFAULT 'Reminder', CreatedBy NVARCHAR\\(20\\) NULL, UpdatedBy NVARCHAR\\(20\\) NULL, DateCreated DATETIME NULL, LastUpdate DATETIME NULL\\); CREATE UNIQUE INDEX UX_tblTmkActionParameter ON tblTmkActionParameter \\(ActionTypeID, ActionDue, Yr, Mo, Dy\\); END;\")",
+      "Bash(sqlcmd -S \"\\(local\\)\" -d LawPortalCPiR10 -E -Q \"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN \\('tblPatActionParameter','tblTmkActionParameter'\\);\")",
+      "Bash(find \"D:/Projects/Claw/Claw-Claude/R10.Web/Areas/Patent/Views\" -path \"*DesCaseType*\" -name \"_SearchNavItems.cshtml\" -exec ls -la {} \\\\;)",
+      "Bash(npx gulp *)"
     ]
   }
 }

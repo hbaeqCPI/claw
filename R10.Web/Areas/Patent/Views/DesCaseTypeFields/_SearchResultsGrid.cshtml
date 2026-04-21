@@ -1,15 +1,33 @@
 @model PageViewModel
 @inject IStringLocalizer<SharedResource> Localizer
-@using R10.Core.Entities.Patent
+@using R10.Web.Areas.Shared.ViewModels
 
-@(Html.Kendo().Grid<dynamic>()
+@{
+    var baseDetailUrl = Url.Action("Detail", "DesCaseTypeFields", new { desCaseType = "__DCT__", fromSearch = true });
+    var extDetailUrl = Url.Action("Detail", "DesCaseTypeFieldsExt", new { desCaseType = "__DCT__", fromField = "__FF__", toField = "__TF__", systems = "__SY__", fromSearch = true });
+    var detailTemplate = "<a href='#= (IsExt ? \""
+        + extDetailUrl
+        + "\".replace(\"__DCT__\", encodeURIComponent(DesCaseType||\"\")).replace(\"__FF__\", encodeURIComponent(FromField||\"\")).replace(\"__TF__\", encodeURIComponent(ToField||\"\")).replace(\"__SY__\", encodeURIComponent(Systems||\"\"))"
+        + " : \""
+        + baseDetailUrl
+        + "\".replace(\"__DCT__\", encodeURIComponent(DesCaseType||\"\"))) #' class='details-link'>#: DesCaseType #</a>";
+}
+
+@(Html.Kendo().Grid<DesCaseTypeFieldsSearchItem>()
     .Name($"{Model.PageId}-Grid")
     .Columns(columns =>
     {
-        columns.Bound("DesCaseType").Title(Localizer["Des Case Type"].Value).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { desCaseType = "#: DesCaseType#", fromSearch = true }), "DesCaseType")).Width(200);
-        columns.Bound("Systems").Title(Localizer["Systems"].Value).Width(300);
+        columns.Bound(m => m.DesCaseType).ClientTemplate(detailTemplate).Width(200);
+        columns.Bound(m => m.FromField).Width(200);
+        columns.Bound(m => m.ToField).Width(200);
+        columns.Bound(m => m.Systems).Width(300);
+        columns.Bound(m => m.IsExt).Title("_Ext").Width(80)
+            .ClientTemplate("#: IsExt ? '\\u2713' : '' #");
     })
-    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplateTwoAdd(
+        Url.Action("Add", "DesCaseTypeFields", new { fromSearch = true }), Localizer["Add"],
+        Url.Action("Add", "DesCaseTypeFieldsExt", new { fromSearch = true }), Localizer["Add _Ext"],
+        Localizer["Export to Excel"])))
     .AutoBind(false)
     .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
     .Sortable(sort => sort.AllowUnsort(false))

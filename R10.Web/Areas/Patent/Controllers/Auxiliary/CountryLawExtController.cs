@@ -114,6 +114,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { country = country, caseType = caseType, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyCountry = country, copyCaseType = caseType, copySystems = systems, copyLabelTaxSched = detail.LabelTaxSched }) : "";
             perm.IsCopyScreenPopup = false;

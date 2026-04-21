@@ -46,21 +46,17 @@ namespace R10.Web.Areas.Patent.Controllers
             return p;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            var model = new PageViewModel { Page = PageType.Search, PageId = "patDesCaseTypeExtSearch", Title = _localizer["Des Case Type Ext Search"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return Request.IsAjax() ? PartialView("Index", model) : View(model);
-        }
+        // The _Ext search is now rendered inside the base DesCaseType search
+        // (unified grid). Redirect any direct hit to the base controller so the
+        // back-to-search button from an _Ext detail lands on the unified view.
+        public IActionResult Index() => RedirectToAction("Index", "DesCaseType");
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Search([FromBody] List<QueryFilterViewModel> mainSearchFilters)
-        {
-            var model = new PageViewModel { Page = PageType.SearchResults, PageId = "patDesCaseTypeExtSearchResults", Title = _localizer["Des Case Type Ext Search Results"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return PartialView("Index", model);
-        }
+        public IActionResult Search([FromBody] List<QueryFilterViewModel> mainSearchFilters) =>
+            RedirectToAction("Index", "DesCaseType");
 
         [HttpGet]
-        public IActionResult Search() => RedirectToAction("Index");
+        public IActionResult Search() => RedirectToAction("Index", "DesCaseType");
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
@@ -116,6 +112,7 @@ namespace R10.Web.Areas.Patent.Controllers
                 return RedirectToAction("Index");
             }
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             perm.DeleteScreenUrl = perm.CanDeleteRecord ? Url.Action("Delete", new { intlCode = intlCode, caseType = caseType, desCountry = desCountry, desCaseType = desCaseType, systems = systems }) : "";
             perm.CopyScreenUrl = perm.CanCopyRecord ? Url.Action("Add", new { fromSearch = true, copyIntlCode = intlCode, copyCaseType = caseType, copyDesCountry = desCountry, copyDesCaseType = desCaseType, copySystems = systems, copyDefault = detail.Default, copyGenApp = detail.GenApp }) : "";
             perm.IsCopyScreenPopup = false;

@@ -70,16 +70,16 @@ namespace R10.Web.Services.Menu
                     ("Country", "Country", "{\"area\":\"Patent\"}", 40),
                     ("Indicator", "Indicator", "{\"area\":\"Patent\"}", 70)
                 };
+                // DesCaseTypeExt / DesCaseTypeDeleteExt / DesCaseTypeFieldsExt are now
+                // rendered inside their base search screens (unified grid with an IsExt
+                // column), so they don't get their own menu entries. DesCaseTypeFieldsDeleteExt
+                // has been dropped entirely.
                 var patDesignated = new List<(string Title, string Controller, string RouteOptions, int SortOrder)>
                 {
                     ("Des Case Type", "DesCaseType", "{\"area\":\"Patent\"}", 10),
                     ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Patent\"}", 11),
-                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Patent\"}", 12),
-                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Patent\"}", 13),
                     ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Patent\"}", 20),
                     ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Patent\"}", 21),
-                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Patent\"}", 22),
-                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Patent\"}", 23),
                 };
 
                 // Trademark categories
@@ -104,12 +104,8 @@ namespace R10.Web.Services.Menu
                 {
                     ("Des Case Type", "DesCaseType", "{\"area\":\"Trademark\"}", 10),
                     ("Des Case Type Delete", "DesCaseTypeDelete", "{\"area\":\"Trademark\"}", 11),
-                    ("Des Case Type Delete Ext", "DesCaseTypeDeleteExt", "{\"area\":\"Trademark\"}", 12),
-                    ("Des Case Type Ext", "DesCaseTypeExt", "{\"area\":\"Trademark\"}", 13),
                     ("Des Case Type Fields", "DesCaseTypeFields", "{\"area\":\"Trademark\"}", 20),
                     ("Des Case Type Fields Delete", "DesCaseTypeFieldsDelete", "{\"area\":\"Trademark\"}", 21),
-                    ("Des Case Type Fields Delete Ext", "DesCaseTypeFieldsDeleteExt", "{\"area\":\"Trademark\"}", 22),
-                    ("Des Case Type Fields Ext", "DesCaseTypeFieldsExt", "{\"area\":\"Trademark\"}", 23),
                 };
 
                 bool changed = false;

@@ -90,16 +90,57 @@ namespace R10.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
-            var entities = _repository.TmkDesCaseTypes.AsNoTracking().AsQueryable();
-            if (mainSearchFilters != null && mainSearchFilters.Count > 0)
-            {
-                {
-                    entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
-                }
-            }
-            entities = entities.BuildCriteria(mainSearchFilters);
-            var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            string? Bool(string name) => mainSearchFilters?.FirstOrDefault(f =>
+                string.Equals(f.Property, name, StringComparison.OrdinalIgnoreCase))?.Value;
+            var extFilter = Bool("IsExt");
+            var defFilter = Bool("Default");
+            var genAppFilter = Bool("GenApp");
+            var otherFilters = mainSearchFilters?.Where(f =>
+                !string.Equals(f.Property, "IsExt", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(f.Property, "Default", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(f.Property, "GenApp", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            var baseRows = extFilter == "true"
+                ? new List<DesCaseTypeSearchItem>()
+                : await _repository.TmkDesCaseTypes.AsNoTracking()
+                    .Select(x => new DesCaseTypeSearchItem
+                    {
+                        IntlCode = x.IntlCode,
+                        CaseType = x.CaseType,
+                        DesCountry = x.DesCountry,
+                        DesCaseType = x.DesCaseType,
+                        Default = x.Default,
+                        GenApp = null,
+                        Systems = x.Systems,
+                        IsExt = false
+                    }).ToListAsync();
+
+            var extRows = extFilter == "false"
+                ? new List<DesCaseTypeSearchItem>()
+                : await _repository.TmkDesCaseTypeExts.AsNoTracking()
+                    .Select(x => new DesCaseTypeSearchItem
+                    {
+                        IntlCode = x.IntlCode,
+                        CaseType = x.CaseType,
+                        DesCountry = x.DesCountry,
+                        DesCaseType = x.DesCaseType,
+                        Default = x.Default,
+                        GenApp = x.GenApp,
+                        Systems = x.Systems,
+                        IsExt = true
+                    }).ToListAsync();
+
+            var combined = baseRows.Concat(extRows).AsQueryable();
+            if (otherFilters != null && otherFilters.Count > 0)
+                combined = Helpers.QueryHelper.ApplySystemsFilter(combined, otherFilters, a => a.Systems);
+            combined = combined.BuildCriteria(otherFilters);
+
+            if (defFilter == "true") combined = combined.Where(x => x.Default);
+            else if (defFilter == "false") combined = combined.Where(x => !x.Default);
+            if (genAppFilter == "true") combined = combined.Where(x => x.GenApp == true);
+            else if (genAppFilter == "false") combined = combined.Where(x => x.GenApp == false);
+
+            return Json(combined.ToList().ToDataSourceResult(request));
         }
 
         public async Task<IActionResult> Detail(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -116,6 +157,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
 
             var permission = await GetPermission();
+            permission.AddScreenUrl = permission.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             permission.DeleteScreenUrl = permission.CanDeleteRecord
                 ? Url.Action("Delete", new { intlCode = detail.IntlCode, caseType = detail.CaseType, desCountry = detail.DesCountry, desCaseType = detail.DesCaseType, systems = detail.Systems })
                 : "";

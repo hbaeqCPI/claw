@@ -10,7 +10,10 @@
                                         .Columns(columns =>
                                         {
                                             columns.Bound(c => c.CountryName)
+                                                .Width(420)
+                                                .HtmlAttributes(new { style = "white-space: nowrap;" })
                                                 .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { country = "#: Country#", caseType = "#: CaseType#", systems = "#: Systems#", fromSearch = true }), "CountryName"));
+                                            columns.Bound(c => c.Country).Title("Country Code").Width(130);
                                             columns.Bound(c => c.CaseType);
                                             columns.Bound(c => c.Systems);
                                             columns.Bound(c => c.LabelTaxSched);

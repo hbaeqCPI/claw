@@ -30,6 +30,38 @@
                     @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
                 </div>
             </div>
+            <div class="col-md-4">
+                <label for="IsExt">@Localizer["_Ext"]</label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="IsExt" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="IsExt" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="IsExt" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="InUse">@Localizer["In Use"] <small class="text-muted">(@Localizer["_Ext only"])</small></label>
+                <div>
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline">
+                            <input type="radio" name="InUse" class="form-control" value="true" data-role="option"> @Localizer["Yes"]
+                        </label>
+                        <label class="btn btn-outline">
+                            <input type="radio" name="InUse" class="form-control" value="false" data-role="option"> @Localizer["No"]
+                        </label>
+                        <label class="btn btn-outline active">
+                            <input type="radio" name="InUse" class="form-control" value="" data-role="option"> @Localizer["All"]
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

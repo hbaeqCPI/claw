@@ -46,21 +46,15 @@ namespace R10.Web.Areas.Trademark.Controllers
             return p;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            var model = new PageViewModel { Page = PageType.Search, PageId = "tmkDesCaseTypeExtSearch", Title = _localizer["Des Case Type Ext Search"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return Request.IsAjax() ? PartialView("Index", model) : View(model);
-        }
+        // Redirect to unified DesCaseType search screen.
+        public IActionResult Index() => RedirectToAction("Index", "DesCaseType");
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Search([FromBody] List<QueryFilterViewModel> mainSearchFilters)
-        {
-            var model = new PageViewModel { Page = PageType.SearchResults, PageId = "tmkDesCaseTypeExtSearchResults", Title = _localizer["Des Case Type Ext Search Results"].ToString(), CanAddRecord = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryModify)).Succeeded };
-            return PartialView("Index", model);
-        }
+        public IActionResult Search([FromBody] List<QueryFilterViewModel> mainSearchFilters) =>
+            RedirectToAction("Index", "DesCaseType");
 
         [HttpGet]
-        public IActionResult Search() => RedirectToAction("Index");
+        public IActionResult Search() => RedirectToAction("Index", "DesCaseType");
 
         public async Task<IActionResult> PageRead([DataSourceRequest] DataSourceRequest request, List<QueryFilterViewModel> mainSearchFilters)
         {
@@ -118,6 +112,7 @@ namespace R10.Web.Areas.Trademark.Controllers
             }
 
             var perm = await GetPermission();
+            perm.AddScreenUrl = perm.CanAddRecord ? Url.Action("Add", new { fromSearch = true }) : "";
             perm.DeleteScreenUrl = perm.CanDeleteRecord
                 ? Url.Action("Delete", new { intlCode = detail.IntlCode, caseType = detail.CaseType, desCountry = detail.DesCountry, desCaseType = detail.DesCaseType, systems = detail.Systems })
                 : "";

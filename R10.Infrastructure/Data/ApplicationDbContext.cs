@@ -56,6 +56,7 @@ namespace R10.Infrastructure.Data
         public DbSet<PatCountryExp> PatCountryExpirations { get; set; }
         public DbSet<PatCaseType> PatCaseTypes { get; set; }
         public DbSet<PatActionType> PatActionTypes { get; set; }
+        public DbSet<PatActionParameter> PatActionParameters { get; set; }
         public DbSet<PatDesignationDTO> PatDesignationDTO { get; set; }
         public DbSet<PatDesCaseType> PatDesCaseTypes { get; set; }
         public DbSet<PatDesCaseTypeFields> PatDesCaseTypeFields { get; set; }
@@ -91,6 +92,7 @@ namespace R10.Infrastructure.Data
         public DbSet<TmkCountryLaw> TmkCountryLaws { get; set; }
         public DbSet<TmkCountryDue> TmkCountryDues { get; set; }
         public DbSet<TmkActionType> TmkActionTypes { get; set; }
+        public DbSet<TmkActionParameter> TmkActionParameters { get; set; }
         public DbSet<TmkDesignatedCountry> TmkDesignatedCountries { get; set; }
 
         public DbSet<TmkCountryLawUpdate> TmkCountryLawUpdate { get; set; }
@@ -278,6 +280,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new PatDesCaseTypeFieldsMap());
             //builder.ApplyConfiguration(new PatDesignatedCountryMap()); // table removed
             builder.ApplyConfiguration(new PatActionTypeMap());
+            builder.ApplyConfiguration(new PatActionParameterMap());
 
             builder.ApplyConfiguration(new PatCountryLawUpdateMap());
 
@@ -314,6 +317,7 @@ namespace R10.Infrastructure.Data
             builder.ApplyConfiguration(new TmkCountryLawMap());
             builder.ApplyConfiguration(new TmkCountryDueMap());
             builder.ApplyConfiguration(new TmkActionTypeMap());
+            builder.ApplyConfiguration(new TmkActionParameterMap());
             //builder.ApplyConfiguration(new TmkConflictMap()); // table removed
             //builder.ApplyConfiguration(new TmkDesignatedCountryMap()); // table removed
 

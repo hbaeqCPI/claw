@@ -37,6 +37,7 @@ namespace R10.Web.Areas.Patent.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<PatActionType> _viewModelService;
         private readonly IEntityService<PatActionType> _actionTypeService;
+        private readonly IChildEntityService<PatActionType, PatActionParameter> _actionParamService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "patActionTypeDetail";
@@ -45,11 +46,13 @@ namespace R10.Web.Areas.Patent.Controllers
             IAuthorizationService authService,
             IViewModelService<PatActionType> viewModelService,
             IEntityService<PatActionType> actionTypeService,
+            IChildEntityService<PatActionType, PatActionParameter> actionParamService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _actionTypeService = actionTypeService;
+            _actionParamService = actionParamService;
             _localizer = localizer;
         }
 
@@ -448,5 +451,54 @@ namespace R10.Web.Areas.Patent.Controllers
         }
 
         // Retroactive Action Generation removed during debloat
+
+        #region Action Parameters (child grid)
+
+        public async Task<IActionResult> ActionParametersRead([DataSourceRequest] DataSourceRequest request, int actionTypeId)
+        {
+            var list = await _actionParamService.QueryableList
+                .Where(p => p.ActionTypeID == actionTypeId)
+                .ToListAsync();
+            return Json(list.ToDataSourceResult(request));
+        }
+
+        [Authorize(Policy = PatentAuthorizationPolicy.ActionTypeModify)]
+        public async Task<IActionResult> ActionParametersUpdate(int actionTypeId,
+            [Bind(Prefix = "updated")] IEnumerable<PatActionParameter> updated,
+            [Bind(Prefix = "new")] IEnumerable<PatActionParameter> added,
+            [Bind(Prefix = "deleted")] IEnumerable<PatActionParameter> deleted)
+        {
+            var canDelete = (await _authService.AuthorizeAsync(User, PatentAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
+            if (deleted.Any() && !canDelete)
+                return Forbid();
+
+            if (updated.Any() || added.Any() || deleted.Any())
+            {
+                if (!ModelState.IsValid)
+                    return new JsonBadRequest(new { errors = ModelState.Errors() });
+
+                await _actionParamService.Update(actionTypeId, User.GetUserName(), updated, added, deleted);
+                var total = deleted.Count() + updated.Count() + added.Count();
+                var success = total == 1
+                    ? _localizer["Action Parameter has been saved successfully."].ToString()
+                    : _localizer["Action Parameters have been saved successfully"].ToString();
+                return Ok(new { success });
+            }
+            return Ok();
+        }
+
+        [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryCanDelete)]
+        public async Task<IActionResult> ActionParametersDelete([Bind(Prefix = "deleted")] PatActionParameter deleted)
+        {
+            if (deleted.ActParamId > 0)
+            {
+                await _actionParamService.Update(deleted.ActionTypeID, User.GetUserName(),
+                    new List<PatActionParameter>(), new List<PatActionParameter>(), new List<PatActionParameter> { deleted });
+                return Ok(new { success = _localizer["Action Parameter has been deleted successfully."].ToString() });
+            }
+            return Ok();
+        }
+
+        #endregion
     }
 }

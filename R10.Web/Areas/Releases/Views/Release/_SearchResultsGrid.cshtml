@@ -9,7 +9,10 @@
                 .Name($"{Model.PageId}-Grid")
                 .Columns(columns =>
                 {
-                    columns.Bound(m => m.Name).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: ReleaseId#", fromSearch = true }), "Name")).Width(200);
+                    columns.Bound(m => m.Name)
+                        .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: ReleaseId#", fromSearch = true }), "Name"))
+                        .Width(360)
+                        .HtmlAttributes(new { style = "white-space: nowrap;" });
                     columns.Bound(m => m.Year);
                     columns.Bound(m => m.Quarter);
                     columns.Bound(m => m.SystemType);
@@ -30,7 +33,7 @@
                 .Read(read => read.Action("PageRead", "Release")
                 .Data("releasePage.gridMainSearchFilters")
                 )
-                .Sort(sort => sort.Add(m => m.Name))
+                .Sort(sort => sort.Add(m => m.Name).Descending())
                 )
                 .HtmlAttributes(new { @class = "kendo-Grid" })
 )

@@ -150,7 +150,11 @@
             });
             //cancel
             plugin.find(".cancel-changes").on("click", function () {
-                cpiConfirm.confirm(plugin.data("cancel-title"), plugin.data("cancel-message"), function () {
+                // Fall back to sensible defaults when the form's data-cancel-* attributes
+                // are missing (e.g. when CPiDetailFormTagHelper didn't run on this view).
+                var cancelTitle = plugin.data("cancel-title") || "Confirm Cancel Changes";
+                var cancelMessage = plugin.data("cancel-message") || "Changes will not be saved. Do you want to continue?";
+                cpiConfirm.confirm(cancelTitle, cancelMessage, function () {
                     isParentDirty = false;
 
                     if (options.onCancel !== undefined) {

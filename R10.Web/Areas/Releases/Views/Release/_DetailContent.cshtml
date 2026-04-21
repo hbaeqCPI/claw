@@ -104,25 +104,47 @@
                 </div>
             </div>
         </div>
+        @{
+            var sysTypeForNotes = Model.SystemType ?? "";
+            // Show Patent notes unless this release is trademark-only; show Trademark
+            // notes unless it's patent-only. Matches the Generate MDB button logic.
+            var showPatentNotes = !sysTypeForNotes.StartsWith("Tmk", StringComparison.OrdinalIgnoreCase);
+            var showTmkNotes = !sysTypeForNotes.StartsWith("Pat", StringComparison.OrdinalIgnoreCase);
+        }
         <div class="form-row">
-            <div class="col-md-6">
-                <div class="form-group float-label">
-                    <label asp-for="ReportNotesPatent"></label>
-                    <textarea class="form-control form-control-sm" rows="3"
-                              asp-for="ReportNotesPatent" asp-is-readonly="@isReadOnly"
-                              placeholder="@Localizer["Rendered at the top of the Patent report PDF"]"></textarea>
-                    <span asp-validation-for="ReportNotesPatent"></span>
+            @if (showPatentNotes)
+            {
+                <div class="col-md-6">
+                    <div class="form-group float-label">
+                        <label asp-for="ReportNotesPatent"></label>
+                        <textarea class="form-control form-control-sm" rows="3"
+                                  asp-for="ReportNotesPatent" asp-is-readonly="@isReadOnly"
+                                  placeholder="@Localizer["Rendered at the top of the Patent report PDF"]"></textarea>
+                        <span asp-validation-for="ReportNotesPatent"></span>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group float-label">
-                    <label asp-for="ReportNotesTrademark"></label>
-                    <textarea class="form-control form-control-sm" rows="3"
-                              asp-for="ReportNotesTrademark" asp-is-readonly="@isReadOnly"
-                              placeholder="@Localizer["Rendered at the top of the Trademark report PDF"]"></textarea>
-                    <span asp-validation-for="ReportNotesTrademark"></span>
+            }
+            else
+            {
+                @* Preserve existing value on post when the field is hidden. *@
+                <input type="hidden" asp-for="ReportNotesPatent" />
+            }
+            @if (showTmkNotes)
+            {
+                <div class="col-md-6">
+                    <div class="form-group float-label">
+                        <label asp-for="ReportNotesTrademark"></label>
+                        <textarea class="form-control form-control-sm" rows="3"
+                                  asp-for="ReportNotesTrademark" asp-is-readonly="@isReadOnly"
+                                  placeholder="@Localizer["Rendered at the top of the Trademark report PDF"]"></textarea>
+                        <span asp-validation-for="ReportNotesTrademark"></span>
+                    </div>
                 </div>
-            </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="ReportNotesTrademark" />
+            }
         </div>
         @if (!addMode)
         {

@@ -51,6 +51,7 @@ namespace LawPortal.Web.Services
             var dueT = $"{pfx}CountryDue";
             var clT = $"{pfx}CountryLaw";
             var atT = $"{pfx}ActionType";
+            var paramT = $"{pfx}ActionParameter";
             var expT = comp.IsPatent ? "tblPatCountryExp" : null;
             var expDelT = comp.IsPatent ? "tblPatCountryExpDelete" : null;
 
@@ -61,7 +62,7 @@ namespace LawPortal.Web.Services
             // and trademark. Patent stops there until country law; trademark follows
             // with Standard Goods (green underline, no yellow highlight — these are
             // manual reference-data updates) and then structural changes.
-            WriteManualUpdates(doc, comp, atT, dueT);
+            WriteManualUpdates(doc, comp, atT, dueT, paramT);
             if (!comp.IsPatent)
             {
                 WriteStandardGoods(doc, comp);
@@ -273,7 +274,7 @@ namespace LawPortal.Web.Services
         // metadata (name, Office-Action flag, country, follow-up, remarks) plus
         // any matching CountryDue rows that changed for that same Action Type.
         // ═══════════════════════════════════════════════════════════════
-        private void WriteManualUpdates(Document doc, MdbComparisonResult comp, string atT, string dueT)
+        private void WriteManualUpdates(Document doc, MdbComparisonResult comp, string atT, string dueT, string paramT)
         {
             if (!H(comp, atT)) return;
             var diff = comp.TableDiffs[atT];
@@ -295,24 +296,24 @@ namespace LawPortal.Web.Services
             {
                 doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("New Actions", _b, 11)));
                 foreach (var at in diff.AddedRows.OrderBy(r => G(r, "ActionType")))
-                    WriteActionTypeBlock(doc, at, comp, dueT, "new");
+                    WriteActionTypeBlock(doc, at, comp, dueT, paramT, "new");
             }
             if (diff.ModifiedRows.Any())
             {
                 doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("Modified Actions", _b, 11)));
                 foreach (var at in diff.ModifiedRows.OrderBy(r => G(r, "ActionType")))
-                    WriteActionTypeBlock(doc, at, comp, dueT, "mod");
+                    WriteActionTypeBlock(doc, at, comp, dueT, paramT, "mod");
             }
             if (diff.DeletedRows.Any())
             {
                 doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("Deleted Actions:", _b, 11)));
                 foreach (var at in diff.DeletedRows.OrderBy(r => G(r, "ActionType")))
-                    WriteActionTypeBlock(doc, at, comp, dueT, "del");
+                    WriteActionTypeBlock(doc, at, comp, dueT, paramT, "del");
             }
         }
 
         // Render a single Action Type block under Manual Updates.
-        private void WriteActionTypeBlock(Document doc, RowDiff at, MdbComparisonResult comp, string dueT, string mode)
+        private void WriteActionTypeBlock(Document doc, RowDiff at, MdbComparisonResult comp, string dueT, string paramT, string mode)
         {
             bool isNew = mode == "new", isDel = mode == "del";
             var name = G(at, "ActionType");
@@ -339,28 +340,9 @@ namespace LawPortal.Web.Services
                 doc.Add(cp);
             }
 
-            // Matching CountryDue diff rows — show any CountryDue adds/mods/deletes
-            // that reference this ActionType name + country. When the ActionType isn't
-            // country-specific, rows span multiple countries so the table renders an
-            // extra Country column to disambiguate.
-            if (H(comp, dueT) && !isDel)
-            {
-                bool multiCountry = string.IsNullOrEmpty(country);
-                var dd = comp.TableDiffs[dueT];
-                var relevant = dd.AddedRows.Concat(dd.ModifiedRows)
-                    .Where(r => G(r, "ActionType") == name
-                             && (string.IsNullOrEmpty(country) || G(r, "Country") == country))
-                    .ToList();
-                if (relevant.Any())
-                    WriteActionDueTable(doc, relevant, treatAllAsNew: isNew, marginLeft: 50, includeCountry: multiCountry);
-
-                var deletedRelevant = dd.DeletedRows
-                    .Where(r => G(r, "ActionType") == name
-                             && (string.IsNullOrEmpty(country) || G(r, "Country") == country))
-                    .ToList();
-                if (deletedRelevant.Any())
-                    WriteActionDueTable(doc, deletedRelevant, treatAllAsDeleted: true, marginLeft: 50, includeCountry: multiCountry);
-            }
+            // CountryDue rows are intentionally NOT listed here. Manual Updates
+            // focuses on the Action Type metadata itself (header, remarks, follow-up).
+            // Per-country due-date changes appear under Country Law > Law Actions.
 
             // Remarks (with inline line-diff for modified action types)
             var remarks = G(at, "Remarks");
@@ -402,19 +384,105 @@ namespace LawPortal.Web.Services
                     .Add(T($"Follow Up Based On: {FollowUpGenLabel(fuGen)}", _r, 9)));
             }
 
+            // Action Parameter diffs for THIS action type (matched by ActionTypeID).
+            // Orphan parameter changes (parent ActionType unchanged) are never shown —
+            // they simply don't appear in the report.
+            WriteActionParameterSubTable(doc, at, comp, paramT, mode);
+
             HL(doc, 0.3f);
         }
 
-        // Short 5-col Action Due table (shared by Manual Updates + Country Law).
-        // When includeCountry is true, a leading Country column is added so long
-        // multi-country lists show which country each row applies to.
+        // Sub-table of Action Parameter changes scoped to a single Action Type.
+        // Columns: Action Due | Yr | Mo | Dy | Indicator | Change.
+        // - Added params: full-row yellow.
+        // - Modified params: per-cell yellow on changed columns only.
+        // - Deleted params: red strikethrough.
+        // For added/deleted parent Action Types, every matching param is treated as
+        // added/deleted respectively (even if the comparison classed them differently
+        // due to ActionTypeID identity shifts).
+        private void WriteActionParameterSubTable(Document doc, RowDiff at, MdbComparisonResult comp,
+            string paramT, string parentMode)
+        {
+            if (!H(comp, paramT)) return;
+            var atId = G(at, "ActionTypeID");
+            if (string.IsNullOrEmpty(atId)) return;
+
+            var pd = comp.TableDiffs[paramT];
+            bool Matches(RowDiff r) => G(r, "ActionTypeID") == atId;
+
+            var added = pd.AddedRows.Where(Matches).ToList();
+            var modified = pd.ModifiedRows.Where(Matches).ToList();
+            var deleted = pd.DeletedRows.Where(Matches).ToList();
+            if (!added.Any() && !modified.Any() && !deleted.Any()) return;
+
+            doc.Add(P(9).SetFont(_b).SetMarginLeft(50).SetMarginTop(6)
+                .Add(T("Action Parameters", _b, 9)));
+
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 35, 10, 10, 10, 20, 15 }))
+                .UseAllAvailableWidth().SetMarginLeft(50).SetMarginTop(3).SetFontSize(8);
+            foreach (var h in new[] { "Action Due", "Yr", "Mo", "Dy", "Indicator", "Change" })
+                tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
+                    .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
+
+            // mode: "add" = whole row yellow, "mod" = per-cell yellow, "del" = strikethrough.
+            void Row(RowDiff r, string tag, string rowMode)
+            {
+                void C(string v, bool highlight, bool strike = false)
+                {
+                    var text = T(v ?? "", _r, 8);
+                    if (strike) text.SetLineThrough().SetFontColor(Red);
+                    var cell = new Cell().Add(P(8).Add(text))
+                        .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
+                    if (highlight) cell.SetBackgroundColor(Yellow);
+                    tbl.AddCell(cell);
+                }
+                bool allYellow = rowMode == "add";
+                bool allStrike = rowMode == "del";
+                bool Ch(string col) =>
+                    allYellow || (rowMode == "mod" && r.ChangedColumns.Contains(col));
+
+                C(G(r, "ActionDue"), Ch("ActionDue"), allStrike);
+                C(G(r, "Yr"), Ch("Yr"), allStrike);
+                C(G(r, "Mo"), Ch("Mo"), allStrike);
+                C(G(r, "Dy"), Ch("Dy"), allStrike);
+                C(G(r, "Indicator"), Ch("Indicator"), allStrike);
+                C(tag, allYellow || rowMode == "mod", false);
+            }
+
+            // If the parent ActionType is new, every matching parameter is by definition
+            // part of the new action — render them all as added even if the comparison
+            // considers them modified/etc.
+            string EffectiveMode(RowDiff r)
+            {
+                if (parentMode == "new") return "add";
+                if (parentMode == "del") return "del";
+                return r.OldValues == null ? "add" : "mod";
+            }
+
+            foreach (var r in added.OrderBy(r => G(r, "ActionDue")))
+                Row(r, "Added", EffectiveMode(r));
+            foreach (var r in modified.OrderBy(r => G(r, "ActionDue")))
+                Row(r, "Modified", EffectiveMode(r));
+            foreach (var r in deleted.OrderBy(r => G(r, "ActionDue")))
+                Row(r, "Deleted", parentMode == "new" ? "add" : "del");
+
+            doc.Add(tbl);
+        }
+
+        // Action Due table (shared by Manual Updates + Country Law).
+        // Columns: [Country?] | Action Due | Yr | Mo | Dy | Indicator |
+        //          Based On | Effective From | To | Effective Based On
+        // - Whole row yellow for brand-new rows (or when treatAllAsNew is set
+        //   because the country-law block itself is new).
+        // - Per-cell yellow on modified rows (only changed columns highlight).
+        // - Red strikethrough for deleted rows.
         private void WriteActionDueTable(Document doc, List<RowDiff> rows,
             bool treatAllAsNew = false, bool treatAllAsDeleted = false, float marginLeft = 20,
             bool includeCountry = false)
         {
             float[] cols = includeCountry
-                ? new float[] { 22, 32, 6, 6, 6, 18 }
-                : new float[] { 40, 8, 8, 8, 20 };
+                ? new float[] { 14, 18, 5, 5, 5, 10, 10, 11, 11, 11 }
+                : new float[] { 20, 5, 5, 5, 11, 11, 13, 13, 17 };
             var tbl = new Table(UnitValue.CreatePercentArray(cols))
                 .UseAllAvailableWidth().SetMarginLeft(marginLeft).SetMarginTop(6).SetFontSize(9);
             if (includeCountry) tbl.AddHeaderCell(HC("Country"));
@@ -423,6 +491,10 @@ namespace LawPortal.Web.Services
             tbl.AddHeaderCell(HC("Mo"));
             tbl.AddHeaderCell(HC("Dy"));
             tbl.AddHeaderCell(HC("Indicator"));
+            tbl.AddHeaderCell(HC("Based On"));
+            tbl.AddHeaderCell(HC("Effective From"));
+            tbl.AddHeaderCell(HC("To"));
+            tbl.AddHeaderCell(HC("Effective Based On"));
 
             foreach (var row in rows
                 .OrderBy(r => includeCountry ? CN(G(r, "Country")) : "")
@@ -432,26 +504,41 @@ namespace LawPortal.Web.Services
                 string countryLabel = includeCountry
                     ? $"{CN(G(row, "Country"))} ({G(row, "Country")})"
                     : "";
+                string effFrom = FD(row, "EffStartDate");
+                string effTo = FD(row, "EffEndDate");
                 if (treatAllAsDeleted)
                 {
                     if (includeCountry) DC(tbl, countryLabel);
                     DC(tbl, G(row, "ActionDue")); DC(tbl, G(row, "Yr")); DC(tbl, G(row, "Mo"));
                     DC(tbl, G(row, "Dy")); DC(tbl, G(row, "Indicator"));
+                    DC(tbl, G(row, "BasedOn")); DC(tbl, effFrom); DC(tbl, effTo); DC(tbl, G(row, "EffBasedOn"));
                 }
                 else if (treatAllAsNew || isAdd)
                 {
                     if (includeCountry) YC(tbl, countryLabel);
                     YC(tbl, G(row, "ActionDue")); YC(tbl, G(row, "Yr")); YC(tbl, G(row, "Mo"));
                     YC(tbl, G(row, "Dy")); YC(tbl, G(row, "Indicator"));
+                    YC(tbl, G(row, "BasedOn")); YC(tbl, effFrom); YC(tbl, effTo); YC(tbl, G(row, "EffBasedOn"));
                 }
                 else
                 {
                     if (includeCountry) PC(tbl, countryLabel);
                     MC(tbl, row, "ActionDue"); MC(tbl, row, "Yr"); MC(tbl, row, "Mo");
                     MC(tbl, row, "Dy"); MC(tbl, row, "Indicator");
+                    MC(tbl, row, "BasedOn");
+                    MCDate(tbl, row, "EffStartDate");
+                    MCDate(tbl, row, "EffEndDate");
+                    MC(tbl, row, "EffBasedOn");
                 }
             }
             doc.Add(tbl);
+        }
+
+        // Bordered MC variant that formats the value as a date (M/d/yyyy).
+        private void MCDate(Table t, RowDiff row, string col)
+        {
+            var v = FD(row, col);
+            if (row.ChangedColumns.Contains(col)) YC(t, v); else PC(t, v);
         }
 
         private static string FollowUpGenLabel(string v) => v switch
@@ -467,66 +554,43 @@ namespace LawPortal.Web.Services
         // ═══════════════════════════════════════════════════════════════
         private void WriteStructural(Document doc, MdbComparisonResult c, string pfx)
         {
-            var acTbl = $"{pfx}AreaCountry";
-            var acDelTbl = $"{pfx}AreaCountryDelete";
             var ctTbl = $"{pfx}CaseType";
             var desTbl = $"{pfx}DesCaseType";
             var desDelTbl = $"{pfx}DesCaseTypeDelete";
 
-            // Area Countries Deleted
-            var acDel = new List<RowDiff>();
-            if (H(c, acTbl)) acDel.AddRange(c.TableDiffs[acTbl].DeletedRows);
-            if (H(c, acDelTbl)) acDel.AddRange(c.TableDiffs[acDelTbl].AddedRows);
-            if (acDel.Any())
-            {
-                SectionHeader(doc, "Area Countries Deleted");
-                foreach (var g in acDel.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
-                {
-                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
-                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
-                        doc.Add(P(9).SetMarginLeft(30).Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)));
-                }
-            }
+            // Area Countries changes are intentionally NOT rendered — the Area/Country
+            // tables are still exported + diffed so history is preserved between
+            // releases, but they don't appear in the PDF.
 
-            // Area Countries Added
-            if (H(c, acTbl) && c.TableDiffs[acTbl].AddedRows.Any())
-            {
-                SectionHeader(doc, "Area Countries Added");
-                foreach (var g in c.TableDiffs[acTbl].AddedRows.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
-                {
-                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
-                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
-                        doc.Add(P(9).SetMarginLeft(30).Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)));
-                }
-            }
-
-            // Case Types Added
+            // Case Types Added — yellow highlight. Force onto a new page so a long
+            // Standard Goods list (trademark) doesn't bleed into the case-type lists.
             if (H(c, ctTbl) && c.TableDiffs[ctTbl].AddedRows.Any())
             {
+                doc.Add(new AreaBreak());
                 SectionHeader(doc, "Case Types Added");
                 foreach (var r in c.TableDiffs[ctTbl].AddedRows.OrderBy(r => G(r, "CaseType")))
                 {
                     var t = new Table(UnitValue.CreatePercentArray(new float[] { 15, 85 })).UseAllAvailableWidth();
-                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
-                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9))).SetBorder(Border.NO_BORDER));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9).SetBackgroundColor(Yellow))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9).SetBackgroundColor(Yellow))).SetBorder(Border.NO_BORDER));
                     doc.Add(t);
                 }
             }
 
-            // Case Types Deleted
+            // Case Types Deleted — red strikethrough.
             if (H(c, ctTbl) && c.TableDiffs[ctTbl].DeletedRows.Any())
             {
                 SectionHeader(doc, "Case Types Deleted");
                 foreach (var r in c.TableDiffs[ctTbl].DeletedRows.OrderBy(r => G(r, "CaseType")))
                 {
                     var t = new Table(UnitValue.CreatePercentArray(new float[] { 15, 85 })).UseAllAvailableWidth();
-                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
-                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9))).SetBorder(Border.NO_BORDER));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "CaseType"), _r, 9).SetLineThrough().SetFontColor(Red))).SetBorder(Border.NO_BORDER).SetPaddingLeft(15));
+                    t.AddCell(new Cell().Add(P(9).Add(T(G(r, "Description"), _r, 9).SetLineThrough().SetFontColor(Red))).SetBorder(Border.NO_BORDER));
                     doc.Add(t);
                 }
             }
 
-            // Designation Deleted
+            // Designation Deleted — red strikethrough.
             var desDel = new List<RowDiff>();
             if (H(c, desTbl)) desDel.AddRange(c.TableDiffs[desTbl].DeletedRows);
             if (H(c, desDelTbl)) desDel.AddRange(c.TableDiffs[desDelTbl].AddedRows);
@@ -536,7 +600,7 @@ namespace LawPortal.Web.Services
                 WriteDesignations(doc, desDel, added: false);
             }
 
-            // Designation Added
+            // Designation Added — yellow highlight.
             if (H(c, desTbl) && c.TableDiffs[desTbl].AddedRows.Any())
             {
                 SectionHeader(doc, "Designation Added");
@@ -546,6 +610,9 @@ namespace LawPortal.Web.Services
 
         private void WriteDesignations(Document doc, List<RowDiff> rows, bool added)
         {
+            // Added → yellow highlight; Deleted → red strikethrough.
+            Text Style(Text t) => added ? t.SetBackgroundColor(Yellow) : t.SetLineThrough().SetFontColor(Red);
+
             var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 50, 50 }))
                 .UseAllAvailableWidth().SetMarginTop(4);
             tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Organization/Union", _b, 9))).SetBorder(Border.NO_BORDER));
@@ -557,17 +624,17 @@ namespace LawPortal.Web.Services
                 {
                     var ct = ctGrp.Key;
                     tbl.AddCell(new Cell().Add(P(9).SetFont(_b).SetMarginTop(4)
-                        .Add(T($"{CN(ioGrp.Key)} ({ioGrp.Key})", _b, 9))).SetBorder(Border.NO_BORDER));
+                        .Add(Style(T($"{CN(ioGrp.Key)} ({ioGrp.Key})", _b, 9)))).SetBorder(Border.NO_BORDER));
                     tbl.AddCell(new Cell().Add(P(9).SetFont(_b).SetMarginTop(4)
-                        .Add(T($"{ct} - {CD(ct)}", _b, 9))).SetBorder(Border.NO_BORDER));
+                        .Add(Style(T($"{ct} - {CD(ct)}", _b, 9)))).SetBorder(Border.NO_BORDER));
                     tbl.AddCell(new Cell().Add(P(9).Add(T(added ? "Can be designated in" : "designated in", _r, 9)))
                         .SetBorder(Border.NO_BORDER));
                     tbl.AddCell(new Cell().Add(P(9).Add(T("as", _r, 9))).SetBorder(Border.NO_BORDER));
                     foreach (var r in ctGrp.OrderBy(r => CN(G(r, "DesCountry"))))
                     {
-                        tbl.AddCell(new Cell().Add(P(9).Add(T($"{CN(G(r, "DesCountry"))} ({G(r, "DesCountry")})", _r, 9)))
+                        tbl.AddCell(new Cell().Add(P(9).Add(Style(T($"{CN(G(r, "DesCountry"))} ({G(r, "DesCountry")})", _r, 9))))
                             .SetBorder(Border.NO_BORDER));
-                        tbl.AddCell(new Cell().Add(P(9).Add(T(G(r, "DesCaseType"), _r, 9)))
+                        tbl.AddCell(new Cell().Add(P(9).Add(Style(T(G(r, "DesCaseType"), _r, 9))))
                             .SetBorder(Border.NO_BORDER));
                     }
                 }
@@ -811,35 +878,43 @@ namespace LawPortal.Web.Services
             doc.Add(P(9).SetMarginTop(4)
                 .Add(T("The following law action changes have no corresponding Law Highlights changes.", _r, 9)));
 
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 16, 8, 30, 8, 8, 8, 12, 10 }))
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 15, 8, 24, 12, 7, 7, 7, 12 }))
                 .UseAllAvailableWidth().SetMarginTop(6).SetFontSize(8);
-            foreach (var h in new[] { "Country", "Case", "Action Due (Indicator)", "Yr", "Mo", "Dy", "Change", "Based On" })
+            foreach (var h in new[] { "Country", "Case", "Action Due (Indicator)", "Based On", "Yr", "Mo", "Dy", "Change" })
                 tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
                     .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
 
-            void Row(RowDiff r, string tag, DeviceRgb? bg)
+            // mode: "add" = whole row yellow, "mod" = per-cell yellow on changed
+            // columns only, "del" = no highlight (tag cell carries the state).
+            void Row(RowDiff r, string tag, string mode)
             {
-                void C(string v)
+                void C(string v, bool highlight)
                 {
                     var cell = new Cell().Add(P(8).Add(T(v ?? "", _r, 8)))
                         .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
-                    if (bg != null) cell.SetBackgroundColor(bg);
+                    if (highlight) cell.SetBackgroundColor(Yellow);
                     tbl.AddCell(cell);
                 }
-                C($"{CN(G(r, "Country"))} ({G(r, "Country")})");
-                C(G(r, "CaseType"));
-                C($"{G(r, "ActionDue")} ({G(r, "Indicator")})");
-                C(G(r, "Yr")); C(G(r, "Mo")); C(G(r, "Dy"));
-                C(tag);
-                C(G(r, "BasedOn"));
+                bool allYellow = mode == "add";
+                bool Ch(params string[] cols) =>
+                    allYellow || (mode == "mod" && cols.Any(c => r.ChangedColumns.Contains(c)));
+
+                C($"{CN(G(r, "Country"))} ({G(r, "Country")})", allYellow);
+                C(G(r, "CaseType"), allYellow);
+                C($"{G(r, "ActionDue")} ({G(r, "Indicator")})", Ch("ActionDue", "Indicator"));
+                C(G(r, "BasedOn"), Ch("BasedOn"));
+                C(G(r, "Yr"), Ch("Yr"));
+                C(G(r, "Mo"), Ch("Mo"));
+                C(G(r, "Dy"), Ch("Dy"));
+                C(tag, allYellow || mode == "mod");
             }
 
             foreach (var r in orphanAdd.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Added", Yellow);
+                Row(r, "Added", "add");
             foreach (var r in orphanMod.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Modified", Yellow);
+                Row(r, "Modified", "mod");
             foreach (var r in orphanDel.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Deleted", null);
+                Row(r, "Deleted", "del");
 
             doc.Add(tbl);
         }

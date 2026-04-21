@@ -36,6 +36,7 @@ namespace R10.Web.Areas.Trademark.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<TmkActionType> _viewModelService;
         private readonly IEntityService<TmkActionType> _actionTypeService;
+        private readonly IChildEntityService<TmkActionType, TmkActionParameter> _actionParamService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "tmkActionTypeDetail";
@@ -44,11 +45,13 @@ namespace R10.Web.Areas.Trademark.Controllers
             IAuthorizationService authService,
             IViewModelService<TmkActionType> viewModelService,
             IEntityService<TmkActionType> actionTypeService,
+            IChildEntityService<TmkActionType, TmkActionParameter> actionParamService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _actionTypeService = actionTypeService;
+            _actionParamService = actionParamService;
             _localizer = localizer;
         }
 
@@ -437,5 +440,54 @@ namespace R10.Web.Areas.Trademark.Controllers
         }
 
         // Retroactive Action Generation removed during debloat
+
+        #region Action Parameters (child grid)
+
+        public async Task<IActionResult> ActionParametersRead([DataSourceRequest] DataSourceRequest request, int actionTypeId)
+        {
+            var list = await _actionParamService.QueryableList
+                .Where(p => p.ActionTypeID == actionTypeId)
+                .ToListAsync();
+            return Json(list.ToDataSourceResult(request));
+        }
+
+        [Authorize(Policy = TrademarkAuthorizationPolicy.ActionTypeModify)]
+        public async Task<IActionResult> ActionParametersUpdate(int actionTypeId,
+            [Bind(Prefix = "updated")] IEnumerable<TmkActionParameter> updated,
+            [Bind(Prefix = "new")] IEnumerable<TmkActionParameter> added,
+            [Bind(Prefix = "deleted")] IEnumerable<TmkActionParameter> deleted)
+        {
+            var canDelete = (await _authService.AuthorizeAsync(User, TrademarkAuthorizationPolicy.AuxiliaryCanDelete)).Succeeded;
+            if (deleted.Any() && !canDelete)
+                return Forbid();
+
+            if (updated.Any() || added.Any() || deleted.Any())
+            {
+                if (!ModelState.IsValid)
+                    return new JsonBadRequest(new { errors = ModelState.Errors() });
+
+                await _actionParamService.Update(actionTypeId, User.GetUserName(), updated, added, deleted);
+                var total = deleted.Count() + updated.Count() + added.Count();
+                var success = total == 1
+                    ? _localizer["Action Parameter has been saved successfully."].ToString()
+                    : _localizer["Action Parameters have been saved successfully"].ToString();
+                return Ok(new { success });
+            }
+            return Ok();
+        }
+
+        [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryCanDelete)]
+        public async Task<IActionResult> ActionParametersDelete([Bind(Prefix = "deleted")] TmkActionParameter deleted)
+        {
+            if (deleted.ActParamId > 0)
+            {
+                await _actionParamService.Update(deleted.ActionTypeID, User.GetUserName(),
+                    new List<TmkActionParameter>(), new List<TmkActionParameter>(), new List<TmkActionParameter> { deleted });
+                return Ok(new { success = _localizer["Action Parameter has been deleted successfully."].ToString() });
+            }
+            return Ok();
+        }
+
+        #endregion
     }
 }

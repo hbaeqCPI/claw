@@ -68,6 +68,14 @@ namespace R10.Web.Models.PageViewModels
             return $"<nav class='nav nav-left sidebar-link'>{ExportToExcelButton(exportToExcelLabel, hasExportToExcelSetup, exportSetupLabel)}{AddButton(addUrl, addLabel)}</nav>";
         }
 
+        // Two-add-button variant: used by unified search screens that combine a base
+        // table with its _Ext sibling. The second button routes to the Ext controller's
+        // Add action so records can be added to whichever underlying table is correct.
+        public string ToolbarTemplateTwoAdd(string addUrl, string addLabel, string addExtUrl, string addExtLabel, string exportToExcelLabel)
+        {
+            return $"<nav class='nav nav-left sidebar-link'>{ExportToExcelButton(exportToExcelLabel)}{AddButton(addUrl, addLabel)}{AddButton(addExtUrl, addExtLabel)}</nav>";
+        }
+
         public string ToolbarTemplate(string addUrl, string addLabel, string exportToExcelLabel, string clearFiltersLabel)
         {
             return $"<nav class='nav nav-left sidebar-link'>{ClearFiltersButton(clearFiltersLabel)}{ExportToExcelButton(exportToExcelLabel)}{AddButton(addUrl, addLabel)}</nav>";

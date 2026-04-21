@@ -28,6 +28,8 @@ namespace R10.Web.Extensions
 
             services.AddScoped<IViewModelService<PatActionType>, ViewModelService<PatActionType>>();
             services.AddScoped<IEntityService<PatActionType>, AuxService<PatActionType>>();
+            services.AddScoped<IChildEntityService<PatActionType, PatActionParameter>, ChildEntityService<PatActionType, PatActionParameter>>();
+            services.AddScoped<IEntityService<PatActionParameter>, AuxService<PatActionParameter>>();
 
             services.AddScoped<IViewModelService<PatCaseType>, ViewModelService<PatCaseType>>();
             services.AddScoped<IEntityService<PatCaseType>, AuxService<PatCaseType>>();
