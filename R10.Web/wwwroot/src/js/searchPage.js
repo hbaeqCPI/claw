@@ -42,6 +42,17 @@ export default class SearchPage extends BasePage {
         $(searchPage.container).floatLabels();
         $(searchPage.container).moreInfo();
 
+        // (Previously installed an Enter-key guard here to stop Kendo pickers
+        // from auto-selecting the first item on fast-type+Enter. Reverted — it
+        // was interfering with the initial search-form submit flow. TODO: revisit
+        // with a less invasive approach.)
+
+        // Clear any stale filter state left over from a previous visit (e.g. via
+        // browser back/forward or breadcrumb cache) so landing on a search page
+        // always starts from "show all". Without this, Kendo inputs can retain
+        // values that nobody can see, producing 0-result searches.
+        try { $(searchPage.form).clearSearch(); } catch (_) { /* plugin missing */ }
+
         //auto submit form
         $(searchForm).submit();
     }
