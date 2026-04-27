@@ -26,7 +26,9 @@
         columns.Command(command =>
         {
             if (detailPagePermission.CanDeleteRecord)
-                command.Destroy().IconClass("k-icon fal fa-trash-alt")
+                command.Custom("Delete")
+                    .Click("function(e) { pageHelper.deleteGridRow(e, $(e.delegateTarget).data('kendoGrid').dataItem($(e.currentTarget).closest('tr'))); }")
+                    .IconClass("k-icon fal fa-trash-alt")
                     .Text($"<span class='grid-action-label'>{SharedLocalizer["Delete"]}</span>")
                     .HtmlAttributes(new { @class = "grid-action" });
         }).Width(10);

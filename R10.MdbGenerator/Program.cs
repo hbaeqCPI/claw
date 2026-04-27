@@ -86,7 +86,7 @@ public class MdbGenerator
 {
     private readonly GeneratorConfig _config;
 
-    // Full patent tables (used by 97, PatR5-7, PatR8-10)
+    // Full patent tables (used by 97, PatR5-7, PatR8-R10v2.1)
     private static readonly string[] PatentTablesFull = new[]
     {
         "tblPatActionType", "tblPatActionParameter",

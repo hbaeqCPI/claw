@@ -23,9 +23,15 @@ if (!File.Exists(mdbReaderPath))
 var tableKeys = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
 {
     ["tblPatCountryLaw"] = new[] { "Country", "CaseType" },
-    ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "Yr", "Mo", "Dy", "Indicator" },
-    ["tblPatCountryExp"] = new[] { "Country", "CaseType", "Type", "BasedOn", "Yr", "Mo", "Dy" },
-    ["tblPatCountryExpDelete"] = new[] { "Country", "CaseType", "Type", "BasedOn", "Yr", "Mo", "Dy" },
+    // CountryDue: add EffStartDate — some rows share the (Country, CaseType, ActionType,
+    // ActionDue, BasedOn, Yr, Mo, Dy, Indicator) combo but legitimately differ on
+    // effective window (historical vs current).
+    ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "Yr", "Mo", "Dy", "Indicator", "EffStartDate" },
+    // CountryExp / CountryExpDelete: add EffBasedOn, EffStartDate, EffEndDate —
+    // rows can legitimately share the rest of the key but represent different
+    // historical law terms.
+    ["tblPatCountryExp"] = new[] { "Country", "CaseType", "Type", "BasedOn", "Yr", "Mo", "Dy", "EffBasedOn", "EffStartDate", "EffEndDate" },
+    ["tblPatCountryExpDelete"] = new[] { "Country", "CaseType", "Type", "BasedOn", "Yr", "Mo", "Dy", "EffBasedOn", "EffStartDate", "EffEndDate" },
     ["tblPatDesCaseType"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
     ["tblPatArea"] = new[] { "Area" },
     ["tblPatAreaCountry"] = new[] { "Area", "Country" },
@@ -36,14 +42,16 @@ var tableKeys = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCas
     ["tblPatCountryLaw_Ext"] = new[] { "Country", "CaseType" },
     ["tblPatCountryLawUpdate"] = new[] { "Year", "Quarter" },
     ["tblPatDesCaseType_Ext"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
-    ["tblPatDesCaseTypeDelete"] = new[] { "CaseType", "DesCountry", "DesCaseType" },
-    ["tblPatDesCaseTypeDelete_Ext"] = new[] { "CaseType", "DesCountry", "DesCaseType" },
+    // DesCaseTypeDelete: add IntlCode — same (CaseType, DesCountry, DesCaseType) can
+    // appear with different IntlCode (e.g. 'II' vs 'IB').
+    ["tblPatDesCaseTypeDelete"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
+    ["tblPatDesCaseTypeDelete_Ext"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
     ["tblPatDesCaseTypeFields"] = new[] { "DesCaseType", "FromField" },
     ["tblPatDesCaseTypeFields_Ext"] = new[] { "DesCaseType", "FromField" },
     ["tblPatDesCaseTypeFieldsDelete"] = new[] { "DesCaseType", "FromField" },
     ["tblPatDesCaseTypeFieldsDelete_Ext"] = new[] { "DesCaseType", "FromField" },
     ["tblTmkCountryLaw"] = new[] { "Country", "CaseType" },
-    ["tblTmkCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "Yr", "Mo", "Dy", "Indicator" },
+    ["tblTmkCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "Yr", "Mo", "Dy", "Indicator", "EffStartDate" },
     ["tblTmkDesCaseType"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
     ["tblTmkArea"] = new[] { "Area" },
     ["tblTmkAreaCountry"] = new[] { "Area", "Country" },
@@ -53,8 +61,8 @@ var tableKeys = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCas
     ["tblTmkCountry"] = new[] { "Country" },
     ["tblTmkCountryLawUpdate"] = new[] { "Year", "Quarter" },
     ["tblTmkDesCaseType_Ext"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
-    ["tblTmkDesCaseTypeDelete"] = new[] { "CaseType", "DesCountry", "DesCaseType" },
-    ["tblTmkDesCaseTypeDelete_Ext"] = new[] { "CaseType", "DesCountry", "DesCaseType" },
+    ["tblTmkDesCaseTypeDelete"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
+    ["tblTmkDesCaseTypeDelete_Ext"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
     ["tblTmkDesCaseTypeFields"] = new[] { "DesCaseType", "FromField" },
     ["tblTmkDesCaseTypeFields_Ext"] = new[] { "DesCaseType", "FromField" },
     ["tblTmkDesCaseTypeFieldsDelete"] = new[] { "DesCaseType", "FromField" },
@@ -65,16 +73,24 @@ var tableKeys = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCas
 var skipColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     { "tStamp", "Systems", "CountryLawID" };
 
-// MDB files and their system assignments
-var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "temp_mdbs");
+// MDB files and their system assignments — 2026 Q1 sources on the DevFS share.
+// Filenames in the 2000&Up root and R5-7 subfolder have no year prefix for 2026 Q1;
+// only the R8&Up variants include "2026_1_".
+//   R4            ← 2000&Up\patlaw9.mdb  +  TmkLaw9.mdb
+//   PatR5-7       ← R5-7\patlaw9.mdb
+//   TmkR5-8       ← R5-7\TmkLaw9.mdb
+//   PatR8-R10v2.1 ← R8&Up\2026_1_patlaw10.mdb
+//   TmkR9-10v2.2  ← R8&Up\2026_1_TmkLaw10.mdb
+// (PatR10v2.2 is handled separately below via SQL_R10v22.)
+var devFsBase = @"\\DevFS\CtryLaw\2026\1st_Quarter\2000&Up";
 var imports = new[]
 {
-    new { Path = Path.Combine(baseDir, "R4_pat.mdb"), System = "R4" },
-    new { Path = Path.Combine(baseDir, "R4_tmk.mdb"), System = "R4" },
-    new { Path = Path.Combine(baseDir, "PatR57_pat.mdb"), System = "PatR5-7" },
-    new { Path = Path.Combine(baseDir, "TmkR58_tmk.mdb"), System = "TmkR5-8" },
-    new { Path = Path.Combine(baseDir, "PatR810_pat.mdb"), System = "PatR8-10" },
-    new { Path = Path.Combine(baseDir, "TmkR910_tmk.mdb"), System = "TmkR9-10v2.2" },
+    new { Path = Path.Combine(devFsBase, "patlaw9.mdb"), System = "R4" },
+    new { Path = Path.Combine(devFsBase, "TmkLaw9.mdb"), System = "R4" },
+    new { Path = Path.Combine(devFsBase, "R5-7", "patlaw9.mdb"), System = "PatR5-7" },
+    new { Path = Path.Combine(devFsBase, "R5-7", "TmkLaw9.mdb"), System = "TmkR5-8" },
+    new { Path = Path.Combine(devFsBase, "R8&Up", "2026_1_patlaw10.mdb"), System = "PatR8-R10v2.1" },
+    new { Path = Path.Combine(devFsBase, "R8&Up", "2026_1_TmkLaw10.mdb"), System = "TmkR9-10v2.2" },
 };
 
 try
@@ -120,13 +136,27 @@ try
                 // Only include columns that exist in both MDB and SQL Server, excluding skip columns
                 var columns = row.Keys.Where(c => !skipColumns.Contains(c) && sqlColumns.Contains(c)).ToList();
 
-                // Build key WHERE clause
-                var keyWhere = string.Join(" AND ", keys.Select((k, i) => $"[{k}]=@k{i}"));
-                var keyParams = keys.Select((k, i) =>
+                // Build key WHERE clause. Yr/Mo/Dy get NULL→0 coercion to match
+                // how INSERT writes them (see insertCols loop below) — otherwise
+                // "WHERE Yr=NULL" never matches the "Yr=0" row we created earlier
+                // and we insert duplicates on each MDB pass.
+                object KeyVal(string k)
                 {
-                    var val = row.ContainsKey(k) ? GetSqlValue(row[k]) : DBNull.Value;
-                    return new SqlParameter($"@k{i}", val ?? DBNull.Value);
-                }).ToArray();
+                    var v = row.ContainsKey(k) ? GetSqlValue(row[k]) : (object?)DBNull.Value;
+                    if ((v == null || v == DBNull.Value) &&
+                        (k.Equals("Yr", StringComparison.OrdinalIgnoreCase) ||
+                         k.Equals("Mo", StringComparison.OrdinalIgnoreCase) ||
+                         k.Equals("Dy", StringComparison.OrdinalIgnoreCase)))
+                        return 0;
+                    return v ?? DBNull.Value;
+                }
+                // NULL-safe equality — `col = NULL` in SQL is always UNKNOWN, which
+                // would cause rows with NULL key columns (e.g. EffStartDate) to never
+                // match and get duplicate-inserted on every MDB pass. Wrap each
+                // comparison so NULLs on both sides do match.
+                var keyWhere = string.Join(" AND ", keys.Select((k, i) =>
+                    $"([{k}]=@k{i} OR ([{k}] IS NULL AND @k{i} IS NULL))"));
+                var keyParams = keys.Select((k, i) => new SqlParameter($"@k{i}", KeyVal(k))).ToArray();
 
                 // Check if record exists
                 var checkCmd = new SqlCommand($"SELECT Systems FROM [{tableName}] WHERE {keyWhere}", sqlConn);
@@ -144,11 +174,7 @@ try
                         var newSys = string.Join(",", sysList);
                         var updateCmd = new SqlCommand($"UPDATE [{tableName}] SET Systems=@sys WHERE {keyWhere}", sqlConn);
                         updateCmd.Parameters.AddWithValue("@sys", newSys);
-                        updateCmd.Parameters.AddRange(keys.Select((k, i) =>
-                        {
-                            var val = row.ContainsKey(k) ? GetSqlValue(row[k]) : DBNull.Value;
-                            return new SqlParameter($"@k{i}", val ?? DBNull.Value);
-                        }).ToArray());
+                        updateCmd.Parameters.AddRange(keys.Select((k, i) => new SqlParameter($"@k{i}", KeyVal(k))).ToArray());
                         await updateCmd.ExecuteNonQueryAsync();
                         updated++;
                     }
@@ -158,6 +184,13 @@ try
                     // Insert new record with Systems = this system
                     var insertCols = columns.ToList();
                     if (!insertCols.Contains("Systems")) insertCols.Add("Systems");
+                    // Force-include Yr/Mo/Dy if the SQL table has them — some MDB rows
+                    // omit these columns entirely, but SQL rejects NOT NULL ints with no
+                    // default. The loop below will coerce absent values to 0.
+                    foreach (var required in new[] { "Yr", "Mo", "Dy" })
+                        if (sqlColumns.Contains(required) &&
+                            !insertCols.Contains(required, StringComparer.OrdinalIgnoreCase))
+                            insertCols.Add(required);
 
                     var colList = string.Join(", ", insertCols.Select(c => $"[{c}]"));
                     var paramList = string.Join(", ", insertCols.Select((c, i) => $"@p{i}"));
@@ -171,6 +204,15 @@ try
                             val = imp.System;
                         else
                             val = row.ContainsKey(col) ? GetSqlValue(row[col]) : DBNull.Value;
+                        // Some MDBs have NULL Yr/Mo/Dy; SQL treats them as NOT NULL int.
+                        // Coerce NULL → 0 for these specific columns so the insert succeeds.
+                        if ((val == null || val == DBNull.Value) &&
+                            (col.Equals("Yr", StringComparison.OrdinalIgnoreCase) ||
+                             col.Equals("Mo", StringComparison.OrdinalIgnoreCase) ||
+                             col.Equals("Dy", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            val = 0;
+                        }
                         insertCmd.Parameters.AddWithValue($"@p{i}", val ?? DBNull.Value);
                     }
 
@@ -341,9 +383,15 @@ async Task ImportPatR10v22(SqlConnection destConn)
         var actionDue = dueReader["ActionDue"]?.ToString() ?? "";
         var basedOn = dueReader["BasedOn"]?.ToString() ?? "";
 
-        var checkCmd = new SqlCommand(@"SELECT Systems FROM tblPatCountryDue
+        // Widen the match with EffStartDate so the UPDATE below doesn't over-match
+        // sibling rows that share the 9-col key but represent a different effective
+        // window. Without this, the UPDATE overwrote the Systems CSV of unrelated
+        // rows (see earlier report's "+4 overcount" bug).
+        var effStartDate = dueReader["EffStartDate"];
+        var effParamNullSafe = "(EffStartDate=@esd OR (EffStartDate IS NULL AND @esd IS NULL))";
+        var checkCmd = new SqlCommand($@"SELECT Systems FROM tblPatCountryDue
             WHERE Country=@c AND CaseType=@ct AND ActionType=@at AND ActionDue=@ad AND BasedOn=@bo
-            AND Yr=@yr AND Mo=@mo AND Dy=@dy AND Indicator=@ind", destConn);
+            AND Yr=@yr AND Mo=@mo AND Dy=@dy AND Indicator=@ind AND {effParamNullSafe}", destConn);
         checkCmd.Parameters.AddWithValue("@c", country);
         checkCmd.Parameters.AddWithValue("@ct", caseType);
         checkCmd.Parameters.AddWithValue("@at", actionType);
@@ -353,6 +401,7 @@ async Task ImportPatR10v22(SqlConnection destConn)
         checkCmd.Parameters.AddWithValue("@mo", dueReader["Mo"]);
         checkCmd.Parameters.AddWithValue("@dy", dueReader["Dy"]);
         checkCmd.Parameters.AddWithValue("@ind", dueReader["Indicator"] ?? "");
+        checkCmd.Parameters.AddWithValue("@esd", effStartDate ?? DBNull.Value);
         var existing = await checkCmd.ExecuteScalarAsync();
 
         if (existing != null && existing != DBNull.Value)
@@ -361,9 +410,9 @@ async Task ImportPatR10v22(SqlConnection destConn)
             if (!sys.Split(',').Select(s => s.Trim()).Contains("PatR10v2.2", StringComparer.OrdinalIgnoreCase))
             {
                 var newSys = string.IsNullOrEmpty(sys) ? "PatR10v2.2" : sys + ",PatR10v2.2";
-                var updCmd = new SqlCommand(@"UPDATE tblPatCountryDue SET Systems=@sys, MultipleBasedOn=@mbo
+                var updCmd = new SqlCommand($@"UPDATE tblPatCountryDue SET Systems=@sys, MultipleBasedOn=@mbo
                     WHERE Country=@c AND CaseType=@ct AND ActionType=@at AND ActionDue=@ad AND BasedOn=@bo
-                    AND Yr=@yr AND Mo=@mo AND Dy=@dy AND Indicator=@ind", destConn);
+                    AND Yr=@yr AND Mo=@mo AND Dy=@dy AND Indicator=@ind AND {effParamNullSafe}", destConn);
                 updCmd.Parameters.AddWithValue("@sys", newSys);
                 updCmd.Parameters.AddWithValue("@mbo", dueReader["MultipleBasedOn"]);
                 updCmd.Parameters.AddWithValue("@c", country);
@@ -375,6 +424,7 @@ async Task ImportPatR10v22(SqlConnection destConn)
                 updCmd.Parameters.AddWithValue("@mo", dueReader["Mo"]);
                 updCmd.Parameters.AddWithValue("@dy", dueReader["Dy"]);
                 updCmd.Parameters.AddWithValue("@ind", dueReader["Indicator"] ?? "");
+                updCmd.Parameters.AddWithValue("@esd", effStartDate ?? DBNull.Value);
                 await updCmd.ExecuteNonQueryAsync();
             }
         }

@@ -24,6 +24,10 @@ namespace LawPortal.Web.Services
 
         private PdfFont _b = null!, _bi = null!, _i = null!, _r = null!;
         private Dictionary<string, string> _cn = new(), _ctd = new();
+        // Whether the page break before the "Other ... Changes" tail sections
+        // has already been emitted, so the law-action and expiration orphan
+        // tables share one break instead of each forcing their own page.
+        private bool _orphanBreakAdded;
 
         public byte[] GenerateReport(MdbComparisonResult comp, string name, string year, string qtr,
             Dictionary<string, string>? cn = null, Dictionary<string, string>? ctd = null,
@@ -31,6 +35,7 @@ namespace LawPortal.Web.Services
         {
             _cn = cn ?? new();
             _ctd = ctd ?? new();
+            _orphanBreakAdded = false;
 
             using var ms = new MemoryStream();
             using var w = new PdfWriter(ms);
@@ -58,12 +63,18 @@ namespace LawPortal.Web.Services
             WriteTitle(doc, year, qtr);
             WriteReportNotes(doc, reportNotes);
 
-            // Manual Updates (Action Type diffs) always come first — for both patent
-            // and trademark. Patent stops there until country law; trademark follows
-            // with Standard Goods (green underline, no yellow highlight — these are
-            // manual reference-data updates) and then structural changes.
-            WriteManualUpdates(doc, comp, atT, dueT, paramT);
-            if (!comp.IsPatent)
+            // Order differs by report type:
+            //   Patent:    Structural → Manual Updates (legacy patent layout).
+            //   Trademark: Standard Goods → Structural. No Manual Updates section —
+            //              trademark ActionType changes are handled via the
+            //              CountryDue-driven Law Actions tables in each country
+            //              block (and the orphan table for bare due-date edits).
+            if (comp.IsPatent)
+            {
+                WriteStructural(doc, comp, pfx);
+                WriteManualUpdates(doc, comp, atT, dueT, paramT);
+            }
+            else
             {
                 WriteStandardGoods(doc, comp);
                 WriteStructural(doc, comp, pfx);
@@ -71,14 +82,14 @@ namespace LawPortal.Web.Services
 
             WriteCountryLawAddedModified(doc, comp, year, qtr, clT, dueT, expT, expDelT);
 
-            if (comp.IsPatent)
-                WriteStructural(doc, comp, pfx);
-
             WriteCountryLawDeleted(doc, comp, clT);
 
-            // Orphan law-action changes (CountryDue changes with no remarks/terms change
-            // on the same Country+CaseType) — compact summary at the very end.
+            // Orphan changes — Country+CaseType pairs whose only edits are in
+            // CountryDue (Law Actions) or CountryExp (Expiration / Tax Terms),
+            // with no Remarks change. Each lands in its own compact table at
+            // the end of the report. They share a single page break.
             WriteOrphanLawActions(doc, comp, clT, dueT, expT, expDelT);
+            WriteOrphanExpirationChanges(doc, comp, clT, expT, expDelT);
 
             doc.Close();
             return ms.ToArray();
@@ -119,7 +130,7 @@ namespace LawPortal.Web.Services
             var diff = comp.TableDiffs[sgT];
             if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
 
-            doc.Add(new AreaBreak());
+            // Inline with Manual Updates + structural — no forced page break.
             doc.Add(P(16).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(10)
                 .Add(T("Nice Classification – Standard Goods Update", _r, 16)));
 
@@ -202,22 +213,15 @@ namespace LawPortal.Web.Services
             return t;
         }
 
-        // Like InlineDiff but renders new / changed lines in green+underline
+        // Like InlineDiff but renders inserted / changed words in green+underline
         // instead of yellow background.
         private void AppendGreenLineDiff(Paragraph p, string oldText, string newText)
         {
-            var oldLines = SplitLines(oldText);
-            var newLines = SplitLines(newText);
-            var oldSet = new HashSet<string>(oldLines.Select(NormalizeForCompare));
-            for (int i = 0; i < newLines.Count; i++)
+            foreach (var seg in WordDiffSegments(oldText, newText))
             {
-                var line = newLines[i];
-                if (i > 0) p.Add(T("\n", _r, 9));
-                var norm = NormalizeForCompare(line);
-                if (string.IsNullOrWhiteSpace(norm) || oldSet.Contains(norm))
-                    p.Add(T(line, _r, 9));
-                else
-                    p.Add(T(line, _r, 9).SetFontColor(Green).SetUnderline());
+                var t = T(seg.text, _r, 9);
+                if (seg.changed) t.SetFontColor(Green).SetUnderline();
+                p.Add(t);
             }
         }
 
@@ -393,7 +397,7 @@ namespace LawPortal.Web.Services
         }
 
         // Sub-table of Action Parameter changes scoped to a single Action Type.
-        // Columns: Action Due | Yr | Mo | Dy | Indicator | Change.
+        // Columns: Action Due | Yr | Mo | Dy | Indicator.
         // - Added params: full-row yellow.
         // - Modified params: per-cell yellow on changed columns only.
         // - Deleted params: red strikethrough.
@@ -410,30 +414,38 @@ namespace LawPortal.Web.Services
             var pd = comp.TableDiffs[paramT];
             bool Matches(RowDiff r) => G(r, "ActionTypeID") == atId;
 
+            // Only treat a Modified row as a "real" change if at least one of
+            // the columns we actually display (ActionDue/Yr/Mo/Dy/Indicator)
+            // appears in ChangedColumns. Rows where only ignored/non-displayed
+            // columns shifted would otherwise render as a plain, unhighlighted
+            // row — confusing readers into thinking nothing changed.
+            var displayCols = new[] { "ActionDue", "Yr", "Mo", "Dy", "Indicator" };
             var added = pd.AddedRows.Where(Matches).ToList();
-            var modified = pd.ModifiedRows.Where(Matches).ToList();
+            var modified = pd.ModifiedRows.Where(Matches)
+                .Where(r => displayCols.Any(c => r.ChangedColumns.Contains(c)))
+                .ToList();
             var deleted = pd.DeletedRows.Where(Matches).ToList();
             if (!added.Any() && !modified.Any() && !deleted.Any()) return;
 
             doc.Add(P(9).SetFont(_b).SetMarginLeft(50).SetMarginTop(6)
                 .Add(T("Action Parameters", _b, 9)));
 
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 35, 10, 10, 10, 20, 15 }))
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 40, 12, 12, 12, 24 }))
                 .UseAllAvailableWidth().SetMarginLeft(50).SetMarginTop(3).SetFontSize(8);
-            foreach (var h in new[] { "Action Due", "Yr", "Mo", "Dy", "Indicator", "Change" })
+            foreach (var h in new[] { "Action Due", "Yr", "Mo", "Dy", "Indicator" })
                 tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
                     .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
 
             // mode: "add" = whole row yellow, "mod" = per-cell yellow, "del" = strikethrough.
-            void Row(RowDiff r, string tag, string rowMode)
+            void Row(RowDiff r, string rowMode)
             {
-                void C(string v, bool highlight, bool strike = false)
+                void C(string v, bool highlight, bool strike)
                 {
                     var text = T(v ?? "", _r, 8);
                     if (strike) text.SetLineThrough().SetFontColor(Red);
                     var cell = new Cell().Add(P(8).Add(text))
                         .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
-                    if (highlight) cell.SetBackgroundColor(Yellow);
+                    if (highlight && !strike) cell.SetBackgroundColor(Yellow);
                     tbl.AddCell(cell);
                 }
                 bool allYellow = rowMode == "add";
@@ -446,7 +458,6 @@ namespace LawPortal.Web.Services
                 C(G(r, "Mo"), Ch("Mo"), allStrike);
                 C(G(r, "Dy"), Ch("Dy"), allStrike);
                 C(G(r, "Indicator"), Ch("Indicator"), allStrike);
-                C(tag, allYellow || rowMode == "mod", false);
             }
 
             // If the parent ActionType is new, every matching parameter is by definition
@@ -460,11 +471,11 @@ namespace LawPortal.Web.Services
             }
 
             foreach (var r in added.OrderBy(r => G(r, "ActionDue")))
-                Row(r, "Added", EffectiveMode(r));
+                Row(r, EffectiveMode(r));
             foreach (var r in modified.OrderBy(r => G(r, "ActionDue")))
-                Row(r, "Modified", EffectiveMode(r));
+                Row(r, EffectiveMode(r));
             foreach (var r in deleted.OrderBy(r => G(r, "ActionDue")))
-                Row(r, "Deleted", parentMode == "new" ? "add" : "del");
+                Row(r, parentMode == "new" ? "add" : "del");
 
             doc.Add(tbl);
         }
@@ -554,19 +565,57 @@ namespace LawPortal.Web.Services
         // ═══════════════════════════════════════════════════════════════
         private void WriteStructural(Document doc, MdbComparisonResult c, string pfx)
         {
+            var acTbl = $"{pfx}AreaCountry";
+            var acDelTbl = $"{pfx}AreaCountryDelete";
             var ctTbl = $"{pfx}CaseType";
             var desTbl = $"{pfx}DesCaseType";
             var desDelTbl = $"{pfx}DesCaseTypeDelete";
 
-            // Area Countries changes are intentionally NOT rendered — the Area/Country
-            // tables are still exported + diffed so history is preserved between
-            // releases, but they don't appear in the PDF.
+            // Area Countries Deleted — red strikethrough. Grouped by Area.
+            // A single deletion typically shows up in BOTH the primary table
+            // (as DeletedRows) and the companion *Delete tracker (as AddedRows),
+            // so we dedupe by the natural key (Area, Country).
+            var acDel = new List<RowDiff>();
+            if (H(c, acTbl)) acDel.AddRange(c.TableDiffs[acTbl].DeletedRows);
+            if (H(c, acDelTbl)) acDel.AddRange(c.TableDiffs[acDelTbl].AddedRows);
+            acDel = acDel
+                .GroupBy(r => (G(r, "Area"), G(r, "Country")))
+                .Select(g => g.First())
+                .ToList();
+            if (acDel.Any())
+            {
+                SectionHeader(doc, "Area Countries Deleted");
+                foreach (var g in acDel.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
+                {
+                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
+                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
+                        doc.Add(P(9).SetMarginLeft(30)
+                            .Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)
+                                .SetLineThrough().SetFontColor(Red)));
+                }
+            }
 
-            // Case Types Added — yellow highlight. Force onto a new page so a long
-            // Standard Goods list (trademark) doesn't bleed into the case-type lists.
+            // Area Countries Added — yellow highlight. Grouped by Area.
+            if (H(c, acTbl) && c.TableDiffs[acTbl].AddedRows.Any())
+            {
+                SectionHeader(doc, "Area Countries Added");
+                foreach (var g in c.TableDiffs[acTbl].AddedRows.GroupBy(r => G(r, "Area")).OrderBy(g => g.Key))
+                {
+                    doc.Add(P(10).SetFont(_b).SetMarginTop(4).Add(T(g.Key, _b, 10)));
+                    foreach (var r in g.OrderBy(r => CN(G(r, "Country"))))
+                        doc.Add(P(9).SetMarginLeft(30)
+                            .Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)
+                                .SetBackgroundColor(Yellow)));
+                }
+            }
+
+            // Case Types Added — yellow highlight. Patent forces a page break
+            // here because its structural sections (Area Countries, Designations)
+            // can run long; trademark keeps Case Types inline with the rest of
+            // the structural block.
             if (H(c, ctTbl) && c.TableDiffs[ctTbl].AddedRows.Any())
             {
-                doc.Add(new AreaBreak());
+                if (c.IsPatent) doc.Add(new AreaBreak());
                 SectionHeader(doc, "Case Types Added");
                 foreach (var r in c.TableDiffs[ctTbl].AddedRows.OrderBy(r => G(r, "CaseType")))
                 {
@@ -590,10 +639,16 @@ namespace LawPortal.Web.Services
                 }
             }
 
-            // Designation Deleted — red strikethrough.
+            // Designation Deleted — red strikethrough. Same dedupe pattern as
+            // Area Countries Deleted: a single removal lands in both the primary
+            // DesCaseType table and the DesCaseTypeDelete tracker.
             var desDel = new List<RowDiff>();
             if (H(c, desTbl)) desDel.AddRange(c.TableDiffs[desTbl].DeletedRows);
             if (H(c, desDelTbl)) desDel.AddRange(c.TableDiffs[desDelTbl].AddedRows);
+            desDel = desDel
+                .GroupBy(r => (G(r, "IntlCode"), G(r, "CaseType"), G(r, "DesCountry"), G(r, "DesCaseType")))
+                .Select(g => g.First())
+                .ToList();
             if (desDel.Any())
             {
                 SectionHeader(doc, "Designation Deleted");
@@ -677,9 +732,10 @@ namespace LawPortal.Web.Services
             }
         }
 
-        // A country/case-type gets a full block if its CountryLaw (remarks) or
-        // CountryExp / CountryExpDelete changed. Pure CountryDue changes go to
-        // the orphan table.
+        // A country/case-type gets a full block ONLY if its CountryLaw (Remarks /
+        // narrative) row changed. Pure CountryDue changes and pure Expiration /
+        // Tax-Term changes go to the orphan tables at the end of the report —
+        // a one-line modification doesn't deserve a whole page block.
         private static HashSet<(string, string)> CountryLawBlockKeys(MdbComparisonResult comp,
             string clT, string? expT, string? expDelT)
         {
@@ -690,8 +746,6 @@ namespace LawPortal.Web.Services
                 foreach (var r in rows) keys.Add((G(r, "Country"), G(r, "CaseType")));
             }
             if (H(comp, clT)) { Add(comp.TableDiffs[clT].AddedRows); Add(comp.TableDiffs[clT].ModifiedRows); }
-            if (expT != null && H(comp, expT)) { Add(comp.TableDiffs[expT].AddedRows); Add(comp.TableDiffs[expT].ModifiedRows); }
-            if (expDelT != null && H(comp, expDelT)) Add(comp.TableDiffs[expDelT].AddedRows);
             return keys;
         }
 
@@ -791,64 +845,49 @@ namespace LawPortal.Web.Services
             }
         }
 
-        // Expiration & Tax Terms table
+        // Expiration & Tax Terms table. One row per change. Adds get the whole
+        // row highlighted, mods get only the changed cells highlighted, deletes
+        // get red strikethrough. The previous To/From two-row layout for mods
+        // was retired — yellow on the changed cell tells the same story without
+        // the extra visual noise.
         private void WriteExpTable(Document doc, List<RowDiff> rows, string mode)
         {
             bool isMod = mode == "mod", isDel = mode == "del";
-            float[] cols = isMod
-                ? new float[] { 10, 18, 15, 12, 17, 15, 13 }
-                : new float[] { 20, 17, 15, 18, 15, 15 };
-            var tbl = new Table(UnitValue.CreatePercentArray(cols))
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 20, 17, 15, 18, 15, 15 }))
                 .UseAllAvailableWidth().SetMarginTop(3).SetMarginLeft(10).SetFontSize(9);
 
-            if (isMod) tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Changed", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Based On", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("Terms (y-m)", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("For", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T(isMod ? "" : "Effective For", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("from", _b, 9))).SetBorder(Border.NO_BORDER));
-            tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T("to", _b, 9))).SetBorder(Border.NO_BORDER));
+            foreach (var h in new[] { "Based On", "Terms (y-m)", "For", "Effective For", "from", "to" })
+                tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T(h, _b, 9))).SetBorder(Border.NO_BORDER));
 
             foreach (var row in rows.OrderBy(r => G(r, "Type")))
             {
-                if (isMod)
+                var typ = G(row, "Type");
+                var bon = G(row, "BasedOn");
+                var terms = $"{G(row, "Yr")} {G(row, "Mo")}";
+                var eff = G(row, "EffBasedOn");
+                var from = FD(row, "EffStartDate");
+                var to = FD(row, "EffEndDate");
+
+                if (isDel)
                 {
-                    // To row — new values
-                    tbl.AddCell(NB(P(9).SetFont(_b).Add(T("To", _b, 9))));
-                    NBCell(tbl, G(row, "Type"));
-                    MC(tbl, row, "BasedOn", noBorder: true);
-                    NBCell(tbl, $"{G(row, "Yr")} {G(row, "Mo")}");
-                    MC(tbl, row, "EffBasedOn", noBorder: true);
-                    MC(tbl, row, "EffStartDate", noBorder: true, dateFmt: true);
-                    MC(tbl, row, "EffEndDate", noBorder: true, dateFmt: true);
-                    // From row — old values
-                    tbl.AddCell(NB(P(9).SetFont(_b).Add(T("From", _b, 9))));
-                    var ov = row.OldValues ?? new Dictionary<string, object?>();
-                    NBCell(tbl, Val(ov, "Type"));
-                    NBCell(tbl, Val(ov, "BasedOn"));
-                    NBCell(tbl, $"{Val(ov, "Yr")} {Val(ov, "Mo")}");
-                    NBCell(tbl, Val(ov, "EffBasedOn"));
-                    NBCell(tbl, FmtD(Val(ov, "EffStartDate")));
-                    NBCell(tbl, FmtD(Val(ov, "EffEndDate")));
+                    NBCellDel(tbl, typ); NBCellDel(tbl, bon); NBCellDel(tbl, terms);
+                    NBCellDel(tbl, eff); NBCellDel(tbl, from); NBCellDel(tbl, to);
+                }
+                else if (isMod)
+                {
+                    bool Ch(params string[] cols) => cols.Any(c => row.ChangedColumns.Contains(c));
+                    void Cell(string v, bool y) { if (y) NBCellY(tbl, v); else NBCell(tbl, v); }
+                    Cell(typ, Ch("Type"));
+                    Cell(bon, Ch("BasedOn"));
+                    Cell(terms, Ch("Yr", "Mo"));
+                    Cell(eff, Ch("EffBasedOn"));
+                    Cell(from, Ch("EffStartDate"));
+                    Cell(to, Ch("EffEndDate"));
                 }
                 else
                 {
-                    var typ = G(row, "Type");
-                    var bon = G(row, "BasedOn");
-                    var terms = $"{G(row, "Yr")} {G(row, "Mo")}";
-                    var eff = G(row, "EffBasedOn");
-                    var from = FD(row, "EffStartDate");
-                    var to = FD(row, "EffEndDate");
-                    if (isDel)
-                    {
-                        NBCellDel(tbl, typ); NBCellDel(tbl, bon); NBCellDel(tbl, terms);
-                        NBCellDel(tbl, eff); NBCellDel(tbl, from); NBCellDel(tbl, to);
-                    }
-                    else
-                    {
-                        NBCellY(tbl, typ); NBCellY(tbl, bon); NBCellY(tbl, terms);
-                        NBCellY(tbl, eff); NBCellY(tbl, from); NBCellY(tbl, to);
-                    }
+                    NBCellY(tbl, typ); NBCellY(tbl, bon); NBCellY(tbl, terms);
+                    NBCellY(tbl, eff); NBCellY(tbl, from); NBCellY(tbl, to);
                 }
             }
             doc.Add(tbl);
@@ -872,49 +911,142 @@ namespace LawPortal.Web.Services
             var orphanDel = dd.DeletedRows.Where(IsOrphan).ToList();
             if (!orphanAdd.Any() && !orphanMod.Any() && !orphanDel.Any()) return;
 
-            doc.Add(new AreaBreak());
+            EnsureOrphanBreak(doc);
             doc.Add(P(12).SetFont(_b).SetUnderline().SetMarginTop(6)
                 .Add(T("Other Law Action Changes", _b, 12)));
             doc.Add(P(9).SetMarginTop(4)
                 .Add(T("The following law action changes have no corresponding Law Highlights changes.", _r, 9)));
 
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 15, 8, 24, 12, 7, 7, 7, 12 }))
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 17, 9, 27, 14, 8, 8, 8 }))
                 .UseAllAvailableWidth().SetMarginTop(6).SetFontSize(8);
-            foreach (var h in new[] { "Country", "Case", "Action Due (Indicator)", "Based On", "Yr", "Mo", "Dy", "Change" })
+            foreach (var h in new[] { "Country", "Case", "Action Due (Indicator)", "Based On", "Yr", "Mo", "Dy" })
                 tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
                     .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
 
-            // mode: "add" = whole row yellow, "mod" = per-cell yellow on changed
-            // columns only, "del" = no highlight (tag cell carries the state).
-            void Row(RowDiff r, string tag, string mode)
+            // Identifier cols (Country, Case) are never highlighted. Data cols
+            // are yellow on add (whole row new) or on mod when r.ChangedColumns
+            // names them. Deletes get red strikethrough — that's enough to read
+            // the row's intent without a separate Change column.
+            void Row(RowDiff r, string mode)
             {
+                bool isAdd = mode == "add", isMod = mode == "mod", isDel = mode == "del";
+                bool Ch(params string[] cols) =>
+                    isAdd || (isMod && cols.Any(c => r.ChangedColumns.Contains(c)));
+
                 void C(string v, bool highlight)
                 {
-                    var cell = new Cell().Add(P(8).Add(T(v ?? "", _r, 8)))
+                    var t = T(v ?? "", _r, 8);
+                    if (isDel) t.SetLineThrough().SetFontColor(Red);
+                    var cell = new Cell().Add(P(8).Add(t))
                         .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
-                    if (highlight) cell.SetBackgroundColor(Yellow);
+                    if (highlight && !isDel) cell.SetBackgroundColor(Yellow);
                     tbl.AddCell(cell);
                 }
-                bool allYellow = mode == "add";
-                bool Ch(params string[] cols) =>
-                    allYellow || (mode == "mod" && cols.Any(c => r.ChangedColumns.Contains(c)));
 
-                C($"{CN(G(r, "Country"))} ({G(r, "Country")})", allYellow);
-                C(G(r, "CaseType"), allYellow);
+                C($"{CN(G(r, "Country"))} ({G(r, "Country")})", false);
+                C(G(r, "CaseType"), false);
                 C($"{G(r, "ActionDue")} ({G(r, "Indicator")})", Ch("ActionDue", "Indicator"));
                 C(G(r, "BasedOn"), Ch("BasedOn"));
                 C(G(r, "Yr"), Ch("Yr"));
                 C(G(r, "Mo"), Ch("Mo"));
                 C(G(r, "Dy"), Ch("Dy"));
-                C(tag, allYellow || mode == "mod");
             }
 
             foreach (var r in orphanAdd.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Added", "add");
+                Row(r, "add");
             foreach (var r in orphanMod.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Modified", "mod");
+                Row(r, "mod");
             foreach (var r in orphanDel.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "ActionDue")))
-                Row(r, "Deleted", "del");
+                Row(r, "del");
+
+            doc.Add(tbl);
+        }
+
+        // Emit the page break that separates the orphan tail tables from the
+        // country-block body, but only once per report — so if both this and
+        // the expiration orphan section render they share a single break.
+        private void EnsureOrphanBreak(Document doc)
+        {
+            if (_orphanBreakAdded) return;
+            doc.Add(new AreaBreak());
+            _orphanBreakAdded = true;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // ORPHAN EXPIRATION CHANGES — Country/CaseType pairs whose only change
+        // is in CountryExp / CountryExpDelete (no CountryLaw remarks change).
+        // Renders as a flat one-row-per-change table with changed cells
+        // highlighted, instead of the two-row To/From layout used inside a
+        // full country block. A single tax-term tweak isn't worth a page.
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteOrphanExpirationChanges(Document doc, MdbComparisonResult comp,
+            string clT, string? expT, string? expDelT)
+        {
+            if (expT == null) return; // patent-only table; trademark has no expT
+            var fullBlockKeys = CountryLawBlockKeys(comp, clT, expT, expDelT);
+            bool IsOrphan(RowDiff r) => !fullBlockKeys.Contains((G(r, "Country"), G(r, "CaseType")));
+
+            var orphanAdd = new List<RowDiff>();
+            var orphanMod = new List<RowDiff>();
+            var orphanDel = new List<RowDiff>();
+            if (H(comp, expT))
+            {
+                var ed = comp.TableDiffs[expT];
+                orphanAdd.AddRange(ed.AddedRows.Where(IsOrphan));
+                orphanMod.AddRange(ed.ModifiedRows.Where(IsOrphan));
+            }
+            if (expDelT != null && H(comp, expDelT))
+                orphanDel.AddRange(comp.TableDiffs[expDelT].AddedRows.Where(IsOrphan));
+
+            if (!orphanAdd.Any() && !orphanMod.Any() && !orphanDel.Any()) return;
+
+            EnsureOrphanBreak(doc);
+            doc.Add(P(12).SetFont(_b).SetUnderline().SetMarginTop(14)
+                .Add(T("Other Expiration and Tax Term Changes", _b, 12)));
+            doc.Add(P(9).SetMarginTop(4)
+                .Add(T("The following expiration / tax term changes have no corresponding Law Highlights changes.", _r, 9)));
+
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 15, 8, 12, 12, 10, 12, 11, 11 }))
+                .UseAllAvailableWidth().SetMarginTop(6).SetFontSize(8);
+            foreach (var h in new[] { "Country", "Case", "Type", "Based On", "Terms (y-m)", "Effective For", "from", "to" })
+                tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
+                    .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
+
+            // Same highlighting rules as the law-actions orphan table:
+            // identifier columns never yellow, data columns yellow on add or
+            // when r.ChangedColumns names them on a mod, deletes red strikethrough.
+            void Row(RowDiff r, string mode)
+            {
+                bool isAdd = mode == "add", isMod = mode == "mod", isDel = mode == "del";
+                bool Ch(params string[] cols) =>
+                    isAdd || (isMod && cols.Any(c => r.ChangedColumns.Contains(c)));
+
+                void C(string v, bool highlight)
+                {
+                    var t = T(v ?? "", _r, 8);
+                    if (isDel) t.SetLineThrough().SetFontColor(Red);
+                    var cell = new Cell().Add(P(8).Add(t))
+                        .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
+                    if (highlight && !isDel) cell.SetBackgroundColor(Yellow);
+                    tbl.AddCell(cell);
+                }
+
+                C($"{CN(G(r, "Country"))} ({G(r, "Country")})", false);
+                C(G(r, "CaseType"), false);
+                C(G(r, "Type"), Ch("Type"));
+                C(G(r, "BasedOn"), Ch("BasedOn"));
+                C($"{G(r, "Yr")} {G(r, "Mo")}", Ch("Yr", "Mo"));
+                C(G(r, "EffBasedOn"), Ch("EffBasedOn"));
+                C(FD(r, "EffStartDate"), Ch("EffStartDate"));
+                C(FD(r, "EffEndDate"), Ch("EffEndDate"));
+            }
+
+            foreach (var r in orphanAdd.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
+                Row(r, "add");
+            foreach (var r in orphanMod.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
+                Row(r, "mod");
+            foreach (var r in orphanDel.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
+                Row(r, "del");
 
             doc.Add(tbl);
         }
@@ -935,37 +1067,142 @@ namespace LawPortal.Web.Services
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // INLINE REMARKS DIFF — line-level, whole-line highlight for new
-        // or edited lines. A new line matches an old line by normalized
-        // whitespace comparison (exact match after trimming/collapsing
-        // spaces), so minor reflow doesn't trigger false highlights.
+        // INLINE REMARKS DIFF — word-level. Tokenizes both old and new into
+        // words + whitespace runs, computes the LCS, and highlights only the
+        // new tokens that aren't in the LCS. So a single changed date inside
+        // a paragraph highlights just that date, not the whole surrounding line.
         // ═══════════════════════════════════════════════════════════════
         private Paragraph InlineDiff(string oldText, string newText)
         {
             var p = P(9);
-            var oldLines = SplitLines(oldText);
-            var newLines = SplitLines(newText);
-            var oldSet = new HashSet<string>(oldLines.Select(NormalizeForCompare));
-
-            for (int i = 0; i < newLines.Count; i++)
+            foreach (var seg in WordDiffSegments(oldText, newText))
             {
-                var line = newLines[i];
-                if (i > 0) p.Add(T("\n", _r, 9));
-                var norm = NormalizeForCompare(line);
-                if (string.IsNullOrWhiteSpace(norm) || oldSet.Contains(norm))
-                    p.Add(T(line, _r, 9));
-                else
-                    p.Add(T(line, _r, 9).SetBackgroundColor(Yellow));
+                var t = T(seg.text, _r, 9);
+                if (seg.changed) t.SetBackgroundColor(Yellow);
+                p.Add(t);
             }
             return p;
         }
 
-        private static List<string> SplitLines(string? s) =>
-            (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n")
-                .Split('\n').Select(l => l.TrimEnd()).ToList();
+        // Word-level diff used by InlineDiff and AppendGreenLineDiff.
+        // Returns the new text as a sequence of runs, each marked changed=true
+        // if it was inserted/modified relative to oldText. Consecutive
+        // same-state tokens are merged so one changed span = one styled run.
+        private static List<(string text, bool changed)> WordDiffSegments(string? oldText, string? newText)
+        {
+            var oldTokens = Tokenize(oldText);
+            var newTokens = Tokenize(newText);
+            if (newTokens.Count == 0) return new List<(string, bool)>();
 
-        private static string NormalizeForCompare(string s) =>
-            System.Text.RegularExpressions.Regex.Replace((s ?? "").Trim(), @"\s+", " ");
+            var inLcs = LongestCommonSubsequence(oldTokens, newTokens);
+            var changed = new bool[newTokens.Count];
+
+            // Count non-whitespace tokens + matches to decide if the paragraph
+            // is "mostly rewritten". Pure LCS on heavily-reworded legal prose
+            // catches coincidental matches on stopwords ("the", "of", "a") and
+            // produces swiss-cheese highlighting. If less than half the new
+            // non-ws tokens survive in the LCS, just flag the whole thing.
+            int totalNonWs = 0, matchedNonWs = 0;
+            for (int i = 0; i < newTokens.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(newTokens[i])) continue;
+                totalNonWs++;
+                if (inLcs[i]) matchedNonWs++;
+            }
+            bool mostlyRewritten = oldTokens.Count == 0
+                || (totalNonWs > 0 && matchedNonWs * 2 < totalNonWs);
+
+            if (mostlyRewritten)
+            {
+                for (int i = 0; i < newTokens.Count; i++) changed[i] = true;
+            }
+            else
+            {
+                for (int i = 0; i < newTokens.Count; i++) changed[i] = !inLcs[i];
+
+                // Coalesce: a short run of unchanged non-ws tokens (≤ 5) that
+                // sits between two changed runs is almost always LCS noise on
+                // common words — flip it to changed so the edit renders as
+                // one contiguous yellow block instead of swiss cheese.
+                const int MAX_GAP_NON_WS = 5;
+                int k = 0;
+                while (k < newTokens.Count)
+                {
+                    if (changed[k]) { k++; continue; }
+                    int start = k, nonWs = 0;
+                    while (k < newTokens.Count && !changed[k])
+                    {
+                        if (!string.IsNullOrWhiteSpace(newTokens[k])) nonWs++;
+                        k++;
+                    }
+                    int end = k;
+                    bool sandwiched = start > 0 && end < newTokens.Count;
+                    if (sandwiched && nonWs > 0 && nonWs <= MAX_GAP_NON_WS)
+                        for (int j = start; j < end; j++) changed[j] = true;
+                }
+            }
+
+            // Don't highlight a whitespace-only token on its own. Only keep it
+            // highlighted if both adjacent non-ws tokens are also highlighted —
+            // that way an inserted phrase stays one contiguous yellow block,
+            // but bare spaces between unchanged words don't flash.
+            for (int i = 0; i < newTokens.Count; i++)
+            {
+                if (!changed[i] || !string.IsNullOrWhiteSpace(newTokens[i])) continue;
+                bool leftHl = i > 0 && changed[i - 1] && !string.IsNullOrWhiteSpace(newTokens[i - 1]);
+                bool rightHl = i < newTokens.Count - 1 && changed[i + 1] && !string.IsNullOrWhiteSpace(newTokens[i + 1]);
+                if (!(leftHl && rightHl)) changed[i] = false;
+            }
+
+            var segments = new List<(string, bool)>();
+            var sb = new System.Text.StringBuilder();
+            bool? state = null;
+            for (int i = 0; i < newTokens.Count; i++)
+            {
+                if (state != changed[i])
+                {
+                    if (sb.Length > 0) { segments.Add((sb.ToString(), state == true)); sb.Clear(); }
+                    state = changed[i];
+                }
+                sb.Append(newTokens[i]);
+            }
+            if (sb.Length > 0) segments.Add((sb.ToString(), state == true));
+            return segments;
+        }
+
+        // Split into tokens that are either a run of whitespace (incl. newlines)
+        // or a run of non-whitespace. Keeping whitespace as its own token lets
+        // us re-emit the text with original spacing intact.
+        private static List<string> Tokenize(string? s) =>
+            string.IsNullOrEmpty(s)
+                ? new List<string>()
+                : System.Text.RegularExpressions.Regex.Matches(s, @"\s+|\S+")
+                    .Cast<System.Text.RegularExpressions.Match>()
+                    .Select(m => m.Value).ToList();
+
+        // Classic LCS dynamic-programming table, then backtrack to mark which
+        // tokens in the NEW sequence are part of the common subsequence.
+        // Tokens not in the LCS are inserted/changed and should be highlighted.
+        private static bool[] LongestCommonSubsequence(List<string> oldTokens, List<string> newTokens)
+        {
+            int n = oldTokens.Count, m = newTokens.Count;
+            var inLcs = new bool[m];
+            if (n == 0 || m == 0) return inLcs;
+            var dp = new int[n + 1, m + 1];
+            for (int i = 1; i <= n; i++)
+                for (int j = 1; j <= m; j++)
+                    dp[i, j] = oldTokens[i - 1] == newTokens[j - 1]
+                        ? dp[i - 1, j - 1] + 1
+                        : Math.Max(dp[i - 1, j], dp[i, j - 1]);
+            int ii = n, jj = m;
+            while (ii > 0 && jj > 0)
+            {
+                if (oldTokens[ii - 1] == newTokens[jj - 1]) { inLcs[jj - 1] = true; ii--; jj--; }
+                else if (dp[ii - 1, jj] >= dp[ii, jj - 1]) ii--;
+                else jj--;
+            }
+            return inLcs;
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // HELPERS
