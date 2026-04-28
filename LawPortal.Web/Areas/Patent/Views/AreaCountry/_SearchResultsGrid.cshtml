@@ -1,0 +1,24 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@using LawPortal.Core.Entities.Patent
+
+@(Html.Kendo().Grid<PatAreaCountry>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.Area).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { areaCode = "#: Area#", country = "#: Country#", systems = "#: Systems#", fromSearch = true }), "Area")).Width(200);
+        columns.Bound(m => m.Country).Width(200);
+        columns.Bound(m => m.Systems).Width(300);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("AreaCountryList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "AreaCountry")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("patAreaCountryPage.searchResultGridError"))
+        .Events(events => events.RequestEnd("patAreaCountryPage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "AreaCountry").Data("patAreaCountryPage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

@@ -1,0 +1,26 @@
+﻿@model LawPortal.Web.Models.DeleteConfirmationViewModels.ConfirmationCodeViewModel
+
+<form id="deleteConfirmation" class="form-detail delete-confirm" method="post">
+    <input asp-for="ConfirmationToken" class="form-control" hidden />
+    <div class="text-center">
+        <label asp-for="ConfirmationCode"></label>
+        <div class="token">@Model.ConfirmationToken</div>
+        <div class="code"><input asp-for="ConfirmationCode" class="form-control" maxlength="@Model.ConfirmationToken.Length" /></div>
+        <div class="validation"><span asp-validation-for="ConfirmationCode"></span></div>
+    </div>
+</form>
+<style>
+    .delete-confirm .token {
+        font-family: Courier New, Courier, monospace;
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    .delete-confirm .code input {
+        font-family: Courier New, Courier, monospace;
+        font-size: 32px;
+        width: @(Model.ConfirmationToken.Length * 25)px;
+        display: inline-block;
+        text-align: center;
+    }
+</style>

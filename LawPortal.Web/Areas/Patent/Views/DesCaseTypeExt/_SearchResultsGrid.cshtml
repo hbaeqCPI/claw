@@ -1,0 +1,28 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@using LawPortal.Core.Entities.Patent
+
+@(Html.Kendo().Grid<PatDesCaseTypeExt>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.IntlCode).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { intlCode = "#: IntlCode#", caseType = "#: CaseType#", desCountry = "#: DesCountry#", desCaseType = "#: DesCaseType#", systems = "#: Systems#", fromSearch = true }), "IntlCode")).Width(120);
+        columns.Bound(m => m.CaseType).Title("Parent Case Type").Width(140);
+        columns.Bound(m => m.DesCountry).Width(120);
+        columns.Bound(m => m.DesCaseType).Width(130);
+        columns.Bound(m => m.Default).ClientTemplate("#: Default ? '\\u2713' : '' #").Width(80);
+        columns.Bound(m => m.GenApp).ClientTemplate("#: GenApp ? '\\u2713' : '' #").Width(80);
+        columns.Bound(m => m.Systems).Width(300);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("DesCaseTypeExtList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "DesCaseTypeExt")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("patDesCaseTypeExtPage.searchResultGridError"))
+        .Events(events => events.RequestEnd("patDesCaseTypeExtPage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "DesCaseTypeExt").Data("patDesCaseTypeExtPage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

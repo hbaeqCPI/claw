@@ -1,0 +1,25 @@
+﻿@using  LawPortal.Web.Areas
+@inject IStringLocalizer<SharedResource> Localizer
+@model PrintViewModel
+
+@{
+    Layout = "";
+}
+
+<form method="post"
+      id="ReportCriteriaForm"
+      data-url="@ViewBag.Url">
+    <div class="col-sm-12" hidden>
+        <div class="form-group">
+            <label for="ReportFormat">@Localizer["Report Format"]</label>
+            <input id="ReportFormat" asp-for="ReportFormat" />
+        </div>
+        <div class="form-group">
+            <label for="IDs">@Localizer["IDs"]</label>
+            <input id="IDs" asp-for="IDs" type="text" value="" />
+        </div>
+        <div class="form-group">
+            <input id="DownloadName" type="text" value="@ViewBag.DownloadName" />
+        </div>
+    </div>
+</form>

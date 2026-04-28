@@ -109,7 +109,13 @@
       "Bash(sqlcmd -S '\\(local\\)' -d SQL_R10v22 -E -Q ' *)",
       "Bash(R10.MdbReader/bin/Debug/net8.0/R10.MdbReader.exe '//DevFS/CtryLaw/2026/1st_Quarter/2000&Up/R8&Up/2026_1_TmkLaw10.mdb')",
       "Bash(python -c ' *)",
-      "Bash(python)"
+      "Bash(python)",
+      "Bash(grep -c \"\\\\.rdl$\")",
+      "Bash(grep \"\\\\.rdl$\")",
+      "Bash(grep -v \"\\\\.rdl$\")",
+      "Bash(grep -E \"csproj$|^/\")",
+      "Bash(dotnet sln *)",
+      "Bash(grep -rn \"country field is required\\\\|Country.*Required\\\\|\\\\\\\\[Required\\\\\\\\].*Country\" --include=\"*.cs\" LawPortal.Web LawPortal.Core)"
     ]
   }
 }

@@ -1,0 +1,16 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace LawPortal.Web.Areas.Shared.ViewModels
+{
+    public class CountryLawChildViewModel : ChildViewModel
+    {
+        public string? Country { get; set; }
+        public string? CaseType { get; set; }
+        public string? Systems { get; set; }
+        public bool CanDeleteChild { get; set; }
+        
+    }
+}

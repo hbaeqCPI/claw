@@ -1,0 +1,120 @@
+@model PatAreaCountry
+@using LawPortal.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    var countryLabel = Localizer["Country"];
+    var countryNameLabel = Localizer["Country Name"];
+}
+
+<form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row align-items-end">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Area"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaCountry", area = "Patent", action = "GetAreaList", defaultValue = Model.Area })
+                        <span asp-validation-for="Area"></span>
+                    }
+                </div>
+            </div>
+            @if (!addMode)
+            {
+                <div class="col-auto mb-3">
+                    <button type="button" class="btn btn-warning btn-sm" id="btnMoveToDelete"
+                            data-url="@Url.Action("MoveToDelete", new { areaCode = Model.Area, countryCode = Model.Country, systems = Model.Systems })">
+                        <i class="fal fa-exchange-alt pr-1"></i> Move to Delete
+                    </button>
+                </div>
+            }
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "AreaCountry", area = "Patent", action = "GetCountryList", defaultValue = Model.Country })
+                        <span asp-validation-for="Country"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patAC" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", false }
+                    })
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    patAreaCountryPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patAreaCountryPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('#btnMoveToDelete').on('click', function() {
+            var btn = $(this);
+            var url = btn.data('url');
+            cpiConfirm.confirm('Move to Delete', 'Are you sure you want to move this record to the delete table?', function() {
+                cpiLoadingSpinner.show();
+                $.post(url).done(function(result) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showSuccess(result.success || 'Record moved to delete table successfully.');
+                    pageHelper.showSearchScreen('@Url.Action("Index")');
+                }).fail(function(e) {
+                    cpiLoadingSpinner.hide();
+                    pageHelper.showErrors(e);
+                });
+            });
+        });
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

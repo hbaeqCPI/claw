@@ -1,0 +1,61 @@
+﻿@using  LawPortal.Web.Areas
+@inject IStringLocalizer<SharedResource> Localizer
+<div class="modal fade" id="cpiPrintConfirm" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="cpiPrintConfirmLabel" aria-hidden="true"
+     data-title="@Localizer["Print Confirm Dialog"]"
+     data-btn-yes="@Localizer["Yes"]"
+     data-btn-no="@Localizer["No"]"
+     data-btn-cancel="@Localizer["Cancel"]"
+     data-btn-delete="@Localizer["Delete"]"
+     data-btn-save="@Localizer["Save"]"
+     data-btn-print="@Localizer["Print View"]">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header row">
+                <h4 class="modal-title col-sm-4" id="cpiPrintConfirmLabel"></h4>
+                <div class="col-sm-8">
+                    <div class="row">
+                        <div class="form-group col-sm-10" style="text-align:left">
+                            <label for="ReportFormat">@Localizer["Report Format"]</label>&nbsp;
+                            @(Html.Kendo().DropDownList()
+                            .Name("ReportFormatOption")
+                            .HtmlAttributes(new { style = "width: 100px" })
+                                .BindTo(Html.GetEnumSelectList<ReportOutputType>().Where(e => Int32.Parse(e.Value) < 3 || Int32.Parse(e.Value) == 5))
+                            .Events(events => events.Change("function() {ReportFormatChanged();}"))
+                            )
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-sm-12" style="text-align:left">
+                            <input id="PrintScreenOption" type="checkbox" />
+                            <label for="IDs">@Localizer["Print all records from search"]</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn modal-close" data-dismiss="modal"><i class="pr-2"></i><span></span></button>
+                <button type="button" class="btn modal-action"><i class="pr-2"></i><span></span></button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function ReportFormatChanged(e) {
+        var excelHidePrintOptions = document.querySelectorAll('.ExcelHidePrintOption');
+
+        if (document.getElementById("ReportFormatOption").value == 1) {
+            excelHidePrintOptions.forEach(element => {
+                element.setAttribute("hidden", "hidden");
+            });
+        }
+        else {
+            excelHidePrintOptions.forEach(element => {
+                element.removeAttribute("hidden");
+            });
+        }
+
+    }
+</script>

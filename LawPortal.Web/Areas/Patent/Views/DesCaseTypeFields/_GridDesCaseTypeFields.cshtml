@@ -1,0 +1,73 @@
+@model LawPortal.Web.Areas.Shared.ViewModels.ChildViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<PatSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+    var detailPagePermission = Model.Permission ?? new DetailPagePermission();
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    var desCaseType = Model.Code;
+    var systems = ViewData["Systems"]?.ToString() ?? "";
+    var pageName = ViewBag.ActivePage?.ToString() ?? "patDesCaseTypeFieldsPage";
+}
+
+@(Html.Kendo().Grid<LawPortal.Core.Entities.Patent.PatDesCaseTypeFields>()
+    .Name("desCaseTypeFieldsGrid")
+    .Columns(columns =>
+    {
+        columns.Bound(f => f.FromField).Title(Localizer["From Field"].Value).Width(300)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Bound(f => f.ToField).Title(Localizer["To Field"].Value).Width(300)
+            .HtmlAttributes(fullModify ? new { @class = "editable-cell" } : null);
+        columns.Command(command =>
+        {
+            if (detailPagePermission.CanDeleteRecord)
+                command.Custom("Delete")
+                    .Click($"function(e) {{ {pageName}.deleteGridRow(e,this) }}")
+                    .IconClass("k-icon fal fa-trash-alt")
+                    .Text($"<span class='grid-action-label'>{Localizer["Delete"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+        }).Width(10);
+        columns.Command(command =>
+        {
+            if (detailPagePermission.CanEditRecord)
+                command.Custom("MoveToDelete")
+                    .Click("function(e) { moveRowToDelete(e); }")
+                    .IconClass("k-icon fal fa-exchange-alt")
+                    .Text($"<span class='grid-action-label'>{Localizer["To Delete"]}</span>")
+                    .HtmlAttributes(new { @class = "grid-action" });
+        }).Width(10);
+    })
+    .ToolBar(toolbar =>
+    {
+        if (detailPagePermission.CanAddRecord)
+        {
+            toolbar.Create().IconClass("k-icon fal fa-plus").Text(Localizer["Add"]).HtmlAttributes(new { @class = "grid-action" });
+        }
+        if (fullModify)
+        {
+            toolbar.Custom().Name("Save").IconClass("k-icon fal fa-save").Text(Localizer["Save"]).HtmlAttributes(new { @class = "d-none" });
+            toolbar.Custom().Name("Cancel").IconClass("k-icon fal fa-times").Text(Localizer["Cancel"]).HtmlAttributes(new { @class = "d-none" });
+        }
+    })
+    .Editable(editable => editable.Enabled(fullModify).Mode(GridEditMode.InCell).DisplayDeleteConfirmation(false))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Pageable()
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Batch(true)
+        .PageSize(settings.SubFormPageSize)
+        .ServerOperation(false)
+        .Model(model =>
+        {
+            model.Id(f => f.FromField);
+            model.Field(f => f.DesCaseType).DefaultValue(desCaseType).Editable(false);
+            model.Field(f => f.Systems).DefaultValue(systems).Editable(false);
+        })
+        .Read(read => read.Action("FieldsRead", "DesCaseTypeFields").Data($"{{ desCaseType: '{desCaseType}' }}"))
+        .Create(create => create.Action("FieldsCreate", "DesCaseTypeFields"))
+        .Update(update => update.Action("FieldsUpdate", "DesCaseTypeFields"))
+        .Destroy(destroy => destroy.Action("FieldsDestroy", "DesCaseTypeFields"))
+        .Events(events => events.Error("pageHelper.onGridError"))
+    )
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

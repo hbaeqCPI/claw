@@ -1,0 +1,24 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@using LawPortal.Core.Entities.Trademark
+
+@(Html.Kendo().Grid<TmkAreaCountryDelete>()
+    .Name($"{Model.PageId}-Grid")
+    .Columns(columns =>
+    {
+        columns.Bound(m => m.Area).ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { areaCode = "#: Area#", country = "#: Country#", areaNewCode = "#: AreaNew#", countryNew = "#: CountryNew#", systems = "#: Systems#", fromSearch = true }), "Area")).Width(200);
+        columns.Bound(m => m.Country).Width(200);
+        columns.Bound(m => m.Systems).Width(200);
+    })
+    .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+    .AutoBind(false)
+    .Pageable(page => page.Refresh(true).PageSizes(new[] { 10, 25, 50 }))
+    .Sortable(sort => sort.AllowUnsort(false))
+    .Excel(excel => excel.FileName("AreaCountryDeleteList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "AreaCountryDelete")))
+    .DataSource(dataSource => dataSource.Ajax()
+        .Events(events => events.Error("tmkAreaCountryDeletePage.searchResultGridError"))
+        .Events(events => events.RequestEnd("tmkAreaCountryDeletePage.searchResultGridRequestEnd"))
+        .PageSize(25)
+        .Read(read => read.Action("PageRead", "AreaCountryDelete").Data("tmkAreaCountryDeletePage.gridMainSearchFilters")))
+    .HtmlAttributes(new { @class = "kendo-Grid" })
+)

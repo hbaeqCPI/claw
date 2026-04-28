@@ -1,0 +1,178 @@
+@model TmkDesCaseTypeFieldsDelete
+@using LawPortal.Core.Entities.Trademark
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var isCopyGroup = !string.IsNullOrEmpty(Model.CopyFromSystems);
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+}
+
+@if (addMode)
+{
+    <form cpi-detail-form action="Save">
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+        <input type="hidden" name="OriginalSystems" value="__NEW__" />
+        <input type="hidden" name="CopyFromSystems" value="@(Model.CopyFromSystems ?? "")" />
+        <input type="hidden" name="CopyFromDesCaseType" value="@(Model.CopyFromDesCaseType ?? "")" />
+        @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = true })
+
+        <div class="page-content detail cpiMainEntry">
+            <div class="form-row">
+                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="DesCaseType"></label>
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Trademark", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
+                        <span asp-validation-for="DesCaseType"></span>
+                    </div>
+                </div>
+            </div>
+            @if (!isCopyGroup)
+            {
+                <div class="form-row">
+                    <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                        <div class="form-group float-label">
+                            <label asp-for="FromField"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="FromField" />
+                            <span asp-validation-for="FromField"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                        <div class="form-group float-label">
+                            <label asp-for="ToField"></label>
+                            <input type="text" class="form-control form-control-sm" asp-for="ToField" />
+                            <span asp-validation-for="ToField"></span>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="form-row">
+                <div class="col-md-6">
+                    <div class="form-group float-label">
+                        <label asp-for="Systems"></label>
+                        @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                            { "SystemsValue", Model.Systems },
+                            { "SystemsPrefix", "tmkDCTFDel" },
+                            { "SystemsAction", Url.Action("GetSystemList") },
+                            { "SystemsReadOnly", false }
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+}
+else
+{
+    <form cpi-detail-form action="Save" data-save-message="@Localizer["Record has been saved successfully."]">
+        <input type="hidden" name="OriginalSystems" value="@(string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems)" />
+        <input type="hidden" name="FromField" value="" />
+        <input type="hidden" name="ToField" value="" />
+        @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = false })
+
+        <div class="page-content detail cpiMainEntry">
+            <div class="form-row">
+                <div class="col col-sm-5 col-md-4 col-lg-3 col-xl-2">
+                    <div class="form-group float-label">
+                        <label asp-for="DesCaseType"></label>
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group float-label">
+                        <label asp-for="Systems"></label>
+                        @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                            { "SystemsValue", Model.Systems },
+                            { "SystemsPrefix", "tmkDCTFDel_detail" },
+                            { "SystemsAction", Url.Action("GetSystemList") },
+                            { "SystemsReadOnly", false }
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="tmkDCTFieldsDeleteTab" href="#tmkDCTFieldsDeleteTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="tmkDCTFieldsDeleteTabContent" title="@Localizer["Fields"]">@Localizer["Fields"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="tmkDCTFieldsDeleteTabContent" role="tabpanel" aria-labelledby="tmkDCTFieldsDeleteTab">
+                @await Html.PartialAsync("_GridDesCaseTypeFieldsDelete", new LawPortal.Web.Areas.Shared.ViewModels.ChildViewModel { Code = Model.DesCaseType, Permission = detailPagePermission }, new ViewDataDictionary(ViewData) { { "Systems", Model.Systems } })
+            </div>
+        </div>
+    </form>
+}
+
+<script>
+    tmkDesCaseTypeFieldsDeletePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    tmkDesCaseTypeFieldsDeletePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    tmkDesCaseTypeFieldsDeletePage.editableGrids = [
+        {
+            name: 'desCaseTypeFieldsDeleteGrid', isDirty: false,
+            filter: { desCaseType: '@Model.DesCaseType', systems: '@Model.Systems' },
+            afterSubmit: tmkDesCaseTypeFieldsDeletePage.updateRecordStamps,
+            beforeSubmit: function() {
+                var defer = $.Deferred();
+                var grid = $("#desCaseTypeFieldsDeleteGrid").data("kendoGrid");
+                var allData = [];
+                var data = grid.dataSource.data();
+                for (var i = 0; i < data.length; i++) {
+                    allData.push({
+                        FromField: data[i].FromField,
+                        ToField: data[i].ToField,
+                        DesCaseTypeNew: data[i].DesCaseTypeNew,
+                        FromFieldNew: data[i].FromFieldNew,
+                        ToFieldNew: data[i].ToFieldNew
+                    });
+                }
+                var postData = {
+                    desCaseType: '@Model.DesCaseType',
+                    systems: '@Model.Systems',
+                    allRows: allData
+                };
+                $.ajax({
+                    url: '@Url.Action("FieldsReplaceAll", "DesCaseTypeFieldsDelete")',
+                    data: JSON.stringify(postData),
+                    contentType: 'application/json',
+                    type: 'POST',
+                    success: function() {
+                        grid.dataSource.read();
+                        defer.resolve();
+                        setTimeout(function() { pageHelper.showSuccess('Record has been saved successfully.'); }, 500);
+                    },
+                    error: function(e) {
+                        pageHelper.showErrors(e);
+                        defer.reject();
+                    }
+                });
+                return defer.promise();
+            }
+        }
+    ];
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

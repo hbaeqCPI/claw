@@ -1,0 +1,151 @@
+@model PatDesCaseTypeFieldsDeleteExt
+@using LawPortal.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool keyFieldsReadOnly = isReadOnly || !addMode; // Key fields readonly on edit
+}
+
+<form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="DesCaseType"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="DesCaseType" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCaseType", controller = "DesCaseType", area = "Patent", action = "GetPicklistData", textProperty = "DesCaseType", defaultValue = Model.DesCaseType })
+                        <span asp-validation-for="DesCaseType"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="FromField"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="FromField" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "FromField", controller = "DesCaseTypeFields", area = "Patent", action = "GetPicklistData", textProperty = "FromField", defaultValue = Model.FromField })
+                        <span asp-validation-for="FromField"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="ToField"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="ToField" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "ToField", controller = "DesCaseTypeFields", area = "Patent", action = "GetPicklistData", textProperty = "ToField", defaultValue = Model.ToField })
+                        <span asp-validation-for="ToField"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="DesCaseTypeNew"></label>
+                    <input type="hidden" name="DesCaseTypeNew" id="DesCaseTypeNew" value="@Model.DesCaseTypeNew" />
+                    <input type="text" class="form-control form-control-sm" id="DesCaseTypeNewDisplay" value="@Model.DesCaseTypeNew" readonly />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="FromFieldNew"></label>
+                    <input type="hidden" name="FromFieldNew" id="FromFieldNew" value="@Model.FromFieldNew" />
+                    <input type="text" class="form-control form-control-sm" id="FromFieldNewDisplay" value="@Model.FromFieldNew" readonly />
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="ToFieldNew"></label>
+                    <input type="hidden" name="ToFieldNew" id="ToFieldNew" value="@Model.ToFieldNew" />
+                    <input type="text" class="form-control form-control-sm" id="ToFieldNewDisplay" value="@Model.ToFieldNew" readonly />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patDCTFDelExt" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", false }
+                    })
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    $(document).ready(function() {
+        function syncNewFields() {
+            var desCaseType = $('[name=DesCaseType]').val() || $('input[name=DesCaseType]').val() || '';
+            $('#DesCaseTypeNew').val(desCaseType);
+            $('#DesCaseTypeNewDisplay').val(desCaseType);
+            var fromField = $('[name=FromField]').val() || $('input[name=FromField]').val() || '';
+            $('#FromFieldNew').val(fromField);
+            $('#FromFieldNewDisplay').val(fromField);
+            var toField = $('[name=ToField]').val() || $('input[name=ToField]').val() || '';
+            $('#ToFieldNew').val(toField);
+            $('#ToFieldNewDisplay').val(toField);
+        }
+        // Only sync on change, not on load (model values are already set)
+        $(document).on('change', '[name=DesCaseType], [name=DesCaseType_input]', syncNewFields);
+        $(document).on('change', '[name=FromField], [name=FromField_input]', syncNewFields);
+        $(document).on('change', '[name=ToField], [name=ToField_input]', syncNewFields);
+    });
+    patDesCaseTypeFieldsDeleteExtPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patDesCaseTypeFieldsDeleteExtPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

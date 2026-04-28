@@ -1,0 +1,112 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace LawPortal.Core.Entities.Patent
+{
+    public class PatCountryDue : ClawBaseEntity
+    {
+        [Key]
+        public int CDueId { get; set; }
+
+        [Required]
+        [StringLength(5)]
+        public string? Country { get; set; }
+
+        [Required]
+        [StringLength(3)]
+        public string? CaseType { get; set; }
+
+        [StringLength(30)]
+        [Required(ErrorMessage = "The Action Type field is required.")]
+        [Display(Name = "Action Type")]
+        public string? ActionType { get; set; }
+
+        [StringLength(30)]
+        [Required(ErrorMessage = "The Action Due field is required.")]
+        [Display(Name = "Action Due")]
+        public string? ActionDue { get; set; }
+
+        [StringLength(15)]
+        [Required]
+        [Display(Name = "Based On")]
+        public string? BasedOn { get; set; }
+
+        [Display(Name = "Yr")]
+        public int Yr { get; set; }
+
+        [Display(Name = "Mo")]
+        public int Mo { get; set; }
+
+        [Display(Name = "Dy")]
+        public int Dy { get; set; }
+
+        [Required(ErrorMessage = "The Indicator field is required.")]
+        [StringLength(20)]
+        [Display(Name = "Indicator")]
+        public string? Indicator { get; set; }
+
+        [Display(Name = "Recurring")]
+        public float Recurring { get; set; }
+
+        [Required(ErrorMessage = "The Eff Based On field is required.")]
+        [StringLength(15)]
+        [Display(Name = "Eff Based On")]
+        public string? EffBasedOn { get; set; }
+
+        [Display(Name = "Eff Start Date")]
+        public DateTime? EffStartDate { get; set; }
+
+        [Display(Name = "Eff End Date")]
+        public DateTime? EffEndDate { get; set; }
+
+        public bool CPIAction { get; set; }
+
+        [Display(Name = "Calculate")]
+        public bool Calculate { get; set; }
+
+        public int? CPIPermanentID { get; set; }
+
+        [Display(Name = "Multiple Based On")]
+        public bool MultipleBasedOn { get; set; }
+
+        [StringLength(500)]
+        [Required(ErrorMessage = "At least one system must be selected.")]
+        [Display(Name = "Systems")]
+        public string Systems { get; set; } = "";
+
+        [NotMapped]
+        [Display(Name = "Follow up Action")]
+        public string? FollowupAction { get; set; }
+
+        [NotMapped]
+        public string? OldFollowupAction { get; set; }
+
+        [NotMapped]
+        public bool IsNewRecord { get; set; }
+
+        [NotMapped]
+        public string? OriginalSystems { get; set; }
+
+    }
+
+    public class BasedOnOption
+    {
+        public const string? Filing = "Filing";
+        public const string? Issue = "Issue";
+        public const string? ParentFiling = "Parent Filing";
+        public const string? ParentIssue = "Parent Issue";
+        public const string? PCT = "PCT";
+        public const string? Priority = "Priority";
+        public const string? Publication = "Publication";
+    }
+
+    public enum RecurringOption
+    {
+        [Display(Name = "Non Recurring")]
+        NonRecurring = 0,
+        [Display(Name = "Based on Taken Date")]
+        BasedOnTakenDate = 1,
+        [Display(Name = "Based on Due Date")]
+        BasedOnDueDate = -1
+    }
+}

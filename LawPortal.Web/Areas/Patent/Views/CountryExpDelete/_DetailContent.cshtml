@@ -1,0 +1,221 @@
+@model PatCountryExpDelete
+@using LawPortal.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool keyFieldsReadOnly = isReadOnly || !addMode; // Key fields readonly on edit
+}
+
+<form cpi-detail-form action="Save">
+    <input type="hidden" asp-for="CExpId" />
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "Country", area = "Patent", action = "GetPicklistData", defaultValue = Model.Country })
+                        <span asp-validation-for="Country"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="CaseType"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="CaseType" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Patent", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        <span asp-validation-for="CaseType"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Type"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Type" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("Type")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(new[] {
+                                new { Text = "Tax Start", Value = "Tax Start" },
+                                new { Text = "Expiration", Value = "Expiration" }
+                            })
+                            .Value(Model.Type)
+                            .HtmlAttributes(new { style = "width:100%" })
+                        )
+                        <span asp-validation-for="Type"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="BasedOn"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="BasedOn" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "BasedOn", controller = "CountryExpDelete", area = "Patent", action = "GetBasedOnList", defaultValue = Model.BasedOn })
+                        <span asp-validation-for="BasedOn"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row align-items-end">
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
+                    <label asp-for="Yr"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Yr" readonly />
+                    }
+                    else
+                    {
+                        <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
+                        <span asp-validation-for="Yr"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
+                    <label asp-for="Mo"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Mo" readonly />
+                    }
+                    else
+                    {
+                        <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" max="12" style="width: 100%" />
+                        <span asp-validation-for="Mo"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+                <div class="form-group float-label mb-2">
+                    <label asp-for="Dy"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Dy" readonly />
+                    }
+                    else
+                    {
+                        <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
+                        <span asp-validation-for="Dy"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffBasedOn"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="EffBasedOn" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "EffBasedOn", defaultValue = Model.EffBasedOn })
+                        <span asp-validation-for="EffBasedOn"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffStartDate"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" value="@Model.EffStartDate?.ToString("d")" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
+                        <span asp-validation-for="EffStartDate"></span>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="EffEndDate"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" value="@Model.EffEndDate?.ToString("d")" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
+                        <span asp-validation-for="EffEndDate"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patCExpDel" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", false }
+                    })
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    patCountryExpDeletePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patCountryExpDeletePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

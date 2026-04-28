@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LawPortal.Reports</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PDF generation for Country Law Update reports -->
+    <PackageReference Include="itext7" Version="7.2.3" />
+    <!-- Logging + configuration abstractions for service constructors -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

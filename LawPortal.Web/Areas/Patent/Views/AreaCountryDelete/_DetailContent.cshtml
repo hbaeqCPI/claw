@@ -1,0 +1,126 @@
+@model PatAreaCountryDelete
+@using LawPortal.Core.Entities.Patent
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var addMode = Model.IsNewRecord;
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+    bool keyFieldsReadOnly = isReadOnly || !addMode; // Key fields readonly on edit
+}
+
+<form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Area"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.Area })
+                        <span asp-validation-for="Area"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    @if (keyFieldsReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "Country", area = "Patent", action = "GetPicklistData", defaultValue = Model.Country })
+                        <span asp-validation-for="Country"></span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="AreaNew"></label>
+                    <input type="hidden" name="AreaNew" id="AreaNew" value="@Model.AreaNew" />
+                    <input type="text" class="form-control form-control-sm" id="AreaNewDisplay" value="@Model.AreaNew" readonly />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col col-sm-5 col-md-4 col-lg-3">
+                <div class="form-group float-label">
+                    <label asp-for="CountryNew"></label>
+                    <input type="hidden" name="CountryNew" id="CountryNew" value="@Model.CountryNew" />
+                    <input type="text" class="form-control form-control-sm" id="CountryNewDisplay" value="@Model.CountryNew" readonly />
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "patACDel" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", false }
+                    })
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    $(document).ready(function() {
+        function syncNewFields() {
+            var area = $('[name=Area]').val() || $('input[name=Area]').val() || '';
+            $('#AreaNew').val(area);
+            $('#AreaNewDisplay').val(area);
+            var country = $('[name=Country]').val() || $('input[name=Country]').val() || '';
+            $('#CountryNew').val(country);
+            $('#CountryNewDisplay').val(country);
+        }
+        // Only sync on change, not on load (model values are already set)
+        $(document).on('change', '[name=Area], [name=Area_input]', syncNewFields);
+        $(document).on('change', '[name=Country], [name=Country_input]', syncNewFields);
+    });
+    patAreaCountryDeletePage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    patAreaCountryDeletePage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+        $('.copy-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

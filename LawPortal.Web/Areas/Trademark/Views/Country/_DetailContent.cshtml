@@ -1,0 +1,126 @@
+@model TmkCountry
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    var id = Model.Country;
+    var isCopy = ViewBag.CopyOptions != null;
+    var addMode = string.IsNullOrEmpty(id) || isCopy;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord;
+    bool isReadOnly = !fullModify;
+}
+
+<form cpi-detail-form action="Save">
+    @if (addMode)
+    {
+        <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
+    }
+    <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @* Hidden Country mirror — only emit in edit mode (visible input may render
+       disabled and not post). In add mode it would shadow the user-typed value
+       with an empty string and trip the [Required] validator. *@
+    @if (!addMode)
+    {
+        <input type="hidden" asp-for="Country" />
+    }
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Country"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="Country" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    <span asp-validation-for="Country"></span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-8 col-md-7 col-lg-6 col-xl-5">
+                <div class="form-group float-label">
+                    <label asp-for="CountryName"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CountryName" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="CountryName"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-5"></div>
+            <div class="col-6 col-sm-4 col-md-4 col-lg-3 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="CPICode"></label>
+                    <input type="text" class="form-control form-control-sm" asp-for="CPICode" asp-is-readonly="@isReadOnly" />
+                    <span asp-validation-for="CPICode"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
+                    <label asp-for="Systems"></label>
+                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                        { "SystemsValue", Model.Systems },
+                        { "SystemsPrefix", "tmkCtry" },
+                        { "SystemsAction", Url.Action("GetSystemList") },
+                        { "SystemsReadOnly", false }
+                    })
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!addMode)
+    {
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal" role="tablist">
+            <li class="nav-item">
+                <a id="tmkCountryDetailAreaTab" href="#tmkCountryDetailAreaTabContent" class="nav-link active" data-toggle="tab" role="tab" aria-controls="tmkCountryDetailAreaTabContent" title="@SharedLocalizer["Areas"]">@SharedLocalizer["Areas"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show" id="tmkCountryDetailAreaTabContent" role="tabpanel" aria-labelledby="tmkCountryDetailAreaTab">
+                @await Component.InvokeAsync("GridAreas", new AreaGridOptions { Country = Model.Country, Area = "Trademark" })
+            </div>
+        </div>
+        <div class="content-stamp">
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.UserID, dateCreated = Model.DateCreated, updatedBy = Model.UserID, lastUpdate = Model.LastUpdate, tStamp = (byte[])null })
+        </div>
+    }
+</form>
+
+<script>
+    tmkCountryPage.afterInsert = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    tmkCountryPage.showDetails = function(result) {
+        if (result && result.redirectUrl) {
+            pageHelper.openLink(result.redirectUrl, true);
+        }
+    };
+    tmkCountryPage.editableGrids = [
+            {
+             title: '@SharedLocalizer["Areas"]', name: 'areasGrid', isDirty: false, filter: { country: '@Model.Country'},
+             afterSubmit: tmkCountryPage.updateRecordStamps
+            }
+    ];
+
+    $(document).ready(() => {
+        const areasGrid = $("#areasGrid");
+        areasGrid.on("click", ".areaLink", (e) => {
+            e.stopPropagation();
+
+            let url = $(e.target).data("url");
+            const row = $(e.target).closest("tr");
+            const dataItem = areasGrid.data("kendoGrid").dataItem(row);
+            const linkUrl = url.replace("actualValue", dataItem.Area);
+            pageHelper.openLink(linkUrl, false);
+        });
+    })
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('.page-nav.add-record').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            if (url) pageHelper.openLink(url, true);
+        });
+    });
+</script>

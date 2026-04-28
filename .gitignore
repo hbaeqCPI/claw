@@ -24,10 +24,10 @@ mono_crash.*
 
 # Un-ignore legitimate source folders that happen to be named "Release"
 # (the [Rr]elease/ pattern above was intended for bin/obj build outputs only).
-!R10.Web/Areas/Releases/Views/Release/
-!R10.Web/Areas/Releases/Views/Release/**
-!R10.Infrastructure/Data/Release/
-!R10.Infrastructure/Data/Release/**
+!LawPortal.Web/Areas/Releases/Views/Release/
+!LawPortal.Web/Areas/Releases/Views/Release/**
+!LawPortal.Infrastructure/Data/Release/
+!LawPortal.Infrastructure/Data/Release/**
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -371,9 +371,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-/R10.Web/appsettings.Development.json
-/R10.Web/UserFiles
+/LawPortal.Web/appsettings.Development.json
+/LawPortal.Web/UserFiles
 /.sonarqube/conf
 /.sonarlint
-/R10.Web/Resources/encryption.json
-/R10.Web/Resources/encryption.json
+/LawPortal.Web/Resources/encryption.json
+/LawPortal.Web/Resources/encryption.json

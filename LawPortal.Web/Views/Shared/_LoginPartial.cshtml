@@ -1,0 +1,80 @@
+@using Microsoft.AspNetCore.Identity
+@using LawPortal.Web.Models
+@using LawPortal.Core.Identity
+@using LawPortal.Infrastructure.Identity
+@using Microsoft.Extensions.Options;
+@using Microsoft.AspNetCore.Builder
+@using LawPortal.Web.Services
+
+@inject IOptions<RequestLocalizationOptions> LocOptions
+@inject SignInManager<CPiUser> SignInManager
+@inject IOptions<CPiIdentitySettings> Options
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@inject IAuthorizationService AuthorizationService
+@{
+    CPiIdentitySettings CPiSettings = Options.Value;
+    var locale = User.GetLocale() ?? "en";
+    var cultures = LocOptions.Value.SupportedUICultures;
+    var culture = cultures.FirstOrDefault(c => c.Name == locale);
+    var myAccountLabel = $"{User.FindFirst(CPiClaimTypes.FirstName)?.Value?.FirstOrDefault()}{User.FindFirst(CPiClaimTypes.LastName)?.Value?.FirstOrDefault()}";
+}
+<div class="nav-login">
+    @if (SignInManager.IsSignedIn(User))
+    {
+    <ul class="nav d-none d-lg-flex justify-content-end pt-lg-1">
+        <li class="nav-item">
+            <div class="position-relative">
+                <a class="nav-link" href="#" id="cpi-cultures" title="@Localizer["Language"]">
+                    <i class="fal fa-globe pr-1"></i>@(culture?.DisplayName ?? Localizer["Language ({0})", locale])
+                </a>
+                <ul class="d-none list-group position-absolute cultures">
+                    @foreach (var item in cultures.OrderBy(c => c.DisplayName))
+                    {
+                        <li class="list-group-item culture" data-locale="@item.Name">@item.DisplayName</li>
+                    }
+                </ul>
+            </div>
+        </li>
+        <li class="nav-item">
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="btn nav-link logoutBtn" title="@Localizer["Log out"]">
+                    <i class="fal fa-sign-out pr-1"></i>@Localizer["Log out"]
+                </button>
+            </form>
+        </li>
+        <li class="nav-item">
+            <a asp-area="" asp-controller="Manage" asp-action="Index" title="@Localizer["My Account"]" class="nav-link my-account">
+                <span class="my-account-bg"><span class="my-account-label">@myAccountLabel</span></span>
+            </a>
+        </li>
+    </ul>
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+            <ul class="navbar-nav flex-column flex-lg-row d-md-flex d-lg-none">
+                <li class="nav-item">
+                    <button type="submit" class="btn nav-link logoutBtn" title="Log out">
+                        @Localizer["Log out"]
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <a asp-area="" asp-controller="Manage" asp-action="Index" title="@Localizer["My Account"]" class="nav-link">
+                        @Localizer["My Account"]
+                    </a>
+                </li>
+            </ul>
+        </form>
+    }
+    else
+    {
+        <ul class="nav d-none d-lg-flex">
+            <li class="nav-item">
+                <a asp-area="" asp-controller="Account" asp-action="Login" class="flex-sm-fill nav-link">
+                    <i class="fal fa-sign-in pr-2"></i>@Localizer["Log in"]
+                </a>
+            </li>
+        </ul>
+        <ul class="navbar-nav flex-column flex-lg-row d-md-flex d-lg-none">
+            <li class="nav-item"><a asp-area="" asp-controller="Account" asp-action="Login" class="flex-sm-fill nav-link">@Localizer["Log in"]</a></li>
+        </ul>
+    }
+</div>

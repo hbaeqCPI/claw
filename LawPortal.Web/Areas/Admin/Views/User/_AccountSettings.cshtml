@@ -1,0 +1,1360 @@
+﻿@using Microsoft.EntityFrameworkCore;
+@using LawPortal.Core.Interfaces;
+@using LawPortal.Core.Entities.Patent;
+@using LawPortal.Core.Entities.Shared;
+@using Microsoft.Extensions.Options;
+@using LawPortal.Web.Services;
+@using LawPortal.Web.Security;
+@model AccountSettingsViewModel
+@inject CPiUserManager UserManager
+@inject ICPiUserPermissionManager PermissionManager
+@inject ISystemSettings<PatSetting> PatSettings
+@inject ISystemSettings<DefaultSetting> DefaultSettings
+@inject IStringLocalizer<AdminResource> Localizer
+@inject IOptions<EPOMailboxSettings> EPOMailboxSettings
+@{
+    //todo: toggle ExportControl based on Patent role
+
+    var patSettings = await PatSettings.GetSetting();
+    var defaultSettings = await DefaultSettings.GetSetting();
+
+    var epoMailboxSettings = EPOMailboxSettings.Value;
+
+    var letterRoles = new List<CPiRole>();
+    letterRoles.Add(new CPiRole() { Id = "", Name = "" });
+    letterRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.Letters.Contains(r.Id.ToLower())).ToListAsync());
+
+    var customQueryRoles = new List<CPiRole>();
+    customQueryRoles.Add(new CPiRole() { Id = "", Name = "" });
+    customQueryRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.CustomQuery.Contains(r.Id.ToLower())).ToListAsync());
+
+    var auxiliaryRoles = new List<CPiRole>();
+    auxiliaryRoles.Add(new CPiRole() { Id = "", Name = "" });
+    auxiliaryRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.Auxiliary.Contains(r.Id.ToLower())).ToListAsync());
+
+    var countryLawRoles = new List<CPiRole>();
+    countryLawRoles.Add(new CPiRole() { Id = "", Name = "" });
+    countryLawRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.CountryLaw.Contains(r.Id.ToLower())).ToListAsync());
+
+    var actionTypeRoles = new List<CPiRole>();
+    actionTypeRoles.Add(new CPiRole() { Id = "", Name = "" });
+    actionTypeRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.ActionType.Contains(r.Id.ToLower())).ToListAsync());
+
+    var productsRoles = new List<CPiRole>();
+    productsRoles.Add(new CPiRole() { Id = "", Name = "" });
+    productsRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.Products.Contains(r.Id.ToLower())).ToListAsync());
+
+    var documentVerificationRoles = new List<CPiRole>();
+    documentVerificationRoles.Add(new CPiRole() { Id = "", Name = "" });
+    documentVerificationRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.DocumentVerification.Contains(r.Id.ToLower())).ToListAsync());
+
+    var workflowRoles = new List<CPiRole>();
+    workflowRoles.Add(new CPiRole() { Id = "", Name = "" });
+    workflowRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.Workflow.Contains(r.Id.ToLower())).ToListAsync());
+
+    var showPatentCostEstimator = (Model.UserType == CPiUserType.ContactPerson && patSettings.IsCostEstimatorOn);
+    var showTrademarkCostEstimator = false; // TmkSetting.IsCostEstimatorOn removed during debloat
+
+    var costEstimatorRoles = new List<CPiRole>();
+    costEstimatorRoles.Add(new CPiRole() { Id = "", Name = "" });
+    costEstimatorRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.CostEstimator.Contains(r.Id.ToLower())).ToListAsync());
+
+    var isGermanRemunerationOn = patSettings.IsInventorRemunerationOn;
+    var germanRemunerationRoles = new List<CPiRole>();
+    germanRemunerationRoles.Add(new CPiRole() { Id = "", Name = "" });
+    germanRemunerationRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.GermanRemuneration.Contains(r.Id.ToLower())).ToListAsync());
+
+    var isFrenchRemunerationOn = patSettings.IsInventorFRRemunerationOn;
+    var frenchRemunerationRoles = new List<CPiRole>();
+    frenchRemunerationRoles.Add(new CPiRole() { Id = "", Name = "" });
+    frenchRemunerationRoles.AddRange(await PermissionManager.CPiRoles.Where(r => CPiPermissions.FrenchRemuneration.Contains(r.Id.ToLower())).ToListAsync());
+
+    var attorneyRole = await PermissionManager.GetAttorneyRole();
+    var inventorRole = await PermissionManager.GetInventorRole();
+
+    var isPatModify = Model.HasPatent && Model.IsPatentModify;
+    var isTmkModify = Model.HasTrademark && Model.IsTrademarkModify;
+    var isGMModify = Model.HasGeneralMatter && Model.IsGeneralMattersModify;
+
+    //show dashboard access options
+    var dashboardAccess = new Dictionary<string, string>();
+    if (await UserManager.HasDashboardAccessOptions(new CPiUser() { Id = Model.UserId, UserType = Model.UserType }))
+    {
+        dashboardAccess = (await UserManager.GetSystems()).Where(s => SystemType.HasDashboardWidgets.Any(w => w.ToLower() == s.Id.ToLower())).ToDictionary(s => s.Id, s => s.Name);
+    }
+
+    var showDocumentStorageSettings = patSettings.DocumentStorage != DocumentStorageOptions.BlobOrFileSystem;
+
+    var showPatTradeSecretSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanHaveTSClearance.Contains(Model.UserType);
+    var showPatTradeSecretReportsSetting = patSettings.IsTradeSecretOn && CPiPermissions.CanAccessTSReports.Contains(Model.UserType);
+
+    var isSoftDocketOn = patSettings.IsSoftDocketOn || defaultSettings.IsSoftDocketOn;
+
+    var isRequestDocketOn = patSettings.IsDocketRequestOn || defaultSettings.IsDocketRequestOn;
+
+}
+
+<form id="AccountSettings" method="post" data-on-close="refreshRecordStamp"
+data-save-setting-url="@Url.Action("SaveSetting", "AccountSettings", new { Area = "Admin" })"
+data-save-decision-maker-url="@Url.Action("SaveDecisionMakerRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-attorney-url="@Url.Action("SaveAttorneyRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-soft-docket-url="@(isSoftDocketOn ? Url.Action("SaveSoftDocketRole", "AccountSettings", new { Area = "Admin" }) : "")" 
+data-save-request-docket-url="@(isRequestDocketOn ? Url.Action("SaveRequestDocketRole", "AccountSettings", new { Area = "Admin" }) : "")" 
+data-save-upload-url="@Url.Action("SaveUploadRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-inventor-url="@Url.Action("SaveInventorRole", "AccountSettings", new { Area = "Admin" })" 
+data-link-entity-url="@Url.Action("LinkEntity", "AccountSettings", new { Area = "Admin" })"
+data-save-auxiliary-url="@Url.Action("SaveAuxiliaryRole", "AccountSettings", new { Area = "Admin" })"
+data-save-country-law-url="@Url.Action("SaveCountryLawRole", "AccountSettings", new { Area = "Admin" })"
+data-save-action-type-url="@Url.Action("SaveActionTypeRole", "AccountSettings", new { Area = "Admin" })"
+data-save-letter-url="@Url.Action("SaveLetterRole", "AccountSettings", new { Area = "Admin" })"
+data-save-custom-query-url="@Url.Action("SaveCustomQueryRole", "AccountSettings", new { Area = "Admin" })"
+data-save-products-url="@Url.Action("SaveProductsRole", "AccountSettings", new { Area = "Admin" })"
+data-save-cost-estimator-url="@Url.Action("SaveCostEstimatorRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-german-remuneration-url="@Url.Action("SaveGermanRemunerationRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-french-remuneration-url="@Url.Action("SaveFrenchRemunerationRole", "AccountSettings", new { Area = "Admin" })" 
+data-save-patent-score-url="@Url.Action("SavePatentScoreRole", "AccountSettings", new { Area = "Admin" })"
+data-save-mails-url="@Url.Action("SaveMailsRole", "AccountSettings", new { Area = "Admin" })"
+data-save-document-verification-url="@Url.Action("SaveDocumentVerificationRole", "AccountSettings", new { Area = "Admin" })"
+data-save-workflow-url="@Url.Action("SaveWorkflowRole", "AccountSettings", new { Area = "Admin" })"
+data-save-dashboard-access-url="@Url.Action("SaveDashboardAccess", "AccountSettings", new { Area = "Admin" })"
+data-save-mailbox-access-url="@Url.Action("SaveMailboxAccess", "AccountSettings", new { Area = "Admin" })">
+    <input asp-for="UserId" class="form-control" hidden />
+    <div class="modal-status page-status alert alert-danger collapse" role="alert" style="margin-top: -10px; margin-left: -10px;"><span class="message"></span></div>
+    <div class="settings card-columns">
+        @if (User.IsSystemEnabled(SystemType.DMS) && Model.UserType == CPiUserType.Inventor)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Inventor Account"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between">
+                        <span>@Localizer["Inventor"]</span>
+                        <span class="link-entity" data-entity-type="@((int)CPiEntityType.Inventor)">
+                            @await Component.InvokeAsync("ComboBox", new { name = "Inventor", action = "GetInventorList", controller = "Inventor", area = "Patent", textProperty = "Inventor", valueProperty = "InventorID", defaultValue = (Model.EntityId == 0 ? "" : Model.EntityId.ToString()), defaultText = Model.EntityName, onChange = "function(e) { userSetupPage.linkEntity(e); }" })
+                            <span class="field-validation-error" style="display:none;" data-valmsg-for="Inventor"></span>
+                        </span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                        <label for="IsDmsReviewer">@Localizer["Invention Disclosure Reviewer"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="IsDmsReviewer" type="checkbox" checked="@Model.IsReviewer" class="toggle-option is-reviewer" data-save-reviewer-url="@Url.Action("SaveDMSReviewerRole", "AccountSettings", new { Area = "Admin" })">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                    @if (User.IsSystemEnabled(SystemType.Patent))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="HasPatent">@Localizer[$"Patent {inventorRole.Name}"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="HasPatent" type="checkbox" checked="@Model.HasPatent" class="toggle-option is-inventor" data-system="@SystemType.Patent">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.PatClearance))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsPatClearanceReviewer">@Localizer["Patent Clearance Search Access"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsPatClearanceReviewer" type="checkbox" checked="@Model.IsPatClearanceReviewer" class="toggle-option is-reviewer" data-save-reviewer-url="@Url.Action("SavePatClearanceReviewerRole", "AccountSettings", new { Area = "Admin" })">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType == CPiUserType.Attorney)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Attorney Account"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between">
+                        <span>@Localizer["Attorney"]</span>
+                        <span class="link-entity" data-entity-type="@((int)CPiEntityType.Attorney)">
+                            @await Component.InvokeAsync("ComboBox", LawPortal.Web.Helpers.ComboBoxHelper.AttorneyNameID("Attorney", "Attorney", "Attorney Name", "Attorney", "Shared", "", Model.EntityId, Model.EntityName, "function(e) { userSetupPage.linkEntity(e); }"))
+                            <span class="field-validation-error" style="display:none;" data-valmsg-for="Attorney"></span>
+                        </span>
+                    </li>
+                    @if (User.IsSystemEnabled(SystemType.Patent))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="HasPatent">@Localizer[$"Patent {attorneyRole.Name}"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="HasPatent" type="checkbox" checked="@Model.HasPatent" class="toggle-option is-attorney" data-system="@SystemType.Patent">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.Trademark))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="HasTrademark">@Localizer[$"Trademark {attorneyRole.Name}"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="HasTrademark" type="checkbox" checked="@Model.HasTrademark" class="toggle-option is-attorney" data-system="@SystemType.Trademark">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.GeneralMatter))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="HasGeneralMatter">@Localizer[$"General Matter {attorneyRole.Name}"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="HasGeneralMatter" type="checkbox" checked="@Model.HasGeneralMatter" class="toggle-option is-attorney" data-system="@SystemType.GeneralMatter">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (User.IsSystemEnabled(SystemType.Patent) && patSettings.IsPatentScoreOn && CPiPermissions.CanHavePatentScoreRole.Contains(Model.UserType))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Patent Score"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between patent-score">
+                        <label for="PatentScore" class="toggle-label @(Model.HasPatent ? "" : "text-muted")">@Localizer[$"Allow Patent Score update"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="PatentScore" type="checkbox" checked="@Model.IsPatentScoreModify" class="toggle-option is-patent-score-modify" data-system="@SystemType.Patent" @(Model.HasPatent ? "" : "disabled")>
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType == CPiUserType.ContactPerson)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Contact Person Account"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between">
+                        <span>@Localizer["Contact Person"]</span>
+                        <span class="link-entity" data-entity-type="@((int)CPiEntityType.ContactPerson)">
+                            @await Component.InvokeAsync("ComboBox", LawPortal.Web.Helpers.ComboBoxHelper.ContactID("Contact", "Contact", "Contact Name", "ContactPerson", "Shared", "", Model.EntityId, Model.EntityName, "function(e) { userSetupPage.linkEntity(e); }"))
+                            <span class="field-validation-error" style="display:none;" data-valmsg-for="Contact"></span>
+                        </span>
+                    </li>
+                    @if (User.IsSystemEnabled(SystemType.DMS))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactDmsReviewer">@Localizer["Invention Disclosure Reviewer"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactDmsReviewer" type="checkbox" checked="@Model.IsReviewer" class="toggle-option is-reviewer" data-save-reviewer-url="@Url.Action("SaveDMSReviewerRole", "AccountSettings", new { Area = "Admin" })">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.AMS))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactAMSDecisionMaker">@Localizer["Annuity Management Decision Maker"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactAMSDecisionMaker" type="checkbox" checked="@Model.IsAMSDecisionMaker" class="toggle-option is-decision-maker" data-system="@SystemType.AMS">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.SearchRequest))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactClearanceReviewer">@Localizer["Trademark Search Request Reviewer"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactClearanceReviewer" type="checkbox" checked="@Model.IsClearanceReviewer" class="toggle-option is-reviewer" data-save-reviewer-url="@Url.Action("SaveClearanceReviewerRole", "AccountSettings", new { Area = "Admin" })">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.PatClearance))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactPatClearanceReviewer">@Localizer["Patent Clearance Search Reviewer"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactPatClearanceReviewer" type="checkbox" checked="@Model.IsPatClearanceReviewer" class="toggle-option is-reviewer" data-save-reviewer-url="@Url.Action("SavePatClearanceReviewerRole", "AccountSettings", new { Area = "Admin" })">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.RMS))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactRMSDecisionMaker">@Localizer["Renewal Management Decision Maker"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactRMSDecisionMaker" type="checkbox" checked="@Model.IsRMSDecisionMaker" class="toggle-option is-decision-maker" data-system="@SystemType.RMS">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.ForeignFiling))
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="IsContactForeignFilingDecisionMaker">@Localizer["Foreign Filing Decision Maker"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="IsContactForeignFilingDecisionMaker" type="checkbox" checked="@Model.IsForeignFilingDecisionMaker" class="toggle-option is-decision-maker" data-system="@SystemType.ForeignFiling">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsRegularUser() && (Model.HasAMS || Model.HasDMS || Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter || Model.HasClearance || Model.HasRMS || Model.HasForeignFiling || Model.HasPatClearance))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Auxiliary Permissions"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasAMS)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Annuity Management"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("AMSAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.AMSAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.AMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatentAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.Patent}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasPatClearance)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Clearance Search"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatClearanceAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatClearanceAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.PatClearance}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasForeignFiling)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Foreign Filing"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("ForeignFilingAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.ForeignFilingAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.ForeignFiling}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasDMS)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Invention Disclosure"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("DMSAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.DMSAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.DMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("TmkAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.TrademarkAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.Trademark}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasClearance)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Search Request"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("ClearanceAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.ClearanceAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.SearchRequest}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasRMS)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Renewal Management"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("RMSAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.RMSAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.RMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("GMAuxiliaryRole").BindTo(auxiliaryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.GeneralMatterAuxiliaryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveAuxiliaryRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsRegularUser() && (Model.HasPatent || Model.HasTrademark))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Country Law"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("PatCountryLawRole")
+                                        .BindTo(countryLawRoles)
+                                        .DataValueField("Id")
+                                        .DataTextField("Name")
+                                        .Value(Model.PatentCountryLawRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveCountryLawRole(e, '{SystemType.Patent}'); }}"))
+                                        )
+                            </span>
+                        </li>                    
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("TmkCountryLawRole").BindTo(countryLawRoles).DataValueField("Id").DataTextField("Name")
+                                        .Value(Model.TrademarkCountryLawRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveCountryLawRole(e, '{SystemType.Trademark}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if ((Model.UserType.IsRegularUser() && ((Model.HasPatent && User.IsModuleEnabled(CPiModule.PatCostEstimator)) || (Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkCostEstimator))))
+        || showPatentCostEstimator || showTrademarkCostEstimator)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Cost Estimator"]</h5>
+                <ul class="list-group pb-2">
+                    @if ((Model.HasPatent && User.IsModuleEnabled(CPiModule.PatCostEstimator)) || showPatentCostEstimator)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatCostEstimatorRole")
+                                            .BindTo(costEstimatorRoles)
+                                            .DataValueField("Id")
+                                            .DataTextField("Name")
+                                            .Value(Model.PatentCostEstimatorRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveCostEstimatorRole(e, '{SystemType.Patent}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if ((Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkCostEstimator)) || showTrademarkCostEstimator)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("TmkCostEstimatorRole")
+                                            .BindTo(costEstimatorRoles)
+                                            .DataValueField("Id")
+                                            .DataTextField("Name")
+                                            .Value(Model.TrademarkCostEstimatorRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveCostEstimatorRole(e, '{SystemType.Trademark}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }                    
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsRegularUser() && (Model.HasPatent) && (isGermanRemunerationOn || isFrenchRemunerationOn))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Inventor Remuneration"]</h5>
+                <ul class="list-group pb-2">
+                    @if (isGermanRemunerationOn)
+                    {                    
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["German"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("PatGermanRemunerationRole")
+                                        .BindTo(germanRemunerationRoles)
+                                        .DataValueField("Id")
+                                        .DataTextField("Name")
+                                        .Value(Model.PatentGermanRemunerationRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveGermanRemunerationRole(e, '{SystemType.Patent}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }
+                    @if (isFrenchRemunerationOn)
+                    {                    
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["French"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("PatFrenchRemunerationRole")
+                                        .BindTo(frenchRemunerationRoles)
+                                        .DataValueField("Id")
+                                        .DataTextField("Name")
+                                        .Value(Model.PatentFrenchRemunerationRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveFrenchRemunerationRole(e, '{SystemType.Patent}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }                    
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsRegularUser() && (Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Action Type"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("PatActionTypeRole")
+                                                .BindTo(actionTypeRoles)
+                                                .DataValueField("Id")
+                                                .DataTextField("Name")
+                                                .Value(Model.PatentActionTypeRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveActionTypeRole(e, '{SystemType.Patent}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("TmkActionTypeRole").BindTo(actionTypeRoles).DataValueField("Id").DataTextField("Name")
+                                                .Value(Model.TrademarkActionTypeRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveActionTypeRole(e, '{SystemType.Trademark}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("GMActionTypeRole").BindTo(actionTypeRoles).DataValueField("Id").DataTextField("Name")
+                                                .Value(Model.GeneralMatterActionTypeRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveActionTypeRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="card">
+                <h5 class="">@Localizer["Letter Generation"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("PatLetterRole")
+                                                .BindTo(letterRoles)
+                                                .DataValueField("Id")
+                                                .DataTextField("Name")
+                                                .Value(Model.PatentLetterRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveLetterRole(e, '{SystemType.Patent}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("TmkLetterRole").BindTo(letterRoles).DataValueField("Id").DataTextField("Name")
+                                                .Value(Model.TrademarkLetterRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveLetterRole(e, '{SystemType.Trademark}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                                .Name("GMLetterRole").BindTo(letterRoles).DataValueField("Id").DataTextField("Name")
+                                                .Value(Model.GeneralMatterLetterRole)
+                                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveLetterRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                                )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType == CPiUserType.User && (Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter || Model.HasAMS))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Custom Query"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("PatCustomQueryRole").BindTo(customQueryRoles).DataValueField("Id").DataTextField("Name")
+                                        .Value(Model.PatentCustomQueryRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveCustomQueryRole(e, '{SystemType.Patent}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("TmkCustomQueryRole").BindTo(customQueryRoles).DataValueField("Id").DataTextField("Name")
+                                        .Value(Model.TrademarkCustomQueryRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveCustomQueryRole(e, '{SystemType.Trademark}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                        .Name("GMCustomQueryRole").BindTo(customQueryRoles).DataValueField("Id").DataTextField("Name")
+                                        .Value(Model.GeneralMatterCustomQueryRole)
+                                        .Events(e => e.Change($"function (e) {{ userSetupPage.saveCustomQueryRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                        )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasAMS)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["AMS"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("AMSCustomQueryRole").BindTo(customQueryRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.AMSCustomQueryRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveCustomQueryRole(e, '{SystemType.AMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType == CPiUserType.User && (Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter ||
+                                                  Model.HasDMS || Model.HasPatClearance || Model.HasClearance))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Manage Workflow"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatentWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.Patent}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("TmkWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.TrademarkWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.Trademark}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("GMWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.GeneralMatterWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasDMS)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["DMS"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("DMSWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.DMSWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.DMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasPatClearance)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Clearance Search"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatClearanceWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatClearanceWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.PatClearance}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasClearance)
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Search Request"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("ClearanceWorkflowRole").BindTo(workflowRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.ClearanceWorkflowRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveWorkflowRole(e, '{SystemType.SearchRequest}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsInternalUser() && (
+           (Model.HasPatent && User.IsModuleEnabled(CPiModule.PatProducts)) ||
+           (!User.IsAMSIntegrated() && Model.HasAMS && User.IsModuleEnabled(CPiModule.AMSProducts)) ||
+           (Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkProducts)) ||
+           (Model.HasGeneralMatter && User.IsModuleEnabled(CPiModule.GMProducts))))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Products Management"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent && User.IsModuleEnabled(CPiModule.PatProducts))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatProductsRole").BindTo(productsRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatentProductsRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveProductsRole(e, '{SystemType.Patent}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @* AMS STAND ALONE ONLY. USE PATENT PRODUCTS ROLE IF INTEGRATED.*@
+                    @if (!User.IsAMSIntegrated() && Model.HasAMS && User.IsModuleEnabled(CPiModule.AMSProducts))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["AMS"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("AMSProductsRole").BindTo(productsRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.AMSProductsRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveProductsRole(e, '{SystemType.AMS}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkProducts))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("TmkProductsRole").BindTo(productsRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.TrademarkProductsRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveProductsRole(e, '{SystemType.Trademark}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter && User.IsModuleEnabled(CPiModule.GMProducts))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("GMProductsRole").BindTo(productsRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.GeneralMatterProductsRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveProductsRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.UserType.IsInternalUser() && (
+        (Model.HasPatent && User.IsModuleEnabled(CPiModule.PatDocumentVerification)) ||
+        (Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkDocumentVerification)) ||
+        (Model.HasGeneralMatter && User.IsModuleEnabled(CPiModule.GMDocumentVerification))))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Document Verification"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent && User.IsModuleEnabled(CPiModule.PatDocumentVerification))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Patent"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("PatDocumentVerification").BindTo(documentVerificationRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.PatentDocumentVerificationRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveDocumentVerificationRole(e, '{SystemType.Patent}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark && User.IsModuleEnabled(CPiModule.TmkDocumentVerification))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["Trademark"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("TmkDocumentVerificationRole").BindTo(documentVerificationRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.TrademarkDocumentVerificationRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveDocumentVerificationRole(e, '{SystemType.Trademark}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasGeneralMatter && User.IsModuleEnabled(CPiModule.GMDocumentVerification))
+                    {
+                        <li class="d-flex justify-content-between pb-1">
+                            <span>@Localizer["General Matter"]</span>
+                            <span>
+                                @(Html.Kendo().DropDownList().AutoWidth(true)
+                                            .Name("GMDocumentVerificationRole").BindTo(documentVerificationRoles).DataValueField("Id").DataTextField("Name")
+                                            .Value(Model.GeneralMatterDocumentVerificationRole)
+                                            .Events(e => e.Change($"function (e) {{ userSetupPage.saveDocumentVerificationRole(e, '{SystemType.GeneralMatter}'); }}"))
+                                            )
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="card">
+            <h5 class="">@Localizer["Documents"]</h5>
+            <ul class="list-group pb-2">
+                <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                    <label for="RestrictPrivateDocuments">@Localizer["Restrict access to private documents"]</label>
+                    <span>
+                        <label class="toggle-switch">
+                            <input id="RestrictPrivateDocuments" type="checkbox" checked="@Model.Settings.RestrictPrivateDocuments" data-setting="RestrictPrivateDocuments" class="toggle-option">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                </li>
+                @if (Model.CanHavePatentUploadRole || Model.CanHaveTrademarkUploadRole || Model.CanHaveGeneralMatterUploadRole)
+                {
+                    @if (Model.CanHavePatentUploadRole)
+                    {
+                        <li class="d-flex justify-content-between upload patent">
+                            <label for="CanUploadPatent" class="toggle-label @(Model.HasPatent ? "" : "text-muted")">@Localizer["Allow Patent upload"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="CanUploadPatent" type="checkbox" checked="@Model.CanUploadPatent" class="toggle-option can-upload" data-system="@SystemType.Patent" @(Model.HasPatent ? "" : "disabled")>
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (Model.CanHaveTrademarkUploadRole)
+                    {
+                        <li class="d-flex justify-content-between upload trademark">
+                            <label for="CanUploadTrademark" class="toggle-label @(Model.HasTrademark ? "" : "text-muted")">@Localizer["Allow Trademark upload"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="CanUploadTrademark" type="checkbox" checked="@Model.CanUploadTrademark" class="toggle-option can-upload" data-system="@SystemType.Trademark" @(Model.HasTrademark ? "" : "disabled")>
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (Model.CanHaveGeneralMatterUploadRole)
+                    {
+                        <li class="d-flex justify-content-between upload generalmatter">
+                            <label for="CanUploadGeneralMatter" class="toggle-label @(Model.HasGeneralMatter ? "" : "text-muted")">@Localizer["Allow General Matter upload"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="CanUploadGeneralMatter" type="checkbox" checked="@Model.CanUploadGeneralMatter" class="toggle-option can-upload" data-system="@SystemType.GeneralMatter" @(Model.HasGeneralMatter ? "" : "disabled")>
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+
+        @if ((Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter) && isSoftDocketOn && CPiPermissions.CanHaveSoftDocketRole.Contains(Model.UserType))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Soft Docket"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent && patSettings.IsSoftDocketOn)
+                    {
+                        <li class="d-flex justify-content-between soft-docket">
+                            <label for="SoftDocketPatent" class="toggle-label">@Localizer[$"Allow Patent Soft Docket"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="SoftDocketPatent" type="checkbox" checked="@Model.IsPatentSoftDocket" class="toggle-option is-soft-docket" data-system="@SystemType.Patent">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark && defaultSettings.IsSoftDocketOn)
+                    {
+                        <li class="d-flex justify-content-between soft-docket">
+                            <label for="SoftDocketTrademark" class="toggle-label">@Localizer[$"Allow Trademark Soft Docket"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="SoftDocketTrademark" type="checkbox" checked="@Model.IsTrademarkSoftDocket" class="toggle-option is-soft-docket" data-system="@SystemType.Trademark">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if ((Model.HasPatent || Model.HasTrademark || Model.HasGeneralMatter) && isRequestDocketOn && CPiPermissions.CanHaveRequestDocketRole.Contains(Model.UserType))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Request Docket"]</h5>
+                <ul class="list-group pb-2">
+                    @if (Model.HasPatent && patSettings.IsDocketRequestOn)
+                    {
+                        <li class="d-flex justify-content-between request-docket">
+                            <label for="RequestDocketPatent" class="toggle-label">@Localizer[$"Allow Patent Docket Request"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="RequestDocketPatent" type="checkbox" checked="@Model.IsPatentRequestDocket" class="toggle-option is-request-docket" data-system="@SystemType.Patent">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasTrademark && defaultSettings.IsDocketRequestOn)
+                    {
+                        <li class="d-flex justify-content-between request-docket">
+                            <label for="RequestDocketTrademark" class="toggle-label">@Localizer[$"Allow Trademark Docket Request"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="RequestDocketTrademark" type="checkbox" checked="@Model.IsTrademarkRequestDocket" class="toggle-option is-request-docket" data-system="@SystemType.Trademark">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if(patSettings.IsExportControlOn && Model.HasPatent) 
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Export Control"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                        <label for="RestrictExportControl">@Localizer["Restrict access to export control records"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="RestrictExportControl" type="checkbox" checked="@Model.Settings.RestrictExportControl" data-setting="RestrictExportControl" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+
+        @if (Model.HasPatent || showPatTradeSecretSetting || showPatTradeSecretReportsSetting)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Access Control"]</h5>
+                <ul class="list-group pb-2">
+                    @if (showPatTradeSecretSetting)
+                    {
+                        <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                            <label for="RestrictPatTradeSecret">@Localizer["Restrict access to Patent trade secret"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="RestrictPatTradeSecret" type="checkbox" checked="@Model.Settings.RestrictPatTradeSecret" data-setting="RestrictPatTradeSecret" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (showPatTradeSecretReportsSetting)
+                    {
+                        <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                            <label for="RestrictPatTradeSecretReports">@Localizer["Restrict access to Patent trade secret reports"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="RestrictPatTradeSecretReports" type="checkbox" checked="@Model.Settings.RestrictPatTradeSecretReports" data-setting="RestrictPatTradeSecretReports" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (Model.HasPatent)
+                    {
+                        <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                            <label for="RestrictInventorInfo">@Localizer["Restrict access to inventor information"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="RestrictInventorInfo" type="checkbox" checked="@Model.Settings.RestrictInventorInfo" data-setting="RestrictInventorInfo" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (isPatModify || isTmkModify || isGMModify) 
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Actions"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                        <label for="RestrictAdhocActions">@Localizer["Restrict adding adhoc actions"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="RestrictAdhocActions" type="checkbox" checked="@Model.Settings.RestrictAdhocActions" data-setting="RestrictAdhocActions" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+
+        @if ((Model.UserType == CPiUserType.User || Model.IsAdmin) && (
+             (User.IsSystemEnabled(SystemType.AMS) && Model.CanReceiveAMSNotifications) ||
+             (User.IsSystemEnabled(SystemType.RMS) && Model.CanReceiveRMSNotifications) ||
+             (User.IsSystemEnabled(SystemType.ForeignFiling) && Model.CanReceiveFFNotifications) ||
+             ((User.IsModuleEnabled(CPiModule.PatDeDocket) || User.IsModuleEnabled(CPiModule.TmkDeDocket) || User.IsModuleEnabled(CPiModule.GMDeDocket)) && Model.CanReceiveDeDocketNotifications)))
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Receive instruction notification"]</h5>
+                <ul class="list-group user-settings" data-group="@CPiSettings.UserNotificationSettings">
+                    @if (User.IsSystemEnabled(SystemType.AMS) && Model.CanReceiveAMSNotifications)
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="ReceiveAMSInstructionNotification">@Localizer["Annuity Management"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="ReceiveAMSInstructionNotification" type="checkbox" checked="@Model.NotificationSettings.ReceiveAMSInstructionNotification" data-setting="ReceiveAMSInstructionNotification" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.ForeignFiling) && Model.CanReceiveFFNotifications)
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="ReceiveFFInstructionNotification">@Localizer["Foreign Filing"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="ReceiveFFInstructionNotification" type="checkbox" checked="@Model.NotificationSettings.ReceiveFFInstructionNotification" data-setting="ReceiveFFInstructionNotification" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if (User.IsSystemEnabled(SystemType.RMS) && Model.CanReceiveRMSNotifications)
+                    {
+                        <li class="d-flex justify-content-between">
+                            <label for="ReceiveRMSInstructionNotification">@Localizer["Renewal Management"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="ReceiveRMSInstructionNotification" type="checkbox" checked="@Model.NotificationSettings.ReceiveRMSInstructionNotification" data-setting="ReceiveRMSInstructionNotification" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                    @if ((User.IsModuleEnabled(CPiModule.PatDeDocket) || User.IsModuleEnabled(CPiModule.TmkDeDocket) || User.IsModuleEnabled(CPiModule.GMDeDocket)) && Model.CanReceiveDeDocketNotifications)
+                   {
+                        <li class="d-flex justify-content-between">
+                            <label for="ReceiveDeDocketInstructionNotification">@Localizer["DeDocket Instructions"]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="ReceiveDeDocketInstructionNotification" type="checkbox" checked="@Model.NotificationSettings.ReceiveDeDocketInstructionNotification" data-setting="ReceiveDeDocketInstructionNotification" class="toggle-option">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                   }
+                </ul>
+            </div>
+        }
+        @* Mailbox section removed during debloat (GraphSettings no longer available) *@
+        @if (Model.IsAdmin)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Administration"]</h5>
+                <ul class="list-group user-settings" data-group="@CPiSettings.UserNotificationSettings">
+                    <li class="d-flex justify-content-between">
+                        <label for="ReceivePendingRegistrationNotification">@Localizer["Receive pending registration notification"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="ReceivePendingRegistrationNotification" type="checkbox" checked="@Model.NotificationSettings.ReceivePendingRegistrationNotification" data-setting="ReceivePendingRegistrationNotification" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                        <label for="ReceiveTaskSchedulerNotification">@Localizer["Receive Task Scheduler error notification"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="ReceiveTaskSchedulerNotification" type="checkbox" checked="@Model.NotificationSettings.ReceiveTaskSchedulerNotification" data-setting="ReceiveTaskSchedulerNotification" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+        @if (dashboardAccess.Any())
+        {
+            <div class="card">
+                <h5 class="">@Localizer["Dashboard"]</h5>
+                <ul class="list-group">
+                    @foreach (var system in dashboardAccess)
+                    {
+                        var elId = $"CanAccess{system.Key}Dashboard";
+                        <li class="d-flex justify-content-between">
+                            <label for="@elId">@Localizer[system.Value]</label>
+                            <span>
+                                <label class="toggle-switch">
+                                    <input id="@elId" type="checkbox" checked="@Model.Settings.DashboardAccess.Contains(system.Key)" class="toggle-option dashboard-access" data-system="@system.Key">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+        @if (showDocumentStorageSettings)
+        {
+            <div class="card">
+                <h5 class="">@Localizer[patSettings.DocumentStorage.GetDisplayName()]</h5>
+                <ul class="list-group">
+                    <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                        <span>@Localizer["Account type"]</span>
+                        <span>
+                            @(Html.Kendo().DropDownList().AutoWidth(true)
+                                .Name("DocumentStorageAccountType")
+                                .BindTo(Html.GetEnumSelectList<DocumentStorageAccountType>())
+                                .DataValueField("Value").DataTextField("Text")
+                                .Value(((int)(Model.Settings.DocumentStorageAccountType)).ToString())
+                                .HtmlAttributes(new { @data_setting = "DocumentStorageAccountType" })
+                                .Events(e => e.Change($"function (e) {{ userSetupPage.saveDocumentStorageAccountType(e); }}"))
+                                )
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+        @if (Model.HasPatent && (Model.UserType == CPiUserType.User || Model.IsAdmin) && epoMailboxSettings.IsAPIOn)
+        {
+            <div class="card">
+                <h5 class="">@Localizer["MyEPO"]</h5>
+                <ul class="list-group pb-2">
+                    <li class="d-flex justify-content-between user-settings" data-group="@CPiSettings.UserAccountSettings">
+                        <label for="AllowHandleMyEPOCommunications">@Localizer["Allow to handle MyEPO communications"]</label>
+                        <span>
+                            <label class="toggle-switch">
+                                <input id="AllowHandleMyEPOCommunications" type="checkbox" checked="@Model.Settings.AllowHandleMyEPOCommunications" data-setting="AllowHandleMyEPOCommunications" class="toggle-option">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        }
+    </div>
+</form>
+<style>    
+    @@media (max-width: 991px) {
+        .settings.card-columns {
+            column-count: 1;
+        }
+    }
+    @@media (min-width: 992px) {
+        .settings.card-columns {
+            column-count: 2;
+        }
+    }
+    @@media (min-width: 1200px) {
+        .settings.card-columns {
+            column-count: 3;
+        }
+    }
+    .settings.card-columns .card {
+        border: none;
+    }
+</style>
+<script>
+    $(document).ready(function () {
+        $("#AccountSettings .user-settings .toggle-option").on("click", function (e) {
+            userSetupPage.saveSetting($(this));
+        });
+        $("#AccountSettings .is-reviewer").on("click", function (e) {
+            userSetupPage.saveReviewerRole($(this));
+        });
+        $("#AccountSettings .is-previewer").on("click", function (e) {
+            userSetupPage.savePreviewerRole($(this));
+        });
+        $("#AccountSettings .is-decision-maker").on("click", function (e) {
+            userSetupPage.saveDecisionMakerRole($(this));
+        });
+        $("#AccountSettings .is-attorney").on("click", function (e) {
+            userSetupPage.saveAttorneyRole($(this));
+        });
+        $("#AccountSettings .is-soft-docket").on("click", function (e) {
+            userSetupPage.saveSoftDocketRole($(this));
+        });
+        $("#AccountSettings .is-request-docket").on("click", function (e) {
+            userSetupPage.saveRequestDocketRole($(this));
+        });
+        $("#AccountSettings .can-upload").on("click", function (e) {
+            userSetupPage.saveUploadRole($(this));
+        });
+        $("#AccountSettings .is-inventor").on("click", function (e) {
+            userSetupPage.saveInventorRole($(this));
+        });
+        $("#AccountSettings .is-patent-score-modify").on("click", function (e) {
+            userSetupPage.savePatentScoreRole($(this));
+        });
+        $("#AccountSettings .has-mails").on("click", function (e) {
+            userSetupPage.saveMailsRole($(this));
+        });
+        $("#AccountSettings .dashboard-access").on("click", function (e) {
+            userSetupPage.saveDashboardAccess($(this));
+        });
+        $("#AccountSettings .mailbox").on("click", function (e) {
+            userSetupPage.saveMailboxAccess($(this));
+        });
+    });
+
+    function refreshRecordStamp(el) {
+        console.log("refreshRecordStamp", el);
+        userSetupPage.updateRecordStamps();
+        return true;
+    }
+</script>

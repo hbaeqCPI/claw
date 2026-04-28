@@ -1,0 +1,17 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using LawPortal.Core.Entities.Trademark;
+
+namespace LawPortal.Infrastructure.Data.Trademark.mappings
+{
+    public class TmkDesCaseTypeExtMap : IEntityTypeConfiguration<TmkDesCaseTypeExt>
+    {
+        public void Configure(EntityTypeBuilder<TmkDesCaseTypeExt> builder)
+        {
+            builder.ToTable("tblTmkDesCaseType_Ext");
+            builder.HasKey(e => new { e.IntlCode, e.CaseType, e.DesCountry, e.DesCaseType, e.Systems });
+            builder.Ignore(e => e.IsNewRecord);
+            builder.Ignore(e => e.OriginalSystems);
+        }
+    }
+}

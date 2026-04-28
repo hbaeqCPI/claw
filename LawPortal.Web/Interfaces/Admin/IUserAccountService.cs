@@ -1,0 +1,53 @@
+﻿using Microsoft.AspNetCore.Identity;
+using LawPortal.Core.Entities;
+using LawPortal.Core.Identity;
+using LawPortal.Web.Areas.Admin.ViewModels;
+using LawPortal.Web.Areas.Shared.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace LawPortal.Web.Interfaces
+{
+    public interface IUserAccountService
+    {
+        /// <summary>
+        /// Creates new DecisionMaker user if account does not exists.
+        /// </summary>
+        /// <param name="userType"></param>
+        /// <param name="systemType"></param>
+        /// <param name="email"></param>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <param name="contactId"></param>
+        /// <param name="requireChangePassword"></param>
+        /// <returns>New password if new user account was created, otherwise empty string.</returns>
+        Task<string> CreateDecisionMakerUser(CPiUserType userType, string systemType, string email, string firstName, string lastName, int contactId, bool requireChangePassword);
+
+        Task<string> GetDefaultNewPasswordNotification(bool requireChangePassword);
+
+        Task<RegisterClientResult> RegisterOutlookAddInClient(string email);
+
+        Task<bool> DeleteOutlookAddInClient(string clientId);
+
+        Task LinkUserAccount(CPiUser user);
+
+        Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail model);
+
+        Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification model);
+
+        Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration model);
+
+        Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification model);
+    }
+
+    /// <summary>
+    /// Stub for RegisterClientResult (originally in LawPortal.Web.Services.EmailAddIn, removed during debloat)
+    /// </summary>
+    public class RegisterClientResult
+    {
+        public bool Success { get; set; }
+        public Tuple<string, string> ClientIdSecret { get; set; }
+    }
+}
