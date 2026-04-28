@@ -29,6 +29,11 @@ namespace LawPortal.Web.Services
         // tables share one break instead of each forcing their own page.
         private bool _orphanBreakAdded;
 
+        // R8+ reports drop "and Tax" from the expiration-section headers
+        // ("Expiration Terms Added" instead of "Expiration and Tax Terms Added").
+        // Detected from the release name in GenerateReport.
+        private bool _isR8Plus;
+
         public byte[] GenerateReport(MdbComparisonResult comp, string name, string year, string qtr,
             Dictionary<string, string>? cn = null, Dictionary<string, string>? ctd = null,
             string? reportNotes = null)
@@ -36,6 +41,7 @@ namespace LawPortal.Web.Services
             _cn = cn ?? new();
             _ctd = ctd ?? new();
             _orphanBreakAdded = false;
+            _isR8Plus = IsR8PlusName(name);
 
             using var ms = new MemoryStream();
             using var w = new PdfWriter(ms);
@@ -348,7 +354,12 @@ namespace LawPortal.Web.Services
             // focuses on the Action Type metadata itself (header, remarks, follow-up).
             // Per-country due-date changes appear under Country Law > Law Actions.
 
-            // Remarks (with inline line-diff for modified action types)
+            // Order: Action Parameters → Remarks → Follow-Up. Clients care most
+            // about the deadline parameters; the prose remarks come after.
+            // Action Parameter diffs for THIS action type (matched by ActionTypeID).
+            WriteActionParameterSubTable(doc, at, comp, paramT, mode);
+
+            // Remarks (with inline word-diff for modified action types)
             var remarks = G(at, "Remarks");
             if (!string.IsNullOrWhiteSpace(remarks))
             {
@@ -358,7 +369,7 @@ namespace LawPortal.Web.Services
                     .SetBorder(Border.NO_BORDER).SetTextAlignment(TextAlignment.RIGHT).SetPaddingRight(4));
                 var remCell = new Cell().SetBorder(Border.NO_BORDER);
                 if (isNew)
-                    remCell.Add(P(9).Add(T(remarks, _r, 9).SetBackgroundColor(Yellow)));
+                    remCell.Add(P(9).Add(T(remarks, _r, 9).SetBackgroundColor(Yellow).SetUnderline()));
                 else if (isDel)
                     remCell.Add(P(9).Add(T(remarks, _r, 9).SetLineThrough()));
                 else if (at.OldValues != null && at.ChangedColumns.Contains("Remarks"))
@@ -387,11 +398,6 @@ namespace LawPortal.Web.Services
                 doc.Add(P(9).SetMarginLeft(50)
                     .Add(T($"Follow Up Based On: {FollowUpGenLabel(fuGen)}", _r, 9)));
             }
-
-            // Action Parameter diffs for THIS action type (matched by ActionTypeID).
-            // Orphan parameter changes (parent ActionType unchanged) are never shown —
-            // they simply don't appear in the report.
-            WriteActionParameterSubTable(doc, at, comp, paramT, mode);
 
             HL(doc, 0.3f);
         }
@@ -771,16 +777,17 @@ namespace LawPortal.Web.Services
                 var ed = comp.TableDiffs[expT];
                 var added = ed.AddedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
                 var modified = ed.ModifiedRows.Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
+                var hdrPrefix = _isR8Plus ? "Expiration Terms" : "Expiration and Tax Terms";
                 if (added.Any())
                 {
                     doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
-                        .Add(T("Expiration and Tax Terms Added", _b, 10)));
+                        .Add(T($"{hdrPrefix} Added", _b, 10)));
                     WriteExpTable(doc, added, mode: "add");
                 }
                 if (modified.Any())
                 {
                     doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
-                        .Add(T("Expiration and Tax Terms Modified", _b, 10)));
+                        .Add(T($"{hdrPrefix} Modified", _b, 10)));
                     WriteExpTable(doc, modified, mode: "mod");
                 }
             }
@@ -790,8 +797,9 @@ namespace LawPortal.Web.Services
                     .Where(r => G(r, "Country") == country && G(r, "CaseType") == caseType).ToList();
                 if (del.Any())
                 {
+                    var hdrPrefix = _isR8Plus ? "Expiration Terms" : "Expiration and Tax Terms";
                     doc.Add(P(10).SetFont(_b).SetUnderline().SetMarginTop(6)
-                        .Add(T("Expiration and Tax Terms Deleted", _b, 10)));
+                        .Add(T($"{hdrPrefix} Deleted", _b, 10)));
                     WriteExpTable(doc, del, mode: "del");
                 }
             }
@@ -831,7 +839,7 @@ namespace LawPortal.Web.Services
                     if (isNewBlock || clRow.OldValues == null || !clRow.ChangedColumns.Contains("Remarks"))
                     {
                         var rP = P(9).SetMarginLeft(20).SetMarginTop(3);
-                        if (isNewBlock) rP.Add(T(remarks, _r, 9).SetBackgroundColor(Yellow));
+                        if (isNewBlock) rP.Add(T(remarks, _r, 9).SetBackgroundColor(Yellow).SetUnderline());
                         else rP.Add(T(remarks, _r, 9));
                         doc.Add(rP);
                     }
@@ -1001,10 +1009,14 @@ namespace LawPortal.Web.Services
             if (!orphanAdd.Any() && !orphanMod.Any() && !orphanDel.Any()) return;
 
             EnsureOrphanBreak(doc);
+            var orphanHdr = _isR8Plus ? "Other Expiration Term Changes" : "Other Expiration and Tax Term Changes";
+            var orphanSub = _isR8Plus
+                ? "The following expiration term changes have no corresponding Law Highlights changes."
+                : "The following expiration / tax term changes have no corresponding Law Highlights changes.";
             doc.Add(P(12).SetFont(_b).SetUnderline().SetMarginTop(14)
-                .Add(T("Other Expiration and Tax Term Changes", _b, 12)));
+                .Add(T(orphanHdr, _b, 12)));
             doc.Add(P(9).SetMarginTop(4)
-                .Add(T("The following expiration / tax term changes have no corresponding Law Highlights changes.", _r, 9)));
+                .Add(T(orphanSub, _r, 9)));
 
             var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 15, 8, 12, 12, 10, 12, 11, 11 }))
                 .UseAllAvailableWidth().SetMarginTop(6).SetFontSize(8);
@@ -1078,7 +1090,8 @@ namespace LawPortal.Web.Services
             foreach (var seg in WordDiffSegments(oldText, newText))
             {
                 var t = T(seg.text, _r, 9);
-                if (seg.changed) t.SetBackgroundColor(Yellow);
+                // Yellow + underline so the change still reads on grayscale prints.
+                if (seg.changed) t.SetBackgroundColor(Yellow).SetUnderline();
                 p.Add(t);
             }
             return p;
@@ -1168,6 +1181,20 @@ namespace LawPortal.Web.Services
             }
             if (sb.Length > 0) segments.Add((sb.ToString(), state == true));
             return segments;
+        }
+
+        // True if the release name targets only R8+ systems. We scan for "R<n>"
+        // tokens and require every n found to be ≥ 8. Mixed-tier names like
+        // "TmkR4-R8" or "Pat2000" return false so they keep the legacy
+        // "Expiration and Tax Terms" wording.
+        private static bool IsR8PlusName(string? name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            var matches = System.Text.RegularExpressions.Regex.Matches(name, @"R(\d+)");
+            if (matches.Count == 0) return false;
+            foreach (System.Text.RegularExpressions.Match m in matches)
+                if (!int.TryParse(m.Groups[1].Value, out var n) || n < 8) return false;
+            return true;
         }
 
         // Split into tokens that are either a run of whitespace (incl. newlines)

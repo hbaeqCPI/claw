@@ -60,9 +60,15 @@ namespace LawPortal.Web.Services
             ["tblTmkStandardGood"] = new[] { "Class", "ClassType" },
             // Patent tables
             ["tblPatCountryLaw"] = new[] { "Country", "CaseType" },
-            ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn" },
-            ["tblPatCountryExp"] = new[] { "Country", "CaseType", "Type", "BasedOn" },
-            ["tblPatCountryExpDelete"] = new[] { "Country", "CaseType", "Type", "BasedOn" },
+            // CountryDue can hold multiple rows for the same (Country, CaseType,
+            // ActionType, ActionDue, BasedOn) when a deadline is being phased
+            // in/out — old rule effective until date X, new rule effective from
+            // date Y. Include EffStartDate/EffEndDate in the key so both rows
+            // survive the diff instead of collapsing into one. Same logic for
+            // CountryExp.
+            ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "EffStartDate", "EffEndDate" },
+            ["tblPatCountryExp"] = new[] { "Country", "CaseType", "Type", "BasedOn", "EffStartDate", "EffEndDate" },
+            ["tblPatCountryExpDelete"] = new[] { "Country", "CaseType", "Type", "BasedOn", "EffStartDate", "EffEndDate" },
             ["tblPatDesCaseType"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
             ["tblPatArea"] = new[] { "Area" },
             ["tblPatAreaCountry"] = new[] { "Area", "Country" },
@@ -81,7 +87,7 @@ namespace LawPortal.Web.Services
             ["tblPatDesCaseTypeFieldsDelete_Ext"] = new[] { "DesCaseType", "FromField" },
             // Trademark tables
             ["tblTmkCountryLaw"] = new[] { "Country", "CaseType" },
-            ["tblTmkCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn" },
+            ["tblTmkCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "BasedOn", "EffStartDate", "EffEndDate" },
             ["tblTmkDesCaseType"] = new[] { "IntlCode", "CaseType", "DesCountry", "DesCaseType" },
             ["tblTmkArea"] = new[] { "Area" },
             ["tblTmkAreaCountry"] = new[] { "Area", "Country" },
