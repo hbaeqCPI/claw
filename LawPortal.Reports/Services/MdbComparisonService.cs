@@ -119,10 +119,30 @@ namespace LawPortal.Reports.Services
         public MdbComparisonService(string webRootPath, ILogger<MdbComparisonService> logger)
         {
             _logger = logger;
-            var webRoot = new DirectoryInfo(webRootPath);
-            var solutionRoot = webRoot.Parent?.Parent;
-            // Single merged LawPortal.Mdb.exe — invoke with the "read" subcommand.
-            _mdbReaderPath = Path.Combine(solutionRoot?.FullName ?? "", "LawPortal.Mdb", "bin", "Debug", "net8.0", "LawPortal.Mdb.exe");
+            _mdbReaderPath = ResolveMdbExePath(webRootPath);
+        }
+
+        // Resolve LawPortal.Mdb.exe location.
+        // Production/staging: <deployFolder>\mdbservice\LawPortal.Mdb.exe
+        //   (deployFolder = parent of wwwroot static-files folder, where LawPortal.Web.dll lives)
+        // Dev fallback:     <solutionRoot>\LawPortal.Mdb\bin\{Debug|Release}\net8.0\LawPortal.Mdb.exe
+        private static string ResolveMdbExePath(string webRootPath)
+        {
+            var deployFolder = new DirectoryInfo(webRootPath).Parent?.FullName ?? webRootPath;
+            var deployed = Path.Combine(deployFolder, "mdbservice", "LawPortal.Mdb.exe");
+            if (File.Exists(deployed)) return deployed;
+
+            var solutionRoot = new DirectoryInfo(webRootPath).Parent?.Parent?.FullName;
+            if (solutionRoot != null)
+            {
+                foreach (var cfg in new[] { "Debug", "Release" })
+                {
+                    var dev = Path.Combine(solutionRoot, "LawPortal.Mdb", "bin", cfg, "net8.0", "LawPortal.Mdb.exe");
+                    if (File.Exists(dev)) return dev;
+                }
+            }
+
+            return deployed;
         }
 
         public async Task<MdbComparisonResult> CompareMdbFiles(string currentMdbPath, string oldMdbPath)

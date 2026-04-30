@@ -23,14 +23,30 @@ namespace LawPortal.Reports.Services
             _templatePath = Path.Combine(webRootPath, "templates", "blank_template.mdb");
             _logger = logger;
 
-            // Find the merged LawPortal.Mdb.exe in solution's build output (we invoke
-            // with the "generate" subcommand below).
-            var webRoot = new DirectoryInfo(webRootPath);
-            var solutionRoot = webRoot.Parent; // LawPortal.Web
-            if (solutionRoot?.Parent != null)
-                solutionRoot = solutionRoot.Parent; // solution root
+            _generatorExePath = ResolveMdbExePath(webRootPath);
+        }
 
-            _generatorExePath = Path.Combine(solutionRoot?.FullName ?? "", "LawPortal.Mdb", "bin", "Debug", "net8.0", "LawPortal.Mdb.exe");
+        // Resolve LawPortal.Mdb.exe location.
+        // Production/staging: <deployFolder>\mdbservice\LawPortal.Mdb.exe
+        //   (deployFolder = parent of wwwroot static-files folder, where LawPortal.Web.dll lives)
+        // Dev fallback:     <solutionRoot>\LawPortal.Mdb\bin\{Debug|Release}\net8.0\LawPortal.Mdb.exe
+        private static string ResolveMdbExePath(string webRootPath)
+        {
+            var deployFolder = new DirectoryInfo(webRootPath).Parent?.FullName ?? webRootPath;
+            var deployed = Path.Combine(deployFolder, "mdbservice", "LawPortal.Mdb.exe");
+            if (File.Exists(deployed)) return deployed;
+
+            var solutionRoot = new DirectoryInfo(webRootPath).Parent?.Parent?.FullName;
+            if (solutionRoot != null)
+            {
+                foreach (var cfg in new[] { "Debug", "Release" })
+                {
+                    var dev = Path.Combine(solutionRoot, "LawPortal.Mdb", "bin", cfg, "net8.0", "LawPortal.Mdb.exe");
+                    if (File.Exists(dev)) return dev;
+                }
+            }
+
+            return deployed;
         }
 
         public async Task<List<string>> GenerateMdbFiles(string systems, bool generatePatent, bool generateTrademark, string outputFolder, string releaseName = "")

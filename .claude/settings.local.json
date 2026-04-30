@@ -115,7 +115,15 @@
       "Bash(grep -v \"\\\\.rdl$\")",
       "Bash(grep -E \"csproj$|^/\")",
       "Bash(dotnet sln *)",
-      "Bash(grep -rn \"country field is required\\\\|Country.*Required\\\\|\\\\\\\\[Required\\\\\\\\].*Country\" --include=\"*.cs\" LawPortal.Web LawPortal.Core)"
+      "Bash(grep -rn \"country field is required\\\\|Country.*Required\\\\|\\\\\\\\[Required\\\\\\\\].*Country\" --include=\"*.cs\" LawPortal.Web LawPortal.Core)",
+      "Bash(grep -E \"rptproj$|\\\\.rds$\")",
+      "Bash(curl -sS -I -m 15 https://lawportal-staging.cpisystems.com/)",
+      "Bash(curl -sS -m 15 https://lawportal-staging.cpisystems.com/)",
+      "Read(//d/Projects/Claw/Staging - 04302026/wwwroot/**)",
+      "Bash(xargs -I{} cat {})",
+      "Bash(git checkout *)",
+      "Bash(mv \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Documents/\"*.mdb \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Searchable/Documents/\")",
+      "Bash(mv \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Documents/\"*.pdf \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Searchable/Documents/\")"
     ]
   }
 }

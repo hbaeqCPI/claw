@@ -29,7 +29,7 @@ namespace LawPortal.Web.Helpers
 
         public string GetDocumentBasePath()
         {
-            return Path.Combine(_environment.ContentRootPath, "UserFiles", "Documents");
+            return Path.Combine(_environment.ContentRootPath, "UserFiles", "Searchable", "Documents");
         }
 
         public string GetDocumentPath(string docFileName)
