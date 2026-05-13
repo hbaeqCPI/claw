@@ -272,6 +272,24 @@ $(document).on("keyup", ".k-multiselect input", function (evt) {
     commitMultiSelectCustomValue(widget, newValue);
 });
 
+// Kendo MultiSelect's _inputBlur overwrites the visible input with its
+// placeholder (which is " " in our component setup), so by the time the
+// form submits the typed text is gone. Track every keystroke onto the
+// underlying <select> as a data attribute so the submit handler can
+// recover the text even after blur has wiped the input.
+$(document).on("input keyup", ".k-multiselect input", function () {
+    const $input = $(this);
+    const widget = findMultiSelectWidget($input);
+    if (!widget) return;
+    const $select = $(widget.element);
+    const val = ($input.val() || "").trim();
+    if (val) {
+        $select.attr("data-pending-text", val);
+    } else {
+        $select.removeAttr("data-pending-text");
+    }
+});
+
 // Legacy named export kept for the DataBound wiring in older bundles —
 // it just delegates to the same commit logic.
 const attachMultiSelectCustomValue = function (e) {
@@ -336,17 +354,23 @@ const formDataToCriteriaList = function (form) {
         });
     }
 
-    // Capture wildcard text typed into MultiSelect inputs that wasn't committed as a chip
+    // Capture wildcard text typed into MultiSelect inputs that wasn't committed as a chip.
+    // Reads from the data-pending-text attribute (set on every keystroke) because
+    // Kendo's blur handler overwrites the visible input with its placeholder.
     const captureMultiSelectWildcard = function ($container) {
         $container.find('select[data-role="multiselect"]').each(function () {
             const $select = $(this);
-            const ms = $select.data("kendoMultiSelect");
-            let typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
+            let typed = ($select.attr("data-pending-text") || "").trim();
+            if (!typed) {
+                const ms = $select.data("kendoMultiSelect");
+                typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
+            }
             if (!typed) {
                 typed = ($select.siblings('div').first().find('input').first().val() || "").trim();
             }
             if (typed && WILDCARD_RE.test(typed)) {
                 combinedFields.push({ name: $select.attr("name"), value: typed });
+                $select.removeAttr("data-pending-text");
             }
         });
     };
