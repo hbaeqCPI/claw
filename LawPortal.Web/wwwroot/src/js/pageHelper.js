@@ -203,6 +203,63 @@ const formDataToJson = function (form, includeEmpty) {
     return { verificationToken: verificationToken, payLoad: formData };
 };
 
+// Wildcard search support for Kendo MultiSelect / ComboBox criteria.
+// Users type a pattern containing * or ? and it is submitted as a criterion;
+// the backend translates * -> % and ? -> _ for SQL LIKE matching.
+const WILDCARD_RE = /[*?]/;
+
+const addMultiSelectCustomValue = function (widget, value) {
+    if (!widget || !value) return;
+    const textField = widget.options.dataTextField;
+    const valueField = widget.options.dataValueField;
+    const items = widget.dataSource.data();
+    let exists = false;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i][valueField] === value) { exists = true; break; }
+    }
+    if (!exists) {
+        const newItem = {};
+        newItem[textField] = value;
+        if (textField !== valueField) newItem[valueField] = value;
+        widget.dataSource.add(newItem);
+    }
+    const current = (widget.value() || []).slice(0);
+    if (current.indexOf(value) < 0) {
+        current.push(value);
+        widget.value(current);
+    }
+    if (widget.input) widget.input.val("");
+};
+
+const getMultiSelectFromInput = function ($input) {
+    const $wrap = $input.closest(".k-multiselect");
+    if (!$wrap.length) return null;
+    let widget = null;
+    if (typeof kendo !== "undefined" && kendo.widgetInstance) {
+        widget = kendo.widgetInstance($wrap);
+    }
+    if (!widget) {
+        $wrap.parent().find('select[data-role="multiselect"]').each(function () {
+            const w = $(this).data("kendoMultiSelect");
+            if (w && w.wrapper && w.wrapper[0] === $wrap[0]) widget = w;
+        });
+    }
+    return widget;
+};
+
+// Commit typed wildcard text as a custom chip when user presses Enter.
+$(document).on("keydown", ".k-multiselect input.k-input", function (e) {
+    if (e.which !== 13) return; // Enter
+    const $input = $(this);
+    const val = ($input.val() || "").trim();
+    if (!val || !WILDCARD_RE.test(val)) return;
+    const widget = getMultiSelectFromInput($input);
+    if (!widget) return;
+    e.preventDefault();
+    e.stopPropagation();
+    addMultiSelectCustomValue(widget, val);
+});
+
 //converts array of form data to criteria list
 const formDataToCriteriaList = function (form) {
     const filters = [];
@@ -253,6 +310,37 @@ const formDataToCriteriaList = function (form) {
             }
         });
     }
+
+    // Capture wildcard text typed into MultiSelect inputs that wasn't committed as a chip
+    const captureMultiSelectWildcard = function ($container) {
+        $container.find('select[data-role="multiselect"]').each(function () {
+            const $select = $(this);
+            const ms = $select.data("kendoMultiSelect");
+            const typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
+            if (typed && WILDCARD_RE.test(typed)) {
+                combinedFields.push({ name: $select.attr("name"), value: typed });
+            }
+        });
+    };
+    captureMultiSelectWildcard($(form));
+    if (formId !== undefined) captureMultiSelectWildcard($('div[form="' + formId + '"]'));
+
+    // Capture wildcard text typed into single-select Kendo ComboBoxes (where the
+    // typed text didn't match a list item and so wasn't reflected in the bound value).
+    const captureComboBoxWildcard = function ($container) {
+        $container.find('input[data-role="combobox"], input[data-role="dropdownlist"]').each(function () {
+            const cb = $(this).data("kendoComboBox") || $(this).data("kendoDropDownList");
+            if (!cb || typeof cb.text !== "function") return;
+            const typedText = (cb.text() || "").trim();
+            if (!typedText || !WILDCARD_RE.test(typedText)) return;
+            const name = cb.element.attr("name");
+            if (!name) return;
+            combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+            combinedFields.push({ name: name, value: typedText });
+        });
+    };
+    captureComboBoxWildcard($(form));
+    if (formId !== undefined) captureComboBoxWildcard($('div[form="' + formId + '"]'));
 
     // Extract btn-group-toggle radio values explicitly (serializeArray may not capture checked radios in Bootstrap toggles)
     $(form).find('.btn-group-toggle input[type="radio"]:checked').each(function () {
