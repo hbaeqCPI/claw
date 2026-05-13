@@ -208,54 +208,80 @@ const formDataToJson = function (form, includeEmpty) {
 // criterion; the backend translates * -> % and ? -> _ for SQL LIKE.
 const WILDCARD_RE = /[*?]/;
 
-// Wire a Kendo MultiSelect to accept custom typed values. Attached via the
-// widget's DataBound event from the ComboBox view component. Pressing Enter
-// in the input commits the typed text as a chip even when it does not match
-// any data source item, which is what enables wildcard patterns like "US*"
-// to flow through to the backend.
+// Locate the Kendo MultiSelect widget for a given input element inside the
+// rendered .k-multiselect wrapper.
+const findMultiSelectWidget = function ($input) {
+    const $wrap = $input.closest(".k-multiselect");
+    if (!$wrap.length) return null;
+    if (typeof kendo !== "undefined" && kendo.widgetInstance) {
+        const w = kendo.widgetInstance($wrap);
+        if (w && typeof w.value === "function" && w.dataSource) return w;
+    }
+    let widget = null;
+    $wrap.parent().find('select[data-role="multiselect"]').each(function () {
+        const w = $(this).data("kendoMultiSelect");
+        if (w && w.wrapper && w.wrapper[0] === $wrap[0]) widget = w;
+    });
+    return widget;
+};
+
+// Push typed text into a Kendo MultiSelect as a real chip — required for
+// wildcard patterns like "US*" because the value is not in the data source.
+const commitMultiSelectCustomValue = function (widget, newValue) {
+    if (!widget || !newValue) return;
+    const existing = (widget.value() || []).slice();
+    if (existing.indexOf(newValue) >= 0) return;
+    if (widget.dataSource.filter) widget.dataSource.filter({});
+    const data = widget.dataSource.data();
+    const valueField = widget.options.dataValueField;
+    const textField = widget.options.dataTextField;
+    let dataTemplate;
+    if (data.length === 0) {
+        dataTemplate = {};
+        dataTemplate[valueField] = newValue;
+        if (textField !== valueField) dataTemplate[textField] = newValue;
+    } else {
+        dataTemplate = JSON.parse(JSON.stringify(data[0]));
+        if (valueField.indexOf("Name") < 0) {
+            const nameProp = valueField.replace("Code", "Name");
+            if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
+                dataTemplate[nameProp] = "";
+            }
+        }
+        dataTemplate[valueField] = newValue;
+        if (textField !== valueField) dataTemplate[textField] = newValue;
+    }
+    const observable = new kendo.data.ObservableObject(dataTemplate);
+    dataTemplate.uid = observable.uid;
+    widget.dataSource.add(dataTemplate);
+    widget.value($.unique([newValue].concat(existing)));
+    widget.trigger("change");
+    if (widget.input) widget.input.val("");
+};
+
+// Delegated keyup handler — fires regardless of whether the widget has
+// finished its initial data fetch, so users can press Enter immediately
+// after typing without a race against DataBound.
+$(document).on("keyup", ".k-multiselect input", function (evt) {
+    if (evt.keyCode !== 13) return;
+    const $input = $(this);
+    const newValue = ($input.val() || "").trim();
+    if (!newValue) return;
+    const widget = findMultiSelectWidget($input);
+    if (!widget) return;
+    commitMultiSelectCustomValue(widget, newValue);
+});
+
+// Legacy named export kept for the DataBound wiring in older bundles —
+// it just delegates to the same commit logic.
 const attachMultiSelectCustomValue = function (e) {
     const widget = e && e.sender;
-    if (!widget || widget.__customValueWired) return;
+    if (!widget || widget.__customValueWired || !widget.input) return;
     widget.__customValueWired = true;
-    const input = widget.input;
-    if (!input) return;
-    input.on("keyup", function (evt) {
-        if (evt.keyCode !== 13) return; // Enter
-        const newValue = (input.val() || "").trim();
-        if (!newValue) return;
-        const existing = (widget.value() || []).slice();
-        if (existing.indexOf(newValue) >= 0) {
-            input.val("");
-            return;
-        }
-        widget.dataSource.filter({});
-        const data = widget.dataSource.data();
-        const valueField = widget.options.dataValueField;
-        const textField = widget.options.dataTextField;
-        let dataTemplate;
-        if (data.length === 0) {
-            dataTemplate = {};
-            dataTemplate[valueField] = newValue;
-            if (textField !== valueField) dataTemplate[textField] = newValue;
-        } else {
-            dataTemplate = JSON.parse(JSON.stringify(data[0]));
-            // Clear other display fields so the chip shows the typed value
-            if (valueField.indexOf("Name") < 0) {
-                const nameProp = valueField.replace("Code", "Name");
-                if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
-                    dataTemplate[nameProp] = "";
-                }
-            }
-            dataTemplate[valueField] = newValue;
-            if (textField !== valueField) dataTemplate[textField] = newValue;
-        }
-        const observable = new kendo.data.ObservableObject(dataTemplate);
-        dataTemplate.uid = observable.uid;
-        widget.dataSource.add(dataTemplate);
-        const merged = [newValue].concat(existing);
-        widget.value($.unique(merged));
-        widget.trigger("change");
-        input.val("");
+    widget.input.on("keyup", function (evt) {
+        if (evt.keyCode !== 13) return;
+        const v = (widget.input.val() || "").trim();
+        if (v) commitMultiSelectCustomValue(widget, v);
     });
 };
 
