@@ -78,6 +78,7 @@
         })
         .HtmlAttributes(htmlAttributes)
         .Events(e => e.Open($"function(e) {{ var w = this; if (!w._fetched) {{ w._fetched = true; w.dataSource.read(); }} }}"))
+        .Events(e => e.DataBound("pageHelper.attachMultiSelectCustomValue"))
         .Events(e => { if (!string.IsNullOrEmpty(Model.OnChange)) { e.Change(Model.OnChange); } })
       )
   } else if (Model.Columns==null || Model.Columns.Count < 2) {

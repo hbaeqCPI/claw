@@ -204,61 +204,60 @@ const formDataToJson = function (form, includeEmpty) {
 };
 
 // Wildcard search support for Kendo MultiSelect / ComboBox criteria.
-// Users type a pattern containing * or ? and it is submitted as a criterion;
-// the backend translates * -> % and ? -> _ for SQL LIKE matching.
+// The user types a pattern containing * or ? and it is submitted as a
+// criterion; the backend translates * -> % and ? -> _ for SQL LIKE.
 const WILDCARD_RE = /[*?]/;
 
-const addMultiSelectCustomValue = function (widget, value) {
-    if (!widget || !value) return;
-    const textField = widget.options.dataTextField;
-    const valueField = widget.options.dataValueField;
-    const items = widget.dataSource.data();
-    let exists = false;
-    for (let i = 0; i < items.length; i++) {
-        if (items[i][valueField] === value) { exists = true; break; }
-    }
-    if (!exists) {
-        const newItem = {};
-        newItem[textField] = value;
-        if (textField !== valueField) newItem[valueField] = value;
-        widget.dataSource.add(newItem);
-    }
-    const current = (widget.value() || []).slice(0);
-    if (current.indexOf(value) < 0) {
-        current.push(value);
-        widget.value(current);
-    }
-    if (widget.input) widget.input.val("");
+// Wire a Kendo MultiSelect to accept custom typed values. Attached via the
+// widget's DataBound event from the ComboBox view component. Pressing Enter
+// in the input commits the typed text as a chip even when it does not match
+// any data source item, which is what enables wildcard patterns like "US*"
+// to flow through to the backend.
+const attachMultiSelectCustomValue = function (e) {
+    const widget = e && e.sender;
+    if (!widget || widget.__customValueWired) return;
+    widget.__customValueWired = true;
+    const input = widget.input;
+    if (!input) return;
+    input.on("keyup", function (evt) {
+        if (evt.keyCode !== 13) return; // Enter
+        const newValue = (input.val() || "").trim();
+        if (!newValue) return;
+        const existing = (widget.value() || []).slice();
+        if (existing.indexOf(newValue) >= 0) {
+            input.val("");
+            return;
+        }
+        widget.dataSource.filter({});
+        const data = widget.dataSource.data();
+        const valueField = widget.options.dataValueField;
+        const textField = widget.options.dataTextField;
+        let dataTemplate;
+        if (data.length === 0) {
+            dataTemplate = {};
+            dataTemplate[valueField] = newValue;
+            if (textField !== valueField) dataTemplate[textField] = newValue;
+        } else {
+            dataTemplate = JSON.parse(JSON.stringify(data[0]));
+            // Clear other display fields so the chip shows the typed value
+            if (valueField.indexOf("Name") < 0) {
+                const nameProp = valueField.replace("Code", "Name");
+                if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
+                    dataTemplate[nameProp] = "";
+                }
+            }
+            dataTemplate[valueField] = newValue;
+            if (textField !== valueField) dataTemplate[textField] = newValue;
+        }
+        const observable = new kendo.data.ObservableObject(dataTemplate);
+        dataTemplate.uid = observable.uid;
+        widget.dataSource.add(dataTemplate);
+        const merged = [newValue].concat(existing);
+        widget.value($.unique(merged));
+        widget.trigger("change");
+        input.val("");
+    });
 };
-
-const getMultiSelectFromInput = function ($input) {
-    const $wrap = $input.closest(".k-multiselect");
-    if (!$wrap.length) return null;
-    let widget = null;
-    if (typeof kendo !== "undefined" && kendo.widgetInstance) {
-        widget = kendo.widgetInstance($wrap);
-    }
-    if (!widget) {
-        $wrap.parent().find('select[data-role="multiselect"]').each(function () {
-            const w = $(this).data("kendoMultiSelect");
-            if (w && w.wrapper && w.wrapper[0] === $wrap[0]) widget = w;
-        });
-    }
-    return widget;
-};
-
-// Commit typed wildcard text as a custom chip when user presses Enter.
-$(document).on("keydown", ".k-multiselect input.k-input", function (e) {
-    if (e.which !== 13) return; // Enter
-    const $input = $(this);
-    const val = ($input.val() || "").trim();
-    if (!val || !WILDCARD_RE.test(val)) return;
-    const widget = getMultiSelectFromInput($input);
-    if (!widget) return;
-    e.preventDefault();
-    e.stopPropagation();
-    addMultiSelectCustomValue(widget, val);
-});
 
 //converts array of form data to criteria list
 const formDataToCriteriaList = function (form) {
@@ -316,7 +315,10 @@ const formDataToCriteriaList = function (form) {
         $container.find('select[data-role="multiselect"]').each(function () {
             const $select = $(this);
             const ms = $select.data("kendoMultiSelect");
-            const typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
+            let typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
+            if (!typed) {
+                typed = ($select.siblings('div').first().find('input').first().val() || "").trim();
+            }
             if (typed && WILDCARD_RE.test(typed)) {
                 combinedFields.push({ name: $select.attr("name"), value: typed });
             }
@@ -2516,7 +2518,7 @@ export {
     initializeSidebar, initializeSidebarPage, manageDetailPageMainButtons, formDataToJson, hideErrors, addMaxLength, showSuccess, showErrors,
     populateForm, kendoGridSave, kendoGridIsDirty, kendoGridDirtyTracking, showActiveTab, cpiDateFormatToDisplay, cpiDateFormatToSave, errorsArrayToString,
     formDataToCriteriaList, appendPage, openDetailsLink, postJson, afterInsert, postData, setDelay,
-    getPagedComboBoxValue, handleComboBoxInvalidEntry, refreshGridNameField, onComboBoxSelect, kendoGridDeleteRecord,
+    getPagedComboBoxValue, handleComboBoxInvalidEntry, attachMultiSelectCustomValue, refreshGridNameField, onComboBoxSelect, kendoGridDeleteRecord,
     displayNameFromComboBox, setWebLinksDefaultOption, setWebLinksOption, getWebLinksOption, getFormCriteria, onComboBoxChangeDisplayName, getKendoDataItemProperties,
     verificationTokenFormData, updateRecordStamps, setKendoListWidth, gridMainSearchFilters, placeholder,
     hint, onGridError, getErrorMessage, setupDragDropFiles, addBreadCrumbsRefreshHandler, sortableGridOnEdit, validateRequiredEntityFilterList,
