@@ -207,6 +207,26 @@ const formDataToJson = function (form, includeEmpty) {
 // When the user types text into a MultiSelect that has no chips selected,
 // formDataToCriteriaList reads it from the sibling div's input and submits
 // it as a criterion. The backend translates * -> % and ? -> _ for SQL LIKE.
+//
+// Kendo MultiSelect's _inputFocusout calls _placeholder which overwrites
+// the visible input on blur. Pressing Enter in the input is fine because
+// the form's submit event fires before blur. But clicking the Search
+// button blurs the input first, so the typed text is gone by submit time.
+// Mirror the typed text onto a data attribute on the underlying <select>
+// so the submit handler can recover it after blur.
+$(document).on("input keyup", ".k-multiselect input", function () {
+    var input = $(this);
+    var select = input.closest(".k-multiselect").parent().find('select[data-role="multiselect"]').first();
+    if (!select.length) {
+        select = input.closest(".k-multiselect").prevAll('select[data-role="multiselect"]').first();
+    }
+    var val = (input.val() || "").trim();
+    if (val) {
+        select.attr("data-typed", val);
+    } else {
+        select.removeAttr("data-typed");
+    }
+});
 
 //converts array of form data to criteria list
 const formDataToCriteriaList = function (form) {
@@ -259,15 +279,20 @@ const formDataToCriteriaList = function (form) {
         });
     }
 
-    //to handle saved criteria with wildcard (not selectable) — copied from R10v22
+    //to handle saved criteria with wildcard (not selectable) — copied from R10v22,
+    //with a data-typed fallback so click-Search works (blur wipes the live input).
     $(form).find('select').filter(function () {
         if ($(this).data("role") == "multiselect") {
             const value = $(this).find('option:selected').val();
             if (!value) {
                 const ms = $(this);
-                const hiddenVal = $(ms.siblings('div')[0]).find("input").val();
-                if (hiddenVal) {
-                    combinedFields.push({ name: ms.attr('name'), value: hiddenVal });
+                let hiddenVal = $(ms.siblings('div')[0]).find("input").val();
+                if (!hiddenVal || !hiddenVal.trim()) {
+                    hiddenVal = ms.attr("data-typed");
+                }
+                if (hiddenVal && hiddenVal.trim()) {
+                    combinedFields.push({ name: ms.attr('name'), value: hiddenVal.trim() });
+                    ms.removeAttr("data-typed");
                 }
             }
         }
