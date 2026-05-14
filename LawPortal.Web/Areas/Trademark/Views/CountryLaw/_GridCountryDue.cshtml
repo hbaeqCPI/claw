@@ -14,7 +14,6 @@
           .Name("tmkCountryDueGrid")
           .Columns(columns =>
           {
-              columns.Bound(d => d.Systems).Width(150);
               columns.Bound(d => d.ActionDue).Width(400);
               columns.Bound(d => d.ActionType).Width(250);
               columns.Bound(d => d.BasedOn);
@@ -30,6 +29,7 @@
               columns.Bound(d => d.EffBasedOn).Width(150);
               columns.Bound(d => d.EffStartDate).Format("{0:dd-MMM-yyyy}").Width(150);
               columns.Bound(d => d.EffEndDate).Format("{0:dd-MMM-yyyy}").Width(150);
+              columns.Bound(d => d.Systems).Width(150);
               columns.Command(command =>
               {
                   if (permission.CanEditRecord && !permission.CanEditRemarksOnly)

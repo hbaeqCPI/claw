@@ -12,7 +12,6 @@
                      .Name("patCountryExpGrid")
                      .Columns(columns =>
                      {
-                         columns.Bound(e => e.Systems).Width(150);
                          columns.Bound(e => e.Type)
                             .EditorTemplateName("ComboBox").Width(150)
                             .EditorViewData(new {action = "GetExpirationTypeList", controller = "CountryLaw", area = "Patent", dataTextField = "Text", dataValueField = "Text" });
@@ -32,6 +31,7 @@
 
                          columns.Bound(a => a.EffStartDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
                          columns.Bound(a => a.EffEndDate).EditorTemplateName("Date").Format("{0:dd-MMM-yyyy}").Width(130);
+                         columns.Bound(e => e.Systems).Width(150);
                          columns.Command(command =>
                          {
                              if (Model.CanDeleteChild)

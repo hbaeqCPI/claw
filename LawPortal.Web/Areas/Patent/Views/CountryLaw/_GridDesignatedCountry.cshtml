@@ -10,7 +10,6 @@
                      .Name("patDesCaseTypeGrid")
                      .Columns(columns =>
                      {
-                         columns.Bound(d => d.Systems).Width(150);
                          columns.Bound(d => d.DesCountry).EditorTemplateName("ComboBox")
                              .EditorViewData(new
                              {
@@ -31,6 +30,7 @@
                                  template = ComboBoxHelper.GetItemTemplate("CaseType", "Description"),
                                  headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["CaseType"], Localizer["Description"])
                              }).Width(200);
+                         columns.Bound(d => d.Systems).Width(150);
 
                          columns.Command(command =>
                          {
