@@ -167,14 +167,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group float-label">
-                                    <label class="required" asp-for="EffBasedOn"></label>
+                                    <label asp-for="EffBasedOn"></label>
                                     @(Html.Kendo().ComboBox()
                                                     .Name("EffBasedOn")
                                                     .Value(Model.EffBasedOn)
                                                     .BindTo(basedOnOptions)
                                                     .Filter(FilterType.StartsWith)
                                                     .Events(e => e.Change("pageHelper.handleComboBoxInvalidEntry"))
-                                                    .HtmlAttributes(new { style = "width: 100%", id = $"EffBasedOn_{screen}", required = "required", data_val = "true", data_val_required = requiredValidationMessages.Where(v => v.Name == "EffBasedOn").Select(v => v.ErrorMessage).FirstOrDefault() ?? "The Eff Based On field is required." })
+                                                    .HtmlAttributes(new { style = "width: 100%", id = $"EffBasedOn_{screen}" })
                                     )
                                     <span asp-validation-for="EffBasedOn"></span>
                                 </div>
