@@ -770,7 +770,6 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             {
                 if (string.IsNullOrWhiteSpace(e.Type)) errors["Type"] = new[] { "The Type field is required." };
                 if (string.IsNullOrWhiteSpace(e.BasedOn)) errors["BasedOn"] = new[] { "The Based On field is required." };
-                if (string.IsNullOrWhiteSpace(e.EffBasedOn)) errors["EffBasedOn"] = new[] { "The Eff Based On field is required." };
             }
             if (errors.Any())
                 return new JsonBadRequest(new { errors });

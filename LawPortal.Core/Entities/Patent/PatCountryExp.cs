@@ -22,7 +22,7 @@ namespace LawPortal.Core.Entities.Patent
         public string? Type { get; set; }
 
         [Required(ErrorMessage = "The Based On field is required.")]
-        [StringLength(12)]
+        [StringLength(30)]
         [Display(Name = "Based On")]
         public string? BasedOn { get; set; }
 
@@ -35,8 +35,7 @@ namespace LawPortal.Core.Entities.Patent
         [Display(Name = "Dy")]
         public int Dy { get; set; }
 
-        [Required(ErrorMessage = "The Eff Based On field is required.")]
-        [StringLength(15)]
+        [StringLength(30)]
         [Display(Name = "Eff Based On")]
         public string? EffBasedOn { get; set; }
 

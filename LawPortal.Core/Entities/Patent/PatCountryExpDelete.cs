@@ -25,7 +25,7 @@ namespace LawPortal.Core.Entities.Patent
 
         [Required]
         [Display(Name = "Based On")]
-        [StringLength(12)]
+        [StringLength(30)]
         public string? BasedOn { get; set; }
 
         [Display(Name = "Yr")]
@@ -38,7 +38,7 @@ namespace LawPortal.Core.Entities.Patent
         public int Dy { get; set; }
 
         [Display(Name = "Eff Based On")]
-        [StringLength(15)]
+        [StringLength(30)]
         public string? EffBasedOn { get; set; }
 
         [Display(Name = "Eff Start Date")]
