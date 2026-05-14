@@ -203,30 +203,105 @@ const formDataToJson = function (form, includeEmpty) {
     return { verificationToken: verificationToken, payLoad: formData };
 };
 
-// Wildcard search support for Kendo MultiSelect criteria — mirrors R10v22.
-// When the user types text into a MultiSelect that has no chips selected,
-// formDataToCriteriaList reads it from the sibling div's input and submits
-// it as a criterion. The backend translates * -> % and ? -> _ for SQL LIKE.
-//
-// Kendo MultiSelect's _inputFocusout calls _placeholder which overwrites
-// the visible input on blur. Pressing Enter in the input is fine because
-// the form's submit event fires before blur. But clicking the Search
-// button blurs the input first, so the typed text is gone by submit time.
-// Mirror the typed text onto a data attribute on the underlying <select>
-// so the submit handler can recover it after blur.
-$(document).on("input keyup", ".k-multiselect input", function () {
-    var input = $(this);
-    var select = input.closest(".k-multiselect").parent().find('select[data-role="multiselect"]').first();
-    if (!select.length) {
-        select = input.closest(".k-multiselect").prevAll('select[data-role="multiselect"]').first();
+// Wildcard search support for Kendo MultiSelect / ComboBox criteria.
+// The user types a pattern containing * or ? and it is submitted as a
+// criterion; the backend translates * -> % and ? -> _ for SQL LIKE.
+const WILDCARD_RE = /[*?]/;
+
+// Locate the Kendo MultiSelect widget for a given input element inside the
+// rendered .k-multiselect wrapper.
+const findMultiSelectWidget = function ($input) {
+    const $wrap = $input.closest(".k-multiselect");
+    if (!$wrap.length) return null;
+    if (typeof kendo !== "undefined" && kendo.widgetInstance) {
+        const w = kendo.widgetInstance($wrap);
+        if (w && typeof w.value === "function" && w.dataSource) return w;
     }
-    var val = (input.val() || "").trim();
-    if (val) {
-        select.attr("data-typed", val);
+    let widget = null;
+    $wrap.parent().find('select[data-role="multiselect"]').each(function () {
+        const w = $(this).data("kendoMultiSelect");
+        if (w && w.wrapper && w.wrapper[0] === $wrap[0]) widget = w;
+    });
+    return widget;
+};
+
+// Push typed text into a Kendo MultiSelect as a real chip — required for
+// wildcard patterns like "US*" because the value is not in the data source.
+const commitMultiSelectCustomValue = function (widget, newValue) {
+    if (!widget || !newValue) return;
+    const existing = (widget.value() || []).slice();
+    if (existing.indexOf(newValue) >= 0) return;
+    if (widget.dataSource.filter) widget.dataSource.filter({});
+    const data = widget.dataSource.data();
+    const valueField = widget.options.dataValueField;
+    const textField = widget.options.dataTextField;
+    let dataTemplate;
+    if (data.length === 0) {
+        dataTemplate = {};
+        dataTemplate[valueField] = newValue;
+        if (textField !== valueField) dataTemplate[textField] = newValue;
     } else {
-        select.removeAttr("data-typed");
+        dataTemplate = JSON.parse(JSON.stringify(data[0]));
+        if (valueField.indexOf("Name") < 0) {
+            const nameProp = valueField.replace("Code", "Name");
+            if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
+                dataTemplate[nameProp] = "";
+            }
+        }
+        dataTemplate[valueField] = newValue;
+        if (textField !== valueField) dataTemplate[textField] = newValue;
+    }
+    const observable = new kendo.data.ObservableObject(dataTemplate);
+    dataTemplate.uid = observable.uid;
+    widget.dataSource.add(dataTemplate);
+    widget.value($.unique([newValue].concat(existing)));
+    widget.trigger("change");
+    if (widget.input) widget.input.val("");
+};
+
+// Delegated keyup handler — fires regardless of whether the widget has
+// finished its initial data fetch, so users can press Enter immediately
+// after typing without a race against DataBound.
+$(document).on("keyup", ".k-multiselect input", function (evt) {
+    if (evt.keyCode !== 13) return;
+    const $input = $(this);
+    const newValue = ($input.val() || "").trim();
+    if (!newValue) return;
+    const widget = findMultiSelectWidget($input);
+    if (!widget) return;
+    commitMultiSelectCustomValue(widget, newValue);
+});
+
+// Kendo MultiSelect's _inputBlur overwrites the visible input with its
+// placeholder (which is " " in our component setup), so by the time the
+// form submits the typed text is gone. Track every keystroke onto the
+// underlying <select> as a data attribute so the submit handler can
+// recover the text even after blur has wiped the input.
+$(document).on("input keyup", ".k-multiselect input", function () {
+    const $input = $(this);
+    const widget = findMultiSelectWidget($input);
+    if (!widget) return;
+    const $select = $(widget.element);
+    const val = ($input.val() || "").trim();
+    if (val) {
+        $select.attr("data-pending-text", val);
+    } else {
+        $select.removeAttr("data-pending-text");
     }
 });
+
+// Legacy named export kept for the DataBound wiring in older bundles —
+// it just delegates to the same commit logic.
+const attachMultiSelectCustomValue = function (e) {
+    const widget = e && e.sender;
+    if (!widget || widget.__customValueWired || !widget.input) return;
+    widget.__customValueWired = true;
+    widget.input.on("keyup", function (evt) {
+        if (evt.keyCode !== 13) return;
+        const v = (widget.input.val() || "").trim();
+        if (v) commitMultiSelectCustomValue(widget, v);
+    });
+};
 
 //converts array of form data to criteria list
 const formDataToCriteriaList = function (form) {
@@ -279,24 +354,45 @@ const formDataToCriteriaList = function (form) {
         });
     }
 
-    //to handle saved criteria with wildcard (not selectable) — copied from R10v22,
-    //with a data-typed fallback so click-Search works (blur wipes the live input).
-    $(form).find('select').filter(function () {
-        if ($(this).data("role") == "multiselect") {
-            const value = $(this).find('option:selected').val();
-            if (!value) {
-                const ms = $(this);
-                let hiddenVal = $(ms.siblings('div')[0]).find("input").val();
-                if (!hiddenVal || !hiddenVal.trim()) {
-                    hiddenVal = ms.attr("data-typed");
-                }
-                if (hiddenVal && hiddenVal.trim()) {
-                    combinedFields.push({ name: ms.attr('name'), value: hiddenVal.trim() });
-                    ms.removeAttr("data-typed");
-                }
+    // Capture wildcard text typed into MultiSelect inputs that wasn't committed as a chip.
+    // Reads from the data-pending-text attribute (set on every keystroke) because
+    // Kendo's blur handler overwrites the visible input with its placeholder.
+    const captureMultiSelectWildcard = function ($container) {
+        $container.find('select[data-role="multiselect"]').each(function () {
+            const $select = $(this);
+            let typed = ($select.attr("data-pending-text") || "").trim();
+            if (!typed) {
+                const ms = $select.data("kendoMultiSelect");
+                typed = (ms && ms.input) ? (ms.input.val() || "").trim() : "";
             }
-        }
-    });
+            if (!typed) {
+                typed = ($select.siblings('div').first().find('input').first().val() || "").trim();
+            }
+            if (typed && WILDCARD_RE.test(typed)) {
+                combinedFields.push({ name: $select.attr("name"), value: typed });
+                $select.removeAttr("data-pending-text");
+            }
+        });
+    };
+    captureMultiSelectWildcard($(form));
+    if (formId !== undefined) captureMultiSelectWildcard($('div[form="' + formId + '"]'));
+
+    // Capture wildcard text typed into single-select Kendo ComboBoxes (where the
+    // typed text didn't match a list item and so wasn't reflected in the bound value).
+    const captureComboBoxWildcard = function ($container) {
+        $container.find('input[data-role="combobox"], input[data-role="dropdownlist"]').each(function () {
+            const cb = $(this).data("kendoComboBox") || $(this).data("kendoDropDownList");
+            if (!cb || typeof cb.text !== "function") return;
+            const typedText = (cb.text() || "").trim();
+            if (!typedText || !WILDCARD_RE.test(typedText)) return;
+            const name = cb.element.attr("name");
+            if (!name) return;
+            combinedFields = combinedFields.filter(function (f) { return f.name !== name; });
+            combinedFields.push({ name: name, value: typedText });
+        });
+    };
+    captureComboBoxWildcard($(form));
+    if (formId !== undefined) captureComboBoxWildcard($('div[form="' + formId + '"]'));
 
     // Extract btn-group-toggle radio values explicitly (serializeArray may not capture checked radios in Bootstrap toggles)
     $(form).find('.btn-group-toggle input[type="radio"]:checked').each(function () {
@@ -2472,7 +2568,7 @@ export {
     initializeSidebar, initializeSidebarPage, manageDetailPageMainButtons, formDataToJson, hideErrors, addMaxLength, showSuccess, showErrors,
     populateForm, kendoGridSave, kendoGridIsDirty, kendoGridDirtyTracking, showActiveTab, cpiDateFormatToDisplay, cpiDateFormatToSave, errorsArrayToString,
     formDataToCriteriaList, appendPage, openDetailsLink, postJson, afterInsert, postData, setDelay,
-    getPagedComboBoxValue, handleComboBoxInvalidEntry, refreshGridNameField, onComboBoxSelect, kendoGridDeleteRecord,
+    getPagedComboBoxValue, handleComboBoxInvalidEntry, attachMultiSelectCustomValue, refreshGridNameField, onComboBoxSelect, kendoGridDeleteRecord,
     displayNameFromComboBox, setWebLinksDefaultOption, setWebLinksOption, getWebLinksOption, getFormCriteria, onComboBoxChangeDisplayName, getKendoDataItemProperties,
     verificationTokenFormData, updateRecordStamps, setKendoListWidth, gridMainSearchFilters, placeholder,
     hint, onGridError, getErrorMessage, setupDragDropFiles, addBreadCrumbsRefreshHandler, sortableGridOnEdit, validateRequiredEntityFilterList,
