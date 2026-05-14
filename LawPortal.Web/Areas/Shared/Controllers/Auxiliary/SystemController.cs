@@ -257,15 +257,23 @@ namespace LawPortal.Web.Areas.Shared.Controllers
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            // requiredRelation doubles as an area filter for the systems picklist:
-            // "Pat" -> R4 + Pat* systems, "Tmk" -> R4 + Tmk* systems. Empty -> all.
-            var source = _systemService.QueryableList;
-            if (requiredRelation == "Pat" || requiredRelation == "Tmk")
-            {
-                source = source.Where(s => s.SystemName == "R4" || s.SystemName.StartsWith(requiredRelation));
-                requiredRelation = "";
-            }
-            return await GetPicklistData(source, request, property, text, filterType, requiredRelation);
+            return await GetPicklistData(_systemService.QueryableList, request, property, text, filterType, requiredRelation);
+        }
+
+        // Patent screens use this picklist so they only ever see R4 + Pat* systems.
+        public async Task<IActionResult> GetPatentSystems([DataSourceRequest] DataSourceRequest request, string property = "SystemName", string text = "", FilterType filterType = FilterType.StartsWith)
+        {
+            var source = _systemService.QueryableList
+                .Where(s => s.SystemName == "R4" || s.SystemName.StartsWith("Pat"));
+            return await GetPicklistData(source, request, property, text, filterType);
+        }
+
+        // Trademark screens use this picklist so they only ever see R4 + Tmk* systems.
+        public async Task<IActionResult> GetTrademarkSystems([DataSourceRequest] DataSourceRequest request, string property = "SystemName", string text = "", FilterType filterType = FilterType.StartsWith)
+        {
+            var source = _systemService.QueryableList
+                .Where(s => s.SystemName == "R4" || s.SystemName.StartsWith("Tmk"));
+            return await GetPicklistData(source, request, property, text, filterType);
         }
 
         [HttpGet()]
