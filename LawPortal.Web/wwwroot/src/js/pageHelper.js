@@ -227,36 +227,57 @@ const findMultiSelectWidget = function ($input) {
 
 // Push typed text into a Kendo MultiSelect as a real chip — required for
 // wildcard patterns like "US*" because the value is not in the data source.
+//
+// If the picklist hasn't finished loading yet, defer the add until it has.
+// Otherwise the async fetch completes after our add and wipes the chip
+// from _data, leaving widget.value() with a value that has no matching
+// data item and no underlying <option selected> for the form to serialize.
 const commitMultiSelectCustomValue = function (widget, newValue) {
     if (!widget || !newValue) return;
-    const existing = (widget.value() || []).slice();
-    if (existing.indexOf(newValue) >= 0) return;
-    if (widget.dataSource.filter) widget.dataSource.filter({});
-    const data = widget.dataSource.data();
-    const valueField = widget.options.dataValueField;
-    const textField = widget.options.dataTextField;
-    let dataTemplate;
-    if (data.length === 0) {
-        dataTemplate = {};
-        dataTemplate[valueField] = newValue;
-        if (textField !== valueField) dataTemplate[textField] = newValue;
-    } else {
-        dataTemplate = JSON.parse(JSON.stringify(data[0]));
-        if (valueField.indexOf("Name") < 0) {
-            const nameProp = valueField.replace("Code", "Name");
-            if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
-                dataTemplate[nameProp] = "";
-            }
+
+    const doAdd = function () {
+        const existing = (widget.value() || []).slice();
+        if (existing.indexOf(newValue) >= 0) {
+            if (widget.input) widget.input.val("");
+            return;
         }
-        dataTemplate[valueField] = newValue;
-        if (textField !== valueField) dataTemplate[textField] = newValue;
+        if (widget.dataSource.filter) widget.dataSource.filter({});
+        const data = widget.dataSource.data();
+        const valueField = widget.options.dataValueField;
+        const textField = widget.options.dataTextField;
+        let dataTemplate;
+        if (data.length === 0) {
+            dataTemplate = {};
+            dataTemplate[valueField] = newValue;
+            if (textField !== valueField) dataTemplate[textField] = newValue;
+        } else {
+            dataTemplate = JSON.parse(JSON.stringify(data[0]));
+            if (valueField.indexOf("Name") < 0) {
+                const nameProp = valueField.replace("Code", "Name");
+                if (Object.prototype.hasOwnProperty.call(dataTemplate, nameProp)) {
+                    dataTemplate[nameProp] = "";
+                }
+            }
+            dataTemplate[valueField] = newValue;
+            if (textField !== valueField) dataTemplate[textField] = newValue;
+        }
+        const observable = new kendo.data.ObservableObject(dataTemplate);
+        dataTemplate.uid = observable.uid;
+        widget.dataSource.add(dataTemplate);
+        widget.value($.unique([newValue].concat(existing)));
+        widget.trigger("change");
+        if (widget.input) widget.input.val("");
+    };
+
+    const ds = widget.dataSource;
+    if (ds && ds.data().length === 0 && typeof ds.read === "function") {
+        // Picklist not loaded yet — kick off a read and add the chip when it lands.
+        // Show the typed text in the input meanwhile so the user has feedback.
+        ds.one("change", doAdd);
+        ds.read();
+    } else {
+        doAdd();
     }
-    const observable = new kendo.data.ObservableObject(dataTemplate);
-    dataTemplate.uid = observable.uid;
-    widget.dataSource.add(dataTemplate);
-    widget.value($.unique([newValue].concat(existing)));
-    widget.trigger("change");
-    if (widget.input) widget.input.val("");
 };
 
 // Delegated keyup handler — fires regardless of whether the widget has
