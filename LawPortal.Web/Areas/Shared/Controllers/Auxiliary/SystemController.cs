@@ -257,7 +257,15 @@ namespace LawPortal.Web.Areas.Shared.Controllers
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_systemService.QueryableList, request, property, text, filterType, requiredRelation);
+            // requiredRelation doubles as an area filter for the systems picklist:
+            // "Pat" -> R4 + Pat* systems, "Tmk" -> R4 + Tmk* systems. Empty -> all.
+            var source = _systemService.QueryableList;
+            if (requiredRelation == "Pat" || requiredRelation == "Tmk")
+            {
+                source = source.Where(s => s.SystemName == "R4" || s.SystemName.StartsWith(requiredRelation));
+                requiredRelation = "";
+            }
+            return await GetPicklistData(source, request, property, text, filterType, requiredRelation);
         }
 
         [HttpGet()]

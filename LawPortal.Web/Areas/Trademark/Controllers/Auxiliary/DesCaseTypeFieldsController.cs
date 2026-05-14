@@ -455,7 +455,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
         public IActionResult GetSystemList()
         {
-            return Json(Helpers.SystemsHelper.SystemNames);
+            return Json(Helpers.SystemsHelper.ForTrademark);
         }
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")

@@ -339,7 +339,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
         public IActionResult GetSystemList()
         {
-            return Json(Helpers.SystemsHelper.SystemNames);
+            return Json(Helpers.SystemsHelper.ForTrademark);
         }
 
         public async Task<IActionResult> GetRecordStamps(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "")

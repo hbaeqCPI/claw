@@ -12,7 +12,7 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="FromField">@Localizer["From Field"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "FromField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", multiSelect = true })
+                    @await Component.InvokeAsync("ComboBox", new { name = "FromField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", multiSelect = true, requiredRelation = "Tmk" })
                 </div>
             </div>
         </div>
@@ -20,13 +20,13 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="ToField">@Localizer["To Field"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "ToField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", multiSelect = true })
+                    @await Component.InvokeAsync("ComboBox", new { name = "ToField", controller = "DesCaseTypeFields", area = "Trademark", action = "GetPicklistData", multiSelect = true, requiredRelation = "Tmk" })
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="SystemName">@Localizer["Systems"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true })
+                    @await Component.InvokeAsync("ComboBox", new { name = "SystemName", controller = "System", area = "Shared", action = "GetPicklistData", multiSelect = true, requiredRelation = "Tmk" })
                 </div>
             </div>
         </div>

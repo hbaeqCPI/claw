@@ -303,7 +303,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
         public IActionResult GetSystemList()
         {
-            return Json(Helpers.SystemsHelper.SystemNames);
+            return Json(Helpers.SystemsHelper.ForPatent);
         }
 
         [HttpGet]

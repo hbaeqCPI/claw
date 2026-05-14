@@ -511,7 +511,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
         public IActionResult GetSystemList()
         {
-            return Json(Helpers.SystemsHelper.SystemNames);
+            return Json(Helpers.SystemsHelper.ForTrademark);
         }
 
         public IActionResult GetBasedOnList(string property, string text, FilterType filterType)
