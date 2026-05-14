@@ -178,11 +178,11 @@
         @if (!addMode)
         {
             <li class="nav-item">
-                <a class="nav-link active" id="countryLawDetailLawActionsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawActionsContent" aria-selected="true" href="#countryLawDetailLawActionsTabContent">@Localizer["Law Actions"] </a>
+                <a class="nav-link active" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="true" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
             </li>
-        }
-        @if (!addMode)
-        {
+            <li class="nav-item">
+                <a class="nav-link" id="countryLawDetailLawActionsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawActionsContent" aria-selected="false" href="#countryLawDetailLawActionsTabContent">@Localizer["Law Actions"] </a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link" id="countryLawDetailExpirationTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailExpirationTabContent" aria-selected="false" href="#countryLawDetailExpirationTabContent">@Localizer["Expiration Terms"]</a>
             </li>
@@ -196,9 +196,6 @@
         @if (!addMode)
         {
             <li class="nav-item">
-                <a class="nav-link" id="countryLawDetailLawHighlightsTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailLawHighlightsTabContent" aria-selected="false" href="#countryLawDetailLawHighlightsTabContent">@Localizer["Law Highlights"]</a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link" id="countryLawDetailInternalRemarksTab" data-toggle="tab" role="tab" aria-controls="countryLawDetailInternalRemarksTabContent" aria-selected="false" href="#countryLawDetailInternalRemarksTabContent">@Localizer["Internal Remarks"]</a>
             </li>
         }
@@ -206,12 +203,16 @@
     <div class="tab-content">
         @if (!addMode)
         {
-            <div class="tab-pane page-content show active" id="countryLawDetailLawActionsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawActions">
+            <div class="tab-pane page-content px-1 py-1 show active" id="countryLawDetailLawHighlightsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawHighlightsTab">
+                <div class="form-row">
+                    <div class="col">
+                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane page-content" id="countryLawDetailLawActionsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawActions">
                 @await Html.PartialAsync("_GridCountryDue", childViewModel)
             </div>
-        }
-        @if (!addMode)
-        {
             <div class="tab-pane page-content" id="countryLawDetailExpirationTabContent" role="tabpanel" aria-labelledby="countryLawDetailExpirationTab">
                 <div id="patCountryExpValidationErrors" class="alert alert-dismissible fade show" style="display:none; margin: 4px 0; background-color:#fff; color:#dc3545; border:1px solid #dc3545;">
                     <span class="patCountryExpValidationErrors-text"></span>
@@ -230,13 +231,6 @@
         }
         @if (!addMode)
         {
-            <div class="tab-pane page-content px-1 py-1" id="countryLawDetailLawHighlightsTabContent" role="tabpanel" aria-labelledby="countryLawDetailLawHighlightsTab">
-                <div class="form-row">
-                    <div class="col">
-                        <textarea class="form-control form-control-sm" rows="12" asp-for="Remarks" asp-is-readonly="@isReadOnlyRemarks"></textarea>
-                    </div>
-                </div>
-            </div>
             <div class="tab-pane page-content px-1 py-1" id="countryLawDetailInternalRemarksTabContent" role="tabpanel" aria-labelledby="countryLawDetailInternalRemarksTab">
                 <div class="form-row">
                     <div class="col">
