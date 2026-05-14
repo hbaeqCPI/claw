@@ -143,7 +143,20 @@
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label asp-for="LabelTaxSched"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="LabelTaxSched" asp-is-readonly="@isReadOnly" />
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="LabelTaxSched" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new {
+                            name = "LabelTaxSched",
+                            controller = "CountryLaw",
+                            area = "Patent",
+                            defaultValue = Model.LabelTaxSched ?? "",
+                            valuePrimitive = true
+                        })
+                    }
                 </div>
             </div>
         </div>

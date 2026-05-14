@@ -59,7 +59,13 @@
                     }
                     else
                     {
-                        <input type="text" class="form-control form-control-sm" asp-for="LabelTaxSched" />
+                        @await Component.InvokeAsync("ComboBox", new {
+                            name = "LabelTaxSched",
+                            controller = "CountryLawExt",
+                            area = "Patent",
+                            defaultValue = Model.LabelTaxSched ?? "",
+                            valuePrimitive = true
+                        })
                     }
                     <span asp-validation-for="LabelTaxSched"></span>
                 </div>
