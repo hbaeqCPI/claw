@@ -12,6 +12,7 @@
                      .Name("patCountryExpGrid")
                      .Columns(columns =>
                      {
+                         columns.Bound(e => e.Systems).Width(150);
                          columns.Bound(e => e.Type)
                             .EditorTemplateName("ComboBox").Width(150)
                             .EditorViewData(new {action = "GetExpirationTypeList", controller = "CountryLaw", area = "Patent", dataTextField = "Text", dataValueField = "Text" });
@@ -69,7 +70,7 @@
                              model.Id(e => e.CExpId);
                              model.Field(e => e.Country).DefaultValue(Model.Country);
                              model.Field(e => e.CaseType).DefaultValue(Model.CaseType);
-                             model.Field(e => e.Systems).DefaultValue(Model.Systems ?? "");
+                             model.Field(e => e.Systems).DefaultValue(Model.Systems ?? "").Editable(false);
                          })
                          .Read(create => create.Action("CountryExpRead", "CountryLaw").Data(childLinkParam))
                          .Update(create => create.Action("CountryExpUpdate", "CountryLaw").Data(childLinkParam))

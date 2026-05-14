@@ -14,6 +14,7 @@
           .Name("patCountryDueGrid")
           .Columns(columns =>
           {
+              columns.Bound(d => d.Systems).Width(150);
               columns.Bound(d => d.ActionDue).Width(400);
               columns.Bound(d => d.ActionType).Width(250);
               columns.Bound(d => d.BasedOn);
@@ -86,7 +87,7 @@
               .Model(model =>
               {
                   model.Id(d => d.CDueId);
-                  model.Field(d => d.Systems).DefaultValue(Model.Systems ?? "");
+                  model.Field(d => d.Systems).DefaultValue(Model.Systems ?? "").Editable(false);
               })
               .Read(create => create.Action("CountryDueRead", "CountryLaw").Data(childLinkParam))
               .Update(create => create.Action("CountryDuesUpdate", "CountryLaw").Data(childLinkParam))
