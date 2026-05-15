@@ -21,7 +21,24 @@
             <div class="col-md-4 col-lg-3 col-xl-2">
                 <div class="form-group float-label">
                     <label asp-for="IntlCode"></label>
-                    <input type="text" class="form-control form-control-sm" asp-for="IntlCode" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="IntlCode" readonly />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox", new {
+                            name = "IntlCode",
+                            controller = "Country",
+                            area = "Patent",
+                            action = "GetCountryList",
+                            textProperty = "Country",
+                            defaultValue = Model.IntlCode,
+                            headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]),
+                            itemTemplate = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                            listWidth = 400
+                        })
+                    }
                     <span asp-validation-for="IntlCode"></span>
                 </div>
             </div>
@@ -59,7 +76,17 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Patent", action = "GetPicklistData", textProperty = "Country", defaultValue = Model.DesCountry })
+                        @await Component.InvokeAsync("ComboBox", new {
+                            name = "DesCountry",
+                            controller = "Country",
+                            area = "Patent",
+                            action = "GetCountryList",
+                            textProperty = "Country",
+                            defaultValue = Model.DesCountry,
+                            headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]),
+                            itemTemplate = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
+                            listWidth = 400
+                        })
                         <span asp-validation-for="DesCountry"></span>
                     }
                 </div>
