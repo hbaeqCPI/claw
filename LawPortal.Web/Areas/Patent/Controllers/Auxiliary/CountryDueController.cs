@@ -210,7 +210,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         {
             var viewModel = new DetailPageViewModel<PatCountryDue>
             {
-                Detail = new PatCountryDue()
+                Detail = new PatCountryDue { CPIAction = true, Calculate = true }
             };
 
             viewModel.AddPatentAuxiliarySecurityPolicies();

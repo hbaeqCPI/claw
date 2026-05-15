@@ -186,7 +186,7 @@
                     <label class="k-checkbox-label" asp-for="CPIAction">@Localizer["CPI Action"]</label>
                 </div>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2 d-none">
                 <div class="form-check mt-2">
                     <input type="checkbox" class="k-checkbox" asp-for="Calculate" disabled="@(isReadOnly ? "disabled" : null)" />
                     <label class="k-checkbox-label" asp-for="Calculate">@Localizer["Calculate"]</label>

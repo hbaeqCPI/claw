@@ -539,7 +539,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
         public IActionResult CountryDueAdd(string country, string caseType, string systems = "")
         {
-            return PartialView("_CountryDueEntry", new TmkCountryDue { Country = country, CaseType = caseType, Systems = systems, Calculate = true });
+            return PartialView("_CountryDueEntry", new TmkCountryDue { Country = country, CaseType = caseType, Systems = systems, CPIAction = true, Calculate = true });
         }
 
         public async Task<IActionResult> CountryDueEdit(int cDueId)

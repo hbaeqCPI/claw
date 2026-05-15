@@ -193,7 +193,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
         {
             var viewModel = new DetailPageViewModel<TmkCountryDue>
             {
-                Detail = new TmkCountryDue()
+                Detail = new TmkCountryDue { CPIAction = true, Calculate = true }
             };
 
             viewModel.AddTrademarkAuxiliarySecurityPolicies();

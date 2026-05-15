@@ -573,7 +573,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
         public IActionResult CountryDueAdd(string country, string caseType, string systems = "")
         {
-            return PartialView("_CountryDueEntry", new PatCountryDue { Country = country, CaseType = caseType, Systems = systems, Calculate = true});
+            return PartialView("_CountryDueEntry", new PatCountryDue { Country = country, CaseType = caseType, Systems = systems, CPIAction = true, Calculate = true });
         }
 
         public async Task<IActionResult> CountryDueEdit(int cDueId)

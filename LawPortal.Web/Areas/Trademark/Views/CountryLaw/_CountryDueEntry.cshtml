@@ -23,8 +23,6 @@
 
     var labelCanGenerate = Localizer["Generate this Action?"];
     bool copyLawAction = ViewBag.CopyLawAction ?? false;
-    // Allow full edit regardless of CPI Action status
-    Model.CPIAction = false;
 }
 
 <div class="modal fade" id="tmkCountryDueEntryDialog" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
@@ -54,7 +52,7 @@
                                     <div class="dymo-alert">@Localizer["CPI Action"]</div>
                                 }
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-6 d-none">
                                 @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
                             </div>
                         </div>
