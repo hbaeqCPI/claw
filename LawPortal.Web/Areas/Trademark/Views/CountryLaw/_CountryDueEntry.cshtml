@@ -156,7 +156,6 @@
                                     <label asp-for="EffBasedOn"></label>
                                     @await Component.InvokeAsync("ComboBox",
                                         new { name = "EffBasedOn", action = "GetBasedOnList", controller = "CountryLaw", defaultValue = Model.EffBasedOn, textProperty = "Text" })
-                                    <span asp-validation-for="EffBasedOn"></span>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -172,7 +171,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row d-none">
                             <div class="col-md-6">
                                 <div class="form-group float-label">
                                     <label asp-for="FollowupAction"></label>
