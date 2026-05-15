@@ -76,9 +76,37 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 !string.Equals(f.Property, "Default", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(f.Property, "GenApp", StringComparison.OrdinalIgnoreCase)).ToList();
 
+            // Filters that use EF.Functions.Like (BuildCriteria, ApplySystemsFilter)
+            // MUST be applied to the entity-typed IQueryable before materialising —
+            // EF.Functions.Like has no in-memory implementation, so calling it on a
+            // List.AsQueryable() throws "Like method is not supported because the
+            // query has switched to client-evaluation".
+
+            // Clone per-side because both helpers mutate the filter list
+            // (BuildCriteria sets Operator, ApplySystemsFilter removes SystemName).
+            List<QueryFilterViewModel> CloneFilters() =>
+                otherFilters?.Select(f => new QueryFilterViewModel { Property = f.Property, Operator = f.Operator, Value = f.Value }).ToList()
+                ?? new List<QueryFilterViewModel>();
+
+            var baseQuery = _repository.PatDesCaseTypes.AsNoTracking();
+            if (otherFilters != null && otherFilters.Count > 0)
+            {
+                var baseFilters = CloneFilters();
+                baseQuery = Helpers.QueryHelper.ApplySystemsFilter(baseQuery, baseFilters, a => a.Systems);
+                baseQuery = baseQuery.BuildCriteria(baseFilters);
+            }
+
+            var extQuery = _repository.PatDesCaseTypeExts.AsNoTracking();
+            if (otherFilters != null && otherFilters.Count > 0)
+            {
+                var extFilters = CloneFilters();
+                extQuery = Helpers.QueryHelper.ApplySystemsFilter(extQuery, extFilters, a => a.Systems);
+                extQuery = extQuery.BuildCriteria(extFilters);
+            }
+
             var baseRows = extFilter == "true"
                 ? new List<DesCaseTypeSearchItem>()
-                : await _repository.PatDesCaseTypes.AsNoTracking()
+                : await baseQuery
                     .Select(x => new DesCaseTypeSearchItem
                     {
                         IntlCode = x.IntlCode,
@@ -93,7 +121,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
             var extRows = extFilter == "false"
                 ? new List<DesCaseTypeSearchItem>()
-                : await _repository.PatDesCaseTypeExts.AsNoTracking()
+                : await extQuery
                     .Select(x => new DesCaseTypeSearchItem
                     {
                         IntlCode = x.IntlCode,
@@ -106,13 +134,10 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                         IsExt = true
                     }).ToListAsync();
 
-            var combined = baseRows.Concat(extRows).AsQueryable();
-            if (otherFilters != null && otherFilters.Count > 0)
-                combined = Helpers.QueryHelper.ApplySystemsFilter(combined, otherFilters, a => a.Systems);
-            combined = combined.BuildCriteria(otherFilters);
+            IEnumerable<DesCaseTypeSearchItem> combined = baseRows.Concat(extRows);
 
-            // Apply bool filters after BuildCriteria (it can't express null-exclusion
-            // on a nullable bool, which is what we want for "GenApp=true" on base rows).
+            // Bool filters applied in memory after combining (base rows have GenApp=null,
+            // which we want to exclude when the user filters on GenApp = true/false).
             if (defFilter == "true") combined = combined.Where(x => x.Default);
             else if (defFilter == "false") combined = combined.Where(x => !x.Default);
             if (genAppFilter == "true") combined = combined.Where(x => x.GenApp == true);
