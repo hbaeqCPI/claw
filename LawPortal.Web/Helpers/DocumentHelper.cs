@@ -27,12 +27,12 @@ namespace LawPortal.Web.Helpers
             _logger = logger;
         }
 
-        public string GetDocumentBasePath()
+        public virtual string GetDocumentBasePath()
         {
             return Path.Combine(_environment.ContentRootPath, "UserFiles", "Searchable", "Documents");
         }
 
-        public string GetDocumentPath(string docFileName)
+        public virtual string GetDocumentPath(string docFileName)
         {
             if (string.IsNullOrEmpty(docFileName))
                 return string.Empty;
@@ -40,7 +40,7 @@ namespace LawPortal.Web.Helpers
             return Path.Combine(GetDocumentBasePath(), docFileName);
         }
 
-        public async Task<bool> SaveDocumentFileUpload(IFormFile uploadedFile, string docFileName, string thumbFileName, DocFolderHeader folderHeader)
+        public virtual async Task<bool> SaveDocumentFileUpload(IFormFile uploadedFile, string docFileName, string thumbFileName, DocFolderHeader folderHeader)
         {
             try
             {
@@ -67,7 +67,7 @@ namespace LawPortal.Web.Helpers
             }
         }
 
-        public async Task<bool> SaveDocumentFromStream(MemoryStream stream, string docFileName, DocFolderHeader docFolder)
+        public virtual async Task<bool> SaveDocumentFromStream(MemoryStream stream, string docFileName, DocFolderHeader docFolder)
         {
             try
             {
@@ -95,7 +95,7 @@ namespace LawPortal.Web.Helpers
             }
         }
 
-        public bool DeleteDocumentFile(string docFileName, string thumbFileName, bool hasImage)
+        public virtual bool DeleteDocumentFile(string docFileName, string thumbFileName, bool hasImage)
         {
             try
             {
@@ -119,7 +119,7 @@ namespace LawPortal.Web.Helpers
             }
         }
 
-        public bool DeleteLetterLogFile(string docFileName)
+        public virtual bool DeleteLetterLogFile(string docFileName)
         {
             try
             {
@@ -135,7 +135,7 @@ namespace LawPortal.Web.Helpers
             }
         }
 
-        public bool DeleteEFSLogFile(string docFileName)
+        public virtual bool DeleteEFSLogFile(string docFileName)
         {
             try
             {

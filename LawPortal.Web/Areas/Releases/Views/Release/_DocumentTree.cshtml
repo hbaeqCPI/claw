@@ -275,9 +275,23 @@
             }).fail(function (e) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(e); else alert("Error loading document dialog."); });
         }
 
+        // Trigger a file download without opening a new tab. window.open(url, "_blank")
+        // produced a flickering empty tab — the browser opens it, sees the response is
+        // an attachment with no renderable body, and closes the tab. A programmatic
+        // anchor click navigates "in place" but the Content-Disposition header makes the
+        // browser save the file instead of navigating away.
+        function downloadFile(url) {
+            var a = document.createElement("a");
+            a.href = url;
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () { document.body.removeChild(a); }, 100);
+        }
+
         function viewDocument(fileId, docFileName) {
             if (!docFileName) { alert($(treeContainerSelector).data("doc-msg")); return; }
-            window.open($(treeContainerSelector).data("download-url") + "?fileId=" + fileId, "_blank");
+            downloadFile($(treeContainerSelector).data("download-url") + "?fileId=" + fileId);
         }
 
         function viewDocumentFromGrid(e) {
@@ -293,7 +307,7 @@
             var rows = grid.select();
             if (rows.length === 0) { alert("@Localizer["Please select files to download."]"); return; }
             var url = $(treeContainerSelector).data("download-url");
-            rows.each(function () { var d = grid.dataItem(this); if (d && d.FileId) window.open(url + "?fileId=" + d.FileId, "_blank"); });
+            rows.each(function () { var d = grid.dataItem(this); if (d && d.FileId) downloadFile(url + "?fileId=" + d.FileId); });
         }
 
         function searchDocuments() { }

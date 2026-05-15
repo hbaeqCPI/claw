@@ -246,3 +246,115 @@ BEGIN
     ALTER TABLE tblTmkCountryDue ADD CONSTRAINT PK_tblTmkCountryDue PRIMARY KEY (CDueId);
 END;
 GO
+
+-- tblDeployPassword — stores deployments keyed by Year + Quarter + PatentPassword
+-- + TrademarkPassword. Multiple deployments per year/quarter are allowed;
+-- uniqueness covers the full tuple to prevent exact duplicates.
+-- PatentPassword / TrademarkPassword are plain text (no validation, max 30 chars)
+-- so they can be displayed back to the user on the Deploy screen. Both default
+-- to '' (empty string) rather than NULL so the unique index treats "no password"
+-- consistently across rows.
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_NAME = 'tblDeployPassword'
+)
+BEGIN
+    CREATE TABLE tblDeployPassword (
+        DeployPasswordId   INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_tblDeployPassword PRIMARY KEY,
+        [Year]             INT NOT NULL,
+        Quarter            NVARCHAR(2) NOT NULL,
+        PatentPassword     NVARCHAR(30) NOT NULL CONSTRAINT DF_tblDeployPassword_PatentPassword DEFAULT '',
+        TrademarkPassword  NVARCHAR(30) NOT NULL CONSTRAINT DF_tblDeployPassword_TrademarkPassword DEFAULT '',
+        CreatedBy          NVARCHAR(20) NULL,
+        UpdatedBy          NVARCHAR(20) NULL,
+        DateCreated        DATETIME NULL,
+        LastUpdate         DATETIME NULL
+    );
+    CREATE UNIQUE INDEX UX_tblDeployPassword
+        ON tblDeployPassword ([Year], Quarter, PatentPassword, TrademarkPassword);
+END;
+GO
+
+-- Migrate older databases: split single UpdatePassword column into
+-- PatentPassword + TrademarkPassword, and rebuild the unique index over all
+-- four columns. Idempotent.
+IF EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'UpdatePassword'
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'PatentPassword'
+    )
+    BEGIN
+        ALTER TABLE tblDeployPassword
+            ADD PatentPassword NVARCHAR(30) NOT NULL CONSTRAINT DF_tblDeployPassword_PatentPassword DEFAULT '';
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'TrademarkPassword'
+    )
+    BEGIN
+        ALTER TABLE tblDeployPassword
+            ADD TrademarkPassword NVARCHAR(30) NOT NULL CONSTRAINT DF_tblDeployPassword_TrademarkPassword DEFAULT '';
+    END;
+
+    -- Carry over any existing password into PatentPassword (best-effort, since
+    -- the old single column had no concept of which side it belonged to).
+    EXEC sp_executesql N'
+        UPDATE tblDeployPassword
+           SET PatentPassword = UpdatePassword
+         WHERE PatentPassword = '''' AND UpdatePassword <> '''';
+    ';
+
+    -- Drop the legacy index before dropping the column it references.
+    IF EXISTS (
+        SELECT 1 FROM sys.indexes i
+        JOIN sys.tables t ON i.object_id = t.object_id
+        WHERE t.name = 'tblDeployPassword' AND i.name = 'UX_tblDeployPassword'
+    )
+    BEGIN
+        DROP INDEX UX_tblDeployPassword ON tblDeployPassword;
+    END;
+
+    ALTER TABLE tblDeployPassword DROP COLUMN UpdatePassword;
+END;
+GO
+
+-- Make sure the unique index is on the full (Year, Quarter, PatentPassword,
+-- TrademarkPassword) tuple. Rebuild if a previous version is present with a
+-- different column set.
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_NAME = 'tblDeployPassword'
+)
+BEGIN
+    -- Table doesn't exist yet (fresh DB before the first CREATE TABLE block ran);
+    -- nothing to migrate.
+    PRINT 'tblDeployPassword not present yet — skipping index rebuild.';
+END
+ELSE IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes i
+    JOIN sys.tables t ON i.object_id = t.object_id
+    WHERE t.name = 'tblDeployPassword' AND i.name = 'UX_tblDeployPassword'
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_tblDeployPassword
+        ON tblDeployPassword ([Year], Quarter, PatentPassword, TrademarkPassword);
+END
+ELSE IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes i
+    JOIN sys.tables t ON i.object_id = t.object_id
+    JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+    JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+    WHERE t.name = 'tblDeployPassword' AND i.name = 'UX_tblDeployPassword'
+      AND c.name = 'TrademarkPassword'
+)
+BEGIN
+    DROP INDEX UX_tblDeployPassword ON tblDeployPassword;
+    CREATE UNIQUE INDEX UX_tblDeployPassword
+        ON tblDeployPassword ([Year], Quarter, PatentPassword, TrademarkPassword);
+END;
+GO

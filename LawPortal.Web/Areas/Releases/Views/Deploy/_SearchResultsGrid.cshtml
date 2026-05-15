@@ -1,0 +1,38 @@
+@model PageViewModel
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ISystemSettings<DefaultSetting> Settings
+@{
+    var settings = await Settings.GetSetting();
+}
+
+@(Html.Kendo().Grid<DeployPassword>()
+                .Name($"{Model.PageId}-Grid")
+                .Columns(columns =>
+                {
+                    columns.Bound(m => m.Year)
+                        .ClientTemplate(Model.DetailsLinkTemplate(Url.Action("Detail", new { id = "#: DeployPasswordId#", fromSearch = true }), "Year"))
+                        .Width(120);
+                    columns.Bound(m => m.Quarter).Width(120);
+                    columns.Bound(m => m.PatentPassword).Title(Localizer["Patent Password"].Value);
+                    columns.Bound(m => m.TrademarkPassword).Title(Localizer["Trademark Password"].Value);
+                    columns.Bound(m => m.CreatedBy).Hidden();
+                    columns.Bound(m => m.DateCreated).Format("{0:dd-MMM-yyyy}").Hidden();
+                    columns.Bound(m => m.UpdatedBy).Hidden();
+                    columns.Bound(m => m.LastUpdate).Format("{0:dd-MMM-yyyy}").Hidden();
+                })
+                .ToolBar(tools => tools.ClientTemplate(Model.ToolbarTemplate(Url.Action("Add", new { fromSearch = true }), Localizer["Add"], Localizer["Export to Excel"])))
+                .AutoBind(false)
+                .Pageable(page => page.PageSizes(settings.SearchResultsPageSizeOptions).Refresh(true))
+                .Sortable(sort => sort.AllowUnsort(false))
+                .Excel(excel => excel.FileName("DeployList.xlsx").AllPages(true).ProxyURL(Url.Action("ExcelExportSave", "Deploy")))
+                .DataSource(dataSource => dataSource
+                .Ajax().Events(events => events.Error("deployPage.searchResultGridError"))
+                .Events(events => events.RequestEnd("deployPage.searchResultGridRequestEnd"))
+                .PageSize(User.GetSearchResultsPageSize(settings.SearchResultsPageSize))
+                .Read(read => read.Action("PageRead", "Deploy")
+                .Data("deployPage.gridMainSearchFilters")
+                )
+                .Sort(sort => { sort.Add(m => m.Year).Descending(); sort.Add(m => m.Quarter).Descending(); })
+                )
+                .HtmlAttributes(new { @class = "kendo-Grid" })
+)

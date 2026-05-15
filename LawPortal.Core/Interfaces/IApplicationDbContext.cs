@@ -80,6 +80,7 @@ namespace LawPortal.Core.Interfaces
 
         #region Releases
         DbSet<Release> Releases { get; set; }
+        DbSet<DeployPassword> DeployPasswords { get; set; }
         #endregion
 
         #region Shared

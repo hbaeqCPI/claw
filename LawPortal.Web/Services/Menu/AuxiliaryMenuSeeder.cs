@@ -330,6 +330,46 @@ namespace LawPortal.Web.Services.Menu
                 changed = true;
             }
 
+            // Find or create the "Deploy" page
+            var deployRouteOptions = "{\"area\":\"Releases\"}";
+            var deployPage = allPages.FirstOrDefault(p => p.Controller == "Deploy" && p.RouteOptions == deployRouteOptions);
+            if (deployPage == null)
+            {
+                deployPage = new CPiMenuPage
+                {
+                    Name = "Deploy",
+                    Controller = "Deploy",
+                    Action = "Index",
+                    RouteOptions = deployRouteOptions,
+                    Policy = "*"
+                };
+                menuPageRepo.Add(deployPage);
+                await db.SaveChangesAsync();
+                allPages.Add(deployPage);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Deploy' page.");
+                changed = true;
+            }
+
+            // Find or create the "Deploy" leaf menu item
+            var deployLeaf = allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && m.PageId == deployPage.Id);
+            if (deployLeaf == null)
+            {
+                deployLeaf = new CPiMenuItem
+                {
+                    ParentId = manageCategory.Id,
+                    Title = "Deploy",
+                    PageId = deployPage.Id,
+                    SortOrder = 20,
+                    IsEnabled = true,
+                    Policy = "*"
+                };
+                menuItemRepo.Add(deployLeaf);
+                await db.SaveChangesAsync();
+                allItems.Add(deployLeaf);
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Deploy' menu item under Releases/Manage.");
+                changed = true;
+            }
+
             // Find or create "Auxiliary" subcategory under Releases
             var auxCategory = allItems.FirstOrDefault(m => m.ParentId == releasesTop.Id && m.Title == "Auxiliary");
             if (auxCategory == null)

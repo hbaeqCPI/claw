@@ -1,0 +1,160 @@
+@model DeployPassword
+@inject IStringLocalizer<SharedResource> Localizer
+@{
+    var id = Model.DeployPasswordId;
+    var addMode = id == 0;
+
+    var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
+    var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
+    bool isReadOnly = !fullModify;
+}
+<form id="detailForm" method="post" cpi-detail-form
+      action="@Url.Action("Save", "Deploy", new { area = "Releases" })"
+      data-error-message="@Localizer["An error occurred. No updates were made."]"
+      data-save-message="@Localizer["Record has been saved successfully."]"
+      data-cancel-title="@Localizer["Confirm Cancel Changes"]"
+      data-cancel-message="@Localizer["Changes will not be saved. Do you want to continue?"]"
+      data-delete-title="@Localizer["Confirm Delete"]"
+      data-delete-message="@Localizer["You are about to delete this record. This operation cannot be undone."]"
+      data-delete-success="@Localizer["Record has been deleted successfully."]">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DeployPasswordId" />
+    @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
+
+    <div class="page-content detail cpiMainEntry">
+        <div class="form-row">
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Year"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="number" class="form-control form-control-sm" asp-for="Year" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().NumericTextBox<int>()
+                            .Name("Year")
+                            .Value(Model.Year == 0 ? DateTime.Now.Year : Model.Year)
+                            .Format("####")
+                            .Decimals(0)
+                            .Min(2000)
+                            .Max(2100)
+                            .HtmlAttributes(new { style = "width: 100%", placeholder = " " })
+                        )
+                    }
+                    <span asp-validation-for="Year"></span>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-2">
+                <div class="form-group float-label">
+                    <label asp-for="Quarter"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="Quarter" readonly />
+                    }
+                    else
+                    {
+                        @(Html.Kendo().DropDownList()
+                            .Name("Quarter")
+                            .DataTextField("Text")
+                            .DataValueField("Value")
+                            .BindTo(new List<SelectListItem>
+                            {
+                                new SelectListItem { Text = "Q1", Value = "Q1" },
+                                new SelectListItem { Text = "Q2", Value = "Q2" },
+                                new SelectListItem { Text = "Q3", Value = "Q3" },
+                                new SelectListItem { Text = "Q4", Value = "Q4" }
+                            })
+                            .Value(string.IsNullOrEmpty(Model.Quarter) ? "Q1" : Model.Quarter)
+                            .HtmlAttributes(new { style = "width: 100%" })
+                        )
+                    }
+                    <span asp-validation-for="Quarter"></span>
+                </div>
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                <button type="button" class="btn btn-danger btn-sm btnClearUpdTables"
+                        data-url="@Url.Action("ClearUpdTables", "Deploy", new { area = "Releases" })">
+                    <i class="fal fa-trash-alt pr-1"></i> @Localizer["Clear Tables"]
+                </button>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal mt-3" role="tablist">
+            <li class="nav-item">
+                <a id="deployDetailPatentTab" href="#deployDetailPatentTabContent"
+                   class="nav-link active" data-toggle="tab" role="tab"
+                   aria-controls="deployDetailPatentTabContent" aria-selected="true"
+                   title="@Localizer["Patent"]">@Localizer["Patent"]</a>
+            </li>
+            <li class="nav-item">
+                <a id="deployDetailTrademarkTab" href="#deployDetailTrademarkTabContent"
+                   class="nav-link" data-toggle="tab" role="tab"
+                   aria-controls="deployDetailTrademarkTabContent" aria-selected="false"
+                   title="@Localizer["Trademark"]">@Localizer["Trademark"]</a>
+            </li>
+        </ul>
+        <div class="tab-content detail">
+            <div class="tab-pane active show p-3" id="deployDetailPatentTabContent"
+                 role="tabpanel" aria-labelledby="deployDetailPatentTab">
+                <div class="form-row">
+                    <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                        <div class="form-group float-label">
+                            <label asp-for="PatentPassword"></label>
+                            <input type="text" class="form-control form-control-sm"
+                                   asp-for="PatentPassword" asp-is-readonly="@isReadOnly"
+                                   asp-is-autofocus="@addMode" maxlength="30" autocomplete="off" />
+                            <span asp-validation-for="PatentPassword"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane p-3" id="deployDetailTrademarkTabContent"
+                 role="tabpanel" aria-labelledby="deployDetailTrademarkTab">
+                <div class="form-row">
+                    <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                        <div class="form-group float-label">
+                            <label asp-for="TrademarkPassword"></label>
+                            <input type="text" class="form-control form-control-sm"
+                                   asp-for="TrademarkPassword" asp-is-readonly="@isReadOnly"
+                                   maxlength="30" autocomplete="off" />
+                            <span asp-validation-for="TrademarkPassword"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!addMode)
+    {
+        <div class="content-stamp">
+            @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.CreatedBy, dateCreated = Model.DateCreated, updatedBy = Model.UpdatedBy, lastUpdate = Model.LastUpdate, tStamp = new byte[0] })
+        </div>
+    }
+</form>
+
+<script>
+    $(document).ready(function () {
+        $('.btnClearUpdTables').off('click').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = $(this).data('url');
+            cpiConfirm.confirm(
+                '@Localizer["Clear Tables?"]',
+                '@Localizer["This action will clear all update tables and cannot be undone, do you wish to continue?"]',
+                function () {
+                    cpiLoadingSpinner.show();
+                    $.post(url, { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() })
+                        .done(function (result) {
+                            cpiLoadingSpinner.hide();
+                            pageHelper.showSuccess(result.success || '@Localizer["Tables cleared."]');
+                        })
+                        .fail(function (e) {
+                            cpiLoadingSpinner.hide();
+                            pageHelper.showErrors(e);
+                        });
+                });
+        });
+    });
+</script>

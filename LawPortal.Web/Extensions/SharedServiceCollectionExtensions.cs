@@ -21,6 +21,7 @@ using LawPortal.Core.Services.Documents;
 using Microsoft.Extensions.Configuration;
 using LawPortal.Core.Entities.Documents;
 using LawPortal.Core.DTOs;
+using LawPortal.Web.Services.DocumentStorage;
 
 namespace LawPortal.Web.Extensions
 {
@@ -65,8 +66,49 @@ namespace LawPortal.Web.Extensions
 
             // documents
             services.AddScoped<IDocumentService, DocumentService>();
-            services.AddScoped<IDocumentHelper, DocumentHelper>();
             services.AddScoped<IAsyncRepository<DocFixedFolder>, EFRepository<DocFixedFolder>>();
+
+            // Document storage — choose backend based on appsettings DocumentStorage section.
+            // Azure is selected only when UseFileSystem=false AND every required credential is
+            // populated. This means the same appsettings.json works in both environments:
+            // locally where credentials are empty (falls back to FileSystem), and in
+            // staging/prod where the creds are filled in via per-environment overrides or
+            // Key Vault (uses Azure Blob).
+            var docStorageSettings = Configuration.GetSection("DocumentStorage").Get<DocumentStorageSettings>();
+            bool useFileSystem;
+            if (docStorageSettings == null)
+            {
+                useFileSystem = true;
+            }
+            else if (docStorageSettings.UseFileSystem)
+            {
+                useFileSystem = true;
+            }
+            else
+            {
+                // Azure is only viable if the service-principal creds + storage account are present.
+                var azureReady =
+                    !string.IsNullOrWhiteSpace(docStorageSettings.StorageADTenantID) &&
+                    !string.IsNullOrWhiteSpace(docStorageSettings.StorageAppClientID) &&
+                    !string.IsNullOrWhiteSpace(docStorageSettings.StorageAppClientSecret) &&
+                    !string.IsNullOrWhiteSpace(docStorageSettings.StorageAccountName) &&
+                    !string.IsNullOrWhiteSpace(docStorageSettings.StorageContainerName);
+                useFileSystem = !azureReady;
+            }
+            if (useFileSystem)
+            {
+                services.AddScoped<IDocumentStorage, FileSystemStorage>();
+                services.AddScoped<IDocumentHelper, DocumentHelper>();
+            }
+            else
+            {
+                services.AddScoped<IDocumentStorage, AzureStorage>();
+                services.AddScoped<IDocumentHelper, AzureDocumentHelper>();
+            }
+            // AzureStorage is also resolvable concretely (AzureDocumentHelper depends on the
+            // concrete type, and ReleaseController will use it directly to download blobs to
+            // local temp files for the 32-bit MDB sidecar).
+            services.AddScoped<AzureStorage>();
             services.AddScoped<IChildEntityService<DocDocument, DocDocumentTag>, ChildEntityService<DocDocument, DocDocumentTag>>();
             services.AddScoped<IEntityService<DocDocumentTag>, AuxService<DocDocumentTag>>();
 

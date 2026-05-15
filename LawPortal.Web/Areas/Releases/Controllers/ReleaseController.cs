@@ -23,6 +23,7 @@ using LawPortal.Web.Interfaces;
 using LawPortal.Web.Models;
 using LawPortal.Web.Models.PageViewModels;
 using LawPortal.Web.Security;
+using LawPortal.Web.Services.DocumentStorage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LawPortal.Web.Areas.Releases.Controllers
@@ -36,6 +37,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         private readonly IEntityService<AppSystem> _systemService;
         private readonly IDocumentService _documentService;
         private readonly IDocumentHelper _documentHelper;
+        private readonly IDocumentStorage _documentStorage;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "releaseDetail";
@@ -47,6 +49,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             IEntityService<AppSystem> systemService,
             IDocumentService documentService,
             IDocumentHelper documentHelper,
+            IDocumentStorage documentStorage,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
@@ -55,7 +58,23 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             _systemService = systemService;
             _documentService = documentService;
             _documentHelper = documentHelper;
+            _documentStorage = documentStorage;
             _localizer = localizer;
+        }
+
+        // Returns a local file path for the given path-from-DocumentHelper.
+        // - File system mode: GetDocumentPath returns a local path; this just passes it through
+        //   if the file exists on disk.
+        // - Azure mode: GetDocumentPath returns a blob-relative path (no drive letter,
+        //   forward slashes); File.Exists is false, so we download the blob to a temp file
+        //   and return the temp path. Lets the 32-bit MDB sidecar (which only knows local
+        //   files) work in both storage modes without further changes.
+        private async Task<string> EnsureLocalFile(string pathFromHelper, string docFileName)
+        {
+            if (string.IsNullOrEmpty(pathFromHelper)) return string.Empty;
+            if (System.IO.File.Exists(pathFromHelper)) return pathFromHelper;
+            var tempPath = Path.Combine(Path.GetTempPath(), $"mdbcache_{Guid.NewGuid():N}_{docFileName}");
+            return await _documentStorage.SaveFileStreamToPath(pathFromHelper, tempPath);
         }
 
         public async Task<IActionResult> Index()
@@ -780,16 +799,64 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     return NotFound();
 
                 var filePath = _documentHelper.GetDocumentPath(docFile.DocFileName);
-                if (!System.IO.File.Exists(filePath))
-                    return NotFound("File not found on disk.");
+                if (string.IsNullOrEmpty(filePath))
+                    return NotFound("File not found.");
 
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                // File system mode: filePath is a local path. Azure mode: filePath is a blob-
+                // relative key. Try local first, fall back to storage abstraction (which is
+                // the blob client in Azure mode).
+                byte[] fileBytes;
+                if (System.IO.File.Exists(filePath))
+                {
+                    fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                }
+                else
+                {
+                    var stream = await _documentStorage.GetFileStream(filePath);
+                    if (stream == null) return NotFound("File not found on disk.");
+                    fileBytes = stream.ToArray();
+                }
+
                 var contentType = GetContentType(docFile.FileExt);
                 return File(fileBytes, contentType, docFile.UserFileName ?? docFile.DocFileName);
             }
             catch (Exception ex)
             {
                 return NotFound("Error downloading file.");
+            }
+        }
+
+        // Temporary diagnostic for blob storage. Lists the first N blobs in the
+        // container, optionally filtered by prefix, so we can see where existing
+        // documents are actually stored when a lookup fails. Remove once the
+        // legacy-path situation is resolved.
+        //  /Releases/Release/BlobDiagnostic                — top-level listing
+        //  /Releases/Release/BlobDiagnostic?prefix=Sea     — prefix-filtered
+        //  /Releases/Release/BlobDiagnostic?find=120.mdb   — find any blob ending in name
+        public async Task<IActionResult> BlobDiagnostic(string? prefix = null, string? find = null, int max = 100)
+        {
+            try
+            {
+                if (_documentStorage is not LawPortal.Web.Services.DocumentStorage.AzureStorage azure)
+                    return Content("Not running in Azure mode — diagnostic not applicable.", "text/plain");
+
+                if (!string.IsNullOrEmpty(find))
+                {
+                    var match = await azure.FindByFileName(find);
+                    return Content(string.IsNullOrEmpty(match)
+                        ? $"No blob found ending in '{find}'."
+                        : $"Found at: {match}", "text/plain");
+                }
+
+                var blobs = await azure.ListBlobs(string.IsNullOrEmpty(prefix) ? null : prefix, max);
+                if (blobs.Count == 0)
+                    return Content($"No blobs found{(string.IsNullOrEmpty(prefix) ? "" : $" with prefix '{prefix}'")}.", "text/plain");
+
+                return Content(string.Join("\n", blobs), "text/plain");
+            }
+            catch (Exception ex)
+            {
+                return Content($"Diagnostic error: {ex.GetType().Name}: {ex.Message}", "text/plain");
             }
         }
 
@@ -1143,14 +1210,23 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                         Enumerable.Empty<DocDocument>(),
                         null, false);
 
-                    // Save physical file to the documents directory
-                    var docBasePath = _documentHelper.GetDocumentBasePath();
-                    Directory.CreateDirectory(docBasePath);
-                    var destPath = Path.Combine(docBasePath, docFile.DocFileName);
-                    var destDir = Path.GetDirectoryName(destPath);
-                    if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
-                        Directory.CreateDirectory(destDir);
-                    System.IO.File.Copy(filePath, destPath, true);
+                    // Save through the document helper so we hit local FS in file-system mode
+                    // and Azure Blob in Azure mode. We need a header so Azure metadata is set
+                    // correctly; for file-system mode the header is currently ignored.
+                    using (var fileStream = System.IO.File.OpenRead(filePath))
+                    using (var memStream = new MemoryStream())
+                    {
+                        await fileStream.CopyToAsync(memStream);
+                        memStream.Position = 0;
+
+                        var folderHeader = new DocFolderHeader
+                        {
+                            SystemType = release.SystemType,
+                            ScreenCode = "Release",
+                            ParentId = release.ReleaseId
+                        };
+                        await _documentHelper.SaveDocumentFromStream(memStream, docFile.DocFileName, folderHeader);
+                    }
 
                     debugInfo.Add($"{fileName} -> FolderId={rootFolder.FolderId}, DocFileId={docFile.FileId}, DocFileName={docFile.DocFileName}");
                     addedCount++;
@@ -1234,17 +1310,23 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (currentDoc == null || !currentDoc.FileId.HasValue) return BadRequest("Current document not found.");
                 var currentFile = await _documentService.GetFileById(currentDoc.FileId.Value);
                 if (currentFile == null) return BadRequest("Current file not found.");
-                var currentMdbPath = _documentHelper.GetDocumentPath(currentFile.DocFileName);
+                // In Azure mode this returns a blob path; resolve to a local file before
+                // passing to the 32-bit MDB sidecar (which only reads local disk).
+                var currentMdbPath = await EnsureLocalFile(
+                    _documentHelper.GetDocumentPath(currentFile.DocFileName),
+                    currentFile.DocFileName);
 
                 bool isPat = currentDoc.DocName.Contains("Pat", StringComparison.OrdinalIgnoreCase);
                 var compareDoc = await _documentService.GetDocumentById(compareDocId);
                 if (compareDoc == null || !compareDoc.FileId.HasValue) return BadRequest("Comparison document not found.");
                 var compareFile = await _documentService.GetFileById(compareDoc.FileId.Value);
                 if (compareFile == null) return BadRequest("Comparison file not found.");
-                var compareMdbPath = _documentHelper.GetDocumentPath(compareFile.DocFileName);
+                var compareMdbPath = await EnsureLocalFile(
+                    _documentHelper.GetDocumentPath(compareFile.DocFileName),
+                    compareFile.DocFileName);
 
-                if (!System.IO.File.Exists(currentMdbPath)) return BadRequest("Current MDB file not found on disk.");
-                if (!System.IO.File.Exists(compareMdbPath)) return BadRequest("Comparison MDB file not found on disk.");
+                if (string.IsNullOrEmpty(currentMdbPath) || !System.IO.File.Exists(currentMdbPath)) return BadRequest("Current MDB file not found on disk.");
+                if (string.IsNullOrEmpty(compareMdbPath) || !System.IO.File.Exists(compareMdbPath)) return BadRequest("Comparison MDB file not found on disk.");
 
                 var env = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
                 var comparisonService = new LawPortal.Reports.Services.MdbComparisonService(
@@ -1319,12 +1401,21 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 await _documentService.UpdateDocuments(userName,
                     Enumerable.Empty<DocDocument>(), new[] { docDocument }, Enumerable.Empty<DocDocument>(), null, false);
 
-                var docBasePath = _documentHelper.GetDocumentBasePath();
-                Directory.CreateDirectory(docBasePath);
-                var destPath = Path.Combine(docBasePath, docFile.DocFileName);
-                var destDir = Path.GetDirectoryName(destPath);
-                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
-                await System.IO.File.WriteAllBytesAsync(destPath, pdfBytes);
+                // Save through the document helper so the PDF lands at the same canonical
+                // location as MDBs — Searchable/Documents/<filename> in blob (Azure mode)
+                // or <contentRoot>/UserFiles/Searchable/Documents/<filename> on disk
+                // (FileSystem mode). Was previously a direct File.WriteAllBytesAsync that
+                // worked locally but produced a blob-incompatible path in Azure mode.
+                using (var pdfStream = new MemoryStream(pdfBytes))
+                {
+                    var folderHeader = new DocFolderHeader
+                    {
+                        SystemType = release.SystemType,
+                        ScreenCode = "Release",
+                        ParentId = release.ReleaseId
+                    };
+                    await _documentHelper.SaveDocumentFromStream(pdfStream, docFile.DocFileName, folderHeader);
+                }
 
                 return Ok(new { success = $"Report generated: {reportName}.pdf", fileId = docFile.FileId });
             }
