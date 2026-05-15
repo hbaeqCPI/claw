@@ -330,7 +330,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                         });
 
                     if (rowsAffected == 0)
-                        return new RecordDoesNotExistResult();
+                        return new RecordDoesNotExistResult($"Record not found (CDueId={entity.CDueId}).");
                 }
                 else
                 {
