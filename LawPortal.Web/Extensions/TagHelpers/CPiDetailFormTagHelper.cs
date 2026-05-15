@@ -1,4 +1,6 @@
 ﻿using LawPortal.Web.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -14,7 +16,12 @@ namespace LawPortal.Web.Extensions.TagHelpers
     public class CPiDetailFormTagHelper : FormTagHelper
     {
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IUrlHelperFactory _urlHelperFactory;
         private const string ForAttributeName = "cpi-detail-form";
+
+        [ViewContext]
+        [HtmlAttributeNotBound]
+        public ViewContext CurrentViewContext { get; set; }
 
 
         [HtmlAttributeName("form-name")]
@@ -51,10 +58,12 @@ namespace LawPortal.Web.Extensions.TagHelpers
         [HtmlAttributeName("print-message")]
         public string PrintMessage { set; get; }
 
-        public CPiDetailFormTagHelper(IHtmlGenerator generator, 
-            IStringLocalizer<SharedResource> localizer) : base(generator)
+        public CPiDetailFormTagHelper(IHtmlGenerator generator,
+            IStringLocalizer<SharedResource> localizer,
+            IUrlHelperFactory urlHelperFactory) : base(generator)
         {
             _localizer = localizer;
+            _urlHelperFactory = urlHelperFactory;
         }
 
         public override void Process(TagHelperContext context, TagHelperOutput output)
@@ -125,9 +134,22 @@ namespace LawPortal.Web.Extensions.TagHelpers
             base.Process(context, output);
 
             // After base.Process — base may have stripped or rewritten the action
-            // attribute. Restore the literal URL the caller passed in.
+            // attribute. Resolve the caller's value into an absolute URL so the
+            // browser doesn't drop trailing path segments (e.g. /Detail/96 →
+            // /Detail/Save). If ActionMethod looks like a URL already (starts with
+            // / or http), pass it through; otherwise treat it as an MVC action
+            // name on the current controller and let Url.Action resolve it.
             if (!string.IsNullOrEmpty(ActionMethod))
-                output.Attributes.SetAttribute("action", ActionMethod);
+            {
+                var resolved = ActionMethod;
+                if (!ActionMethod.StartsWith("/") && !ActionMethod.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    var urlHelper = _urlHelperFactory.GetUrlHelper(CurrentViewContext);
+                    var absolute = urlHelper.Action(ActionMethod);
+                    if (!string.IsNullOrEmpty(absolute)) resolved = absolute;
+                }
+                output.Attributes.SetAttribute("action", resolved);
+            }
         }
     }
 }
