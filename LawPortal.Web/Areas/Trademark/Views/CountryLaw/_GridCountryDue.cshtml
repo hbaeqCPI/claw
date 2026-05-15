@@ -40,7 +40,7 @@
               {
                   if (Model.CanDeleteChild)
                       command.Custom("Delete").Click("function(e) {tmkCountryLawPage.deleteGridRow(e,this)}").IconClass("k-icon fal fa-trash-alt")
-                      .Text(Localizer["Delete"]).Visible("function(dataItem) {return !dataItem.CPIAction}");
+                      .Text(Localizer["Delete"]);
 
               }).Width(10);
               columns.Command(command =>
