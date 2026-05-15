@@ -272,74 +272,65 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
                 if (entity.CDueId > 0 && !isNewRecord)
                 {
-                    // Update existing record by CDueId
-                    var existing = await _auxService.QueryableList.AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.CDueId == entity.CDueId);
+                    // Check for duplicate systems across records with the same key fields
+                    var allRecords = await _auxService.QueryableList.AsNoTracking()
+                        .Where(c => c.CDueId != entity.CDueId
+                            && c.Country == entity.Country && c.CaseType == entity.CaseType
+                            && c.ActionType == entity.ActionType && c.ActionDue == entity.ActionDue
+                            && c.BasedOn == entity.BasedOn && c.Yr == entity.Yr && c.Mo == entity.Mo
+                            && c.Dy == entity.Dy && c.Indicator == entity.Indicator
+                            && c.Systems != null && c.Systems != "")
+                        .Select(c => c.Systems)
+                        .ToListAsync();
 
-                    if (existing != null)
-                    {
-                        entity.DateCreated = existing.DateCreated ?? now;
+                    var usedSystems = allRecords
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(s => s.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                        // Check for duplicate systems across records with the same key fields
-                        var allRecords = await _auxService.QueryableList.AsNoTracking()
-                            .Where(c => c.CDueId != entity.CDueId
-                                && c.Country == entity.Country && c.CaseType == entity.CaseType
-                                && c.ActionType == entity.ActionType && c.ActionDue == entity.ActionDue
-                                && c.BasedOn == entity.BasedOn && c.Yr == entity.Yr && c.Mo == entity.Mo
-                                && c.Dy == entity.Dy && c.Indicator == entity.Indicator
-                                && c.Systems != null && c.Systems != "")
-                            .Select(c => c.Systems)
-                            .ToListAsync();
+                    var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                    if (duplicates.Any())
+                        return new JsonBadRequest($"The following systems are already assigned to another Country Due record: {string.Join(", ", duplicates)}");
 
-                        var usedSystems = allRecords
-                            .Where(s => !string.IsNullOrEmpty(s))
-                            .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                            .Select(s => s.Trim())
-                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p11", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
+                    var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p12", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
+                    var cpiPerm = new Microsoft.Data.SqlClient.SqlParameter("@p17", System.Data.SqlDbType.Int) { Value = entity.CPIPermanentID.HasValue ? entity.CPIPermanentID.Value : DBNull.Value };
 
-                        var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
-                        if (duplicates.Any())
-                            return new JsonBadRequest($"The following systems are already assigned to another Country Due record: {string.Join(", ", duplicates)}");
+                    // DateCreated intentionally left out of the SET list so the row's
+                    // original create timestamp is preserved without a separate lookup.
+                    var rowsAffected = await _repository.Database.ExecuteSqlRawAsync(
+                        @"UPDATE tblPatCountryDue SET Country=@p0, CaseType=@p1, ActionType=@p2, ActionDue=@p3, BasedOn=@p4,
+                          Yr=@p5, Mo=@p6, Dy=@p7, Indicator=@p8, Recurring=@p9,
+                          EffBasedOn=@p10, EffStartDate=@p11, EffEndDate=@p12,
+                          CPIAction=@p13, Calculate=@p14, MultipleBasedOn=@p21, CPIPermanentID=@p17,
+                          Systems=@p15, UserID=@p18, LastUpdate=@p20
+                          WHERE CDueId=@p16",
+                        new object[] {
+                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.ActionType ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.ActionDue ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.BasedOn ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Yr),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Mo),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.Dy),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.Indicator ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Recurring),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.EffBasedOn ?? ""),
+                            effStart, effEnd,
+                            new Microsoft.Data.SqlClient.SqlParameter("@p13", entity.CPIAction),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p14", entity.Calculate),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p15", entity.Systems),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p16", entity.CDueId),
+                            cpiPerm,
+                            new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate),
+                            new Microsoft.Data.SqlClient.SqlParameter("@p21", entity.MultipleBasedOn)
+                        });
 
-                        var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p11", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
-                        var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p12", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
-                        var cpiPerm = new Microsoft.Data.SqlClient.SqlParameter("@p17", System.Data.SqlDbType.Int) { Value = entity.CPIPermanentID.HasValue ? entity.CPIPermanentID.Value : DBNull.Value };
-
-                        await _repository.Database.ExecuteSqlRawAsync(
-                            @"UPDATE tblPatCountryDue SET Country=@p0, CaseType=@p1, ActionType=@p2, ActionDue=@p3, BasedOn=@p4,
-                              Yr=@p5, Mo=@p6, Dy=@p7, Indicator=@p8, Recurring=@p9,
-                              EffBasedOn=@p10, EffStartDate=@p11, EffEndDate=@p12,
-                              CPIAction=@p13, Calculate=@p14, MultipleBasedOn=@p21, CPIPermanentID=@p17,
-                              Systems=@p15, UserID=@p18, DateCreated=@p19, LastUpdate=@p20
-                              WHERE CDueId=@p16",
-                            new object[] {
-                                new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.ActionType ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.ActionDue ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.BasedOn ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Yr),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Mo),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.Dy),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.Indicator ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.Recurring),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.EffBasedOn ?? ""),
-                                effStart, effEnd,
-                                new Microsoft.Data.SqlClient.SqlParameter("@p13", entity.CPIAction),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p14", entity.Calculate),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p15", entity.Systems),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p16", entity.CDueId),
-                                cpiPerm,
-                                new Microsoft.Data.SqlClient.SqlParameter("@p18", entity.UserID ?? ""),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p19", entity.DateCreated),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p20", entity.LastUpdate),
-                                new Microsoft.Data.SqlClient.SqlParameter("@p21", entity.MultipleBasedOn)
-                            });
-                    }
-                    else
-                    {
+                    if (rowsAffected == 0)
                         return new RecordDoesNotExistResult();
-                    }
                 }
                 else
                 {
