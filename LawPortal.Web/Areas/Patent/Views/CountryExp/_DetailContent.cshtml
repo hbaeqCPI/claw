@@ -64,8 +64,8 @@
                     else
                     {
                         <select class="form-control form-control-sm" asp-for="Type" style="width:100%; height:44px; padding-top:20px;">
+                            <option value="Expiration" selected="@(string.IsNullOrEmpty(Model.Type) || Model.Type == "Expiration" ? "selected" : null)">Expiration</option>
                             <option value="Tax Start" selected="@(Model.Type == "Tax Start" ? "selected" : null)">Tax Start</option>
-                            <option value="Expiration" selected="@(Model.Type == "Expiration" ? "selected" : null)">Expiration</option>
                         </select>
                         <span asp-validation-for="Type"></span>
                     }

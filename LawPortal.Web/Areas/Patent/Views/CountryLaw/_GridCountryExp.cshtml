@@ -70,6 +70,7 @@
                              model.Id(e => e.CExpId);
                              model.Field(e => e.Country).DefaultValue(Model.Country);
                              model.Field(e => e.CaseType).DefaultValue(Model.CaseType);
+                             model.Field(e => e.Type).DefaultValue("Expiration");
                              model.Field(e => e.Systems).DefaultValue(Model.Systems ?? "").Editable(false);
                          })
                          .Read(create => create.Action("CountryExpRead", "CountryLaw").Data(childLinkParam))

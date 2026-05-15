@@ -191,7 +191,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         {
             var viewModel = new DetailPageViewModel<PatCountryExp>
             {
-                Detail = new PatCountryExp()
+                Detail = new PatCountryExp { Type = "Expiration" }
             };
 
             viewModel.AddPatentAuxiliarySecurityPolicies();

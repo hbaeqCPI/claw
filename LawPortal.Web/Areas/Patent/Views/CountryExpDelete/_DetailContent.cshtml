@@ -64,10 +64,10 @@
                             .DataTextField("Text")
                             .DataValueField("Value")
                             .BindTo(new[] {
-                                new { Text = "Tax Start", Value = "Tax Start" },
-                                new { Text = "Expiration", Value = "Expiration" }
+                                new { Text = "Expiration", Value = "Expiration" },
+                                new { Text = "Tax Start", Value = "Tax Start" }
                             })
-                            .Value(Model.Type)
+                            .Value(string.IsNullOrEmpty(Model.Type) ? "Expiration" : Model.Type)
                             .HtmlAttributes(new { style = "width:100%" })
                         )
                         <span asp-validation-for="Type"></span>
