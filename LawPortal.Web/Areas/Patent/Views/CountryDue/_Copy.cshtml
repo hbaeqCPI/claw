@@ -100,13 +100,26 @@
                             <div class="col-md-6 px-0">
                                 <div class="form-group float-label">
                                     <label asp-for="EffStartDate"></label>
-                                    <input asp-for="EffStartDate" type="date" class="form-control form-control-sm" />
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffStartDate") { Value = Model.EffStartDate })
                                 </div>
                             </div>
                             <div class="col-md-6 px-0">
                                 <div class="form-group float-label">
                                     <label asp-for="EffEndDate"></label>
-                                    <input asp-for="EffEndDate" type="date" class="form-control form-control-sm" />
+                                    @await Component.InvokeAsync("DatePicker", new DatePickerOptions("EffEndDate") { Value = Model.EffEndDate })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 px-0">
+                                <div class="form-group float-label">
+                                    <label asp-for="Systems"></label>
+                                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                                        { "SystemsValue", Model.Systems ?? "" },
+                                        { "SystemsPrefix", "patCDCopy" },
+                                        { "SystemsAction", Url.Action("GetSystemList", "CountryDue", new { area = "Patent" }) },
+                                        { "SystemsReadOnly", false }
+                                    })
                                 </div>
                             </div>
                         </div>

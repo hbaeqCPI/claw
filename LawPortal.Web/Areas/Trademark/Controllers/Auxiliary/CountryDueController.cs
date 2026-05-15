@@ -393,7 +393,8 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 Recurring = entity.Recurring,
                 EffBasedOn = entity.EffBasedOn,
                 EffStartDate = entity.EffStartDate,
-                EffEndDate = entity.EffEndDate
+                EffEndDate = entity.EffEndDate,
+                Systems = entity.Systems
             };
             return PartialView("_Copy", viewModel);
         }
@@ -432,6 +433,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                     page.Detail.EffBasedOn = copyOptions.EffBasedOn;
                     page.Detail.EffStartDate = copyOptions.EffStartDate;
                     page.Detail.EffEndDate = copyOptions.EffEndDate;
+                    page.Detail.Systems = copyOptions.Systems ?? source.Systems ?? "";
                     page.Detail.CPIAction = false;
                     page.Detail.CPIPermanentID = 0;
                 }
