@@ -194,61 +194,52 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
             if (!isNewRecord)
             {
-                // Update existing record
                 var originalSystems = entity.OriginalSystems == "__EMPTY__" ? "" : entity.OriginalSystems;
 
-                var existing = await _repository.PatCountryExpDeletes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.CExpId == entity.CExpId && c.Systems == originalSystems);
+                // Check for duplicate systems across records with same (Country, CaseType, Type, BasedOn, Yr, Mo, Dy)
+                var allRecords = await _repository.PatCountryExpDeletes.AsNoTracking()
+                    .Where(c => c.CExpId != entity.CExpId
+                        && c.Country == entity.Country && c.CaseType == entity.CaseType
+                        && c.Type == entity.Type && c.BasedOn == entity.BasedOn
+                        && c.Yr == entity.Yr && c.Mo == entity.Mo && c.Dy == entity.Dy
+                        && c.Systems != null && c.Systems != "")
+                    .Select(c => c.Systems)
+                    .ToListAsync();
 
-                if (existing != null)
-                {
-                    // Check for duplicate systems across records with same (Country, CaseType, Type, BasedOn, Yr, Mo, Dy)
-                    var allRecords = await _repository.PatCountryExpDeletes.AsNoTracking()
-                        .Where(c => c.Country == entity.Country && c.CaseType == entity.CaseType
-                            && c.Type == entity.Type && c.BasedOn == entity.BasedOn
-                            && c.Yr == entity.Yr && c.Mo == entity.Mo && c.Dy == entity.Dy
-                            && c.Systems != originalSystems
-                            && c.Systems != null && c.Systems != "")
-                        .Select(c => c.Systems)
-                        .ToListAsync();
+                var usedSystems = allRecords
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(s => s.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    var usedSystems = allRecords
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                        .Select(s => s.Trim())
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
+                if (duplicates.Any())
+                    return new JsonBadRequest($"The following systems are already assigned to another Country Exp Delete record: {string.Join(", ", duplicates)}");
 
-                    var duplicates = newSystems.Where(s => usedSystems.Contains(s)).ToList();
-                    if (duplicates.Any())
-                        return new JsonBadRequest($"The following systems are already assigned to another Country Exp Delete record: {string.Join(", ", duplicates)}");
+                var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p8", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
+                var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p9", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
 
-                    var effStart = new Microsoft.Data.SqlClient.SqlParameter("@p8", System.Data.SqlDbType.DateTime) { Value = entity.EffStartDate.HasValue ? entity.EffStartDate.Value : DBNull.Value };
-                    var effEnd = new Microsoft.Data.SqlClient.SqlParameter("@p9", System.Data.SqlDbType.DateTime) { Value = entity.EffEndDate.HasValue ? entity.EffEndDate.Value : DBNull.Value };
+                var rowsAffected = await _repository.Database.ExecuteSqlRawAsync(
+                    @"UPDATE tblPatCountryExpDelete SET Country=@p0, CaseType=@p1, Type=@p2, BasedOn=@p3,
+                      Yr=@p4, Mo=@p5, Dy=@p6, EffBasedOn=@p7, EffStartDate=@p8, EffEndDate=@p9,
+                      Systems=@p10
+                      WHERE CExpId=@p11",
+                    new object[] {
+                        new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.Type ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.BasedOn ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Yr),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Mo),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Dy),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.EffBasedOn ?? ""),
+                        effStart, effEnd,
+                        new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.Systems),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p11", entity.CExpId)
+                    });
 
-                    await _repository.Database.ExecuteSqlRawAsync(
-                        @"UPDATE tblPatCountryExpDelete SET Country=@p0, CaseType=@p1, Type=@p2, BasedOn=@p3,
-                          Yr=@p4, Mo=@p5, Dy=@p6, EffBasedOn=@p7, EffStartDate=@p8, EffEndDate=@p9,
-                          Systems=@p10
-                          WHERE CExpId=@p11 AND Systems=@p12",
-                        new object[] {
-                            new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.Country ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p1", entity.CaseType ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p2", entity.Type ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.BasedOn ?? ""),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Yr),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Mo),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.Dy),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.EffBasedOn ?? ""),
-                            effStart, effEnd,
-                            new Microsoft.Data.SqlClient.SqlParameter("@p10", entity.Systems),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p11", entity.CExpId),
-                            new Microsoft.Data.SqlClient.SqlParameter("@p12", originalSystems ?? "")
-                        });
-                }
-                else
-                {
-                    return new RecordDoesNotExistResult();
-                }
+                if (rowsAffected == 0)
+                    return new RecordDoesNotExistResult($"Record not found (CExpId={entity.CExpId}).");
             }
             else
             {
