@@ -43,5 +43,8 @@ namespace LawPortal.Web.Areas.Shared.ViewModels
 
         [Display(Name = "Eff End Date")]
         public DateTime? EffEndDate { get; set; }
+
+        [Display(Name = "Systems")]
+        public string? Systems { get; set; }
     }
 }

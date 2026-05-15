@@ -400,7 +400,8 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 Mo = entity.Mo,
                 EffBasedOn = entity.EffBasedOn,
                 EffStartDate = entity.EffStartDate,
-                EffEndDate = entity.EffEndDate
+                EffEndDate = entity.EffEndDate,
+                Systems = entity.Systems
             };
             return PartialView("_Copy", viewModel);
         }
@@ -435,6 +436,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                     page.Detail.EffBasedOn = copyOptions.EffBasedOn;
                     page.Detail.EffStartDate = copyOptions.EffStartDate;
                     page.Detail.EffEndDate = copyOptions.EffEndDate;
+                    page.Detail.Systems = copyOptions.Systems ?? source.Systems ?? "";
                 }
             }
         }
