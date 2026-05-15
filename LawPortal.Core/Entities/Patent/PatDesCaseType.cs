@@ -37,6 +37,18 @@ namespace LawPortal.Core.Entities.Patent
         public string? OriginalSystems { get; set; }
 
         [NotMapped]
+        public string? OriginalIntlCode { get; set; }
+
+        [NotMapped]
+        public string? OriginalCaseType { get; set; }
+
+        [NotMapped]
+        public string? OriginalDesCountry { get; set; }
+
+        [NotMapped]
+        public string? OriginalDesCaseType { get; set; }
+
+        [NotMapped]
         public byte[]? ParentTStamp { get; set; }
     }
 }

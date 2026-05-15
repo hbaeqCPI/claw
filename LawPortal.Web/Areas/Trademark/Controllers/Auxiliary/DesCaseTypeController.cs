@@ -265,14 +265,18 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
             var isNewRecord = entity.IsNewRecord || entity.OriginalSystems == "__NEW__" || entity.OriginalSystems == null;
             var originalSystemsValue = entity.OriginalSystems == "__EMPTY__" ? "" : (entity.OriginalSystems ?? "");
+            var origIntlCode = entity.OriginalIntlCode ?? entity.IntlCode;
+            var origCaseType = entity.OriginalCaseType ?? entity.CaseType;
+            var origDesCountry = entity.OriginalDesCountry ?? entity.DesCountry;
+            var origDesCaseType = entity.OriginalDesCaseType ?? entity.DesCaseType;
 
-            // Find existing record on update
+            // Find existing record on update — use ORIGINAL key, not the (possibly edited) new key.
             TmkDesCaseType existing = null;
             if (!isNewRecord)
             {
                 existing = await _repository.TmkDesCaseTypes.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType
-                        && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType && c.Systems == originalSystemsValue);
+                    .FirstOrDefaultAsync(c => c.IntlCode == origIntlCode && c.CaseType == origCaseType
+                        && c.DesCountry == origDesCountry && c.DesCaseType == origDesCaseType && c.Systems == originalSystemsValue);
             }
 
             // Check for duplicate systems across other records with the same key fields
@@ -369,7 +373,46 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_repository.TmkDesCaseTypes.AsQueryable(), request, property, text, filterType, requiredRelation);
+            // Union distinct values from base + ext so search dropdowns surface every
+            // value the user might encounter, not just what's in tblTmkDesCaseType.
+            IQueryable<string>? baseValues = property switch
+            {
+                "IntlCode"    => _repository.TmkDesCaseTypes.AsNoTracking().Select(x => x.IntlCode),
+                "CaseType"    => _repository.TmkDesCaseTypes.AsNoTracking().Select(x => x.CaseType),
+                "DesCountry"  => _repository.TmkDesCaseTypes.AsNoTracking().Select(x => x.DesCountry),
+                "DesCaseType" => _repository.TmkDesCaseTypes.AsNoTracking().Select(x => x.DesCaseType),
+                _ => null
+            };
+            IQueryable<string>? extValues = property switch
+            {
+                "IntlCode"    => _repository.TmkDesCaseTypeExts.AsNoTracking().Select(x => x.IntlCode),
+                "CaseType"    => _repository.TmkDesCaseTypeExts.AsNoTracking().Select(x => x.CaseType),
+                "DesCountry"  => _repository.TmkDesCaseTypeExts.AsNoTracking().Select(x => x.DesCountry),
+                "DesCaseType" => _repository.TmkDesCaseTypeExts.AsNoTracking().Select(x => x.DesCaseType),
+                _ => null
+            };
+
+            if (baseValues == null || extValues == null)
+                return await GetPicklistData(_repository.TmkDesCaseTypes.AsQueryable(), request, property, text, filterType, requiredRelation);
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                var pattern = filterType == FilterType.Contains ? "%" + text + "%" : text + "%";
+                baseValues = baseValues.Where(v => v != null && EF.Functions.Like(v, pattern));
+                extValues = extValues.Where(v => v != null && EF.Functions.Like(v, pattern));
+            }
+
+            var baseList = await baseValues.Where(v => v != null).Distinct().ToListAsync();
+            var extList = await extValues.Where(v => v != null).Distinct().ToListAsync();
+
+            var union = baseList.Concat(extList)
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .Select(v => new Dictionary<string, string> { [property] = v! })
+                .ToList();
+
+            return Json(union);
         }
 
         [HttpPost, Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]

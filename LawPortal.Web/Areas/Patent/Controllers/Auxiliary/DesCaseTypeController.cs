@@ -222,13 +222,18 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
             if (!isNewRecord)
             {
-                // Update existing record
+                // Update existing record — WHERE uses the ORIGINAL composite key so changes
+                // to IntlCode/CaseType/DesCountry/DesCaseType actually find the row.
                 var originalSystems = entity.OriginalSystems == "__EMPTY__" ? "" : entity.OriginalSystems;
+                var origIntlCode = entity.OriginalIntlCode ?? entity.IntlCode;
+                var origCaseType = entity.OriginalCaseType ?? entity.CaseType;
+                var origDesCountry = entity.OriginalDesCountry ?? entity.DesCountry;
+                var origDesCaseType = entity.OriginalDesCaseType ?? entity.DesCaseType;
 
-                // Check for duplicate systems across records with the same (IntlCode, CaseType, DesCountry, DesCaseType)
+                // Check for duplicate systems across OTHER records (excluding the row being updated) with the same NEW key
                 var allRecords = await _repository.PatDesCaseTypes.AsNoTracking()
                     .Where(c => c.IntlCode == entity.IntlCode && c.CaseType == entity.CaseType && c.DesCountry == entity.DesCountry && c.DesCaseType == entity.DesCaseType
-                        && c.Systems != originalSystems
+                        && !(c.IntlCode == origIntlCode && c.CaseType == origCaseType && c.DesCountry == origDesCountry && c.DesCaseType == origDesCaseType && c.Systems == originalSystems)
                         && c.Systems != null && c.Systems != "")
                     .Select(c => c.Systems)
                     .ToListAsync();
@@ -243,7 +248,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 if (duplicates.Any())
                     return new JsonBadRequest($"The following systems are already assigned to another Designation Case Type record: {string.Join(", ", duplicates)}");
 
-                await _repository.Database.ExecuteSqlRawAsync(
+                var rowsAffected = await _repository.Database.ExecuteSqlRawAsync(
                     "UPDATE tblPatDesCaseType SET IntlCode=@p0, CaseType=@p1, DesCountry=@p2, DesCaseType=@p3, [Default]=@p4, Systems=@p5 WHERE IntlCode=@p6 AND CaseType=@p7 AND DesCountry=@p8 AND DesCaseType=@p9 AND Systems=@p10",
                     new object[] {
                         new Microsoft.Data.SqlClient.SqlParameter("@p0", entity.IntlCode ?? ""),
@@ -252,12 +257,15 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                         new Microsoft.Data.SqlClient.SqlParameter("@p3", entity.DesCaseType ?? ""),
                         new Microsoft.Data.SqlClient.SqlParameter("@p4", entity.Default),
                         new Microsoft.Data.SqlClient.SqlParameter("@p5", entity.Systems),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p6", entity.IntlCode ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p7", entity.CaseType ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p8", entity.DesCountry ?? ""),
-                        new Microsoft.Data.SqlClient.SqlParameter("@p9", entity.DesCaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p6", origIntlCode ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p7", origCaseType ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p8", origDesCountry ?? ""),
+                        new Microsoft.Data.SqlClient.SqlParameter("@p9", origDesCaseType ?? ""),
                         new Microsoft.Data.SqlClient.SqlParameter("@p10", originalSystems ?? "")
                     });
+
+                if (rowsAffected == 0)
+                    return new RecordDoesNotExistResult($"Record not found ({origIntlCode}/{origCaseType}/{origDesCountry}/{origDesCaseType}/{originalSystems}).");
             }
             else
             {
@@ -347,7 +355,47 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
         public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
         {
-            return await GetPicklistData(_repository.PatDesCaseTypes.AsQueryable(), request, property, text, filterType, requiredRelation);
+            // Union distinct values from base + ext tables so search dropdowns surface every
+            // IntlCode / CaseType / DesCountry / DesCaseType the user might encounter, not
+            // just what happens to exist in tblPatDesCaseType.
+            IQueryable<string>? baseValues = property switch
+            {
+                "IntlCode"    => _repository.PatDesCaseTypes.AsNoTracking().Select(x => x.IntlCode),
+                "CaseType"    => _repository.PatDesCaseTypes.AsNoTracking().Select(x => x.CaseType),
+                "DesCountry"  => _repository.PatDesCaseTypes.AsNoTracking().Select(x => x.DesCountry),
+                "DesCaseType" => _repository.PatDesCaseTypes.AsNoTracking().Select(x => x.DesCaseType),
+                _ => null
+            };
+            IQueryable<string>? extValues = property switch
+            {
+                "IntlCode"    => _repository.PatDesCaseTypeExts.AsNoTracking().Select(x => x.IntlCode),
+                "CaseType"    => _repository.PatDesCaseTypeExts.AsNoTracking().Select(x => x.CaseType),
+                "DesCountry"  => _repository.PatDesCaseTypeExts.AsNoTracking().Select(x => x.DesCountry),
+                "DesCaseType" => _repository.PatDesCaseTypeExts.AsNoTracking().Select(x => x.DesCaseType),
+                _ => null
+            };
+
+            if (baseValues == null || extValues == null)
+                return await GetPicklistData(_repository.PatDesCaseTypes.AsQueryable(), request, property, text, filterType, requiredRelation);
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                var pattern = filterType == FilterType.Contains ? "%" + text + "%" : text + "%";
+                baseValues = baseValues.Where(v => v != null && EF.Functions.Like(v, pattern));
+                extValues = extValues.Where(v => v != null && EF.Functions.Like(v, pattern));
+            }
+
+            var baseList = await baseValues.Where(v => v != null).Distinct().ToListAsync();
+            var extList = await extValues.Where(v => v != null).Distinct().ToListAsync();
+
+            var union = baseList.Concat(extList)
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .Select(v => new Dictionary<string, string> { [property] = v! })
+                .ToList();
+
+            return Json(union);
         }
 
         [HttpPost, Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]

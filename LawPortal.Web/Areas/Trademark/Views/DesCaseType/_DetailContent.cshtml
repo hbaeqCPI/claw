@@ -13,6 +13,13 @@
         <input type="hidden" name="IsNewRecord" value="true" class="boolean" />
     }
     <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
+    @if (!addMode)
+    {
+        <input type="hidden" name="OriginalIntlCode" value="@Model.IntlCode" />
+        <input type="hidden" name="OriginalCaseType" value="@Model.CaseType" />
+        <input type="hidden" name="OriginalDesCountry" value="@Model.DesCountry" />
+        <input type="hidden" name="OriginalDesCaseType" value="@Model.DesCaseType" />
+    }
     @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     <div class="page-content detail cpiMainEntry">
