@@ -168,3 +168,81 @@ BEGIN
     ALTER TABLE tblTmkCountryDue ALTER COLUMN EffBasedOn NVARCHAR(30) NULL;
 END;
 GO
+
+-- Add PRIMARY KEY constraints on the surrogate-id columns of the CountryDue /
+-- CountryExp tables. Without these, the table is a heap and the
+-- "MAX(id)+1 then INSERT" generation pattern in the controllers races under
+-- concurrent writes. tblTmkCountryDue had 169 colliding CDueIds from earlier
+-- runs of that pattern; this script renumbers them before adding the PK.
+
+-- 1) Deduplicate any rows that share a CDueId in tblTmkCountryDue.
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountryDue')
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.key_constraints
+       WHERE name = 'PK_tblTmkCountryDue' AND parent_object_id = OBJECT_ID('dbo.tblTmkCountryDue')
+   )
+   AND EXISTS (SELECT 1 FROM tblTmkCountryDue GROUP BY CDueId HAVING COUNT(*) > 1)
+BEGIN
+    ALTER TABLE tblTmkCountryDue ADD __dedupeKey uniqueidentifier NULL;
+
+    EXEC sp_executesql N'UPDATE tblTmkCountryDue SET __dedupeKey = NEWID();';
+
+    EXEC sp_executesql N'
+        DECLARE @baseId int = (SELECT ISNULL(MAX(CDueId),0) FROM tblTmkCountryDue);
+        ;WITH ranked AS (
+            SELECT __dedupeKey, CDueId, ROW_NUMBER() OVER (PARTITION BY CDueId ORDER BY __dedupeKey) AS rn
+            FROM tblTmkCountryDue
+        ),
+        toRenumber AS (
+            SELECT __dedupeKey, ROW_NUMBER() OVER (ORDER BY CDueId, __dedupeKey) AS new_offset
+            FROM ranked WHERE rn > 1
+        )
+        UPDATE t SET t.CDueId = @baseId + r.new_offset
+        FROM tblTmkCountryDue t
+        JOIN toRenumber r ON t.__dedupeKey = r.__dedupeKey;
+    ';
+
+    ALTER TABLE tblTmkCountryDue DROP COLUMN __dedupeKey;
+END;
+GO
+
+-- 2) Add the PRIMARY KEY constraints (idempotent).
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryDue')
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.key_constraints
+       WHERE name = 'PK_tblPatCountryDue' AND parent_object_id = OBJECT_ID('dbo.tblPatCountryDue')
+   )
+BEGIN
+    ALTER TABLE tblPatCountryDue ADD CONSTRAINT PK_tblPatCountryDue PRIMARY KEY (CDueId);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryExp')
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.key_constraints
+       WHERE name = 'PK_tblPatCountryExp' AND parent_object_id = OBJECT_ID('dbo.tblPatCountryExp')
+   )
+BEGIN
+    ALTER TABLE tblPatCountryExp ADD CONSTRAINT PK_tblPatCountryExp PRIMARY KEY (CExpId);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryExpDelete')
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.key_constraints
+       WHERE name = 'PK_tblPatCountryExpDelete' AND parent_object_id = OBJECT_ID('dbo.tblPatCountryExpDelete')
+   )
+BEGIN
+    ALTER TABLE tblPatCountryExpDelete ADD CONSTRAINT PK_tblPatCountryExpDelete PRIMARY KEY (CExpId);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountryDue')
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.key_constraints
+       WHERE name = 'PK_tblTmkCountryDue' AND parent_object_id = OBJECT_ID('dbo.tblTmkCountryDue')
+   )
+BEGIN
+    ALTER TABLE tblTmkCountryDue ADD CONSTRAINT PK_tblTmkCountryDue PRIMARY KEY (CDueId);
+END;
+GO
