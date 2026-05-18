@@ -58,16 +58,16 @@
             </div>
         </div>
 
-        @* Top flags row — same arrangement as the Edit Law Action popup.
+        @* Top flags row — all checkboxes pushed to the right edge.
            Trademark has no Multiple Based On checkbox. *@
         <div class="form-row align-items-end">
-            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
+            <div class="col-md-auto ml-md-auto d-flex align-items-center pb-2">
                 <div class="form-check mt-2">
                     <input type="checkbox" class="k-checkbox" asp-for="CPIAction" disabled="@(isReadOnly ? "disabled" : null)" />
                     <label class="k-checkbox-label" asp-for="CPIAction">@Localizer["CPI Action"]</label>
                 </div>
             </div>
-            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
+            <div class="col-md-auto d-flex align-items-center pb-2">
                 <div class="form-check mt-2">
                     <input type="checkbox" class="k-checkbox" asp-for="Calculate" disabled="@(isReadOnly ? "disabled" : null)" />
                     <label class="k-checkbox-label" asp-for="Calculate">@labelCanGenerate</label>

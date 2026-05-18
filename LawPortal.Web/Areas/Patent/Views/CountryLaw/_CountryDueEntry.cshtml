@@ -46,18 +46,18 @@
                         <input type="hidden" asp-for="OldFollowupAction" />
                         <input type="checkbox" asp-for="CPIAction" class="d-none" />
 
-                        @* Top row: CPI Action badge on the left, rarely-used flags on the right. *@
+                        @* Top row: all flags pushed to the right edge. *@
                         <div class="row align-items-end">
-                            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
+                            <div class="col-md-auto ml-md-auto d-flex align-items-center pb-2">
                                 @if (Model.CPIAction)
                                 {
                                     <div class="dymo-alert">@Localizer["CPI Action"]</div>
                                 }
                             </div>
-                            <div class="col-12 col-md-3 d-flex align-items-center pb-2">
+                            <div class="col-md-auto d-flex align-items-center pb-2">
                                 @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
                             </div>
-                            <div class="col-12 col-md-3 d-flex align-items-center pb-2">
+                            <div class="col-md-auto d-flex align-items-center pb-2">
                                 @(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn).Label(Localizer["Multiple Based On"].ToString()))
                             </div>
                         </div>
