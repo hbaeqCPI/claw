@@ -4,6 +4,7 @@
 @inject ISystemSettings<DefaultSetting> Settings
 @inject ITmkCountryLawService CountryLawService
 @inject IStringLocalizer<CountryLawResource> Localizer
+@inject IStringLocalizer<SharedResource> SharedLocalizer
 
 @{
     var settings = await Settings.GetSetting();
@@ -22,6 +23,9 @@
         .ToList();
 
     var labelCanGenerate = Localizer["Generate this Action?"];
+    var countryLabel = SharedLocalizer["Country"];
+    var countryNameLabel = SharedLocalizer["Country Name"];
+
     bool copyLawAction = ViewBag.CopyLawAction ?? false;
 }
 
@@ -39,21 +43,38 @@
                 <div class="modal-body py-1">
                     <div class="container-fluid">
                         <input type="hidden" asp-for="CDueId" value="@Model.CDueId" /> @* because of weird behavior (copy, non zero value)*@
-                        @*<input type="hidden" asp-for="CPIAction" />*@
-                        <input type="hidden" asp-for="Country" />
-                        <input type="hidden" asp-for="CaseType" />
                         <input type="hidden" asp-for="OldFollowupAction" />
+                        @* Follow Up Action moved off-screen — value preserved so existing followups
+                           survive a save through this dialog. Its visible slot was reused for Systems. *@
+                        <input type="hidden" asp-for="FollowupAction" />
                         <input type="checkbox" asp-for="CPIAction" class="d-none" />
+                        @* Hidden "Generate this Action?" — preserved as a posted value, not displayed. *@
+                        <div class="d-none">
+                            @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
+                        </div>
 
-                        <div class="row">
-                            <div class="col-12 col-md-6">
+                        @* Top row: identity (Country, CaseType) on the left, CPI Action badge on the right.
+                           Trademark has no Multiple Based On flag. *@
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="Country"></label>
+                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country))
+                                    <span asp-validation-for="Country"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group float-label">
+                                    <label asp-for="CaseType"></label>
+                                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
+                                    <span asp-validation-for="CaseType"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center pb-2">
                                 @if (Model.CPIAction)
                                 {
                                     <div class="dymo-alert">@Localizer["CPI Action"]</div>
                                 }
-                            </div>
-                            <div class="col-12 col-md-6 d-none">
-                                @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
                             </div>
                         </div>
 
@@ -108,28 +129,26 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <h6 class="ml-4">@Localizer["Terms"]</h6>
+                        <div class="row mt-2">
+                            <h6 class="ml-4 mb-1">@Localizer["Terms"]</h6>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 d-flex">
-                                <div class="pr-1">
-                                    <div class="form-group float-label">
-                                        <label asp-for="Yr"></label>
-                                        <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
-                                    </div>
+                        <div class="row align-items-end">
+                            <div class="col-2" style="min-width:80px;">
+                                <div class="form-group float-label mb-2">
+                                    <label asp-for="Yr"></label>
+                                    <input type="number" class="form-control form-control-sm" name="Yr" id="Yr" value="@Model.Yr" min="0" style="width: 100%" />
                                 </div>
-                                <div class="pr-1">
-                                    <div class="form-group float-label">
-                                        <label asp-for="Mo"></label>
-                                        <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" style="width: 100%" />
-                                    </div>
+                            </div>
+                            <div class="col-2" style="min-width:80px;">
+                                <div class="form-group float-label mb-2">
+                                    <label asp-for="Mo"></label>
+                                    <input type="number" class="form-control form-control-sm" name="Mo" id="Mo" value="@Model.Mo" min="0" style="width: 100%" />
                                 </div>
-                                <div>
-                                    <div class="form-group float-label">
-                                        <label asp-for="Dy"></label>
-                                        <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
-                                    </div>
+                            </div>
+                            <div class="col-2" style="min-width:80px;">
+                                <div class="form-group float-label mb-2">
+                                    <label asp-for="Dy"></label>
+                                    <input type="number" class="form-control form-control-sm" name="Dy" id="Dy" value="@Model.Dy" min="0" max="31" style="width: 100%" />
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -171,19 +190,16 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row d-none">
+
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group float-label">
-                                    <label asp-for="FollowupAction"></label>
-                                    @await Component.InvokeAsync("ComboBox",
-                                    new
-                                    {
-                                        name = "FollowupAction",
-                                             action = "GetCountryLawFollowUpList",
-                                             controller = "ActionType",
-                                             defaultValue = Model.FollowupAction,
-                                        textProperty = "ActionType",
-                                             data = "tmkCountryLawPage.getCountry"
+                                    <label asp-for="Systems"></label>
+                                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
+                                        { "SystemsValue", Model.Systems },
+                                        { "SystemsPrefix", "tmkCdueDlg" },
+                                        { "SystemsAction", Url.Action("GetSystemList") },
+                                        { "SystemsReadOnly", false }
                                     })
                                 </div>
                             </div>
