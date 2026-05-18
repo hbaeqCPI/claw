@@ -12,6 +12,7 @@
 
     var countryLabel = Localizer["Country"];
     var countryNameLabel = Localizer["Country Name"];
+    var labelCanGenerate = Localizer["Generate this Action?"].ToString();
 }
 <form cpi-detail-form action="Save">
     @if (addMode)
@@ -20,20 +21,14 @@
     }
     <input type="hidden" name="OriginalSystems" value="@(addMode ? "__NEW__" : (string.IsNullOrEmpty(Model.Systems) ? "__EMPTY__" : Model.Systems))" />
     <input type="hidden" asp-for="CDueId" />
-    @if (!addMode)
-    {
-        <input type="hidden" asp-for="Country" />
-        <input type="hidden" asp-for="CaseType" />
-    }
     @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
     @* max-width matches the modal-lg popup so the page reads like the dialog
        even on a wide canvas. *@
     <div class="page-content detail cpiMainEntry" style="max-width: 900px;">
-        @* Top row: identity (Country, CaseType) on the left, CPI Action checkbox on the right.
-           Trademark has no Multiple Based On flag. *@
-        <div class="form-row align-items-end">
-            <div class="col-md-4">
+        @* Identity row — Country and CaseType always visible at the top. *@
+        <div class="form-row">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Country"></label>
                     @if (isReadOnly)
@@ -47,7 +42,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="CaseType"></label>
                     @if (isReadOnly)
@@ -61,19 +56,25 @@
                     }
                 </div>
             </div>
-            <div class="col-md-auto ml-md-auto pb-2">
+        </div>
+
+        @* Top flags row — same arrangement as the Edit Law Action popup.
+           Trademark has no Multiple Based On checkbox. *@
+        <div class="form-row align-items-end">
+            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
                 <div class="form-check mt-2">
                     <input type="checkbox" class="k-checkbox" asp-for="CPIAction" disabled="@(isReadOnly ? "disabled" : null)" />
                     <label class="k-checkbox-label" asp-for="CPIAction">@Localizer["CPI Action"]</label>
                 </div>
             </div>
-            <div class="col-md-auto pb-2 d-none">
+            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
                 <div class="form-check mt-2">
                     <input type="checkbox" class="k-checkbox" asp-for="Calculate" disabled="@(isReadOnly ? "disabled" : null)" />
-                    <label class="k-checkbox-label" asp-for="Calculate">@Localizer["Calculate"]</label>
+                    <label class="k-checkbox-label" asp-for="Calculate">@labelCanGenerate</label>
                 </div>
             </div>
         </div>
+
         <div class="form-row">
             <div class="col-md-6">
                 <div class="form-group float-label">
@@ -245,6 +246,30 @@
         <div class="form-row">
             <div class="col-md-6">
                 <div class="form-group float-label">
+                    <label asp-for="FollowupAction"></label>
+                    @if (isReadOnly)
+                    {
+                        <input type="text" class="form-control form-control-sm" asp-for="FollowupAction" disabled />
+                    }
+                    else
+                    {
+                        @await Component.InvokeAsync("ComboBox",
+                                new
+                                {
+                                    name = "FollowupAction",
+                                    action = "GetCountryLawFollowUpList",
+                                    controller = "ActionType",
+                                    defaultValue = Model.FollowupAction,
+                                    textProperty = "ActionType",
+                                    data = "tmkCountryDuePage.getCountry"
+                                })
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-6">
+                <div class="form-group float-label">
                     <label asp-for="Systems"></label>
                     @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
                         { "SystemsValue", Model.Systems },
@@ -275,6 +300,11 @@
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }
+    };
+    // Used by the FollowupAction ComboBox to scope the follow-up list to the
+    // currently-selected Country (matches the popup's tmkCountryLawPage.getCountry).
+    tmkCountryDuePage.getCountry = function() {
+        return { country: $("#Country").val() || "" };
     };
 </script>
 
