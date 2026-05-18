@@ -4,7 +4,6 @@
 @inject ISystemSettings<PatSetting> Settings
 @inject IPatCountryLawService CountryLawService
 @inject IStringLocalizer<CountryLawResource> Localizer
-@inject IStringLocalizer<SharedResource> SharedLocalizer
 
 @{
     var settings = await Settings.GetSetting();
@@ -23,8 +22,6 @@
         .ToList();
 
     var labelCanGenerate = Localizer["Generate this Action?"].ToString();
-    var countryLabel = SharedLocalizer["Country"];
-    var countryNameLabel = SharedLocalizer["Country Name"];
 
     var basedOnOptions = typeof(BasedOnOption).GetPublicConstantValues<string>().OrderBy(o => o);
     bool copyLawAction = ViewBag.CopyLawAction ?? false;
@@ -44,40 +41,23 @@
                 <div class="modal-body py-1">
                     <div class="container-fluid">
                         <input type="hidden" asp-for="CDueId" value="@Model.CDueId" /> @* because of weird behavior (copy, non zero value)*@
+                        <input type="hidden" asp-for="Country" />
+                        <input type="hidden" asp-for="CaseType" />
                         <input type="hidden" asp-for="OldFollowupAction" />
-                        @* Follow Up Action moved off-screen — value preserved so existing followups
-                           survive a save through this dialog. Its visible slot was reused for Systems. *@
-                        <input type="hidden" asp-for="FollowupAction" />
                         <input type="checkbox" asp-for="CPIAction" class="d-none" />
-                        @* Hidden "Generate this Action?" — preserved as a posted value, not displayed. *@
-                        <div class="d-none">
-                            @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
-                        </div>
 
-                        @* Top row: identity (Country, CaseType) on the left, rarely-touched flags
-                           pulled off to the right side so they don't clutter the main grid. *@
+                        @* Top row: CPI Action badge on the left, rarely-used flags on the right. *@
                         <div class="row align-items-end">
-                            <div class="col-md-4">
-                                <div class="form-group float-label">
-                                    <label asp-for="Country"></label>
-                                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.CountryWithLink("Country", countryLabel, countryNameLabel, Model.Country))
-                                    <span asp-validation-for="Country"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group float-label">
-                                    <label asp-for="CaseType"></label>
-                                    @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Patent", action = "GetPicklistData", defaultValue = Model.CaseType })
-                                    <span asp-validation-for="CaseType"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-auto ml-md-auto d-flex align-items-center pb-2">
+                            <div class="col-12 col-md-6 d-flex align-items-center pb-2">
                                 @if (Model.CPIAction)
                                 {
                                     <div class="dymo-alert">@Localizer["CPI Action"]</div>
                                 }
                             </div>
-                            <div class="col-md-auto d-flex align-items-center pb-2">
+                            <div class="col-12 col-md-3 d-flex align-items-center pb-2">
+                                @(Html.Kendo().CheckBoxFor(m => m.Calculate).Label(labelCanGenerate))
+                            </div>
+                            <div class="col-12 col-md-3 d-flex align-items-center pb-2">
                                 @(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn).Label(Localizer["Multiple Based On"].ToString()))
                             </div>
                         </div>
@@ -214,13 +194,17 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group float-label">
-                                    <label asp-for="Systems"></label>
-                                    @await Html.PartialAsync("~/Views/Shared/_SystemsDropdown.cshtml", null, new ViewDataDictionary(ViewData) {
-                                        { "SystemsValue", Model.Systems },
-                                        { "SystemsPrefix", "patCdueDlg" },
-                                        { "SystemsAction", Url.Action("GetSystemList") },
-                                        { "SystemsReadOnly", false }
-                                    })
+                                    <label asp-for="FollowupAction"></label>
+                                    @await Component.InvokeAsync("ComboBox",
+                                            new
+                                            {
+                                                name = "FollowupAction",
+                                                     action = "GetCountryLawFollowUpList",
+                                                     controller = "ActionType",
+                                                     defaultValue = Model.FollowupAction,
+                                                textProperty = "ActionType",
+                                                     data = "patCountryLawPage.getCountry"
+                                            })
                                 </div>
                             </div>
                         </div>
