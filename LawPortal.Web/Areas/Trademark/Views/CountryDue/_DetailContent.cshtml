@@ -27,11 +27,13 @@
     }
     @await Component.InvokeAsync("DetailPageNavLinks", new { pagePermission = detailPagePermission, title = "", addMode = addMode })
 
-    <div class="page-content detail cpiMainEntry">
+    @* max-width matches the modal-lg popup so the page reads like the dialog
+       even on a wide canvas. *@
+    <div class="page-content detail cpiMainEntry" style="max-width: 900px;">
         @* Top row: identity (Country, CaseType) on the left, CPI Action checkbox on the right.
            Trademark has no Multiple Based On flag. *@
         <div class="form-row align-items-end">
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-md-4">
                 <div class="form-group float-label">
                     <label asp-for="Country"></label>
                     @if (isReadOnly)
@@ -45,7 +47,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-md-4">
                 <div class="form-group float-label">
                     <label asp-for="CaseType"></label>
                     @if (isReadOnly)
@@ -73,14 +75,14 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="ActionDue"></label>
                     <input type="text" class="form-control form-control-sm" asp-for="ActionDue" asp-is-readonly="@isReadOnly" />
                     <span asp-validation-for="ActionDue"></span>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="ActionType"></label>
                     <input type="text" class="form-control form-control-sm" asp-for="ActionType" asp-is-readonly="@isReadOnly" asp-is-autofocus="@addMode" />
@@ -89,7 +91,7 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="BasedOn"></label>
                     @if (isReadOnly)
@@ -103,7 +105,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Recurring"></label>
                     @if (isReadOnly)
@@ -131,7 +133,7 @@
             <h6 class="ml-3 mb-1">@Localizer["Terms"]</h6>
         </div>
         <div class="form-row align-items-end">
-            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+            <div class="col-2" style="min-width:80px;">
                 <div class="form-group float-label mb-2">
                     <label asp-for="Yr"></label>
                     @if (isReadOnly)
@@ -145,7 +147,7 @@
                     }
                 </div>
             </div>
-            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+            <div class="col-2" style="min-width:80px;">
                 <div class="form-group float-label mb-2">
                     <label asp-for="Mo"></label>
                     @if (isReadOnly)
@@ -159,7 +161,7 @@
                     }
                 </div>
             </div>
-            <div class="col-4 col-sm-3 col-md-2 col-lg-1" style="min-width:80px;">
+            <div class="col-2" style="min-width:80px;">
                 <div class="form-group float-label mb-2">
                     <label asp-for="Dy"></label>
                     @if (isReadOnly)
@@ -173,7 +175,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="Indicator"></label>
                     @if (isReadOnly)
@@ -197,7 +199,7 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-md-6">
                 <div class="form-group float-label">
                     <label asp-for="EffBasedOn"></label>
                     @if (isReadOnly)
@@ -211,7 +213,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-md-3">
                 <div class="form-group float-label">
                     <label asp-for="EffStartDate"></label>
                     @if (isReadOnly)
@@ -225,7 +227,7 @@
                     }
                 </div>
             </div>
-            <div class="col-md-4 col-lg-3 col-xl-2">
+            <div class="col-md-3">
                 <div class="form-group float-label">
                     <label asp-for="EffEndDate"></label>
                     @if (isReadOnly)
