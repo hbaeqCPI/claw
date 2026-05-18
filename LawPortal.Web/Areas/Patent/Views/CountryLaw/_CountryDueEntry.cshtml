@@ -71,13 +71,13 @@
                                     <span asp-validation-for="CaseType"></span>
                                 </div>
                             </div>
-                            <div class="col-md-2 d-flex align-items-center pb-2">
+                            <div class="col-md-auto ml-md-auto d-flex align-items-center pb-2">
                                 @if (Model.CPIAction)
                                 {
                                     <div class="dymo-alert">@Localizer["CPI Action"]</div>
                                 }
                             </div>
-                            <div class="col-md-2 d-flex align-items-center pb-2">
+                            <div class="col-md-auto d-flex align-items-center pb-2">
                                 @(Html.Kendo().CheckBoxFor(m => m.MultipleBasedOn).Label(Localizer["Multiple Based On"].ToString()))
                             </div>
                         </div>
