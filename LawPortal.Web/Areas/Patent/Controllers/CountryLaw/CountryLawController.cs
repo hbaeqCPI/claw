@@ -735,7 +735,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             {
                 await _countryLawService.DeleteCountryDue(deleted.Country, deleted.CaseType, User.GetUserName(), new List<PatCountryDue>() { deleted });
             }
-            return Ok();
+            return Ok(new { success = _localizer["Record has been deleted successfully."].ToString() });
         }
         #endregion
 
@@ -815,7 +815,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 }
                 await _countryLawService.UpdateChild(deleted.Country, deleted.CaseType, User.GetUserName(), new List<PatCountryExp>(), new List<PatCountryExp>(), new List<PatCountryExp>() { deleted });
             }
-            return Ok();
+            return Ok(new { success = _localizer["Record has been deleted successfully."].ToString() });
         }
         #endregion
 
@@ -899,7 +899,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 deleted.Systems = parentSystems ?? "";
             }
             await _countryLawService.UpdateChild(deleted.IntlCode, deleted.CaseType, User.GetUserName(), new List<PatDesCaseType>(), new List<PatDesCaseType>(), new List<PatDesCaseType>() { deleted });
-            return Ok();
+            return Ok(new { success = _localizer["Record has been deleted successfully."].ToString() });
         }
         #endregion
 

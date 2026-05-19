@@ -998,7 +998,9 @@ const deleteGridRow = function (e, dataItem, afterDelete) {
                 type: "POST",
                 success: function (result) {
                     cpiLoadingSpinner.hide();
-                    showSuccess(result.success);
+                    // Guard against empty/undefined success bodies so we don't
+                    // pop a blank toast when an endpoint returns plain Ok().
+                    if (result && result.success) showSuccess(result.success);
 
                     grid.removeRow($(e.currentTarget).closest("tr"));
                     grid.dataSource._destroyed = [];

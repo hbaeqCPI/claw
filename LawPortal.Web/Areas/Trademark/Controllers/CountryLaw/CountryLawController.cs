@@ -696,7 +696,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             {
                 await _countryLawService.DeleteCountryDue(deleted.Country, deleted.CaseType, User.GetUserName(), new List<TmkCountryDue>() { deleted });
             }
-            return Ok();
+            return Ok(new { success = _localizer["Record has been deleted successfully."].ToString() });
         }
         #endregion
 
@@ -776,7 +776,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             }
 
             await _countryLawService.UpdateChild(deleted.IntlCode, deleted.CaseType, User.GetUserName(), new List<TmkDesCaseType>(), new List<TmkDesCaseType>(), new List<TmkDesCaseType>() { deleted });
-            return Ok();
+            return Ok(new { success = _localizer["Record has been deleted successfully."].ToString() });
         }
         #endregion
 
