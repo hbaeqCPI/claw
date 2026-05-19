@@ -2586,22 +2586,40 @@ const editorModified = function(e) {
 }
 
 // Kendo Grid dataBound handler: when there are no records, the responsive
-// pager renders the page-number selector with an empty value (visible in the
-// dropdown as a blank field). Force-display "0" so the pager doesn't look
-// broken on empty grids. Wire up via .Events(e => e.DataBound("pageHelper.fixEmptyGridPager")).
+// pager renders the page-number area with no children (or with a blank
+// dropdown). Inject a "0" indicator so the pager doesn't look broken on
+// empty grids. Wire up via .Events(e => e.DataBound("pageHelper.fixEmptyGridPager")).
 const fixEmptyGridPager = function (e) {
     const grid = e.sender;
-    if (!grid || !grid.dataSource || grid.dataSource.total() !== 0) return;
-    // Covers both the responsive collapsed dropdown and the input variant.
-    const $disp = grid.wrapper.find(".k-grid-pager .k-dropdown-wrap .k-input, .k-grid-pager .k-pager-input input");
-    $disp.each(function () {
-        const $el = $(this);
-        if (this.tagName === "INPUT") {
-            if (!$el.val()) $el.val("0");
-        } else if (!$el.text().trim()) {
-            $el.text("0");
+    if (!grid) return;
+    // Defer to next tick so Kendo's responsive pager layout has finished
+    // (responsive collapse runs after dataBound in some Kendo versions).
+    setTimeout(function () {
+        if (!grid.dataSource || grid.dataSource.total() !== 0) return;
+        const $pager = grid.wrapper.find(".k-pager-wrap, .k-grid-pager").first();
+        if (!$pager.length) return;
+
+        // First try filling an existing blank display element (responsive
+        // dropdown's .k-input, or the input-pager's input field).
+        let touched = false;
+        $pager.find(".k-input, .k-pager-input input").each(function () {
+            const $el = $(this);
+            if (this.tagName === "INPUT") {
+                if (!$el.val()) { $el.val("0"); touched = true; }
+            } else if (!$el.text().trim()) {
+                $el.text("0"); touched = true;
+            }
+        });
+
+        // Fallback: if Kendo didn't render any display element at all when
+        // empty, append our own "0" placeholder into the page-numbers area.
+        if (!touched) {
+            const $numbers = $pager.find(".k-pager-numbers").first();
+            if ($numbers.length && !$numbers.find(".cpi-empty-page-indicator").length) {
+                $numbers.append('<span class="cpi-empty-page-indicator k-link k-state-selected">0</span>');
+            }
         }
-    });
+    }, 0);
 };
 
 export {
