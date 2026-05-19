@@ -2585,6 +2585,25 @@ const editorModified = function(e) {
     e.sender.value(editorText);
 }
 
+// Kendo Grid dataBound handler: when there are no records, the responsive
+// pager renders the page-number selector with an empty value (visible in the
+// dropdown as a blank field). Force-display "0" so the pager doesn't look
+// broken on empty grids. Wire up via .Events(e => e.DataBound("pageHelper.fixEmptyGridPager")).
+const fixEmptyGridPager = function (e) {
+    const grid = e.sender;
+    if (!grid || !grid.dataSource || grid.dataSource.total() !== 0) return;
+    // Covers both the responsive collapsed dropdown and the input variant.
+    const $disp = grid.wrapper.find(".k-grid-pager .k-dropdown-wrap .k-input, .k-grid-pager .k-pager-input input");
+    $disp.each(function () {
+        const $el = $(this);
+        if (this.tagName === "INPUT") {
+            if (!$el.val()) $el.val("0");
+        } else if (!$el.text().trim()) {
+            $el.text("0");
+        }
+    });
+};
+
 export {
     moveBreadcrumbs, showSearchScreen, searchFormSubmit, manageDetailPage, showDetails, getDetails, openLink,
     initializeDetailTabs, deleteGridRow, emailGridRow, focusLabelControl, clearInvalidKendoDate, resetComboBoxes, initializeMainSearchTabs,
@@ -2599,7 +2618,7 @@ export {
     initKendoEditor, refreshMessageCount, getSortDescriptor, fetchReport, gridExcelExport, callWithAuthToken, initializePage, comboBoxFiltering,
     cpiDateTimeFormatToSave, onChange_Owner, onChange_Client, handleEmailWorkflow, imageLoadRetry, reconnect, stopTimeTrack, showCountryAppLink, showInventionLink, showTmkLink, showGMLink,
     isPageInTheDom, showFavorite, handleSignatureWorkflow, pullDocuSignDoc, pushDocuSignDoc, kendoGridGetChanges, getDataItemValues, kendoGridDirtyHandler,
-    formatFileSize, formatString, editorModified
+    formatFileSize, formatString, editorModified, fixEmptyGridPager
 
 };
 
