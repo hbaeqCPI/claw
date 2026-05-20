@@ -1,7 +1,16 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LawPortal.Core.Entities
 {
+    // The Deploy detail form posts every field as a JSON string (form
+    // serializer in pageHelper.js builds the payload from .serializeArray()).
+    // The default System.Text.Json options on this project are strict, so
+    // posting "119" for a nullable int silently fails to bind and the field
+    // stays null. AllowReadingFromString tells the deserializer to coerce
+    // numeric strings into the typed property — applies to every int / int?
+    // on this entity (DeployPasswordId, Year, and the 12 doc-id fields).
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public class DeployPassword : BaseEntity
     {
         [Key]
