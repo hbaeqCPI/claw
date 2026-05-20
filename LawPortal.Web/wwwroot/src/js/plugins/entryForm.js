@@ -391,6 +391,16 @@
                 markDirty();
             });
 
+            //for plain <select> dropdowns — Kendo widgets bubble change through
+            //their hidden inputs (covered above), but raw HTML selects need an
+            //explicit handler or selecting an option never marks the form dirty
+            //and the Save button stays hidden.
+            plugin.on("change", ".cpiMainEntry select", function () {
+                if ($(this).data("nosave") === undefined) {
+                    markDirty();
+                }
+            });
+
             //validate combobox text input when list is not loaded
             const onComboFocusOut = function (comboBox) {
                 const el = $(comboBox.element);
