@@ -149,7 +149,7 @@
                                     class="form-control form-control-sm deploy-doc-dropdown"
                                     data-tag="@row.Tag" data-is-pat="true" data-is-mdb="@row.IsMdb.ToString().ToLower()"
                                     data-current-value="@(row.Value?.ToString() ?? "")"
-                                    @(isReadOnly ? "disabled" : "")>
+                                    disabled="@(isReadOnly ? "disabled" : null)">
                                 <option value="">@Localizer["-- Select --"]</option>
                             </select>
                         </div>
@@ -182,7 +182,7 @@
                                     class="form-control form-control-sm deploy-doc-dropdown"
                                     data-tag="@row.Tag" data-is-pat="false" data-is-mdb="@row.IsMdb.ToString().ToLower()"
                                     data-current-value="@(row.Value?.ToString() ?? "")"
-                                    @(isReadOnly ? "disabled" : "")>
+                                    disabled="@(isReadOnly ? "disabled" : null)">
                                 <option value="">@Localizer["-- Select --"]</option>
                             </select>
                         </div>
