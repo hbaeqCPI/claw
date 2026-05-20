@@ -246,9 +246,7 @@
                 isMdb: $sel.data('is-mdb') === true || $sel.data('is-mdb') === 'true'
             };
             var currentValue = $sel.data('current-value');
-            console.log('[deploy-dropdown] requesting', $sel.attr('id'), data);
             $.getJSON(getDocsUrl, data, function (docs) {
-                console.log('[deploy-dropdown] response for', $sel.attr('id'), docs);
                 // Reset to placeholder + freshly-fetched options. Iterate the
                 // response defensively: support both camelCase (System.Text.Json)
                 // and PascalCase (Newtonsoft) shapes since the API serializer
@@ -263,7 +261,6 @@
                     $sel.val(String(currentValue));
                 }
             }).fail(function (e) {
-                console.error('[deploy-dropdown] failed', $sel.attr('id'), e.status, e.responseText);
                 pageHelper.showErrors(e);
             });
         }
