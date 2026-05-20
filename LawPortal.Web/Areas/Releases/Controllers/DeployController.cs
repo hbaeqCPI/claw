@@ -257,6 +257,8 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save([FromBody] DeployPassword deployPassword)
         {
+            try
+            {
             if (deployPassword == null)
                 return new JsonBadRequest(new { errors = new[] { "Save: posted body deserialized to null — check form fields match DeployPassword model." } });
 
@@ -322,6 +324,22 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             UpdateEntityStamps(deployPassword, deployPassword.DeployPasswordId);
             await _entityService.Add(deployPassword);
             return Json(deployPassword.DeployPasswordId);
+            }
+            catch (Exception ex)
+            {
+                // Surface the real failure (binding, EF, SQL) to the red banner
+                // instead of letting the ExceptionFilter swallow it into a
+                // generic "An error occurred" message. Walk the inner-exception
+                // chain so EF/SQL errors aren't hidden behind the EF wrapper.
+                var msg = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null)
+                {
+                    msg += " :: " + inner.Message;
+                    inner = inner.InnerException;
+                }
+                return new JsonBadRequest(new { errors = new[] { "Save failed: " + msg } });
+            }
         }
 
         [HttpPost, Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryModify)]
