@@ -358,3 +358,28 @@ BEGIN
         ON tblDeployPassword ([Year], Quarter, PatentPassword, TrademarkPassword);
 END;
 GO
+
+-- Per-path document selections on tblDeployPassword. Each nullable INT column
+-- stores the DocId of the document the user picked from the dropdown next to
+-- the corresponding deploy path (see DeployPassword.cs for path-to-tag map).
+-- Columns are added in a single ALTER so the table is rewritten at most once.
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'PatVer9And10LawDocId'
+)
+BEGIN
+    ALTER TABLE tblDeployPassword
+        ADD PatVer9And10LawDocId  INT NULL,
+            PatVer9And10MdbId     INT NULL,
+            PatR5LawDocId         INT NULL,
+            PatR5MdbId            INT NULL,
+            PatR8LawDocId         INT NULL,
+            PatR8MdbId            INT NULL,
+            TmkVer9And10LawDocId  INT NULL,
+            TmkVer9And10MdbId     INT NULL,
+            TmkR5LawDocId         INT NULL,
+            TmkR5MdbId            INT NULL,
+            TmkR9LawDocId         INT NULL,
+            TmkR9MdbId            INT NULL;
+END;
+GO

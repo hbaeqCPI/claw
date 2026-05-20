@@ -30,6 +30,8 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         private readonly IAuthorizationService _authService;
         private readonly IViewModelService<DeployPassword> _viewModelService;
         private readonly IEntityService<DeployPassword> _entityService;
+        private readonly IEntityService<Release> _releaseService;
+        private readonly IDocumentService _documentService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         private readonly string _dataContainer = "deployDetail";
@@ -38,12 +40,98 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             IAuthorizationService authService,
             IViewModelService<DeployPassword> viewModelService,
             IEntityService<DeployPassword> entityService,
+            IEntityService<Release> releaseService,
+            IDocumentService documentService,
             IStringLocalizer<SharedResource> localizer)
         {
             _authService = authService;
             _viewModelService = viewModelService;
             _entityService = entityService;
+            _releaseService = releaseService;
+            _documentService = documentService;
             _localizer = localizer;
+        }
+
+        // Mirrors ReleaseController.ToDocSystemType — converts a Release.SystemType
+        // string ("Patent" / "Trademark" / ...) into the 1-2 char code used by the
+        // document folder hierarchy ("P" / "T" / ...). Kept in sync intentionally.
+        private static string ToDocSystemType(string systemType)
+        {
+            if (string.IsNullOrEmpty(systemType)) return "";
+            if (systemType.Length <= 2) return systemType;
+            return systemType.ToLower() switch
+            {
+                "patent" => "P",
+                "trademark" => "T",
+                "general matter" => "G",
+                "dms" => "D",
+                "shared" => "S",
+                _ => systemType.Substring(0, Math.Min(systemType.Length, 2))
+            };
+        }
+
+        private static string TruncateFolderName(string name, int maxLen = 100)
+        {
+            if (string.IsNullOrEmpty(name)) return "Documents";
+            return name.Length <= maxLen ? name : name.Substring(0, maxLen);
+        }
+
+        /// <summary>
+        /// Populates the path dropdowns on the Deploy detail screen. Returns
+        /// the documents from any Release matching (Year, Quarter) whose
+        /// Systems comma-list contains <paramref name="systemTag"/>, filtered
+        /// by Pat/Tmk side and by whether the file is an MDB. The Pat/Tmk
+        /// distinction matters for R4, which is shared between both sides.
+        /// </summary>
+        public async Task<IActionResult> GetReleaseDocs(int year, string quarter, string systemTag, bool isPat, bool isMdb)
+        {
+            if (year <= 0 || string.IsNullOrEmpty(quarter) || string.IsNullOrEmpty(systemTag))
+                return Json(new List<object>());
+
+            // Releases for this Year+Quarter, filtered down to those whose
+            // Systems list contains the requested tag. Splits on comma so the
+            // match is exact (won't false-match "R4" inside "R45" etc.).
+            var releases = await _releaseService.QueryableList.AsNoTracking()
+                .Where(r => r.Year == year && r.Quarter == quarter)
+                .ToListAsync();
+
+            var matching = releases.Where(r => (r.Systems ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Any(s => string.Equals(s, systemTag, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            var results = new List<object>();
+            foreach (var rel in matching.OrderBy(r => r.Name))
+            {
+                var sysType = ToDocSystemType(rel.SystemType);
+                var folder = await _documentService.GetFolder(sysType, "ReleaseId", rel.ReleaseId, TruncateFolderName(rel.Name), 0);
+                if (folder == null) continue;
+
+                // Filter on file ext: MDBs are exactly .mdb; "reports" are any
+                // other file type living in the release folder (per the user's
+                // spec — LawDocs paths accept anything that isn't an MDB).
+                var docsQuery = _documentService.DocDocuments
+                    .Where(d => d.FolderId == folder.FolderId && d.DocFile != null);
+                docsQuery = isMdb
+                    ? docsQuery.Where(d => d.DocFile.FileExt == "mdb")
+                    : docsQuery.Where(d => d.DocFile.FileExt != "mdb");
+
+                var docs = await docsQuery
+                    .Select(d => new { d.DocId, d.DocName })
+                    .ToListAsync();
+
+                foreach (var doc in docs)
+                {
+                    // Filename convention: docs containing "Pat" belong on the
+                    // Pat side; everything else (typically "Tmk"-named) on the
+                    // Tmk side. Matches the existing GetCompareMdbFiles logic.
+                    bool docIsPat = (doc.DocName ?? "").Contains("Pat", StringComparison.OrdinalIgnoreCase);
+                    if (docIsPat == isPat)
+                        results.Add(new { doc.DocId, Text = doc.DocName });
+                }
+            }
+            return Json(results);
         }
 
         public async Task<IActionResult> Index()
@@ -217,6 +305,20 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 existing.Quarter = deployPassword.Quarter;
                 existing.PatentPassword = deployPassword.PatentPassword;
                 existing.TrademarkPassword = deployPassword.TrademarkPassword;
+                // Per-path doc selections (nullable; 0 from an empty dropdown
+                // is treated as "not selected" via the conditional assignment).
+                existing.PatVer9And10LawDocId = deployPassword.PatVer9And10LawDocId;
+                existing.PatVer9And10MdbId    = deployPassword.PatVer9And10MdbId;
+                existing.PatR5LawDocId        = deployPassword.PatR5LawDocId;
+                existing.PatR5MdbId           = deployPassword.PatR5MdbId;
+                existing.PatR8LawDocId        = deployPassword.PatR8LawDocId;
+                existing.PatR8MdbId           = deployPassword.PatR8MdbId;
+                existing.TmkVer9And10LawDocId = deployPassword.TmkVer9And10LawDocId;
+                existing.TmkVer9And10MdbId    = deployPassword.TmkVer9And10MdbId;
+                existing.TmkR5LawDocId        = deployPassword.TmkR5LawDocId;
+                existing.TmkR5MdbId           = deployPassword.TmkR5MdbId;
+                existing.TmkR9LawDocId        = deployPassword.TmkR9LawDocId;
+                existing.TmkR9MdbId           = deployPassword.TmkR9MdbId;
                 UpdateEntityStamps(existing, existing.DeployPasswordId);
                 await _entityService.Update(existing);
                 return Json(existing.DeployPasswordId);

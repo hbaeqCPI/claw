@@ -7,6 +7,29 @@
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
     bool isReadOnly = !fullModify;
+
+    // Path → (tag, isPat, isMdb, field) mapping. Keeps the view declarative —
+    // each row in the Pat / Tmk tab is just a lookup against this list.
+    var patRows = new[]
+    {
+        new { Path = "LawDocs/Pat/Ver9and10/", Tag = "R4",            IsMdb = false, Field = "PatVer9And10LawDocId", Value = Model.PatVer9And10LawDocId },
+        new { Path = "Mdbs/Pat/Ver9and10/",    Tag = "R4",            IsMdb = true,  Field = "PatVer9And10MdbId",    Value = Model.PatVer9And10MdbId },
+        new { Path = "LawDocs/Pat/R5/",        Tag = "PatR5-7",       IsMdb = false, Field = "PatR5LawDocId",        Value = Model.PatR5LawDocId },
+        new { Path = "Mdbs/Pat/R5/",           Tag = "PatR5-7",       IsMdb = true,  Field = "PatR5MdbId",           Value = Model.PatR5MdbId },
+        new { Path = "LawDocs/Pat/R8/",        Tag = "PatR8-R10v2.1", IsMdb = false, Field = "PatR8LawDocId",        Value = Model.PatR8LawDocId },
+        new { Path = "Mdbs/Pat/R8/",           Tag = "PatR8-R10v2.1", IsMdb = true,  Field = "PatR8MdbId",           Value = Model.PatR8MdbId }
+    };
+    var tmkRows = new[]
+    {
+        new { Path = "LawDocs/Tmk/Ver9and10/", Tag = "R4",             IsMdb = false, Field = "TmkVer9And10LawDocId", Value = Model.TmkVer9And10LawDocId },
+        new { Path = "Mdbs/Tmk/Ver9and10/",    Tag = "R4",             IsMdb = true,  Field = "TmkVer9And10MdbId",    Value = Model.TmkVer9And10MdbId },
+        new { Path = "LawDocs/Tmk/R5/",        Tag = "TmkR5-8",        IsMdb = false, Field = "TmkR5LawDocId",        Value = Model.TmkR5LawDocId },
+        new { Path = "Mdbs/Tmk/R5/",           Tag = "TmkR5-8",        IsMdb = true,  Field = "TmkR5MdbId",           Value = Model.TmkR5MdbId },
+        new { Path = "LawDocs/Tmk/R9/",        Tag = "TmkR9-10v2.2",   IsMdb = false, Field = "TmkR9LawDocId",        Value = Model.TmkR9LawDocId },
+        new { Path = "Mdbs/Tmk/R9/",           Tag = "TmkR9-10v2.2",   IsMdb = true,  Field = "TmkR9MdbId",           Value = Model.TmkR9MdbId }
+    };
+
+    var getDocsUrl = Url.Action("GetReleaseDocs", "Deploy", new { area = "Releases" });
 }
 <form id="detailForm" method="post" cpi-detail-form
       action="@Url.Action("Save", "Deploy", new { area = "Releases" })"
@@ -108,6 +131,30 @@
                         </div>
                     </div>
                 </div>
+
+                @* Per-path doc selections. Each row is one hardcoded deploy path
+                   with a dropdown of matching Release documents. The dropdown is
+                   populated on tab activation via the deployPathDropdowns script
+                   at the bottom of this view, so the year/quarter at the top is
+                   the source of truth for the filter. *@
+                <hr class="my-3" />
+                @foreach (var row in patRows)
+                {
+                    <div class="form-row align-items-center mb-2">
+                        <div class="col-12 col-md-5 col-lg-4">
+                            <code class="text-muted">@row.Path</code>
+                        </div>
+                        <div class="col-12 col-md-7 col-lg-6">
+                            <select name="@row.Field" id="@row.Field"
+                                    class="form-control form-control-sm deploy-doc-dropdown"
+                                    data-tag="@row.Tag" data-is-pat="true" data-is-mdb="@row.IsMdb.ToString().ToLower()"
+                                    data-current-value="@(row.Value?.ToString() ?? "")"
+                                    @(isReadOnly ? "disabled" : "")>
+                                <option value="">@Localizer["-- Select --"]</option>
+                            </select>
+                        </div>
+                    </div>
+                }
             </div>
             <div class="tab-pane p-3" id="deployDetailTrademarkTabContent"
                  role="tabpanel" aria-labelledby="deployDetailTrademarkTab">
@@ -122,6 +169,25 @@
                         </div>
                     </div>
                 </div>
+
+                <hr class="my-3" />
+                @foreach (var row in tmkRows)
+                {
+                    <div class="form-row align-items-center mb-2">
+                        <div class="col-12 col-md-5 col-lg-4">
+                            <code class="text-muted">@row.Path</code>
+                        </div>
+                        <div class="col-12 col-md-7 col-lg-6">
+                            <select name="@row.Field" id="@row.Field"
+                                    class="form-control form-control-sm deploy-doc-dropdown"
+                                    data-tag="@row.Tag" data-is-pat="false" data-is-mdb="@row.IsMdb.ToString().ToLower()"
+                                    data-current-value="@(row.Value?.ToString() ?? "")"
+                                    @(isReadOnly ? "disabled" : "")>
+                                <option value="">@Localizer["-- Select --"]</option>
+                            </select>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -156,5 +222,54 @@
                         });
                 });
         });
+
+        // Populates each .deploy-doc-dropdown by calling GetReleaseDocs with the
+        // year/quarter from the top of the form + the tag/side/file-type data
+        // attributes on each <select>. Re-fires whenever Year or Quarter changes
+        // so users see fresh options without saving.
+        var getDocsUrl = '@Html.Raw(getDocsUrl)';
+
+        function currentYearQuarter() {
+            var year = parseInt($('#Year').val(), 10) || new Date().getFullYear();
+            // Kendo DropDownList stores value on a hidden input with the same name.
+            var quarter = $('#Quarter').val() || 'Q1';
+            return { year: year, quarter: quarter };
+        }
+
+        function populateDropdown($sel) {
+            var yq = currentYearQuarter();
+            var data = {
+                year: yq.year,
+                quarter: yq.quarter,
+                systemTag: $sel.data('tag'),
+                isPat: $sel.data('is-pat') === true || $sel.data('is-pat') === 'true',
+                isMdb: $sel.data('is-mdb') === true || $sel.data('is-mdb') === 'true'
+            };
+            var currentValue = $sel.data('current-value');
+            $.getJSON(getDocsUrl, data, function (docs) {
+                // Reset to placeholder + freshly-fetched options.
+                $sel.find('option:not(:first)').remove();
+                (docs || []).forEach(function (d) {
+                    $sel.append($('<option>').val(d.docId).text(d.text));
+                });
+                // Re-select the previously-saved value if it's still in the list.
+                if (currentValue) {
+                    $sel.val(String(currentValue));
+                }
+            }).fail(function (e) {
+                pageHelper.showErrors(e);
+            });
+        }
+
+        function refreshAllDropdowns() {
+            $('.deploy-doc-dropdown').each(function () {
+                populateDropdown($(this));
+            });
+        }
+
+        refreshAllDropdowns();
+        // Re-fetch when Year or Quarter changes — both Kendo and plain inputs
+        // bubble a "change" event on their underlying form field.
+        $('#Year, #Quarter').on('change', refreshAllDropdowns);
     });
 </script>
