@@ -246,17 +246,24 @@
                 isMdb: $sel.data('is-mdb') === true || $sel.data('is-mdb') === 'true'
             };
             var currentValue = $sel.data('current-value');
+            console.log('[deploy-dropdown] requesting', $sel.attr('id'), data);
             $.getJSON(getDocsUrl, data, function (docs) {
-                // Reset to placeholder + freshly-fetched options.
+                console.log('[deploy-dropdown] response for', $sel.attr('id'), docs);
+                // Reset to placeholder + freshly-fetched options. Iterate the
+                // response defensively: support both camelCase (System.Text.Json)
+                // and PascalCase (Newtonsoft) shapes since the API serializer
+                // config isn't guaranteed across deploys.
                 $sel.find('option:not(:first)').remove();
                 (docs || []).forEach(function (d) {
-                    $sel.append($('<option>').val(d.docId).text(d.text));
+                    var id = d.docId !== undefined ? d.docId : d.DocId;
+                    var text = d.text !== undefined ? d.text : d.Text;
+                    $sel.append($('<option>').val(id).text(text));
                 });
-                // Re-select the previously-saved value if it's still in the list.
                 if (currentValue) {
                     $sel.val(String(currentValue));
                 }
             }).fail(function (e) {
+                console.error('[deploy-dropdown] failed', $sel.attr('id'), e.status, e.responseText);
                 pageHelper.showErrors(e);
             });
         }
