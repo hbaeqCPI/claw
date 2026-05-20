@@ -88,18 +88,13 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             if (year <= 0 || string.IsNullOrEmpty(quarter) || string.IsNullOrEmpty(systemTag))
                 return Json(new List<object>());
 
-            // Releases for this Year+Quarter, filtered down to those whose
-            // Systems list contains the requested tag. Splits on comma so the
-            // match is exact (won't false-match "R4" inside "R45" etc.).
-            var releases = await _releaseService.QueryableList.AsNoTracking()
-                .Where(r => r.Year == year && r.Quarter == quarter)
+            // Each Release is scoped to exactly one system version, stored in
+            // SystemType (e.g. "R4", "PatR5-7", "PatR8-R10v2.1"). The Systems
+            // column is reserved for downstream client-system overrides and is
+            // typically empty, so the dropdown filter matches on SystemType.
+            var matching = await _releaseService.QueryableList.AsNoTracking()
+                .Where(r => r.Year == year && r.Quarter == quarter && r.SystemType == systemTag)
                 .ToListAsync();
-
-            var matching = releases.Where(r => (r.Systems ?? "")
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim())
-                .Any(s => string.Equals(s, systemTag, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
 
             var results = new List<object>();
             foreach (var rel in matching.OrderBy(r => r.Name))
