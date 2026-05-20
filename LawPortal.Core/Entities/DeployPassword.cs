@@ -20,18 +20,25 @@ namespace LawPortal.Core.Entities
         [Display(Name = "Year")]
         public int Year { get; set; }
 
+        // Quarter is required at the DB level via [Required], but the property
+        // type stays nullable so the auto-generated client-side "required" rule
+        // (from non-nullable reference types) doesn't fire on hidden Kendo
+        // inputs and silently fail validation.
         [Required]
         [StringLength(2)]
         [Display(Name = "Quarter")]
-        public string Quarter { get; set; } = "";
+        public string? Quarter { get; set; } = "";
 
+        // Both passwords are optional. They're declared nullable so jQuery
+        // unobtrusive validation doesn't treat the empty value on the hidden
+        // tab as a required-field violation, which silently blocked Save.
         [StringLength(30)]
         [Display(Name = "Patent Password")]
-        public string PatentPassword { get; set; } = "";
+        public string? PatentPassword { get; set; } = "";
 
         [StringLength(30)]
         [Display(Name = "Trademark Password")]
-        public string TrademarkPassword { get; set; } = "";
+        public string? TrademarkPassword { get; set; } = "";
 
         // Per-path document selections. Each nullable DocId points at a row in
         // DocDocument and corresponds to a hardcoded deploy path on the Deploy
