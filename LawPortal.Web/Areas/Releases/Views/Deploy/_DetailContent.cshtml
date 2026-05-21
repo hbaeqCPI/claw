@@ -96,9 +96,26 @@
                 </div>
             </div>
             <div class="col-auto d-flex align-items-center">
-                <button type="button" class="btn btn-danger btn-sm btnClearUpdTables"
-                        data-url="@Url.Action("ClearUpdTables", "Deploy", new { area = "Releases" })">
-                    <i class="fal fa-trash-alt pr-1"></i> @Localizer["Clear Tables"]
+                @* "Populate Tables" — enabled only when all 12 dropdowns + both
+                   passwords are filled. TRUNCATEs each target upd table before
+                   inserting fresh rows, so a separate "Clear Tables" button is
+                   no longer needed. *@
+                <button type="button" class="btn btn-primary btn-sm btnDeploy" disabled
+                        data-id="@Model.DeployPasswordId"
+                        data-url="@Url.Action("Deploy", "Deploy", new { area = "Releases" })">
+                    <i class="fal fa-upload pr-1"></i> @Localizer["Populate Tables"]
+                </button>
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                @* "Generate Script" — sits next to Populate Tables; hidden
+                   until at least one upd table has rows (so the user can't
+                   generate from an empty staging set). Saves the .sql into
+                   this deploy's Documents tab named
+                   {Year}_{Quarter}_CountryLawScript.sql. *@
+                <button type="button" class="btn btn-primary btn-sm btnGenerateScript" style="display:none;"
+                        data-id="@Model.DeployPasswordId"
+                        data-url="@Url.Action("GenerateScript", "Deploy", new { area = "Releases" })">
+                    <i class="fal fa-file-code pr-1"></i> @Localizer["Generate Script"]
                 </button>
             </div>
         </div>
@@ -115,6 +132,12 @@
                    class="nav-link" data-toggle="tab" role="tab"
                    aria-controls="deployDetailTrademarkTabContent" aria-selected="false"
                    title="@Localizer["Trademark"]">@Localizer["Trademark"]</a>
+            </li>
+            <li class="nav-item">
+                <a id="deployDetailDocumentsTab" href="#deployDetailDocumentsTabContent"
+                   class="nav-link" data-toggle="tab" role="tab"
+                   aria-controls="deployDetailDocumentsTabContent" aria-selected="false"
+                   title="@Localizer["Documents"]">@Localizer["Documents"]</a>
             </li>
         </ul>
         <div class="tab-content detail">
@@ -187,6 +210,25 @@
                     </div>
                 }
             </div>
+
+            @* Documents tab — folder tree + grid, same UX as Release
+               Documents. The partial is only rendered for saved records
+               (id > 0) because the folder hierarchy is keyed off
+               DeployPasswordId; for a fresh Add it has nothing to anchor to. *@
+            <div class="tab-pane p-3" id="deployDetailDocumentsTabContent"
+                 role="tabpanel" aria-labelledby="deployDetailDocumentsTab">
+                @if (Model.DeployPasswordId > 0)
+                {
+                    @await Html.PartialAsync("_DocumentTree", Model)
+                }
+                else
+                {
+                    <div class="text-muted">
+                        <i class="fal fa-folder-tree pr-1"></i>
+                        @Localizer["Save the record first to manage documents."]
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
@@ -200,27 +242,6 @@
 
 <script>
     $(document).ready(function () {
-        $('.btnClearUpdTables').off('click').on('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            var url = $(this).data('url');
-            cpiConfirm.confirm(
-                '@Localizer["Clear Tables?"]',
-                '@Localizer["This action will clear all update tables and cannot be undone, do you wish to continue?"]',
-                function () {
-                    cpiLoadingSpinner.show();
-                    $.post(url, { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() })
-                        .done(function (result) {
-                            cpiLoadingSpinner.hide();
-                            pageHelper.showSuccess(result.success || '@Localizer["Tables cleared."]');
-                        })
-                        .fail(function (e) {
-                            cpiLoadingSpinner.hide();
-                            pageHelper.showErrors(e);
-                        });
-                });
-        });
-
         // Populates each .deploy-doc-dropdown by calling GetReleaseDocs with the
         // year/quarter from the top of the form + the tag/side/file-type data
         // attributes on each <select>. Re-fires whenever Year or Quarter changes
@@ -258,6 +279,9 @@
                 if (currentValue) {
                     $sel.val(String(currentValue));
                 }
+                // Programmatic .val() doesn't fire change, so re-evaluate the
+                // Deploy button manually once the saved selection lands.
+                if (typeof refreshDeployButton === 'function') refreshDeployButton();
             }).fail(function (e) {
                 pageHelper.showErrors(e);
             });
@@ -273,5 +297,139 @@
         // Re-fetch when Year or Quarter changes — both Kendo and plain inputs
         // bubble a "change" event on their underlying form field.
         $('#Year, #Quarter').on('change', refreshAllDropdowns);
+
+        // ────────────────────────────────────────────────────────────────
+        // Deploy button: enables only when every dropdown has a selection
+        // and both password fields are non-empty. Click invokes the Deploy
+        // POST which populates upd* tables from the saved MDB selections.
+        // Note: deploy reads from the SAVED record, so the user must Save
+        // any new dropdown picks before deploy reflects them.
+        // ────────────────────────────────────────────────────────────────
+        function isDeployReady() {
+            var allDropdowns = $('.deploy-doc-dropdown').toArray();
+            var allFilled = allDropdowns.length > 0 && allDropdowns.every(function (s) {
+                return $(s).val() !== '' && $(s).val() != null;
+            });
+            var patPwd = $('#PatentPassword').val() || '';
+            var tmkPwd = $('#TrademarkPassword').val() || '';
+            return allFilled && patPwd.length > 0 && tmkPwd.length > 0;
+        }
+
+        function refreshDeployButton() {
+            $('.btnDeploy').prop('disabled', !isDeployReady());
+        }
+
+        // Hook every input that influences ready-state. Selects bubble
+        // "change"; password fields bubble "input".
+        $('.deploy-doc-dropdown').on('change', refreshDeployButton);
+        $('#PatentPassword, #TrademarkPassword').on('input change', refreshDeployButton);
+        refreshDeployButton();
+
+        $('.btnDeploy').off('click').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var url = $btn.data('url');
+            var id = $btn.data('id');
+            if (!id || id <= 0) {
+                pageHelper.showErrors('@Localizer["Save the record before deploying."]');
+                return;
+            }
+            cpiConfirm.confirm(
+                '@Localizer["Deploy?"]',
+                '@Localizer["This will populate the upd tables from the selected MDBs. Existing rows in those tables will be replaced. Continue?"]',
+                function () {
+                    cpiLoadingSpinner.show();
+                    $btn.prop('disabled', true);
+                    $.ajax({
+                        type: 'POST',
+                        url: url + '?id=' + encodeURIComponent(id),
+                        headers: {
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        }
+                    }).done(function (result) {
+                        cpiLoadingSpinner.hide();
+                        pageHelper.showSuccess(result.success || '@Localizer["Deploy completed."]');
+                        // After a successful deploy, the upd tables have rows.
+                        // Re-check so the On-Prem tab's button reveals itself.
+                        refreshOnPremReady();
+                    }).fail(function (e) {
+                        cpiLoadingSpinner.hide();
+                        pageHelper.showErrors(e);
+                    }).always(function () {
+                        refreshDeployButton();
+                    });
+                });
+        });
+
+        // ────────────────────────────────────────────────────────────────
+        // Generate Script button (lives next to Populate Tables now).
+        // Hidden until the server confirms at least one upd table has
+        // rows — i.e. Populate Tables has actually run.
+        // ────────────────────────────────────────────────────────────────
+        var generateScriptUrl = '@Html.Raw(Url.Action("GenerateScript", "Deploy", new { area = "Releases" }))';
+        var hasDeployedDataUrl = '@Html.Raw(Url.Action("HasDeployedData", "Deploy", new { area = "Releases" }))';
+        var deployPasswordId = @Model.DeployPasswordId;
+
+        function refreshOnPremReady() {
+            if (!deployPasswordId || deployPasswordId <= 0) {
+                $('.btnGenerateScript').hide();
+                return;
+            }
+            $.getJSON(hasDeployedDataUrl, { id: deployPasswordId })
+                .done(function (result) {
+                    var ready = !!(result && (result.ready === true || result.Ready === true));
+                    $('.btnGenerateScript').toggle(ready);
+                })
+                .fail(function () {
+                    $('.btnGenerateScript').hide();
+                });
+        }
+
+        refreshOnPremReady();
+
+        $('.btnGenerateScript').off('click').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var id = $btn.data('id');
+            if (!id || id <= 0) return;
+            cpiLoadingSpinner.show();
+            $btn.prop('disabled', true);
+            $.ajax({
+                type: 'POST',
+                url: generateScriptUrl + '?id=' + encodeURIComponent(id),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                }
+            }).done(function (result) {
+                cpiLoadingSpinner.hide();
+                pageHelper.showSuccess(result.success || '@Localizer["Script generated."]');
+                // Refresh the Documents tree so the new .sql file appears
+                // immediately. The tree IIFE is global on the page and the
+                // selected folder's grid will re-read after the tree reloads.
+                var tv = (typeof deployDocTree_@Model.DeployPasswordId !== 'undefined')
+                    ? $('#deployDocumentTree_@Model.DeployPasswordId').data('kendoTreeView')
+                    : null;
+                if (tv) {
+                    var sel = tv.select();
+                    if (sel && sel.length) {
+                        var item = tv.dataItem(sel);
+                        if (item && typeof item.loaded === 'function') {
+                            item.loaded(false);
+                            item.load();
+                        }
+                    }
+                    tv.dataSource.read();
+                }
+                var grid = $('#deployImageGridView_@Model.DeployPasswordId').data('kendoGrid');
+                if (grid) grid.dataSource.read();
+            }).fail(function (e) {
+                cpiLoadingSpinner.hide();
+                pageHelper.showErrors(e);
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
     });
 </script>
