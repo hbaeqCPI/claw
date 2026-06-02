@@ -595,6 +595,7 @@ namespace LawPortal.Web
                 return new UrlHelper(actionContext);
             });
             services.AddHttpClient();
+            services.AddHttpContextAccessor();
 
             #region Register the OpenIddict services for Web API auth
             services.AddOpenIddict()
