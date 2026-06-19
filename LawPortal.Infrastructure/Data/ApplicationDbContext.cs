@@ -17,15 +17,20 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using LawPortal.Core.Helpers;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace LawPortal.Infrastructure.Data
 {
 
     public class ApplicationDbContext : DbContext, IApplicationDbContext, IDataProtectionKeyContext
     {
+        private readonly IHttpContextAccessor? _httpContextAccessor;
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        { }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IHttpContextAccessor? httpContextAccessor = null) : base(options)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
 
         #region Entities Declaration
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
@@ -133,6 +138,8 @@ namespace LawPortal.Infrastructure.Data
 
         #region Audit Trail
         public DbSet<LookupDTO> AuditLookupDTO { get; set; }
+        public DbSet<PatAuditLog> PatAuditLogs { get; set; }
+        public DbSet<TmkAuditLog> TmkAuditLogs { get; set; }
         #endregion AuditTrail
 
         #region Web Links
@@ -303,6 +310,7 @@ namespace LawPortal.Infrastructure.Data
             builder.ApplyConfiguration(new PatDesCaseTypeFieldsExtMap());
             builder.ApplyConfiguration(new PatDesCaseTypeFieldsDeleteMap());
             builder.ApplyConfiguration(new PatDesCaseTypeFieldsDeleteExtMap());
+            builder.ApplyConfiguration(new PatAuditLogMap());
 
             #endregion
 
@@ -336,6 +344,7 @@ namespace LawPortal.Infrastructure.Data
             builder.ApplyConfiguration(new TmkDesCaseTypeFieldsExtMap());
             builder.ApplyConfiguration(new TmkDesCaseTypeFieldsDeleteMap());
             builder.ApplyConfiguration(new TmkDesCaseTypeFieldsDeleteExtMap());
+            builder.ApplyConfiguration(new TmkAuditLogMap());
 
             #endregion
 
@@ -461,6 +470,123 @@ namespace LawPortal.Infrastructure.Data
             // Mitigate breaking changes in EF7
             // SQL Server tables with triggers or certain computed columns now require special EF Core configuration
             configurationBuilder.Conventions.Add(_ => new BlankTriggerAddingConvention());
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var user = _httpContextAccessor?.HttpContext?.User?.Identity?.Name ?? "system";
+            var now = DateTime.UtcNow;
+
+            // Use table name prefix so all tblPat*/tblTmk* entities are covered
+            // without maintaining a type list (avoids misses from proxy types or omissions).
+            var patEntries = ChangeTracker.Entries()
+                .Where(e => e.Metadata.GetTableName()?.StartsWith("tblPat") == true &&
+                            e.Entity is not PatAuditLog &&
+                            e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .ToList();
+
+            var tmkEntries = ChangeTracker.Entries()
+                .Where(e => e.Metadata.GetTableName()?.StartsWith("tblTmk") == true &&
+                            e.Entity is not TmkAuditLog &&
+                            e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .ToList();
+
+            // Snapshot values before save (EF resets state after SaveChanges)
+            var patLogs = patEntries.Select(e => BuildPatAuditLog(e, user, now)).ToList();
+            var tmkLogs = tmkEntries.Select(e => BuildTmkAuditLog(e, user, now)).ToList();
+
+            var result = await base.SaveChangesAsync(cancellationToken);
+
+            try
+            {
+                if (patLogs.Count > 0)
+                {
+                    PatAuditLogs.AddRange(patLogs);
+                    await base.SaveChangesAsync(cancellationToken);
+                }
+
+                if (tmkLogs.Count > 0)
+                {
+                    TmkAuditLogs.AddRange(tmkLogs);
+                    await base.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch
+            {
+                // Audit failure must never block the original save
+            }
+
+            return result;
+        }
+
+        private static PatAuditLog BuildPatAuditLog(EntityEntry entry, string user, DateTime now) =>
+            new()
+            {
+                ChangedAt = now,
+                ChangedBy = user,
+                Action = entry.State == EntityState.Added ? "I" : entry.State == EntityState.Deleted ? "D" : "U",
+                TableName = entry.Metadata.GetTableName(),
+                RecordId = GetRecordId(entry),
+                OldValues = entry.State != EntityState.Added ? GetValues(entry.OriginalValues) : null,
+                NewValues = entry.State != EntityState.Deleted ? GetValues(entry.CurrentValues) : null,
+            };
+
+        private static TmkAuditLog BuildTmkAuditLog(EntityEntry entry, string user, DateTime now) =>
+            new()
+            {
+                ChangedAt = now,
+                ChangedBy = user,
+                Action = entry.State == EntityState.Added ? "I" : entry.State == EntityState.Deleted ? "D" : "U",
+                TableName = entry.Metadata.GetTableName(),
+                RecordId = GetRecordId(entry),
+                OldValues = entry.State != EntityState.Added ? GetValues(entry.OriginalValues) : null,
+                NewValues = entry.State != EntityState.Deleted ? GetValues(entry.CurrentValues) : null,
+            };
+
+        private static string GetRecordId(EntityEntry entry)
+        {
+            var keys = entry.Metadata.FindPrimaryKey()?.Properties
+                .Select(p => entry.Property(p.Name).CurrentValue?.ToString())
+                .ToArray();
+            return keys is null ? "" : string.Join("|", keys);
+        }
+
+        public async Task WritePatAuditAsync(string action, string tableName, string recordId, string? oldJson, string? newJson, string changedBy)
+        {
+            PatAuditLogs.Add(new PatAuditLog
+            {
+                ChangedAt = DateTime.UtcNow,
+                ChangedBy = changedBy,
+                Action = action,
+                TableName = tableName,
+                RecordId = recordId,
+                OldValues = oldJson,
+                NewValues = newJson,
+            });
+            await base.SaveChangesAsync();
+        }
+
+        public async Task WriteTmkAuditAsync(string action, string tableName, string recordId, string? oldJson, string? newJson, string changedBy)
+        {
+            TmkAuditLogs.Add(new TmkAuditLog
+            {
+                ChangedAt = DateTime.UtcNow,
+                ChangedBy = changedBy,
+                Action = action,
+                TableName = tableName,
+                RecordId = recordId,
+                OldValues = oldJson,
+                NewValues = newJson,
+            });
+            await base.SaveChangesAsync();
+        }
+
+        private static string GetValues(PropertyValues values)
+        {
+            var dict = new Dictionary<string, object?>();
+            foreach (var prop in values.Properties)
+                dict[prop.Name] = values[prop];
+            return JsonSerializer.Serialize(dict);
         }
 
         public void DetachAllEntities()

@@ -192,5 +192,8 @@ namespace LawPortal.Core.Interfaces
         DatabaseFacade Database { get; }
         void DetachAllEntities();
         List<EntityEntry> GetAllTrackedEntities();
+
+        Task WritePatAuditAsync(string action, string tableName, string recordId, string? oldJson, string? newJson, string changedBy);
+        Task WriteTmkAuditAsync(string action, string tableName, string recordId, string? oldJson, string? newJson, string changedBy);
     }
 }

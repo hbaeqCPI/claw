@@ -377,3 +377,12 @@ FodyWeavers.xsd
 /.sonarlint
 /LawPortal.Web/Resources/encryption.json
 /LawPortal.Web/Resources/encryption.json
+
+# Claude Code per-machine scratch space — worktree dirs are local-only git
+# working trees with their own .git pointer back to the main repo. Never
+# share these across machines/devs.
+/.claude/worktrees/
+
+# Local-only credentials and test output that keep landing in `git add`.
+/.amph_token
+/test_results/

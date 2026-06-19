@@ -247,6 +247,38 @@ BEGIN
 END;
 GO
 
+-- Patent audit log table
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatAuditLog')
+BEGIN
+    CREATE TABLE tblPatAuditLog (
+        AuditLogId  BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        ChangedAt   DATETIME2           NOT NULL,
+        ChangedBy   NVARCHAR(100)       NULL,
+        Action      CHAR(1)             NOT NULL,  -- I=Insert, U=Update, D=Delete
+        TableName   NVARCHAR(100)       NULL,
+        RecordId    NVARCHAR(500)       NULL,
+        OldValues   NVARCHAR(MAX)       NULL,
+        NewValues   NVARCHAR(MAX)       NULL
+    );
+END;
+GO
+
+-- Trademark audit log table
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkAuditLog')
+BEGIN
+    CREATE TABLE tblTmkAuditLog (
+        AuditLogId  BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        ChangedAt   DATETIME2           NOT NULL,
+        ChangedBy   NVARCHAR(100)       NULL,
+        Action      CHAR(1)             NOT NULL,  -- I=Insert, U=Update, D=Delete
+        TableName   NVARCHAR(100)       NULL,
+        RecordId    NVARCHAR(500)       NULL,
+        OldValues   NVARCHAR(MAX)       NULL,
+        NewValues   NVARCHAR(MAX)       NULL
+    );
+END;
+GO
+
 -- tblDeployPassword — stores deployments keyed by Year + Quarter + PatentPassword
 -- + TrademarkPassword. Multiple deployments per year/quarter are allowed;
 -- uniqueness covers the full tuple to prevent exact duplicates.

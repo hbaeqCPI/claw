@@ -28,6 +28,7 @@ using LawPortal.Core.Helpers;
 
 using Newtonsoft.Json;
 using LawPortal.Web.Areas;
+using System.Text.Json;
 
 namespace LawPortal.Web.Areas.Trademark.Controllers
 {
@@ -354,6 +355,11 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
                             countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
                             countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
+                        await _repository.WriteTmkAuditAsync("U", "tblTmkCountryLaw",
+                            $"{countryLaw.Country}|{countryLaw.CaseType}|{existing.Systems}→{countryLaw.Systems}",
+                            System.Text.Json.JsonSerializer.Serialize(existing),
+                            System.Text.Json.JsonSerializer.Serialize(countryLaw),
+                            userName);
                     }
                     else
                     {
@@ -364,6 +370,11 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                             countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
                             countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.LastUpdate,
                             countryLaw.Country ?? "", countryLaw.CaseType ?? "", existing.Systems ?? "");
+                        await _repository.WriteTmkAuditAsync("U", "tblTmkCountryLaw",
+                            $"{countryLaw.Country}|{countryLaw.CaseType}|{existing.Systems}",
+                            System.Text.Json.JsonSerializer.Serialize(existing),
+                            System.Text.Json.JsonSerializer.Serialize(countryLaw),
+                            userName);
                     }
 
                     // Cascade Systems change to child records
@@ -400,6 +411,11 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                         countryLaw.Country ?? "", countryLaw.CaseType ?? "", countryLaw.Systems ?? "",
                         countryLaw.DefaultAgent ?? "", countryLaw.AutoGenDesCtry, countryLaw.AutoUpdtDesTmkRecs,
                         countryLaw.Remarks ?? "", countryLaw.UserRemarks ?? "", countryLaw.InternalRemarks ?? "", countryLaw.UserID ?? "", countryLaw.DateCreated, countryLaw.LastUpdate);
+                    await _repository.WriteTmkAuditAsync("I", "tblTmkCountryLaw",
+                        $"{countryLaw.Country}|{countryLaw.CaseType}|{countryLaw.Systems}",
+                        null,
+                        System.Text.Json.JsonSerializer.Serialize(countryLaw),
+                        userName);
                     if (!string.IsNullOrEmpty(countryLaw.CopyOptions))
                         await CopyChildData(countryLaw);
                 }
