@@ -77,6 +77,8 @@ public class GeneratorConfig
     public bool GeneratePatent { get; set; }
     public bool GenerateTrademark { get; set; }
     public string ReleaseName { get; set; } = "";
+    public int Year { get; set; }
+    public string Quarter { get; set; } = "";
 }
 
 public class ColumnInfo
@@ -161,6 +163,24 @@ public class MdbGenerator
     private static bool IsPatR10System(string systemType) =>
         systemType.Equals("PatR10v2.2", StringComparison.OrdinalIgnoreCase);
 
+    private static string GetPatMdbBaseName(string systemType, string prefix)
+    {
+        if (systemType.Equals("PatR8-R10v2.1", StringComparison.OrdinalIgnoreCase))
+            return $"{prefix}_patlaw10";
+        if (systemType.Equals("PatR5-7", StringComparison.OrdinalIgnoreCase))
+            return $"{prefix}_patlaw9";
+        // R4 (shared Pat/Tmk)
+        return $"{prefix}_Patlaw9";
+    }
+
+    private static string GetTmkMdbBaseName(string systemType, string prefix)
+    {
+        if (systemType.Equals("TmkR9-10v2.2", StringComparison.OrdinalIgnoreCase))
+            return $"{prefix}_TmkLaw10";
+        // R4, TmkR5-8
+        return $"{prefix}_TmkLaw9";
+    }
+
     public MdbGenerator(GeneratorConfig config)
     {
         _config = config;
@@ -174,16 +194,18 @@ public class MdbGenerator
 
         Directory.CreateDirectory(_config.OutputFolder);
 
-        // Build file name prefix from release name (sanitize for filesystem)
-        var namePrefix = string.IsNullOrWhiteSpace(_config.ReleaseName)
-            ? "Release"
-            : string.Join("", _config.ReleaseName.Split(Path.GetInvalidFileNameChars()));
+        var systemType = (_config.Systems ?? "").Trim();
 
-        var systemType = (_config.Systems ?? "").Trim(); // Systems field carries the system type name
+        // Quarter number: "Q1" → "1", "Q2" → "2", etc.
+        var qNum = (_config.Quarter ?? "").TrimStart('Q');
+        if (string.IsNullOrEmpty(qNum)) qNum = "1";
+        var yr = _config.Year > 0 ? _config.Year.ToString() : "0000";
+        var prefix = $"{yr}_{qNum}";
 
         if (_config.GeneratePatent)
         {
-            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Pat.mdb");
+            var baseName = GetPatMdbBaseName(systemType, prefix);
+            var path = Path.Combine(_config.OutputFolder, $"{baseName}.mdb");
             if (File.Exists(path)) File.Delete(path);
             await GenerateMdb(path, GetPatentTables(systemType), selectedSystems, systemType);
             generatedFiles.Add(path);
@@ -191,7 +213,8 @@ public class MdbGenerator
 
         if (_config.GenerateTrademark)
         {
-            var path = Path.Combine(_config.OutputFolder, $"{namePrefix}-Tmk.mdb");
+            var baseName = GetTmkMdbBaseName(systemType, prefix);
+            var path = Path.Combine(_config.OutputFolder, $"{baseName}.mdb");
             if (File.Exists(path)) File.Delete(path);
             await GenerateMdb(path, GetTrademarkTables(systemType), selectedSystems, systemType);
             generatedFiles.Add(path);

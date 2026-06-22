@@ -49,7 +49,7 @@ namespace LawPortal.Reports.Services
             return deployed;
         }
 
-        public async Task<List<string>> GenerateMdbFiles(string systems, bool generatePatent, bool generateTrademark, string outputFolder, string releaseName = "")
+        public async Task<List<string>> GenerateMdbFiles(string systems, bool generatePatent, bool generateTrademark, string outputFolder, string releaseName = "", int year = 0, string quarter = "")
         {
             Directory.CreateDirectory(outputFolder);
 
@@ -62,7 +62,9 @@ namespace LawPortal.Reports.Services
                 Systems = systems ?? "",
                 GeneratePatent = generatePatent,
                 GenerateTrademark = generateTrademark,
-                ReleaseName = releaseName ?? ""
+                ReleaseName = releaseName ?? "",
+                Year = year,
+                Quarter = quarter ?? ""
             };
 
             var configPath = Path.Combine(Path.GetTempPath(), $"mdbgen_{Guid.NewGuid():N}.json");

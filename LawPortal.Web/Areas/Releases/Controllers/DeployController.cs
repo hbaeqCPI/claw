@@ -109,16 +109,18 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             if (year <= 0 || string.IsNullOrEmpty(quarter) || string.IsNullOrEmpty(systemTag))
                 return Json(new List<object>());
 
-            // Each Release is scoped to exactly one system version, stored in
-            // SystemType (e.g. "R4", "PatR5-7", "PatR8-R10v2.1"). The Systems
-            // column is reserved for downstream client-system overrides and is
-            // typically empty, so the dropdown filter matches on SystemType.
+            // systemTag may be comma-separated (e.g. "R4,PatR5-7") to merge
+            // docs from multiple release types into one dropdown.
+            var tags = (systemTag ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
+            bool multiTag = tags.Count > 1;
+
             var matching = await _releaseService.QueryableList.AsNoTracking()
-                .Where(r => r.Year == year && r.Quarter == quarter && r.SystemType == systemTag)
+                .Where(r => r.Year == year && r.Quarter == quarter && tags.Contains(r.SystemType))
                 .ToListAsync();
 
             var results = new List<object>();
-            foreach (var rel in matching.OrderBy(r => r.Name))
+            foreach (var rel in matching.OrderBy(r => r.SystemType).ThenBy(r => r.Name))
             {
                 var sysType = ToDocSystemType(rel.SystemType);
                 var folder = await _documentService.GetFolder(sysType, "ReleaseId", rel.ReleaseId, TruncateFolderName(rel.Name), 0);
@@ -144,7 +146,12 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     // Tmk side. Matches the existing GetCompareMdbFiles logic.
                     bool docIsPat = (doc.DocName ?? "").Contains("Pat", StringComparison.OrdinalIgnoreCase);
                     if (docIsPat == isPat)
-                        results.Add(new { doc.DocId, Text = doc.DocName });
+                    {
+                        // When merging multiple system types, prefix with the tag so
+                        // the user can tell which release a doc came from.
+                        var text = multiTag ? $"[{rel.SystemType}] {doc.DocName}" : doc.DocName;
+                        results.Add(new { doc.DocId, Text = text });
+                    }
                 }
             }
             return Json(results);
@@ -397,10 +404,8 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (record.TmkR5MdbId == null) missing.Add("Mdbs/Tmk/R5");
                 if (record.TmkR9MdbId == null) missing.Add("Mdbs/Tmk/R9");
                 if (record.PatVer9And10LawDocId == null) missing.Add("LawDocs/Pat/Ver9and10");
-                if (record.PatR5LawDocId == null) missing.Add("LawDocs/Pat/R5");
                 if (record.PatR8LawDocId == null) missing.Add("LawDocs/Pat/R8");
                 if (record.TmkVer9And10LawDocId == null) missing.Add("LawDocs/Tmk/Ver9and10");
-                if (record.TmkR5LawDocId == null) missing.Add("LawDocs/Tmk/R5");
                 if (record.TmkR9LawDocId == null) missing.Add("LawDocs/Tmk/R9");
                 if (string.IsNullOrEmpty(record.PatentPassword)) missing.Add("Patent Password");
                 if (string.IsNullOrEmpty(record.TrademarkPassword)) missing.Add("Trademark Password");
@@ -642,20 +647,18 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         }
 
         // Metadata for one column of a target upd table.
-        private sealed record ColumnMeta(string Name, string DataType, bool IsNullable, bool IsIdentity);
+        private sealed record ColumnMeta(string Name, string DataType, bool IsNullable, bool IsIdentity, int OrdinalPosition = 0);
 
         private async Task<Dictionary<string, ColumnMeta>> GetTableColumnInfo(SqlConnection conn, string tableName)
         {
             var cols = new Dictionary<string, ColumnMeta>(StringComparer.OrdinalIgnoreCase);
-            // INFORMATION_SCHEMA exposes nullability but not IDENTITY; pull
-            // IsIdentity via COLUMNPROPERTY in the same query so we can skip
-            // IDENTITY columns in the INSERT (would need SET IDENTITY_INSERT).
             using var cmd = new SqlCommand(@"
                 SELECT
                     c.COLUMN_NAME,
                     c.DATA_TYPE,
                     c.IS_NULLABLE,
-                    COLUMNPROPERTY(OBJECT_ID(QUOTENAME(c.TABLE_SCHEMA) + '.' + QUOTENAME(c.TABLE_NAME)), c.COLUMN_NAME, 'IsIdentity') AS IsIdentity
+                    COLUMNPROPERTY(OBJECT_ID(QUOTENAME(c.TABLE_SCHEMA) + '.' + QUOTENAME(c.TABLE_NAME)), c.COLUMN_NAME, 'IsIdentity') AS IsIdentity,
+                    c.ORDINAL_POSITION
                 FROM INFORMATION_SCHEMA.COLUMNS c
                 WHERE c.TABLE_NAME = @t", conn);
             cmd.Parameters.AddWithValue("@t", tableName);
@@ -666,9 +669,176 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 var dataType = rdr.GetString(1);
                 var nullable = rdr.GetString(2) == "YES";
                 var isIdentity = !rdr.IsDBNull(3) && rdr.GetInt32(3) == 1;
-                cols[name] = new ColumnMeta(name, dataType, nullable, isIdentity);
+                var ordinal = rdr.GetInt32(4);
+                cols[name] = new ColumnMeta(name, dataType, nullable, isIdentity, ordinal);
             }
             return cols;
+        }
+
+        // Template for one row in tblLawUpdates. The MdbUrlTemplate may be null
+        // (web-hosted / Access 2.0 rows have no MDB download). Placeholders:
+        //   {year}  → integer year (e.g. 2026)
+        //   {q}     → integer quarter number (e.g. 1)
+        //   {qStr}  → ordinal string (e.g. "1st")
+        private sealed record LawUpdateTemplate(
+            int SysVersionId,
+            string DescriptionTemplate,
+            string? MdbUrlTemplate,
+            string DocUrlTemplate);
+
+        private static readonly LawUpdateTemplate[] PatLawUpdateTemplates =
+        {
+            new(1,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent Access System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Pat/Ver9and10/{year}_{q}_PatLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver9and10/{year}_{q}_Pat2000.pdf"),
+            new(2,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent SQL System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Pat/Ver9and10/{year}_{q}_PatLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver9and10/{year}_{q}_Pat2000.pdf"),
+            new(7,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent R5",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/PAT/R5/{year}_{q}_PatLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver9and10/{year}_{q}_Pat2000.pdf"),
+            new(9,  "{year} {qStr} Quarter Law Update for the Access-C/S 97 Patent System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/PAT/VerSQL70/{year}_{q}_PatLaw8.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/VerSQL70/{year}_{q}_PatCS97.pdf"),
+            new(11, "{year} {qStr} Quarter Law Update for the Web-Hosted Patent System R4",
+                null,
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver9and10/{year}_{q}_Pat2000.pdf"),
+            new(13, "{year} {qStr} Quarter Law Update for the Access 97 Patent System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/PAT/Ver97/{year}_{q}_PatLaw.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver97/{year}_{q}_Pat97.pdf"),
+            new(17, "{year} {qStr} Quarter Law Update for the Access 2.0 Patent System",
+                null,
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/Ver20/{year}_{q}_Pat20.pdf"),
+            new(20, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent Access System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Pat/R8/{year}_{q}_PatLaw10.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/R8/PatentR8_{year}_{q}.pdf"),
+            new(22, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent Access System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Pat/R8/{year}_{q}_PatLaw10.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/R8/PatentR8_{year}_{q}.pdf"),
+            new(24, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Patent Access System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Pat/R8/{year}_{q}_PatLaw10.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Pat/R8/PatentR8_{year}_{q}.pdf"),
+        };
+
+        private static readonly LawUpdateTemplate[] TmkLawUpdateTemplates =
+        {
+            new(25, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark R5",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/R5/{year}_{q}_TmkLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+            new(4,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark SQL System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Tmk/Ver9and10/{year}_{q}_TmkLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+            new(3,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark Access System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Tmk/Ver9and10/{year}_{q}_TmkLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+            new(23, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark R9",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/Tmk/R9/{year}_{q}_TmkLaw10.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/R9/{year}_{q}_TmkR9.pdf"),
+            new(21, "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark R5",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/R5/{year}_{q}_TmkLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+            new(19, "{year} {qStr} Quarter Law Update for the Access 97 Trademark System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/Ver97EU/{year}_{q}_EU97Exp.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver97/{year}_{q}_Tmk97.pdf"),
+            new(14, "{year} {qStr} Quarter Law Update for the Access 97 Trademark System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/Ver97/{year}_{q}_TmkLaw8.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver97/{year}_{q}_Tmk97.pdf"),
+            new(12, "{year} {qStr} Quarter Law Update for the Web-Hosted Trademark System R4",
+                null,
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+            new(10, "{year} {qStr} Quarter Law Update for the Access-C/S 97 Trademark System",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/Ver97/{year}_{q}_TmkLaw8.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/VerSQL70/{year}_{q}_TmkCS97.pdf"),
+            new(8,  "{year} {qStr} Quarter Law Update for the 2000 and 2002 Trademark R5",
+                "https://www2.computerpackages.com/LawUpdates/Mdbs/TMK/R5/{year}_{q}_TmkLaw9.mdb",
+                "https://www2.computerpackages.com/LawUpdates/LawDocs/Tmk/Ver9and10/{year}_{q}_Tmk2000.pdf"),
+        };
+
+        private static int ParseQuarterNumber(string quarter)
+        {
+            if (string.IsNullOrEmpty(quarter)) return 1;
+            if (int.TryParse(quarter.TrimStart('Q', 'q'), out var n)) return n;
+            return 1;
+        }
+
+        private static string QuarterOrdinalString(int q) => q switch
+        {
+            1 => "1st", 2 => "2nd", 3 => "3rd", _ => q + "th"
+        };
+
+        private static string ApplyLawUpdatePlaceholders(string template, int year, int q) =>
+            template.Replace("{year}", year.ToString())
+                    .Replace("{q}", q.ToString())
+                    .Replace("{qStr}", QuarterOrdinalString(q));
+
+        /// <summary>
+        /// Deletes existing tblLawUpdates rows for this year/quarter/side, then inserts
+        /// the fixed template set. Column values are mapped by ORDINAL_POSITION so the
+        /// method doesn't need to know specific column names beyond SysVersionId, Year,
+        /// and Quarter (used for the DELETE predicate). The assumed column order matches
+        /// the data the table was originally populated with:
+        ///   1 SysVersionId | 2 Password | 3 Description | 4 UrlMdb | 5 UrlDoc |
+        ///   6 (flag=1) | 7 (null) | 8 Year | 9 Quarter | 10 (null) | 11 (null) | 12 DateReleased
+        /// </summary>
+        private async Task InsertLawUpdatesForSide(SqlConnection conn, DeployPassword record, bool isPat, DateTime dateReleased)
+        {
+            var templates = isPat ? PatLawUpdateTemplates : TmkLawUpdateTemplates;
+            var password  = isPat ? (record.PatentPassword ?? "") : (record.TrademarkPassword ?? "");
+            var quarterInt = ParseQuarterNumber(record.Quarter);
+            var sysIds = string.Join(",", templates.Select(t => t.SysVersionId));
+
+            // Remove existing rows for this year/quarter/side so the push is idempotent.
+            using (var del = new SqlCommand(
+                $"DELETE FROM [tblLawUpdates] WHERE SysVersionId IN ({sysIds}) AND Year = @yr AND Quarter = @qn",
+                conn))
+            {
+                del.Parameters.AddWithValue("@yr", record.Year);
+                del.Parameters.AddWithValue("@qn", quarterInt);
+                await del.ExecuteNonQueryAsync();
+            }
+
+            // Get columns in ordinal order, skip IDENTITY.
+            var colMeta = await GetTableColumnInfo(conn, "tblLawUpdates");
+            var orderedCols = colMeta.Values
+                .Where(c => !c.IsIdentity)
+                .OrderBy(c => c.OrdinalPosition)
+                .ToList();
+
+            if (orderedCols.Count == 0) return;
+
+            var colList  = string.Join(", ", orderedCols.Select(c => $"[{c.Name}]"));
+            var paramList = string.Join(", ", orderedCols.Select((_, i) => $"@c{i}"));
+            var insertSql = $"INSERT INTO [tblLawUpdates] ({colList}) VALUES ({paramList})";
+
+            foreach (var tmpl in templates)
+            {
+                var description = ApplyLawUpdatePlaceholders(tmpl.DescriptionTemplate, record.Year, quarterInt);
+                var mdbUrl = tmpl.MdbUrlTemplate != null
+                    ? ApplyLawUpdatePlaceholders(tmpl.MdbUrlTemplate, record.Year, quarterInt)
+                    : null;
+                var docUrl = ApplyLawUpdatePlaceholders(tmpl.DocUrlTemplate, record.Year, quarterInt);
+
+                // Values by ordinal position — must match the column order described above.
+                // Index: 0=SysVersionId, 1=Password, 2=Description, 3=MdbUrl, 4=DocUrl,
+                //        5=flag(1), 6=null, 7=Year, 8=Quarter, 9=null, 10=null, 11=DateReleased
+                var templateValues = new object?[]
+                {
+                    tmpl.SysVersionId, password, description,
+                    (object?)mdbUrl ?? DBNull.Value, docUrl,
+                    1, DBNull.Value,
+                    record.Year, quarterInt,
+                    DBNull.Value, DBNull.Value,
+                    dateReleased
+                };
+
+                using var ins = new SqlCommand(insertSql, conn);
+                for (int i = 0; i < orderedCols.Count; i++)
+                {
+                    var val = i < templateValues.Length ? templateValues[i] : (object)DBNull.Value;
+                    ins.Parameters.AddWithValue($"@c{i}", val ?? DBNull.Value);
+                }
+                await ins.ExecuteNonQueryAsync();
+            }
         }
 
         // Best-effort default for a SQL data type when the MDB row supplies
@@ -759,7 +929,6 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     {
                         (record.PatVer9And10LawDocId, @"LawDocs\Pat\Ver9and10"),
                         (record.PatVer9And10MdbId,    @"Mdbs\Pat\Ver9and10"),
-                        (record.PatR5LawDocId,        @"LawDocs\Pat\R5"),
                         (record.PatR5MdbId,           @"Mdbs\Pat\R5"),
                         (record.PatR8LawDocId,        @"LawDocs\Pat\R8"),
                         (record.PatR8MdbId,           @"Mdbs\Pat\R8"),
@@ -768,7 +937,6 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     {
                         (record.TmkVer9And10LawDocId, @"LawDocs\Tmk\Ver9and10"),
                         (record.TmkVer9And10MdbId,    @"Mdbs\Tmk\Ver9and10"),
-                        (record.TmkR5LawDocId,        @"LawDocs\Tmk\R5"),
                         (record.TmkR5MdbId,           @"Mdbs\Tmk\R5"),
                         (record.TmkR9LawDocId,        @"LawDocs\Tmk\R9"),
                         (record.TmkR9MdbId,           @"Mdbs\Tmk\R9"),
@@ -820,7 +988,23 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     return new JsonBadRequest(new { errors = new[] { msg } });
                 }
 
-                return Json(new { success = $"Push completed: {copied} file(s) copied to {baseShare}." });
+                // Insert tblLawUpdates rows for this side. Date released = today.
+                string lawUpdatesNote = "";
+                try
+                {
+                    var connStr = _config.GetConnectionString("DefaultConnection") ?? "";
+                    using var conn = new SqlConnection(connStr);
+                    await conn.OpenAsync();
+                    await InsertLawUpdatesForSide(conn, record, isPat, DateTime.Now.Date);
+                    int rowCount = isPat ? PatLawUpdateTemplates.Length : TmkLawUpdateTemplates.Length;
+                    lawUpdatesNote = $" {rowCount} tblLawUpdates row(s) inserted.";
+                }
+                catch (Exception ex)
+                {
+                    lawUpdatesNote = $" (tblLawUpdates insert failed: {ex.Message})";
+                }
+
+                return Json(new { success = $"Push completed: {copied} file(s) copied to {baseShare}.{lawUpdatesNote}" });
             }
             catch (Exception ex)
             {
@@ -829,15 +1013,14 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         }
 
         /// <summary>
-        /// Builds a SQL script that mirrors the on-prem deploy: USE [WebUpdates],
-        /// DELETE FROM each populated upd table, then per-row INSERT INTO for
-        /// every row currently in those tables. Matches the structure of the
-        /// reference example (COUNTRTYLAWUPDATES-*.sql) minus the tblLawUpdates
-        /// rows — those involve a SysVersionId / URL mapping the user will
-        /// supply later. Instead of streaming the file back as a download we
-        /// stash it in this deploy's Documents tree, named
-        /// {Year}_{Quarter}_CountryLawScript.sql. The client refreshes the
-        /// tree on success so the new file shows up immediately.
+        /// Builds two SQL scripts from the current upd* staging tables:
+        ///   OnPrem  — USE [WebUpdates], DELETE each upd table, INSERT all rows.
+        ///   OffPrem — same, but also includes a SET IDENTITY_INSERT tblLawUpdates
+        ///             ON/OFF block (with all tblLawUpdates rows for this year/quarter)
+        ///             between the deletes and the data inserts — matching the Azure
+        ///             reference script format (COUNTRTYLAWUPDATES-*.sql).
+        /// Both files are saved to this deploy's Documents tree and the tree is
+        /// refreshed on the client.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -851,17 +1034,19 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     return new JsonBadRequest(new { errors = new[] { $"Deployment {id} no longer exists." } });
 
                 var connStr = _config.GetConnectionString("DefaultConnection") ?? "";
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("USE [WebUpdates]");
-                sb.AppendLine("GO");
+                var quarterInt = ParseQuarterNumber(record.Quarter);
+
+                string onPremContent;
+                string offPremContent;
 
                 using (var conn = new SqlConnection(connStr))
                 {
                     await conn.OpenAsync();
 
-                    // Find every upd* table that has rows. Each becomes a DELETE +
-                    // a per-row INSERT block. Ordered by name for deterministic output.
-                    var populated = new List<string>();
+                    // Collect every upd* table that has rows — split into two sets:
+                    //   offPrem: upd8* (Pat R8) and upd9* (Tmk R9) — Azure/SQL systems
+                    //   onPrem:  everything else (upd / upd5, Ver9and10 and R5) — Access systems
+                    var allPopulated = new List<string>();
                     using (var listCmd = new SqlCommand(@"
                         SELECT t.name
                         FROM sys.tables t
@@ -870,49 +1055,99 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                         ORDER BY t.name", conn))
                     using (var rdr = await listCmd.ExecuteReaderAsync())
                     {
-                        while (await rdr.ReadAsync()) populated.Add(rdr.GetString(0));
+                        while (await rdr.ReadAsync()) allPopulated.Add(rdr.GetString(0));
                     }
 
-                    // Phase 1 — wipe every populated table.
-                    foreach (var t in populated)
+                    var offPremTables = allPopulated
+                        .Where(t => t.StartsWith("upd8", StringComparison.OrdinalIgnoreCase) ||
+                                    t.StartsWith("upd9", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    var onPremTables = allPopulated
+                        .Where(t => !t.StartsWith("upd8", StringComparison.OrdinalIgnoreCase) &&
+                                    !t.StartsWith("upd9", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    // Build DELETE + data-INSERT sections for a given table list.
+                    async Task BuildSections(List<string> tables,
+                        System.Text.StringBuilder deletes, System.Text.StringBuilder data)
                     {
-                        sb.Append("delete from ").AppendLine(t);
-                        sb.AppendLine("GO");
-                    }
-
-                    // Phase 2 — per-row INSERTs. Read each table, build literal-valued INSERTs.
-                    foreach (var tableName in populated)
-                    {
-                        var cols = await GetTableColumnInfo(conn, tableName);
-                        var insertCols = cols.Values.Where(c => !c.IsIdentity).Select(c => c.Name).ToList();
-                        if (insertCols.Count == 0) continue;
-
-                        var colList = string.Join(", ", insertCols.Select(c => $"[{c}]"));
-                        var selectSql = $"SELECT {colList} FROM [dbo].[{tableName.Replace("]", "]]")}]";
-
-                        using var selectCmd = new SqlCommand(selectSql, conn);
-                        using var rdr = await selectCmd.ExecuteReaderAsync();
-                        while (await rdr.ReadAsync())
+                        foreach (var t in tables)
                         {
-                            var valueParts = new List<string>();
-                            for (int i = 0; i < insertCols.Count; i++)
+                            deletes.Append("delete from ").AppendLine(t);
+                            deletes.AppendLine("GO");
+                        }
+                        foreach (var tableName in tables)
+                        {
+                            var cols = await GetTableColumnInfo(conn, tableName);
+                            var insertCols = cols.Values.Where(c => !c.IsIdentity).Select(c => c.Name).ToList();
+                            if (insertCols.Count == 0) continue;
+
+                            var colList = string.Join(", ", insertCols.Select(c => $"[{c}]"));
+                            var selectSql = $"SELECT {colList} FROM [dbo].[{tableName.Replace("]", "]]")}]";
+
+                            using var selectCmd = new SqlCommand(selectSql, conn);
+                            using var dataRdr = await selectCmd.ExecuteReaderAsync();
+                            while (await dataRdr.ReadAsync())
                             {
-                                var info = cols[insertCols[i]];
-                                valueParts.Add(rdr.IsDBNull(i) ? "NULL" : FormatSqlLiteral(rdr.GetValue(i), info.DataType));
+                                var valueParts = new List<string>();
+                                for (int i = 0; i < insertCols.Count; i++)
+                                {
+                                    var info = cols[insertCols[i]];
+                                    valueParts.Add(dataRdr.IsDBNull(i) ? "NULL" : FormatSqlLiteral(dataRdr.GetValue(i), info.DataType));
+                                }
+                                data.Append($"INSERT [dbo].[{tableName}] ({colList}) VALUES (")
+                                    .Append(string.Join(", ", valueParts))
+                                    .AppendLine(")");
+                                data.AppendLine("GO");
                             }
-                            sb.Append($"INSERT [dbo].[{tableName}] ({colList}) VALUES (")
-                              .Append(string.Join(", ", valueParts))
-                              .AppendLine(")");
-                            sb.AppendLine("GO");
                         }
                     }
-                } // close SQL connection before doing file I/O
 
-                // ── Save into this deploy's Documents tree ──
+                    var sbOnPremDeletes  = new System.Text.StringBuilder();
+                    var sbOnPremData     = new System.Text.StringBuilder();
+                    await BuildSections(onPremTables, sbOnPremDeletes, sbOnPremData);
+
+                    var sbOffPremDeletes = new System.Text.StringBuilder();
+                    var sbOffPremData    = new System.Text.StringBuilder();
+                    await BuildSections(offPremTables, sbOffPremDeletes, sbOffPremData);
+
+                    // tblLawUpdates IDENTITY_INSERT block — off-prem only.
+                    var sbLawUpdates = new System.Text.StringBuilder();
+                    var lwCols = await GetTableColumnInfo(conn, "tblLawUpdates");
+                    var lwAllCols = lwCols.Values.OrderBy(c => c.OrdinalPosition).Select(c => c.Name).ToList();
+                    var lwColList = string.Join(", ", lwAllCols.Select(c => $"[{c}]"));
+                    var lwSelectSql = $"SELECT {lwColList} FROM [dbo].[tblLawUpdates] WHERE Year = @yr AND Quarter = @qn ORDER BY SysVersionId";
+
+                    sbLawUpdates.AppendLine("SET IDENTITY_INSERT [dbo].[tblLawUpdates] ON ");
+                    sbLawUpdates.AppendLine("GO");
+                    using (var lwCmd = new SqlCommand(lwSelectSql, conn))
+                    {
+                        lwCmd.Parameters.AddWithValue("@yr", record.Year.ToString());
+                        lwCmd.Parameters.AddWithValue("@qn", quarterInt.ToString());
+                        using var lwRdr = await lwCmd.ExecuteReaderAsync();
+                        while (await lwRdr.ReadAsync())
+                        {
+                            var valueParts = new List<string>();
+                            for (int i = 0; i < lwAllCols.Count; i++)
+                            {
+                                var info = lwCols[lwAllCols[i]];
+                                valueParts.Add(lwRdr.IsDBNull(i) ? "NULL" : FormatSqlLiteral(lwRdr.GetValue(i), info.DataType));
+                            }
+                            sbLawUpdates.Append($"INSERT [dbo].[tblLawUpdates] ({lwColList}) VALUES (")
+                                .Append(string.Join(", ", valueParts))
+                                .AppendLine(")");
+                            sbLawUpdates.AppendLine("GO");
+                        }
+                    }
+                    sbLawUpdates.AppendLine("SET IDENTITY_INSERT [dbo].[tblLawUpdates] OFF");
+                    sbLawUpdates.AppendLine("GO");
+
+                    onPremContent  = "USE [WebUpdates]\nGO\n" + sbOnPremDeletes  + sbOnPremData;
+                    offPremContent = "USE [WebUpdates]\nGO\n" + sbOffPremDeletes + sbLawUpdates + sbOffPremData;
+                } // close SQL connection before file I/O
+
+                // ── Save both scripts into this deploy's Documents tree ──
                 var userName = User.GetUserName();
-
-                // Make sure the root folder exists. Same shape as the
-                // Documents tab uses; auto-create on first-touch.
                 var rootName = DeployRootFolderName(record);
                 var rootFolder = await _documentService.GetFolder(
                     DeployScreenCode, "DeployPasswordId", id, rootName, 0);
@@ -924,75 +1159,83 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (rootFolder == null)
                     return new JsonBadRequest(new { errors = new[] { "Could not resolve or create the deploy's root document folder." } });
 
-                // Name format requested by the user: 2026_Q1_CountryLawScript.sql.
-                // Quarter is stored with its "Q" prefix already, so a plain
-                // join produces the right shape.
-                var baseName = $"{record.Year}_{record.Quarter}_CountryLawScript";
+                var baseOnPrem  = $"{record.Year}_{record.Quarter}_CountryLawScript_OnPrem";
+                var baseOffPrem = $"{record.Year}_{record.Quarter}_CountryLawScript_OffPrem";
+
                 var existingNames = await _documentService.DocDocuments
-                    .Where(d => d.FolderId == rootFolder.FolderId && d.DocName != null && d.DocName.StartsWith(baseName))
+                    .Where(d => d.FolderId == rootFolder.FolderId && d.DocName != null &&
+                                (d.DocName.StartsWith(baseOnPrem) || d.DocName.StartsWith(baseOffPrem)))
                     .Select(d => d.DocName!)
                     .ToListAsync();
-                var docName = baseName;
-                if (existingNames.Contains(docName))
-                {
-                    int n = 1;
-                    while (existingNames.Contains($"{baseName} ({n})")) n++;
-                    docName = $"{baseName} ({n})";
-                }
 
-                var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+                var onPremDocName  = DeduplicateScriptName(baseOnPrem,  existingNames);
+                var offPremDocName = DeduplicateScriptName(baseOffPrem, existingNames);
 
-                var docFile = new DocFile
+                var savedFiles = new List<object>();
+                foreach (var (docName, content) in new[]
                 {
-                    FileExt = "sql",
-                    UserFileName = $"{docName}.sql",
-                    FileSize = bytes.Length,
-                    IsImage = false,
-                    CreatedBy = userName,
-                    UpdatedBy = userName,
-                    DateCreated = DateTime.Now,
-                    LastUpdate = DateTime.Now
-                };
-                docFile = await _documentService.AddDocFile(docFile);
+                    (onPremDocName,  onPremContent),
+                    (offPremDocName, offPremContent)
+                })
+                {
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                    var docFile = new DocFile
+                    {
+                        FileExt = "sql",
+                        UserFileName = $"{docName}.sql",
+                        FileSize = bytes.Length,
+                        IsImage = false,
+                        CreatedBy = userName,
+                        UpdatedBy = userName,
+                        DateCreated = DateTime.Now,
+                        LastUpdate = DateTime.Now
+                    };
+                    docFile = await _documentService.AddDocFile(docFile);
 
-                var docDocument = new DocDocument
-                {
-                    FolderId = rootFolder.FolderId,
-                    DocName = docName,
-                    FileId = docFile.FileId,
-                    Author = userName,
-                    CreatedBy = userName,
-                    UpdatedBy = userName,
-                    DateCreated = DateTime.Now,
-                    LastUpdate = DateTime.Now
-                };
-                await _documentService.UpdateDocuments(userName,
-                    Enumerable.Empty<DocDocument>(),
-                    new[] { docDocument },
-                    Enumerable.Empty<DocDocument>(),
-                    null, false);
+                    var docDocument = new DocDocument
+                    {
+                        FolderId = rootFolder.FolderId,
+                        DocName = docName,
+                        FileId = docFile.FileId,
+                        Author = userName,
+                        CreatedBy = userName,
+                        UpdatedBy = userName,
+                        DateCreated = DateTime.Now,
+                        LastUpdate = DateTime.Now
+                    };
+                    await _documentService.UpdateDocuments(userName,
+                        Enumerable.Empty<DocDocument>(),
+                        new[] { docDocument },
+                        Enumerable.Empty<DocDocument>(),
+                        null, false);
 
-                // Persist the file bytes through the document helper so the
-                // path matches everything else under Searchable/Documents
-                // (same plumbing the PDF report generator uses).
-                using (var stream = new MemoryStream(bytes))
-                {
-                    var folderHeader = await _documentService.GetFolderHeader(rootFolder.FolderId);
-                    await _documentHelper.SaveDocumentFromStream(stream, docFile.DocFileName, folderHeader);
+                    using (var stream = new MemoryStream(bytes))
+                    {
+                        var folderHeader = await _documentService.GetFolderHeader(rootFolder.FolderId);
+                        await _documentHelper.SaveDocumentFromStream(stream, docFile.DocFileName, folderHeader);
+                    }
+
+                    savedFiles.Add(new { fileName = docFile.UserFileName, fileId = docFile.FileId });
                 }
 
                 return Json(new
                 {
-                    success = $"Script generated: {docName}.sql — open the Documents tab to view or download.",
-                    fileName = docFile.UserFileName,
-                    fileId = docFile.FileId,
-                    docId = docDocument.DocId
+                    success = $"Scripts generated: {onPremDocName}.sql and {offPremDocName}.sql — open the Documents tab to view or download.",
+                    files = savedFiles
                 });
             }
             catch (Exception ex)
             {
                 return new JsonBadRequest(new { errors = new[] { "Generate Script failed: " + ex.Message } });
             }
+        }
+
+        private static string DeduplicateScriptName(string baseName, List<string> existingNames)
+        {
+            if (!existingNames.Contains(baseName)) return baseName;
+            int n = 1;
+            while (existingNames.Contains($"{baseName} ({n})")) n++;
+            return $"{baseName} ({n})";
         }
 
         // Format a SQL Server value as a literal for inclusion in an INSERT

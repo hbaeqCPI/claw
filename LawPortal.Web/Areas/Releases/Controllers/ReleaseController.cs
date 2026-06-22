@@ -345,6 +345,28 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return name.Length <= maxLen ? name : name.Substring(0, maxLen);
         }
 
+        private static string GetReportBaseName(string systemType, int year, string quarter, bool isPat)
+        {
+            var qNum = (quarter ?? "").TrimStart('Q');
+            if (string.IsNullOrEmpty(qNum)) qNum = "1";
+            var prefix = $"{year}_{qNum}";
+
+            if (isPat)
+            {
+                if (systemType.Equals("PatR8-R10v2.1", StringComparison.OrdinalIgnoreCase))
+                    return $"PatentR8_{year}_{qNum}";
+                // PatR5-7 or R4
+                return $"{prefix}_Pat2000";
+            }
+            else
+            {
+                if (systemType.Equals("TmkR9-10v2.2", StringComparison.OrdinalIgnoreCase))
+                    return $"{prefix}_TmkR9";
+                // R4 or TmkR5-8
+                return $"{prefix}_Tmk2000";
+            }
+        }
+
         public async Task<IActionResult> DocumentTreeRead(int releaseId, string id)
         {
             var release = await _entityService.GetByIdAsync(releaseId);
@@ -1127,7 +1149,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
 
                 // Generate to a temp folder first — filter by SystemType
                 var tempFolder = Path.Combine(Path.GetTempPath(), $"mdbgen_{Guid.NewGuid():N}");
-                var files = await mdbService.GenerateMdbFiles(release.SystemType, generatePatent, generateTrademark, tempFolder, release.Name);
+                var files = await mdbService.GenerateMdbFiles(release.SystemType, generatePatent, generateTrademark, tempFolder, release.Name, release.Year, release.Quarter ?? "");
 
                 if (!files.Any())
                     return BadRequest("MDB Generator completed but produced no files.");
@@ -1373,7 +1395,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (rootFolder == null)
                     rootFolder = await _documentService.AddFolder(sysType, "ReleaseId", "Rel", releaseId, TruncateFolderName(release.Name), 0, false);
 
-                var reportName = $"{release.Name}-{(isPat ? "Pat" : "Tmk")}-Report";
+                var reportName = GetReportBaseName(release.SystemType, release.Year, release.Quarter ?? "", isPat);
                 var existingNames = await _documentService.DocDocuments
                     .Where(d => d.FolderId == rootFolder.FolderId && d.DocName.StartsWith(reportName))
                     .Select(d => d.DocName).ToListAsync();
