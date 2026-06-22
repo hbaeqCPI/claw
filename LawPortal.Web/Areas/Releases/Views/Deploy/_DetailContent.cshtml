@@ -143,15 +143,23 @@
         <div class="tab-content detail">
             <div class="tab-pane active show p-3" id="deployDetailPatentTabContent"
                  role="tabpanel" aria-labelledby="deployDetailPatentTab">
-                <div class="form-row">
+                <div class="form-row align-items-end">
                     <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
-                        <div class="form-group float-label">
+                        <div class="form-group float-label mb-0">
                             <label asp-for="PatentPassword"></label>
                             <input type="text" class="form-control form-control-sm"
                                    asp-for="PatentPassword" asp-is-readonly="@isReadOnly"
                                    asp-is-autofocus="@addMode" maxlength="30" autocomplete="off" />
                             <span asp-validation-for="PatentPassword"></span>
                         </div>
+                    </div>
+                    <div class="col-auto mb-1">
+                        <button type="button" class="btn btn-secondary btn-sm btnPushPat" disabled
+                                data-id="@Model.DeployPasswordId"
+                                data-url="@Url.Action("PushMdbs", "Deploy", new { area = "Releases" })"
+                                data-side="pat">
+                            <i class="fal fa-share-square pr-1"></i> @Localizer["Push"]
+                        </button>
                     </div>
                 </div>
 
@@ -180,15 +188,23 @@
             </div>
             <div class="tab-pane p-3" id="deployDetailTrademarkTabContent"
                  role="tabpanel" aria-labelledby="deployDetailTrademarkTab">
-                <div class="form-row">
+                <div class="form-row align-items-end">
                     <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
-                        <div class="form-group float-label">
+                        <div class="form-group float-label mb-0">
                             <label asp-for="TrademarkPassword"></label>
                             <input type="text" class="form-control form-control-sm"
                                    asp-for="TrademarkPassword" asp-is-readonly="@isReadOnly"
                                    maxlength="30" autocomplete="off" />
                             <span asp-validation-for="TrademarkPassword"></span>
                         </div>
+                    </div>
+                    <div class="col-auto mb-1">
+                        <button type="button" class="btn btn-secondary btn-sm btnPushTmk" disabled
+                                data-id="@Model.DeployPasswordId"
+                                data-url="@Url.Action("PushMdbs", "Deploy", new { area = "Releases" })"
+                                data-side="tmk">
+                            <i class="fal fa-share-square pr-1"></i> @Localizer["Push"]
+                        </button>
                     </div>
                 </div>
 
@@ -282,6 +298,7 @@
                 // Programmatic .val() doesn't fire change, so re-evaluate the
                 // Deploy button manually once the saved selection lands.
                 if (typeof refreshDeployButton === 'function') refreshDeployButton();
+                if (typeof refreshPushButtons === 'function') refreshPushButtons();
             }).fail(function (e) {
                 pageHelper.showErrors(e);
             });
@@ -324,6 +341,68 @@
         $('.deploy-doc-dropdown').on('change', refreshDeployButton);
         $('#PatentPassword, #TrademarkPassword').on('input change', refreshDeployButton);
         refreshDeployButton();
+
+        // ────────────────────────────────────────────────────────────────
+        // Push buttons: enabled when all selects in the respective tab
+        // are filled. Copies the 3 MDB files for that side to the UNC
+        // share (\\edm2016\test\Mdbs\Pat or \Tmk) via a server action.
+        // ────────────────────────────────────────────────────────────────
+        function isPatSelectsFilled() {
+            var patSelects = $('[data-is-pat="true"].deploy-doc-dropdown').toArray();
+            return patSelects.length > 0 && patSelects.every(function (s) {
+                return $(s).val() !== '' && $(s).val() != null;
+            });
+        }
+        function isTmkSelectsFilled() {
+            var tmkSelects = $('[data-is-pat="false"].deploy-doc-dropdown').toArray();
+            return tmkSelects.length > 0 && tmkSelects.every(function (s) {
+                return $(s).val() !== '' && $(s).val() != null;
+            });
+        }
+        function refreshPushButtons() {
+            $('.btnPushPat').prop('disabled', !isPatSelectsFilled());
+            $('.btnPushTmk').prop('disabled', !isTmkSelectsFilled());
+        }
+        $('.deploy-doc-dropdown').on('change', refreshPushButtons);
+        refreshPushButtons();
+
+        function handlePushClick($btn) {
+            $btn.off('click').on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var url = $btn.data('url');
+                var id = $btn.data('id');
+                var side = $btn.data('side');
+                if (!id || id <= 0) {
+                    pageHelper.showErrors('@Localizer["Save the record before pushing."]');
+                    return;
+                }
+                cpiConfirm.confirm(
+                    '@Localizer["Push MDBs?"]',
+                    '@Localizer["This will copy the selected MDB files to the edm2016 network share. Continue?"]',
+                    function () {
+                        cpiLoadingSpinner.show();
+                        $btn.prop('disabled', true);
+                        $.ajax({
+                            type: 'POST',
+                            url: url + '?id=' + encodeURIComponent(id) + '&side=' + encodeURIComponent(side),
+                            headers: {
+                                'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                            }
+                        }).done(function (result) {
+                            cpiLoadingSpinner.hide();
+                            pageHelper.showSuccess(result.success || '@Localizer["Push completed."]');
+                        }).fail(function (ex) {
+                            cpiLoadingSpinner.hide();
+                            pageHelper.showErrors(ex);
+                        }).always(function () {
+                            refreshPushButtons();
+                        });
+                    });
+            });
+        }
+        handlePushClick($('.btnPushPat'));
+        handlePushClick($('.btnPushTmk'));
 
         $('.btnDeploy').off('click').on('click', function (e) {
             e.preventDefault();

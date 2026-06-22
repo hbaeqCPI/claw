@@ -729,6 +729,106 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         }
 
         /// <summary>
+        /// Copies all 6 selected files (3 LawDocs + 3 MDBs) for the given side
+        /// ("pat" or "tmk") to the edm2016 network share. Each file lands in the
+        /// subfolder that matches its path label, e.g.:
+        ///   LawDocs/Pat/Ver9and10/ → \\edm2016\test\LawDocs\Pat\Ver9and10\
+        ///   Mdbs/Pat/R5/           → \\edm2016\test\Mdbs\Pat\R5\
+        /// Destination subfolders are expected to already exist on the share.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryModify)]
+        public async Task<IActionResult> PushMdbs(int id, string side)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(side))
+                    return new JsonBadRequest(new { errors = new[] { "Side (pat/tmk) is required." } });
+
+                var record = await _entityService.GetByIdAsync(id);
+                if (record == null)
+                    return new JsonBadRequest(new { errors = new[] { $"Deployment {id} not found." } });
+
+                bool isPat = side.Equals("pat", StringComparison.OrdinalIgnoreCase);
+                const string baseShare = @"\\edm2016\test";
+
+                // Each job: (docId, relative subfolder path matching the UI label)
+                var jobs = isPat
+                    ? new (int? DocId, string SubPath)[]
+                    {
+                        (record.PatVer9And10LawDocId, @"LawDocs\Pat\Ver9and10"),
+                        (record.PatVer9And10MdbId,    @"Mdbs\Pat\Ver9and10"),
+                        (record.PatR5LawDocId,        @"LawDocs\Pat\R5"),
+                        (record.PatR5MdbId,           @"Mdbs\Pat\R5"),
+                        (record.PatR8LawDocId,        @"LawDocs\Pat\R8"),
+                        (record.PatR8MdbId,           @"Mdbs\Pat\R8"),
+                    }
+                    : new (int? DocId, string SubPath)[]
+                    {
+                        (record.TmkVer9And10LawDocId, @"LawDocs\Tmk\Ver9and10"),
+                        (record.TmkVer9And10MdbId,    @"Mdbs\Tmk\Ver9and10"),
+                        (record.TmkR5LawDocId,        @"LawDocs\Tmk\R5"),
+                        (record.TmkR5MdbId,           @"Mdbs\Tmk\R5"),
+                        (record.TmkR9LawDocId,        @"LawDocs\Tmk\R9"),
+                        (record.TmkR9MdbId,           @"Mdbs\Tmk\R9"),
+                    };
+
+                var emptyCount = jobs.Count(j => j.DocId == null);
+                if (emptyCount > 0)
+                    return new JsonBadRequest(new { errors = new[] { $"{emptyCount} selection(s) are empty — fill all dropdowns before pushing." } });
+
+                var errors = new List<string>();
+                int copied = 0;
+                foreach (var (docId, subPath) in jobs)
+                {
+                    try
+                    {
+                        var doc = await _documentService.GetDocumentById(docId!.Value);
+                        if (doc == null || !doc.FileId.HasValue)
+                            throw new Exception($"Document {docId} not found or has no file.");
+                        var file = await _documentService.GetFileById(doc.FileId.Value);
+                        if (file == null)
+                            throw new Exception($"File for document {docId} not found.");
+
+                        var localPath = await EnsureLocalFile(
+                            _documentHelper.GetDocumentPath(file.DocFileName),
+                            file.DocFileName);
+                        if (string.IsNullOrEmpty(localPath) || !System.IO.File.Exists(localPath))
+                            throw new Exception($"File not found on disk: {doc.DocName}");
+
+                        // Prefer the original upload name (includes extension).
+                        // Fall back to DocName + FileExt so the copy always has
+                        // the correct extension rather than landing as a bare file.
+                        var fileName = !string.IsNullOrEmpty(file.UserFileName)
+                            ? file.UserFileName
+                            : doc.DocName + (string.IsNullOrEmpty(file.FileExt) ? "" : "." + file.FileExt);
+                        var destFolder = Path.Combine(baseShare, subPath);
+                        var destFile = Path.Combine(destFolder, fileName);
+                        System.IO.File.Copy(localPath, destFile, overwrite: true);
+                        copied++;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"{subPath}: {ex.Message}");
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+                    var msg = $"Push completed with errors ({copied}/{jobs.Length} copied). " + string.Join(" | ", errors);
+                    return new JsonBadRequest(new { errors = new[] { msg } });
+                }
+
+                return Json(new { success = $"Push completed: {copied} file(s) copied to {baseShare}." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonBadRequest(new { errors = new[] { "Push failed: " + ex.Message } });
+            }
+        }
+
+        /// <summary>
         /// Builds a SQL script that mirrors the on-prem deploy: USE [WebUpdates],
         /// DELETE FROM each populated upd table, then per-row INSERT INTO for
         /// every row currently in those tables. Matches the structure of the
