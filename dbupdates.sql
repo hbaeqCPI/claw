@@ -415,3 +415,23 @@ BEGIN
             TmkR9MdbId            INT NULL;
 END;
 GO
+
+-- Deploy activity log — one row per Populate Tables / Generate Script / Push action.
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblDeployLog'
+)
+BEGIN
+    CREATE TABLE tblDeployLog (
+        DeployLogId      INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_tblDeployLog PRIMARY KEY,
+        DeployPasswordId INT NOT NULL,
+        Action           NVARCHAR(50)  NULL,   -- PopulateTables | GenerateScript | PushMdbs
+        Side             NVARCHAR(10)  NULL,   -- Pat | Tmk (PushMdbs only)
+        PerformedBy      NVARCHAR(100) NULL,
+        PerformedAt      DATETIME      NOT NULL,
+        Status           NVARCHAR(20)  NULL,   -- Success | Error
+        Detail           NVARCHAR(MAX) NULL
+    );
+    CREATE INDEX IX_tblDeployLog_DeployPasswordId
+        ON tblDeployLog (DeployPasswordId);
+END;
+GO

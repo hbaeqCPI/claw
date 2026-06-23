@@ -118,6 +118,7 @@ namespace LawPortal.Infrastructure.Data
         #region Releases
         public DbSet<LawPortal.Core.Entities.Release> Releases { get; set; }
         public DbSet<DeployPassword> DeployPasswords { get; set; }
+        public DbSet<DeployLog> DeployLogs { get; set; }
         #endregion
 
         #region Shared
@@ -351,6 +352,7 @@ namespace LawPortal.Infrastructure.Data
             #region Releases
             builder.ApplyConfiguration(new LawPortal.Infrastructure.Data.Release.mappings.ReleaseMap());
             builder.ApplyConfiguration(new LawPortal.Infrastructure.Data.Release.mappings.DeployPasswordMap());
+            builder.ApplyConfiguration(new LawPortal.Infrastructure.Data.Release.mappings.DeployLogMap());
             #endregion
 
             #region Shared

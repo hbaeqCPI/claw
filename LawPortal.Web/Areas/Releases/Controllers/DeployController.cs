@@ -40,6 +40,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         private readonly IViewModelService<DeployPassword> _viewModelService;
         private readonly IEntityService<DeployPassword> _entityService;
         private readonly IEntityService<Release> _releaseService;
+        private readonly IEntityService<DeployLog> _deployLogService;
         private readonly IDocumentService _documentService;
         private readonly IDocumentHelper _documentHelper;
         private readonly IDocumentStorage _documentStorage;
@@ -54,6 +55,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             IViewModelService<DeployPassword> viewModelService,
             IEntityService<DeployPassword> entityService,
             IEntityService<Release> releaseService,
+            IEntityService<DeployLog> deployLogService,
             IDocumentService documentService,
             IDocumentHelper documentHelper,
             IDocumentStorage documentStorage,
@@ -65,12 +67,31 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             _viewModelService = viewModelService;
             _entityService = entityService;
             _releaseService = releaseService;
+            _deployLogService = deployLogService;
             _documentService = documentService;
             _documentHelper = documentHelper;
             _documentStorage = documentStorage;
             _env = env;
             _config = config;
             _localizer = localizer;
+        }
+
+        private async Task WriteDeployLog(int deployPasswordId, string action, string status, string detail, string? side = null)
+        {
+            try
+            {
+                await _deployLogService.Add(new DeployLog
+                {
+                    DeployPasswordId = deployPasswordId,
+                    Action = action,
+                    Side = side,
+                    PerformedBy = User.GetUserName(),
+                    PerformedAt = DateTime.Now,
+                    Status = status,
+                    Detail = detail
+                });
+            }
+            catch { /* log write failure must never break the main action */ }
         }
 
         // Mirrors ReleaseController.ToDocSystemType — converts a Release.SystemType
@@ -463,13 +484,17 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (perJobErrors.Count > 0)
                 {
                     var msg = $"Deploy completed with errors. Populated {totalTablesPopulated} table(s). Failures: " + string.Join(" | ", perJobErrors);
+                    await WriteDeployLog(id, "PopulateTables", "Error", msg);
                     return new JsonBadRequest(new { errors = new[] { msg } });
                 }
 
-                return Json(new { success = $"Deploy completed: {totalTablesPopulated} tables populated across all 6 MDBs." });
+                var successMsg = $"Deploy completed: {totalTablesPopulated} tables populated across all 6 MDBs.";
+                await WriteDeployLog(id, "PopulateTables", "Success", successMsg);
+                return Json(new { success = successMsg });
             }
             catch (Exception ex)
             {
+                await WriteDeployLog(id, "PopulateTables", "Error", "Deploy failed: " + ex.Message);
                 return new JsonBadRequest(new { errors = new[] { "Deploy failed: " + ex.Message } });
             }
         }
@@ -873,6 +898,15 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         /// screen that's good enough.
         /// </summary>
         [HttpGet]
+        public IActionResult DeployLogRead([DataSourceRequest] DataSourceRequest request, int deployPasswordId)
+        {
+            var query = _deployLogService.QueryableList
+                .Where(l => l.DeployPasswordId == deployPasswordId)
+                .OrderByDescending(l => l.PerformedAt);
+            return Json(query.ToDataSourceResult(request));
+        }
+
+        [HttpGet]
         public async Task<IActionResult> HasDeployedData(int id)
         {
             try
@@ -985,6 +1019,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (errors.Count > 0)
                 {
                     var msg = $"Push completed with errors ({copied}/{jobs.Length} copied). " + string.Join(" | ", errors);
+                    await WriteDeployLog(id, "PushMdbs", "Error", msg, isPat ? "Pat" : "Tmk");
                     return new JsonBadRequest(new { errors = new[] { msg } });
                 }
 
@@ -1004,10 +1039,13 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     lawUpdatesNote = $" (tblLawUpdates insert failed: {ex.Message})";
                 }
 
-                return Json(new { success = $"Push completed: {copied} file(s) copied to {baseShare}.{lawUpdatesNote}" });
+                var pushSuccessMsg = $"Push completed: {copied} file(s) copied to {baseShare}.{lawUpdatesNote}";
+                await WriteDeployLog(id, "PushMdbs", "Success", pushSuccessMsg, isPat ? "Pat" : "Tmk");
+                return Json(new { success = pushSuccessMsg });
             }
             catch (Exception ex)
             {
+                await WriteDeployLog(id, "PushMdbs", "Error", "Push failed: " + ex.Message, side?.Equals("pat", StringComparison.OrdinalIgnoreCase) == true ? "Pat" : "Tmk");
                 return new JsonBadRequest(new { errors = new[] { "Push failed: " + ex.Message } });
             }
         }
@@ -1218,14 +1256,17 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     savedFiles.Add(new { fileName = docFile.UserFileName, fileId = docFile.FileId });
                 }
 
+                var scriptMsg = $"Scripts generated: {onPremDocName}.sql and {offPremDocName}.sql";
+                await WriteDeployLog(id, "GenerateScript", "Success", scriptMsg);
                 return Json(new
                 {
-                    success = $"Scripts generated: {onPremDocName}.sql and {offPremDocName}.sql — open the Documents tab to view or download.",
+                    success = scriptMsg + " — open the Documents tab to view or download.",
                     files = savedFiles
                 });
             }
             catch (Exception ex)
             {
+                await WriteDeployLog(id, "GenerateScript", "Error", "Generate Script failed: " + ex.Message);
                 return new JsonBadRequest(new { errors = new[] { "Generate Script failed: " + ex.Message } });
             }
         }

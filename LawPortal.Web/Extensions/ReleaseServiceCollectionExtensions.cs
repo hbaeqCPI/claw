@@ -15,6 +15,7 @@ namespace LawPortal.Web.Extensions
             services.AddScoped<IEntityService<Release>, AuxService<Release>>();
             services.AddScoped<IViewModelService<DeployPassword>, ViewModelService<DeployPassword>>();
             services.AddScoped<IEntityService<DeployPassword>, AuxService<DeployPassword>>();
+            services.AddScoped<IEntityService<DeployLog>, AuxService<DeployLog>>();
             return services;
         }
     }

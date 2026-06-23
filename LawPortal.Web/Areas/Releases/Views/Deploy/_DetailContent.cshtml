@@ -390,10 +390,10 @@
                         }).done(function (result) {
                             cpiLoadingSpinner.hide();
                             pageHelper.showSuccess(result.success || '@Localizer["Push completed."]');
-                        }).fail(function (ex) {
+                            }).fail(function (ex) {
                             cpiLoadingSpinner.hide();
                             pageHelper.showErrors(ex);
-                        }).always(function () {
+                            }).always(function () {
                             refreshPushButtons();
                         });
                     });
@@ -482,6 +482,7 @@
             }).done(function (result) {
                 cpiLoadingSpinner.hide();
                 pageHelper.showSuccess(result.success || '@Localizer["Script generated."]');
+                refreshDeployLog();
                 // Refresh the Documents tree so the new .sql file appears
                 // immediately. The tree IIFE is global on the page and the
                 // selected folder's grid will re-read after the tree reloads.
@@ -504,6 +505,7 @@
             }).fail(function (e) {
                 cpiLoadingSpinner.hide();
                 pageHelper.showErrors(e);
+                refreshDeployLog();
             }).always(function () {
                 $btn.prop('disabled', false);
             });
