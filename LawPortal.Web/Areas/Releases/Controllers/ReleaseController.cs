@@ -622,7 +622,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         /// <summary>
         /// Grid read for the right-side document grid — returns documents in a folder.
         /// </summary>
-        public async Task<IActionResult> DocumentGridRead([DataSourceRequest] DataSourceRequest request, int folderId)
+        public async Task<IActionResult> DocumentGridRead([DataSourceRequest] DataSourceRequest request, int folderId, string? extFilter = null)
         {
             try
             {
@@ -648,6 +648,10 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                         FileExt = d.DocFile != null ? d.DocFile.FileExt : ""
                     })
                     .ToListAsync();
+
+                // Server-side extension filter — used by the split MDB/Report panels.
+                if (!string.IsNullOrWhiteSpace(extFilter))
+                    docs = docs.Where(d => (d.UserFileName ?? "").EndsWith(extFilter, StringComparison.OrdinalIgnoreCase)).ToList();
 
                 var result = docs.Select(d => new
                 {
@@ -1334,7 +1338,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return Json(results);
         }
 
-        public async Task<IActionResult> GetMdbFiles(int releaseId)
+public async Task<IActionResult> GetMdbFiles(int releaseId)
         {
             var release = await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == releaseId);
             if (release == null) return Json(new List<object>());

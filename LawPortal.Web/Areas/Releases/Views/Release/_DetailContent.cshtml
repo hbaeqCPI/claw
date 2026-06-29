@@ -201,8 +201,14 @@
             </li>
         </ul>
         <div class="tab-content detail">
-            <div class="tab-pane active show" id="releaseDetailDocumentsTabContent" role="tabpanel" aria-labelledby="releaseDetailDocumentsTab">
-                @await Html.PartialAsync("_DocumentTree", Model)
+            <div class="tab-pane active show p-0" id="releaseDetailDocumentsTabContent" role="tabpanel" aria-labelledby="releaseDetailDocumentsTab">
+                @await Html.PartialAsync("_DocumentTree", Model,
+                    new ViewDataDictionary(ViewData)
+                    {
+                        ["extFilter"]          = ".pdf",
+                        ["companionExtFilter"]  = ".mdb",
+                        ["companionPanelLabel"] = "MDB Files"
+                    })
             </div>
             <div class="tab-pane" id="releaseDetailReportsTabContent" role="tabpanel" aria-labelledby="releaseDetailReportsTab">
                 <div class="p-3">

@@ -310,14 +310,14 @@ namespace LawPortal.Web.Services.Menu
                 changed = true;
             }
 
-            // Find or create the "Release" leaf menu item
+            // Find or create the "MDB Generation" leaf menu item
             var releaseLeaf = allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && m.PageId == releasePage.Id);
             if (releaseLeaf == null)
             {
                 releaseLeaf = new CPiMenuItem
                 {
                     ParentId = manageCategory.Id,
-                    Title = "Releases",
+                    Title = "MDB Generation",
                     PageId = releasePage.Id,
                     SortOrder = 10,
                     IsEnabled = true,
@@ -326,7 +326,14 @@ namespace LawPortal.Web.Services.Menu
                 menuItemRepo.Add(releaseLeaf);
                 await db.SaveChangesAsync();
                 allItems.Add(releaseLeaf);
-                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Releases' menu item under Releases/Manage.");
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'MDB Generation' menu item under Releases/Manage.");
+                changed = true;
+            }
+            else if (releaseLeaf.Title != "MDB Generation")
+            {
+                releaseLeaf.Title = "MDB Generation";
+                await db.SaveChangesAsync();
+                _logger.LogInformation("AuxiliaryMenuSeeder: Renamed Release menu item to 'MDB Generation'.");
                 changed = true;
             }
 
