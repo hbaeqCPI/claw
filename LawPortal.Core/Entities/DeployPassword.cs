@@ -94,5 +94,11 @@ namespace LawPortal.Core.Entities
 
         [Display(Name = "Mdbs/Tmk/R9/")]
         public int? TmkR9MdbId { get; set; }
+
+        public bool IsLocked { get; set; }
+        public DateTime? LockedAt { get; set; }
+
+        [StringLength(100)]
+        public string? LockedBy { get; set; }
     }
 }

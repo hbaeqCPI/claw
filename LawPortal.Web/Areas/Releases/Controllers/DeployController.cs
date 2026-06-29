@@ -955,7 +955,10 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     return new JsonBadRequest(new { errors = new[] { $"Deployment {id} not found." } });
 
                 bool isPat = side.Equals("pat", StringComparison.OrdinalIgnoreCase);
-                const string baseShare = @"\\edm2016\test";
+                var shareSettings = _config.GetSection("NetworkShare").Get<LawPortal.Web.Services.NetworkShareSettings>();
+                var baseShare = shareSettings?.BaseSharePath?.TrimEnd('\\');
+                if (string.IsNullOrEmpty(baseShare))
+                    return new JsonBadRequest(new { errors = new[] { "NetworkShare:BaseSharePath is not configured in appsettings." } });
 
                 // Each job: (docId, relative subfolder path matching the UI label)
                 var jobs = isPat
@@ -980,41 +983,31 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (emptyCount > 0)
                     return new JsonBadRequest(new { errors = new[] { $"{emptyCount} selection(s) are empty — fill all dropdowns before pushing." } });
 
-                var errors = new List<string>();
-                int copied = 0;
+                // Resolve files before impersonating (async not allowed inside RunImpersonated).
+                var resolvedJobs = new List<(string LocalPath, string DestFile, string SubPath)>();
                 foreach (var (docId, subPath) in jobs)
                 {
-                    try
-                    {
-                        var doc = await _documentService.GetDocumentById(docId!.Value);
-                        if (doc == null || !doc.FileId.HasValue)
-                            throw new Exception($"Document {docId} not found or has no file.");
-                        var file = await _documentService.GetFileById(doc.FileId.Value);
-                        if (file == null)
-                            throw new Exception($"File for document {docId} not found.");
+                    var doc = await _documentService.GetDocumentById(docId!.Value);
+                    if (doc == null || !doc.FileId.HasValue)
+                        throw new Exception($"Document {docId} not found or has no file.");
+                    var file = await _documentService.GetFileById(doc.FileId.Value);
+                    if (file == null)
+                        throw new Exception($"File for document {docId} not found.");
 
-                        var localPath = await EnsureLocalFile(
-                            _documentHelper.GetDocumentPath(file.DocFileName),
-                            file.DocFileName);
-                        if (string.IsNullOrEmpty(localPath) || !System.IO.File.Exists(localPath))
-                            throw new Exception($"File not found on disk: {doc.DocName}");
+                    var localPath = await EnsureLocalFile(
+                        _documentHelper.GetDocumentPath(file.DocFileName),
+                        file.DocFileName);
+                    if (string.IsNullOrEmpty(localPath) || !System.IO.File.Exists(localPath))
+                        throw new Exception($"File not found on disk: {doc.DocName}");
 
-                        // Prefer the original upload name (includes extension).
-                        // Fall back to DocName + FileExt so the copy always has
-                        // the correct extension rather than landing as a bare file.
-                        var fileName = !string.IsNullOrEmpty(file.UserFileName)
-                            ? file.UserFileName
-                            : doc.DocName + (string.IsNullOrEmpty(file.FileExt) ? "" : "." + file.FileExt);
-                        var destFolder = Path.Combine(baseShare, subPath);
-                        var destFile = Path.Combine(destFolder, fileName);
-                        System.IO.File.Copy(localPath, destFile, overwrite: true);
-                        copied++;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add($"{subPath}: {ex.Message}");
-                    }
+                    var fileName = !string.IsNullOrEmpty(file.UserFileName)
+                        ? file.UserFileName
+                        : doc.DocName + (string.IsNullOrEmpty(file.FileExt) ? "" : "." + file.FileExt);
+
+                    resolvedJobs.Add((localPath, Path.Combine(baseShare, subPath, fileName), subPath));
                 }
+
+                var (copied, errors) = await Task.Run(() => ConnectAndCopy(shareSettings, resolvedJobs));
 
                 if (errors.Count > 0)
                 {
@@ -2048,5 +2041,189 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             viewModel.Container = _dataContainer;
             return viewModel;
         }
+
+        #region Network share copy
+
+        private static (int Copied, List<string> Errors) ConnectAndCopy(
+            LawPortal.Web.Services.NetworkShareSettings settings,
+            List<(string LocalPath, string DestFile, string SubPath)> jobs)
+        {
+            if (settings == null || string.IsNullOrEmpty(settings.UserName))
+                throw new InvalidOperationException("NetworkShare credentials are not configured.");
+
+            // Run each copy as a subprocess launched under the service account so it gets its
+            // own SMB logon session — avoids credential conflicts with the app pool's session.
+            var password = new System.Security.SecureString();
+            foreach (char c in settings.Password ?? "") password.AppendChar(c);
+            password.MakeReadOnly();
+
+            int copied = 0;
+            var errors = new List<string>();
+
+            foreach (var (localPath, destFile, subPath) in jobs)
+            {
+                string srcDir  = System.IO.Path.GetDirectoryName(localPath)  ?? ".";
+                string srcFile = System.IO.Path.GetFileName(localPath);
+                string dstDir  = System.IO.Path.GetDirectoryName(destFile)   ?? ".";
+
+                // /IS  – copy even if destination is identical (overwrite)
+                // /R:1 – 1 retry on failure
+                // /W:1 – 1 second wait between retries
+                // /NFL /NDL /NJH /NJS – suppress header/summary noise
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName               = "robocopy",
+                    Arguments              = $"\"{srcDir}\" \"{dstDir}\" \"{srcFile}\" /IS /R:1 /W:1 /NFL /NDL /NJH /NJS",
+                    UseShellExecute        = false,
+                    UserName               = settings.UserName,
+                    Domain                 = string.IsNullOrEmpty(settings.Domain) ? null : settings.Domain,
+                    Password               = password,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
+                    CreateNoWindow         = true,
+                };
+
+                try
+                {
+                    using var proc = System.Diagnostics.Process.Start(psi)
+                        ?? throw new InvalidOperationException("Failed to start robocopy process.");
+
+                    // Read both streams on background threads to avoid deadlock if either buffer fills.
+                    var stdoutTask = System.Threading.Tasks.Task.Run(() => proc.StandardOutput.ReadToEnd());
+                    var stderrTask = System.Threading.Tasks.Task.Run(() => proc.StandardError.ReadToEnd());
+                    proc.WaitForExit(60_000);
+
+                    string stdout = stdoutTask.Result;
+                    string stderr = stderrTask.Result;
+
+                    // robocopy exit codes: 0 = nothing to do, 1 = copied OK, 2–7 = warnings, 8+ = errors
+                    if (proc.ExitCode >= 8)
+                    {
+                        string detail = (stdout + " " + stderr).Trim();
+                        errors.Add($"{subPath}: robocopy exited {proc.ExitCode}" +
+                                   (string.IsNullOrEmpty(detail) ? "" : $" — {detail}"));
+                    }
+                    else
+                    {
+                        copied++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{subPath}: {ex.Message}");
+                }
+            }
+
+            return (copied, errors);
+        }
+
+        #endregion
+
+        #region Quarter Lock
+
+        internal static readonly string[] SnapshotTables = new[]
+        {
+            "tblPatActionParameter", "tblPatActionType", "tblPatArea",
+            "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
+            "tblPatAuditLog", "tblPatCaseType", "tblPatCountry",
+            "tblPatCountryDue", "tblPatCountryExp", "tblPatCountryExpDelete",
+            "tblPatCountryLaw", "tblPatCountryLaw_Ext", "tblPatCountryLawUpdate",
+            "tblPatDesCaseType", "tblPatDesCaseType_Ext",
+            "tblPatDesCaseTypeDelete", "tblPatDesCaseTypeDelete_Ext",
+            "tblPatDesCaseTypeFields", "tblPatDesCaseTypeFields_Ext",
+            "tblPatDesCaseTypeFieldsDelete", "tblPatDesCaseTypeFieldsDelete_Ext",
+            "tblPatDesignatedCountry", "tblPatIndicator",
+            "tblTmkActionParameter", "tblTmkActionType", "tblTmkArea",
+            "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
+            "tblTmkAuditLog", "tblTmkCaseType", "tblTmkCountry",
+            "tblTmkCountryDue", "tblTmkCountryLaw", "tblTmkCountryLawUpdate",
+            "tblTmkDesCaseType", "tblTmkDesCaseType_Ext",
+            "tblTmkDesCaseTypeDelete", "tblTmkDesCaseTypeDelete_Ext",
+            "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFields_Ext",
+            "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext",
+            "tblTmkDesignatedCountry", "tblTmkIndicator", "tblTmkStandardGood"
+        };
+
+        [HttpPost, Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryModify)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LockQuarter(int id)
+        {
+            var deploy = await _entityService.GetByIdAsync(id);
+            if (deploy == null)
+                return new JsonBadRequest(new { errors = new[] { "Deployment record not found." } });
+            if (deploy.IsLocked)
+                return new JsonBadRequest(new { errors = new[] { $"This quarter ({deploy.Year} {deploy.Quarter}) is already locked." } });
+
+            try
+            {
+                var connStr = _config.GetConnectionString("DefaultConnection");
+                using var conn = new SqlConnection(connStr);
+                await conn.OpenAsync();
+
+                foreach (var table in SnapshotTables)
+                {
+                    var hist = "hist_" + table;
+
+                    // Build explicit column list excluding identity columns so the
+                    // hist table's own identity (if any) auto-generates new values
+                    // and we don't need SET IDENTITY_INSERT.
+                    var cols = new List<string>();
+                    const string getColsSql = @"
+                        SELECT COLUMN_NAME
+                        FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_NAME = @tbl
+                          AND COLUMNPROPERTY(OBJECT_ID(TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 0
+                          AND DATA_TYPE NOT IN ('timestamp', 'rowversion')
+                        ORDER BY ORDINAL_POSITION";
+                    using (var colCmd = new SqlCommand(getColsSql, conn))
+                    {
+                        colCmd.Parameters.AddWithValue("@tbl", table);
+                        using var colReader = await colCmd.ExecuteReaderAsync();
+                        while (await colReader.ReadAsync())
+                            cols.Add("[" + colReader.GetString(0) + "]");
+                    }
+
+                    var colList = string.Join(", ", cols);
+                    var sql = $"INSERT INTO [{hist}] ({colList}, [SnapshotYear], [SnapshotQuarter]) SELECT {colList}, @year, @quarter FROM [{table}]";
+                    using var cmd = new SqlCommand(sql, conn);
+                    cmd.Parameters.AddWithValue("@year", deploy.Year);
+                    cmd.Parameters.AddWithValue("@quarter", (object?)deploy.Quarter ?? DBNull.Value);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                deploy.IsLocked = true;
+                deploy.LockedAt = DateTime.Now;
+                deploy.LockedBy = User.GetUserName();
+                await _entityService.Update(deploy);
+
+                // Lock all Release records for the same Year + Quarter so MDB/report
+                // generation and note editing are also blocked on the Release side.
+                var lockedAt = deploy.LockedAt.Value;
+                var lockedBy = deploy.LockedBy;
+                var releases = _releaseService.QueryableList
+                    .Where(r => r.Year == deploy.Year && r.Quarter == deploy.Quarter && !r.IsLocked)
+                    .ToList();
+                foreach (var rel in releases)
+                {
+                    rel.IsLocked = true;
+                    rel.LockedAt = lockedAt;
+                    rel.LockedBy = lockedBy;
+                }
+                if (releases.Any())
+                    await _releaseService.Update(releases);
+
+                await WriteDeployLog(id, "LockQuarter", "Success",
+                    $"Snapshotted {SnapshotTables.Length} tables for {deploy.Year} {deploy.Quarter}. {releases.Count} release(s) also locked.");
+
+                return Json(new { success = $"Quarter {deploy.Year} {deploy.Quarter} locked. {SnapshotTables.Length} tables archived, {releases.Count} release(s) locked." });
+            }
+            catch (Exception ex)
+            {
+                await WriteDeployLog(id, "LockQuarter", "Error", ex.Message);
+                return new JsonBadRequest(new { errors = new[] { ex.Message } });
+            }
+        }
+
+        #endregion
     }
 }

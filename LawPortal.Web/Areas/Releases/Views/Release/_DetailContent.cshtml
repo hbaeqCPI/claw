@@ -6,7 +6,7 @@
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
-    bool isReadOnly = !fullModify;
+    bool isReadOnly = !fullModify || Model.IsLocked;
 
     var systemsList = (List<string>)ViewData["SystemsList"] ?? new List<string>();
     var systemItems = systemsList.Select(s => new SelectListItem { Text = s, Value = s }).ToList();
@@ -151,25 +151,38 @@
             var sysType = Model.SystemType ?? "";
             var showPatentBtn = !sysType.StartsWith("Tmk", StringComparison.OrdinalIgnoreCase);
             var showTmkBtn = !sysType.StartsWith("Pat", StringComparison.OrdinalIgnoreCase);
-            <div class="form-row">
+            <div class="form-row align-items-center">
                 <div class="col-auto">
-                    @if (showPatentBtn)
+                    @if (!Model.IsLocked)
                     {
-                        <button type="button" class="btn btn-primary btn-sm mr-2 btnGenerateMdb"
-                                data-area="Patent"
-                                data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Patent" })">
-                            <i class="fal fa-database pr-1"></i> @Localizer["Generate Patent MDB"]
-                        </button>
-                    }
-                    @if (showTmkBtn)
-                    {
-                        <button type="button" class="btn btn-primary btn-sm btnGenerateMdb"
-                                data-area="Trademark"
-                                data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Trademark" })">
-                            <i class="fal fa-database pr-1"></i> @Localizer["Generate Trademark MDB"]
-                        </button>
+                        @if (showPatentBtn)
+                        {
+                            <button type="button" class="btn btn-primary btn-sm mr-2 btnGenerateMdb"
+                                    data-area="Patent"
+                                    data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Patent" })">
+                                <i class="fal fa-database pr-1"></i> @Localizer["Generate Patent MDB"]
+                            </button>
+                        }
+                        @if (showTmkBtn)
+                        {
+                            <button type="button" class="btn btn-primary btn-sm btnGenerateMdb"
+                                    data-area="Trademark"
+                                    data-url="@Url.Action("GenerateMdb", new { id = Model.ReleaseId, mdbArea = "Trademark" })">
+                                <i class="fal fa-database pr-1"></i> @Localizer["Generate Trademark MDB"]
+                            </button>
+                        }
                     }
                 </div>
+                @if (Model.IsLocked)
+                {
+                    <div class="col-auto">
+                        <span class="badge badge-secondary px-3 py-2">
+                            <i class="fal fa-lock pr-1"></i>
+                            @Localizer["Locked"] @(Model.LockedAt?.ToString("yyyy-MM-dd") ?? "")
+                            @(Model.LockedBy != null ? $"by {Model.LockedBy}" : "")
+                        </span>
+                    </div>
+                }
             </div>
         }
     </div>
@@ -182,6 +195,9 @@
             </li>
             <li class="nav-item">
                 <a id="releaseDetailReportsTab" href="#releaseDetailReportsTabContent" class="nav-link" data-toggle="tab" role="tab" aria-controls="releaseDetailReportsTabContent" title="@Localizer["Reports"]">@Localizer["Reports"]</a>
+            </li>
+            <li class="nav-item">
+                <a id="releaseDetailSnapshotTab" href="#releaseDetailSnapshotTabContent" class="nav-link" data-toggle="tab" role="tab" aria-controls="releaseDetailSnapshotTabContent" title="@Localizer["Quarter Snapshot"]">@Localizer["Quarter Snapshot"]</a>
             </li>
         </ul>
         <div class="tab-content detail">
@@ -229,8 +245,10 @@
                                     section += '</select></div>';
                                     section += '<div class="col-md-5"><label class="small text-muted">Compare Against:</label>';
                                     section += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
-                                    section += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport">';
-                                    section += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                    if (!releaseIsLocked) {
+                                        section += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport">';
+                                        section += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                    }
                                     section += '</div></div>';
                                     return section;
                                 }
@@ -301,6 +319,16 @@
                     });
                 </script>
             </div>
+            <div class="tab-pane p-0" id="releaseDetailSnapshotTabContent" role="tabpanel" aria-labelledby="releaseDetailSnapshotTab">
+                <div class="d-flex" style="min-height:300px;">
+                    <div id="snapshotList_@id" style="width:260px;min-width:220px;border-right:1px solid #dee2e6;overflow-y:auto;padding:0.75rem 0;">
+                        <p class="text-muted small px-3">Loading...</p>
+                    </div>
+                    <div id="snapshotPanel_@id" style="flex:1;overflow:auto;padding:1rem;">
+                        <p class="text-muted small">Select a table on the left to view its data.</p>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="content-stamp">
             @await Component.InvokeAsync("RecordStamps", new { createdBy = Model.CreatedBy, dateCreated = Model.DateCreated, updatedBy = Model.UpdatedBy, lastUpdate = Model.LastUpdate, tStamp = new byte[0] })
@@ -309,7 +337,202 @@
 </form>
 
 <script>
+    var releaseIsLocked = @(Model.IsLocked ? "true" : "false");
+
     $(document).ready(function() {
+
+        // ── Quarter Snapshot tab ──────────────────────────────────────────
+        var snapshotSummaryUrl = '@Html.Raw(Url.Action("SnapshotSummary", "Release", new { area = "Releases" }))';
+        var snapshotDataUrl    = '@Html.Raw(Url.Action("SnapshotTableData", "Release", new { area = "Releases" }))';
+        var releaseIdSnap      = @id;
+        var $listDiv           = $('#snapshotList_' + releaseIdSnap);
+        var $panelDiv          = $('#snapshotPanel_' + releaseIdSnap);
+        var snapshotLoaded     = false;
+
+        // ── Snapshot table renderer with per-column filter + sort ────────
+        var snapState = { rows: [], columns: [], sortCol: null, sortDir: 1, filters: {} };
+
+        function escHtml(v) {
+            if (v === null || v === undefined) return '';
+            return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // Supports plain text (contains), prefix A* (starts-with), suffix *A
+        // (ends-with), *phrase* (contains), and exact "phrase" (quoted exact).
+        function matchFilter(cellVal, filterVal) {
+            var cell = String(cellVal === null || cellVal === undefined ? '' : cellVal).toLowerCase();
+            var f    = filterVal.trim().toLowerCase();
+            if (!f) return true;
+            if (f.charAt(0) === '"' && f.charAt(f.length - 1) === '"') {
+                return cell === f.slice(1, -1);
+            }
+            if (f.indexOf('*') === -1) return cell.indexOf(f) !== -1;
+            var startsWild = f.charAt(0) === '*';
+            var endsWild   = f.charAt(f.length - 1) === '*';
+            var inner      = f.replace(/^\*|\*$/g, '');
+            if (startsWild && endsWild) return cell.indexOf(inner) !== -1;
+            if (startsWild)            return cell.endsWith(inner);
+            if (endsWild)              return cell.startsWith(inner);
+            // pattern like a*b — split on * and check each segment in order
+            var parts = f.split('*');
+            var pos = 0;
+            for (var i = 0; i < parts.length; i++) {
+                if (!parts[i]) continue;
+                var idx = cell.indexOf(parts[i], pos);
+                if (idx === -1) return false;
+                pos = idx + parts[i].length;
+            }
+            return true;
+        }
+
+        function renderSnapRows() {
+            var cols    = snapState.columns;
+            var filters = snapState.filters;
+            var sc      = snapState.sortCol;
+            var sd      = snapState.sortDir;
+
+            var visible = snapState.rows.filter(function (r) {
+                return cols.every(function (c) {
+                    var f = filters[c] || '';
+                    return matchFilter(r[c], f);
+                });
+            });
+
+            if (sc !== null) {
+                visible.sort(function (a, b) {
+                    var av = a[sc], bv = b[sc];
+                    if (av === null || av === undefined) av = '';
+                    if (bv === null || bv === undefined) bv = '';
+                    var n = !isNaN(parseFloat(av)) && !isNaN(parseFloat(bv));
+                    var cmp = n ? parseFloat(av) - parseFloat(bv) : String(av).localeCompare(String(bv));
+                    return cmp * sd;
+                });
+            }
+
+            var tbody = visible.map(function (r) {
+                return '<tr>' + cols.map(function (c) { return '<td>' + escHtml(r[c]) + '</td>'; }).join('') + '</tr>';
+            }).join('') || '<tr><td colspan="' + cols.length + '" class="text-muted text-center">No rows match filters.</td></tr>';
+
+            $('#snapTbody').html(tbody);
+            $('#snapCount').text(visible.length.toLocaleString() + ' / ' + snapState.rows.length.toLocaleString() + ' rows');
+        }
+
+        var snapFilterTimer;
+
+        // Bind panel event handlers once — avoids stacking duplicate handlers on
+        // every table load which caused sort direction to flip multiple times per click.
+        $panelDiv.on('click', '.snapSortTh', function () {
+            var col = $(this).data('col');
+            if (snapState.sortCol === col) {
+                snapState.sortDir *= -1;
+            } else {
+                snapState.sortCol = col;
+                snapState.sortDir = 1;
+            }
+            $panelDiv.find('.snapSortIcon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort').css('opacity', '.4');
+            $(this).find('.snapSortIcon').removeClass('fa-sort').addClass(snapState.sortDir === 1 ? 'fa-sort-up' : 'fa-sort-down').css('opacity', '1');
+            renderSnapRows();
+        });
+
+        $panelDiv.on('input', '.snapFilter', function () {
+            snapState.filters[$(this).data('col')] = $(this).val();
+            clearTimeout(snapFilterTimer);
+            snapFilterTimer = setTimeout(renderSnapRows, 180);
+        });
+
+        $panelDiv.on('click', '#snapClearFilters', function () {
+            $panelDiv.find('.snapFilter').val('');
+            snapState.filters = {};
+            renderSnapRows();
+        });
+
+        var snapHiddenCols = { SnapshotYear: true, SnapshotQuarter: true };
+
+        function buildSnapTable(tbl, data) {
+            var cols = data.columns.filter(function (c) { return !snapHiddenCols[c]; });
+            var rows = data.rows;
+            snapState = { rows: rows, columns: cols, sortCol: null, sortDir: 1, filters: {} };
+
+            var thCols = cols.map(function (c) {
+                return '<th class="snapSortTh" data-col="' + escHtml(c) + '" style="cursor:pointer;white-space:nowrap;user-select:none;" title="Click to sort">'
+                     + escHtml(c) + ' <i class="fal fa-sort snapSortIcon" style="opacity:.4;font-size:.7em;"></i></th>';
+            }).join('');
+
+            var filterCols = cols.map(function (c) {
+                return '<th style="padding:2px 4px;"><input type="text" class="form-control form-control-sm snapFilter" '
+                     + 'data-col="' + escHtml(c) + '" placeholder="filter…" style="font-size:.7rem;min-width:60px;" /></th>';
+            }).join('');
+
+            $panelDiv.html(
+                '<div class="d-flex align-items-baseline mb-1">'
+                + '<h6 class="font-weight-bold mb-0 mr-2">' + escHtml(tbl) + '</h6>'
+                + '<small class="text-muted" id="snapCount"></small>'
+                + '<button type="button" class="btn btn-link btn-sm ml-auto p-0 text-muted" id="snapClearFilters" title="Clear all filters" style="font-size:.75rem;">Clear filters</button>'
+                + '</div>'
+                + '<div style="overflow-x:auto;">'
+                + '<table class="table table-sm table-bordered table-striped mb-0" id="snapTable" style="font-size:.75rem;white-space:nowrap;">'
+                + '<thead class="thead-light">'
+                + '<tr>' + thCols + '</tr>'
+                + '<tr class="bg-white">' + filterCols + '</tr>'
+                + '</thead>'
+                + '<tbody id="snapTbody"></tbody>'
+                + '</table></div>'
+            );
+
+            renderSnapRows();
+        }
+
+        function loadSnapshotTable(tbl) {
+            $panelDiv.html('<p class="text-muted small"><i class="fa fa-spinner fa-spin mr-1"></i>Loading ' + tbl + '...</p>');
+            $.getJSON(snapshotDataUrl, { releaseId: releaseIdSnap, tableName: tbl }, function (data) {
+                if (!data.rows || data.rows.length === 0) {
+                    $panelDiv.html('<p class="text-muted small">No rows in ' + tbl + ' for this quarter.</p>');
+                    return;
+                }
+                buildSnapTable(tbl, data);
+            }).fail(function () {
+                $panelDiv.html('<p class="text-danger small">Failed to load table data.</p>');
+            });
+        }
+
+        $('#releaseDetailSnapshotTab').on('shown.bs.tab', function () {
+            if (snapshotLoaded) return;
+            snapshotLoaded = true;
+            $.getJSON(snapshotSummaryUrl, { id: releaseIdSnap }, function (result) {
+                var tables = result.tables || [];
+                var hasData = tables.some(function (t) { return t.rowCount > 0; });
+                if (!hasData) {
+                    $listDiv.html('<p class="text-muted small px-3">No snapshot for ' + result.year + ' ' + result.quarter + '.<br>Lock a Deploy record for this quarter first.</p>');
+                    return;
+                }
+
+                var lastSide = '';
+                var html = '<p class="text-muted small px-3 mb-1">' + result.year + ' ' + result.quarter + '</p>';
+                tables.forEach(function (t) {
+                    if (t.side !== lastSide) {
+                        html += '<div class="px-3 pt-2 pb-1" style="font-size:.7rem;font-weight:600;text-transform:uppercase;color:#6c757d;letter-spacing:.05em;">' + t.side + '</div>';
+                        lastSide = t.side;
+                    }
+                    var label = t.tableName.replace(/^tblPat|^tblTmk/, '');
+                    html += '<a href="#" class="d-block px-3 py-1 snapshotTableLink" style="font-size:.8rem;color:inherit;text-decoration:none;" '
+                          + 'data-table="' + t.tableName + '" title="' + t.tableName + ' (' + t.rowCount.toLocaleString() + ' rows)">'
+                          + label + ' <span class="text-muted" style="font-size:.7rem;">(' + t.rowCount.toLocaleString() + ')</span></a>';
+                });
+                $listDiv.html(html);
+
+                $listDiv.on('click', '.snapshotTableLink', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $listDiv.find('.snapshotTableLink').css({ background: '', fontWeight: '' });
+                    $(this).css({ background: '#e9ecef', fontWeight: '600' });
+                    loadSnapshotTable($(this).data('table'));
+                });
+            }).fail(function () {
+                $listDiv.html('<p class="text-danger small px-3">Failed to load snapshot.</p>');
+            });
+        });
+        // ────────────────────────────────────────────────────────────────
+
         $('.btnGenerateMdb').on('click', function() {
             var btn = $(this);
             var url = btn.data('url');

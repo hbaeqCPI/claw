@@ -51,5 +51,11 @@ namespace LawPortal.Core.Entities
         /// </summary>
         [Display(Name = "Trademark Report Notes")]
         public string? ReportNotesTrademark { get; set; }
+
+        public bool IsLocked { get; set; }
+        public DateTime? LockedAt { get; set; }
+
+        [StringLength(100)]
+        public string? LockedBy { get; set; }
     }
 }

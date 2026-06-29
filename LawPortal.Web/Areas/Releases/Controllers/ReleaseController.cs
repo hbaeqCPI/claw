@@ -24,6 +24,8 @@ using LawPortal.Web.Models;
 using LawPortal.Web.Models.PageViewModels;
 using LawPortal.Web.Security;
 using LawPortal.Web.Services.DocumentStorage;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LawPortal.Web.Areas.Releases.Controllers
@@ -39,6 +41,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         private readonly IDocumentHelper _documentHelper;
         private readonly IDocumentStorage _documentStorage;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IConfiguration _config;
 
         private readonly string _dataContainer = "releaseDetail";
 
@@ -50,7 +53,8 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             IDocumentService documentService,
             IDocumentHelper documentHelper,
             IDocumentStorage documentStorage,
-            IStringLocalizer<SharedResource> localizer)
+            IStringLocalizer<SharedResource> localizer,
+            IConfiguration config)
         {
             _authService = authService;
             _viewModelService = viewModelService;
@@ -60,6 +64,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             _documentHelper = documentHelper;
             _documentStorage = documentStorage;
             _localizer = localizer;
+            _config = config;
         }
 
         // Returns a local file path for the given path-from-DocumentHelper.
@@ -343,6 +348,30 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         {
             if (string.IsNullOrEmpty(name)) return "Documents";
             return name.Length <= maxLen ? name : name.Substring(0, maxLen);
+        }
+
+        private static string GetMdbBaseName(string systemType, int year, string quarter)
+        {
+            var qNum = (quarter ?? "").TrimStart('Q');
+            if (string.IsNullOrEmpty(qNum)) qNum = "1";
+            var prefix = $"{year}_{qNum}";
+
+            if (systemType.StartsWith("Pat", StringComparison.OrdinalIgnoreCase))
+            {
+                if (systemType.Equals("PatR8-R10v2.1", StringComparison.OrdinalIgnoreCase))
+                    return $"{prefix}_patlaw10";
+                if (systemType.Equals("PatR4", StringComparison.OrdinalIgnoreCase))
+                    return $"{prefix}_Patlaw9";
+                // PatR5-7
+                return $"{prefix}_patlaw9";
+            }
+            else
+            {
+                if (systemType.Equals("TmkR9-10v2.2", StringComparison.OrdinalIgnoreCase))
+                    return $"{prefix}_TmkLaw10";
+                // TmkR4, TmkR5-8
+                return $"{prefix}_TmkLaw9";
+            }
         }
 
         private static string GetReportBaseName(string systemType, int year, string quarter, bool isPat)
@@ -1184,7 +1213,9 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     var fileName = Path.GetFileName(filePath);
                     var fileExtension = Path.GetExtension(fileName);
                     var fileInfo = new FileInfo(filePath);
-                    var baseName = Path.GetFileNameWithoutExtension(fileName);
+                    var baseName = fileExtension.Equals(".mdb", StringComparison.OrdinalIgnoreCase)
+                        ? GetMdbBaseName(release.SystemType, release.Year, release.Quarter ?? "")
+                        : Path.GetFileNameWithoutExtension(fileName);
 
                     // If a document with this name already exists, append a number suffix
                     var existingNames = await _documentService.DocDocuments
@@ -1445,6 +1476,171 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             {
                 return BadRequest($"Error generating report: {ex.Message}");
             }
+        }
+
+        #endregion
+
+        #region Quarter Snapshot
+
+        // Returns summary of snapshot tables (name + row count) for the release's
+        // year/quarter. The Release detail view uses this to populate the
+        // Returns true when the hist table's Pat/Tmk side matches the release's SystemType.
+        // Pure-Pat releases ("Pat*") see only tblPat* tables; pure-Tmk releases ("Tmk*")
+        // see only tblTmk* tables; everything else (e.g. "R4" mixed) sees both.
+        private static bool TableMatchesSide(string histTable, string systemType)
+        {
+            var isPat = histTable.IndexOf("tblPat", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (systemType.StartsWith("Tmk", StringComparison.OrdinalIgnoreCase)) return !isPat;
+            if (systemType.StartsWith("Pat", StringComparison.OrdinalIgnoreCase)) return isPat;
+            return true;
+        }
+
+        // "Quarter Snapshot" tab.
+        [HttpGet]
+        public async Task<IActionResult> SnapshotSummary(int id)
+        {
+            var release = await _entityService.GetByIdAsync(id);
+            if (release == null)
+                return BadRequest("Release not found.");
+
+            var sysTags = (release.Systems ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+
+            // Only include tables whose side matches this release's SystemType.
+            // Exclude AuditLog tables — they aren't useful in the snapshot view.
+            var histTables = DeployController.SnapshotTables
+                .Where(t => TableMatchesSide(t, release.SystemType ?? "")
+                         && t.IndexOf("AuditLog", StringComparison.OrdinalIgnoreCase) < 0)
+                .Select(t => "hist_" + t)
+                .ToArray();
+
+            var results = new List<object>();
+            try
+            {
+                var connStr = _config.GetConnectionString("DefaultConnection");
+                using var conn = new SqlConnection(connStr);
+                await conn.OpenAsync();
+
+                foreach (var hist in histTables)
+                {
+                    var (sql, parms) = BuildSnapshotQuery($"SELECT COUNT(*)", hist, release, sysTags, conn);
+                    using var cmd = new SqlCommand(sql, conn);
+                    foreach (var p in parms) cmd.Parameters.Add(p);
+                    var count = (int)await cmd.ExecuteScalarAsync();
+                    var sourceName = hist.Substring(5);
+                    var side = sourceName.StartsWith("tblPat") ? "Patent" : "Trademark";
+                    results.Add(new { tableName = sourceName, histTable = hist, rowCount = count, side });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Json(new { year = release.Year, quarter = release.Quarter, tables = results });
+        }
+
+        // Returns first 200 rows from a hist_* table filtered to this release's
+        // year, quarter, and system tags (where a Systems column exists).
+        [HttpGet]
+        public async Task<IActionResult> SnapshotTableData(int releaseId, string tableName)
+        {
+            var release = await _entityService.GetByIdAsync(releaseId);
+            if (release == null)
+                return BadRequest("Release not found.");
+
+            var allowed = DeployController.SnapshotTables.Select(t => "hist_" + t).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hist = "hist_" + tableName;
+            if (!allowed.Contains(hist))
+                return BadRequest("Unknown table.");
+
+            var sysTags = (release.Systems ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+
+            var rows = new List<Dictionary<string, object?>>();
+            var columns = new List<string>();
+            try
+            {
+                var connStr = _config.GetConnectionString("DefaultConnection");
+                using var conn = new SqlConnection(connStr);
+                await conn.OpenAsync();
+
+                var (sql, parms) = BuildSnapshotQuery("SELECT TOP 200 *", hist, release, sysTags, conn);
+                using var cmd = new SqlCommand(sql, conn);
+                foreach (var p in parms) cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync();
+
+                for (var i = 0; i < reader.FieldCount; i++)
+                    columns.Add(reader.GetName(i));
+
+                while (await reader.ReadAsync())
+                {
+                    var row = new Dictionary<string, object?>();
+                    for (var i = 0; i < reader.FieldCount; i++)
+                        row[columns[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                    rows.Add(row);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Json(new { columns, rows });
+        }
+
+        // Builds a SELECT … FROM [hist] WHERE SnapshotYear/Quarter [AND Systems IN (…)]
+        // query. Falls back to SystemType when release.Systems is blank so rows are
+        // always scoped to the correct system even for older release records.
+        private static (string sql, List<SqlParameter> parms) BuildSnapshotQuery(
+            string selectClause,
+            string hist,
+            Release release,
+            List<string> sysTags,
+            SqlConnection conn)
+        {
+            // If Systems field is blank, use SystemType as the single filter tag.
+            var effectiveTags = sysTags.Any() ? sysTags
+                : (!string.IsNullOrWhiteSpace(release.SystemType)
+                    ? new List<string> { release.SystemType.Trim() }
+                    : new List<string>());
+
+            var parms = new List<SqlParameter>
+            {
+                new SqlParameter("@year",    release.Year),
+                new SqlParameter("@quarter", (object?)release.Quarter ?? DBNull.Value)
+            };
+
+            bool hasSystems = false;
+            if (effectiveTags.Any())
+            {
+                const string checkSql = @"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                                          WHERE TABLE_NAME = @tbl AND COLUMN_NAME = 'Systems'";
+                using var chk = new SqlCommand(checkSql, conn);
+                chk.Parameters.AddWithValue("@tbl", hist);
+                hasSystems = (int)chk.ExecuteScalar() > 0;
+            }
+
+            var where = "WHERE SnapshotYear = @year AND SnapshotQuarter = @quarter";
+            if (hasSystems && effectiveTags.Any())
+            {
+                // Use CHARINDEX so a row with Systems = "TmkR5-8,TmkR9-10v2.2" is
+                // included when filtering for TmkR5-8 (contains, not exact match).
+                var clauses = effectiveTags.Select((t, i) =>
+                {
+                    parms.Add(new SqlParameter($"@sys{i}", t));
+                    return $"CHARINDEX(@sys{i}, [Systems]) > 0";
+                });
+                where += $" AND ({string.Join(" OR ", clauses)})";
+            }
+
+            return ($"{selectClause} FROM [{hist}] {where}", parms);
         }
 
         #endregion

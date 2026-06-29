@@ -1,4 +1,483 @@
 -- Schema updates required for the current working tree.
+
+-- Lock fields on tblRelease — set when a Deploy record for the same Year+Quarter
+-- is locked, preventing further MDB/report generation and note editing.
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblRelease' AND COLUMN_NAME = 'IsLocked')
+BEGIN
+    ALTER TABLE tblRelease ADD IsLocked BIT NOT NULL CONSTRAINT DF_tblRelease_IsLocked DEFAULT 0;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblRelease' AND COLUMN_NAME = 'LockedAt')
+BEGIN
+    ALTER TABLE tblRelease ADD LockedAt DATETIME NULL;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblRelease' AND COLUMN_NAME = 'LockedBy')
+BEGIN
+    ALTER TABLE tblRelease ADD LockedBy NVARCHAR(100) NULL;
+END;
+GO
+
+-- Quarter lock fields on tblDeployPassword. IsLocked is permanent once set;
+-- LockedAt/LockedBy record who triggered the snapshot.
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'IsLocked')
+BEGIN
+    ALTER TABLE tblDeployPassword ADD IsLocked BIT NOT NULL CONSTRAINT DF_tblDeployPassword_IsLocked DEFAULT 0;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'LockedAt')
+BEGIN
+    ALTER TABLE tblDeployPassword ADD LockedAt DATETIME NULL;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblDeployPassword' AND COLUMN_NAME = 'LockedBy')
+BEGIN
+    ALTER TABLE tblDeployPassword ADD LockedBy NVARCHAR(100) NULL;
+END;
+GO
+
+-- Quarter snapshot tables (hist_*). Each mirrors a live tbl* table plus
+-- SnapshotYear / SnapshotQuarter columns. Created via SELECT TOP 0 … INTO so the
+-- schema is always derived from the source — no manual column lists to maintain.
+-- The lock action does: INSERT INTO hist_tblXxx SELECT *, @year, @quarter FROM tblXxx
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatActionParameter')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatActionParameter')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatActionParameter FROM tblPatActionParameter;
+    CREATE INDEX IX_hist_tblPatActionParameter ON hist_tblPatActionParameter (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatActionType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatActionType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatActionType FROM tblPatActionType;
+    CREATE INDEX IX_hist_tblPatActionType ON hist_tblPatActionType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatArea')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatArea')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatArea FROM tblPatArea;
+    CREATE INDEX IX_hist_tblPatArea ON hist_tblPatArea (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatAreaCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatAreaCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatAreaCountry FROM tblPatAreaCountry;
+    CREATE INDEX IX_hist_tblPatAreaCountry ON hist_tblPatAreaCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatAreaCountryDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatAreaCountryDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatAreaCountryDelete FROM tblPatAreaCountryDelete;
+    CREATE INDEX IX_hist_tblPatAreaCountryDelete ON hist_tblPatAreaCountryDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatAreaDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatAreaDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatAreaDelete FROM tblPatAreaDelete;
+    CREATE INDEX IX_hist_tblPatAreaDelete ON hist_tblPatAreaDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatAuditLog')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatAuditLog')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatAuditLog FROM tblPatAuditLog;
+    CREATE INDEX IX_hist_tblPatAuditLog ON hist_tblPatAuditLog (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCaseType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCaseType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCaseType FROM tblPatCaseType;
+    CREATE INDEX IX_hist_tblPatCaseType ON hist_tblPatCaseType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountry FROM tblPatCountry;
+    CREATE INDEX IX_hist_tblPatCountry ON hist_tblPatCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryDue')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryDue')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryDue FROM tblPatCountryDue;
+    CREATE INDEX IX_hist_tblPatCountryDue ON hist_tblPatCountryDue (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryExp')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryExp')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryExp FROM tblPatCountryExp;
+    CREATE INDEX IX_hist_tblPatCountryExp ON hist_tblPatCountryExp (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryExpDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryExpDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryExpDelete FROM tblPatCountryExpDelete;
+    CREATE INDEX IX_hist_tblPatCountryExpDelete ON hist_tblPatCountryExpDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryLaw')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryLaw')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryLaw FROM tblPatCountryLaw;
+    CREATE INDEX IX_hist_tblPatCountryLaw ON hist_tblPatCountryLaw (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryLaw_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryLaw_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryLaw_Ext FROM tblPatCountryLaw_Ext;
+    CREATE INDEX IX_hist_tblPatCountryLaw_Ext ON hist_tblPatCountryLaw_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatCountryLawUpdate')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatCountryLawUpdate')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatCountryLawUpdate FROM tblPatCountryLawUpdate;
+    CREATE INDEX IX_hist_tblPatCountryLawUpdate ON hist_tblPatCountryLawUpdate (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseType FROM tblPatDesCaseType;
+    CREATE INDEX IX_hist_tblPatDesCaseType ON hist_tblPatDesCaseType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseType_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseType_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseType_Ext FROM tblPatDesCaseType_Ext;
+    CREATE INDEX IX_hist_tblPatDesCaseType_Ext ON hist_tblPatDesCaseType_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeDelete FROM tblPatDesCaseTypeDelete;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeDelete ON hist_tblPatDesCaseTypeDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeDelete_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeDelete_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeDelete_Ext FROM tblPatDesCaseTypeDelete_Ext;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeDelete_Ext ON hist_tblPatDesCaseTypeDelete_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeFields')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeFields')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeFields FROM tblPatDesCaseTypeFields;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeFields ON hist_tblPatDesCaseTypeFields (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeFields_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeFields_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeFields_Ext FROM tblPatDesCaseTypeFields_Ext;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeFields_Ext ON hist_tblPatDesCaseTypeFields_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeFieldsDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeFieldsDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeFieldsDelete FROM tblPatDesCaseTypeFieldsDelete;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeFieldsDelete ON hist_tblPatDesCaseTypeFieldsDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesCaseTypeFieldsDelete_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesCaseTypeFieldsDelete_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesCaseTypeFieldsDelete_Ext FROM tblPatDesCaseTypeFieldsDelete_Ext;
+    CREATE INDEX IX_hist_tblPatDesCaseTypeFieldsDelete_Ext ON hist_tblPatDesCaseTypeFieldsDelete_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatDesignatedCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatDesignatedCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatDesignatedCountry FROM tblPatDesignatedCountry;
+    CREATE INDEX IX_hist_tblPatDesignatedCountry ON hist_tblPatDesignatedCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblPatIndicator')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblPatIndicator')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblPatIndicator FROM tblPatIndicator;
+    CREATE INDEX IX_hist_tblPatIndicator ON hist_tblPatIndicator (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkActionParameter')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkActionParameter')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkActionParameter FROM tblTmkActionParameter;
+    CREATE INDEX IX_hist_tblTmkActionParameter ON hist_tblTmkActionParameter (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkActionType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkActionType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkActionType FROM tblTmkActionType;
+    CREATE INDEX IX_hist_tblTmkActionType ON hist_tblTmkActionType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkArea')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkArea')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkArea FROM tblTmkArea;
+    CREATE INDEX IX_hist_tblTmkArea ON hist_tblTmkArea (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkAreaCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkAreaCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkAreaCountry FROM tblTmkAreaCountry;
+    CREATE INDEX IX_hist_tblTmkAreaCountry ON hist_tblTmkAreaCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkAreaCountryDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkAreaCountryDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkAreaCountryDelete FROM tblTmkAreaCountryDelete;
+    CREATE INDEX IX_hist_tblTmkAreaCountryDelete ON hist_tblTmkAreaCountryDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkAreaDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkAreaDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkAreaDelete FROM tblTmkAreaDelete;
+    CREATE INDEX IX_hist_tblTmkAreaDelete ON hist_tblTmkAreaDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkAuditLog')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkAuditLog')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkAuditLog FROM tblTmkAuditLog;
+    CREATE INDEX IX_hist_tblTmkAuditLog ON hist_tblTmkAuditLog (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCaseType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkCaseType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkCaseType FROM tblTmkCaseType;
+    CREATE INDEX IX_hist_tblTmkCaseType ON hist_tblTmkCaseType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkCountry FROM tblTmkCountry;
+    CREATE INDEX IX_hist_tblTmkCountry ON hist_tblTmkCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountryDue')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkCountryDue')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkCountryDue FROM tblTmkCountryDue;
+    CREATE INDEX IX_hist_tblTmkCountryDue ON hist_tblTmkCountryDue (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountryLaw')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkCountryLaw')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkCountryLaw FROM tblTmkCountryLaw;
+    CREATE INDEX IX_hist_tblTmkCountryLaw ON hist_tblTmkCountryLaw (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkCountryLawUpdate')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkCountryLawUpdate')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkCountryLawUpdate FROM tblTmkCountryLawUpdate;
+    CREATE INDEX IX_hist_tblTmkCountryLawUpdate ON hist_tblTmkCountryLawUpdate (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseType')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseType')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseType FROM tblTmkDesCaseType;
+    CREATE INDEX IX_hist_tblTmkDesCaseType ON hist_tblTmkDesCaseType (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseType_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseType_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseType_Ext FROM tblTmkDesCaseType_Ext;
+    CREATE INDEX IX_hist_tblTmkDesCaseType_Ext ON hist_tblTmkDesCaseType_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeDelete FROM tblTmkDesCaseTypeDelete;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeDelete ON hist_tblTmkDesCaseTypeDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeDelete_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeDelete_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeDelete_Ext FROM tblTmkDesCaseTypeDelete_Ext;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeDelete_Ext ON hist_tblTmkDesCaseTypeDelete_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeFields')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeFields')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeFields FROM tblTmkDesCaseTypeFields;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeFields ON hist_tblTmkDesCaseTypeFields (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeFields_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeFields_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeFields_Ext FROM tblTmkDesCaseTypeFields_Ext;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeFields_Ext ON hist_tblTmkDesCaseTypeFields_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeFieldsDelete')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeFieldsDelete')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeFieldsDelete FROM tblTmkDesCaseTypeFieldsDelete;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeFieldsDelete ON hist_tblTmkDesCaseTypeFieldsDelete (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesCaseTypeFieldsDelete_Ext')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesCaseTypeFieldsDelete_Ext')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesCaseTypeFieldsDelete_Ext FROM tblTmkDesCaseTypeFieldsDelete_Ext;
+    CREATE INDEX IX_hist_tblTmkDesCaseTypeFieldsDelete_Ext ON hist_tblTmkDesCaseTypeFieldsDelete_Ext (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkDesignatedCountry')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkDesignatedCountry')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkDesignatedCountry FROM tblTmkDesignatedCountry;
+    CREATE INDEX IX_hist_tblTmkDesignatedCountry ON hist_tblTmkDesignatedCountry (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkIndicator')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkIndicator')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkIndicator FROM tblTmkIndicator;
+    CREATE INDEX IX_hist_tblTmkIndicator ON hist_tblTmkIndicator (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tblTmkStandardGood')
+   AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'hist_tblTmkStandardGood')
+BEGIN
+    SELECT TOP 0 *, CAST(0 AS INT) AS SnapshotYear, CAST('  ' AS NVARCHAR(2)) AS SnapshotQuarter
+    INTO hist_tblTmkStandardGood FROM tblTmkStandardGood;
+    CREATE INDEX IX_hist_tblTmkStandardGood ON hist_tblTmkStandardGood (SnapshotYear, SnapshotQuarter);
+END;
+GO
+
+
 -- Apply these against the main LawPortal SQL Server database before running the site.
 
 -- ReportNotes columns on tblRelease — free-form text rendered at the top of the

@@ -6,7 +6,7 @@
 
     var detailPagePermission = (DetailPagePermission)ViewData["PagePermission"];
     var fullModify = detailPagePermission.CanEditRecord && (!detailPagePermission.CanEditRemarksOnly);
-    bool isReadOnly = !fullModify;
+    bool isReadOnly = !fullModify || Model.IsLocked;
 
     // Path → (tag, isPat, isMdb, field) mapping. Keeps the view declarative —
     // each row in the Pat / Tmk tab is just a lookup against this list.
@@ -116,6 +116,27 @@
                     <i class="fal fa-file-code pr-1"></i> @Localizer["Generate Script"]
                 </button>
             </div>
+            @if (!addMode)
+            {
+                <div class="col-auto d-flex align-items-center ml-auto">
+                    @if (Model.IsLocked)
+                    {
+                        <span class="badge badge-secondary px-3 py-2">
+                            <i class="fal fa-lock pr-1"></i>
+                            @Localizer["Locked"] @(Model.LockedAt?.ToString("yyyy-MM-dd") ?? "")
+                            @(Model.LockedBy != null ? $"by {Model.LockedBy}" : "")
+                        </span>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-warning btn-sm btnLockQuarter"
+                                data-id="@Model.DeployPasswordId"
+                                data-url="@Url.Action("LockQuarter", "Deploy", new { area = "Releases" })">
+                            <i class="fal fa-lock pr-1"></i> @Localizer["Lock Quarter"]
+                        </button>
+                    }
+                </div>
+            }
         </div>
 
         <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal mt-3" role="tablist">
@@ -464,6 +485,40 @@
         }
 
         refreshOnPremReady();
+
+        // ────────────────────────────────────────────────────────────────
+        // Lock Quarter button — copies all tbl* tables to hist_* and sets
+        // IsLocked permanently. Reloads the page on success so the locked
+        // badge renders and all inputs become read-only.
+        // ────────────────────────────────────────────────────────────────
+        $('.btnLockQuarter').off('click').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var url = $btn.data('url');
+            var id = $btn.data('id');
+            if (!id || id <= 0) return;
+            cpiConfirm.confirm(
+                '@Localizer["Lock Quarter?"]',
+                '@Localizer["This will permanently snapshot all Pat/Tmk tables for this quarter. The record will become read-only. This cannot be undone."]',
+                function () {
+                    cpiLoadingSpinner.show();
+                    $btn.prop('disabled', true);
+                    $.ajax({
+                        type: 'POST',
+                        url: url + '?id=' + encodeURIComponent(id),
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                    }).done(function (result) {
+                        cpiLoadingSpinner.hide();
+                        pageHelper.showSuccess(result.success || '@Localizer["Quarter locked."]');
+                        setTimeout(function () { window.location.reload(); }, 1200);
+                    }).fail(function (ex) {
+                        cpiLoadingSpinner.hide();
+                        $btn.prop('disabled', false);
+                        pageHelper.showErrors(ex);
+                    });
+                });
+        });
 
         $('.btnGenerateScript').off('click').on('click', function (e) {
             e.preventDefault();
