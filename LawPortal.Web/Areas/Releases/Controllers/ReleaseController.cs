@@ -88,7 +88,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             {
                 Page = PageType.Search,
                 PageId = "releaseSearch",
-                Title = _localizer["Releases"].ToString(),
+                Title = _localizer["MDB Generation"].ToString(),
                 CanAddRecord = (await _authService.AuthorizeAsync(User, ReleaseAuthorizationPolicy.AuxiliaryModify)).Succeeded
             };
 
@@ -106,7 +106,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             {
                 Page = PageType.SearchResults,
                 PageId = "releaseSearchResults",
-                Title = _localizer["Releases"].ToString(),
+                Title = _localizer["MDB Generation"].ToString(),
                 CanAddRecord = (await _authService.AuthorizeAsync(User, ReleaseAuthorizationPolicy.AuxiliaryModify)).Succeeded
             };
 
@@ -178,7 +178,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             {
                 Page = PageType.Detail,
                 PageId = page.Container,
-                Title = _localizer["Releases"].ToString(),
+                Title = _localizer["MDB Generation"].ToString(),
                 RecordId = detail.ReleaseId,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
@@ -235,7 +235,7 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             {
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
                 PageId = page.Container,
-                Title = _localizer["New Releases"].ToString(),
+                Title = _localizer["New MDB Generation"].ToString(),
                 RecordId = detail.ReleaseId,
                 PagePermission = page,
                 Data = detail,

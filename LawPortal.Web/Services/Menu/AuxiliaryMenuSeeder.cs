@@ -297,7 +297,7 @@ namespace LawPortal.Web.Services.Menu
             {
                 releasePage = new CPiMenuPage
                 {
-                    Name = "Releases",
+                    Name = "MDB Generation",
                     Controller = "Release",
                     Action = "Index",
                     RouteOptions = routeOptions,
@@ -306,12 +306,23 @@ namespace LawPortal.Web.Services.Menu
                 menuPageRepo.Add(releasePage);
                 await db.SaveChangesAsync();
                 allPages.Add(releasePage);
-                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'Releases' page.");
+                _logger.LogInformation("AuxiliaryMenuSeeder: Created 'MDB Generation' page.");
+                changed = true;
+            }
+            else if (releasePage.Name == "Releases")
+            {
+                releasePage.Name = "MDB Generation";
+                menuPageRepo.Update(releasePage);
+                await db.SaveChangesAsync();
+                _logger.LogInformation("AuxiliaryMenuSeeder: Renamed Release page to 'MDB Generation'.");
                 changed = true;
             }
 
-            // Find or create the "MDB Generation" leaf menu item
-            var releaseLeaf = allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && m.PageId == releasePage.Id);
+            // Find or create the "MDB Generation" leaf menu item.
+            // Search by PageId first, then fall back to title in case the item
+            // was created outside the seeder with a different PageId linkage.
+            var releaseLeaf = allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && m.PageId == releasePage.Id)
+                           ?? allItems.FirstOrDefault(m => m.ParentId == manageCategory.Id && (m.Title == "Releases" || m.Title == "MDB Generation"));
             if (releaseLeaf == null)
             {
                 releaseLeaf = new CPiMenuItem
@@ -332,6 +343,7 @@ namespace LawPortal.Web.Services.Menu
             else if (releaseLeaf.Title != "MDB Generation")
             {
                 releaseLeaf.Title = "MDB Generation";
+                menuItemRepo.Update(releaseLeaf);
                 await db.SaveChangesAsync();
                 _logger.LogInformation("AuxiliaryMenuSeeder: Renamed Release menu item to 'MDB Generation'.");
                 changed = true;
