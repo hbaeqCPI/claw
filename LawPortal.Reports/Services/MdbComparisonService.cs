@@ -16,6 +16,13 @@ namespace LawPortal.Reports.Services
     {
         public bool IsPatent { get; set; }
         public Dictionary<string, TableDiff> TableDiffs { get; set; } = new();
+
+        // Raw row counts per table for each source file, keyed by table name.
+        // Used to detect an incomplete source MDB (e.g. a whole table present in
+        // one file but empty in the other) so the report can warn instead of
+        // silently emitting a diff full of phantom adds/deletes.
+        public Dictionary<string, int> CurrentRowCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, int> OldRowCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public class TableDiff
@@ -195,6 +202,9 @@ namespace LawPortal.Reports.Services
             {
                 var currentRows = currentData.ContainsKey(tableName) ? currentData[tableName] : new();
                 var oldRows = oldData.ContainsKey(tableName) ? oldData[tableName] : new();
+
+                result.CurrentRowCounts[tableName] = currentRows.Count;
+                result.OldRowCounts[tableName] = oldRows.Count;
 
                 var keyColumns = TableKeys.ContainsKey(tableName) ? TableKeys[tableName] : new[] { "Id" };
 

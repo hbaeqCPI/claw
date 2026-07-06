@@ -68,17 +68,20 @@ namespace LawPortal.Reports.Services
 
             WriteTitle(doc, year, qtr);
             WriteReportNotes(doc, reportNotes);
+            WriteDataIntegrityWarning(doc, comp, pfx);
 
             // Order differs by report type:
-            //   Patent:    Structural → Manual Updates (legacy patent layout).
+            //   Patent:    Manual Updates → Structural. Manual Updates (Action Type
+            //              changes) must lead, right after the report notes and
+            //              before every other change section.
             //   Trademark: Standard Goods → Structural. No Manual Updates section —
             //              trademark ActionType changes are handled via the
             //              CountryDue-driven Law Actions tables in each country
             //              block (and the orphan table for bare due-date edits).
             if (comp.IsPatent)
             {
-                WriteStructural(doc, comp, pfx);
                 WriteManualUpdates(doc, comp, atT, dueT, paramT);
+                WriteStructural(doc, comp, pfx);
             }
             else
             {
@@ -116,6 +119,54 @@ namespace LawPortal.Reports.Services
             {
                 box.Add(T(line, _r, 10));
                 box.Add(T("\n", _r, 10));
+            }
+            doc.Add(box);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATA INTEGRITY WARNING — catch an incomplete source MDB before it
+        // produces a misleading report. If a whole table is populated in one
+        // file but empty in the other, every row reads as a phantom add/delete
+        // (e.g. an ActionType table missing from one export makes all Action
+        // Types show as "Deleted" and suppresses the Manual Updates section).
+        // We surface that loudly at the top rather than emitting silent garbage.
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteDataIntegrityWarning(Document doc, MdbComparisonResult comp, string pfx)
+        {
+            // Tables whose wholesale absence badly distorts the report, with labels.
+            var critical = new (string table, string label)[]
+            {
+                ($"{pfx}ActionType", "Action Types"),
+                ($"{pfx}ActionParameter", "Action Parameters"),
+                ($"{pfx}CountryLaw", "Country Law"),
+                ($"{pfx}CountryDue", "Law Actions (Country Due)"),
+                ($"{pfx}CaseType", "Case Types"),
+                ($"{pfx}Country", "Countries"),
+            };
+
+            var issues = new List<string>();
+            foreach (var (table, label) in critical)
+            {
+                int cur = comp.CurrentRowCounts.TryGetValue(table, out var c) ? c : 0;
+                int old = comp.OldRowCounts.TryGetValue(table, out var o) ? o : 0;
+                if (cur == 0 && old > 0)
+                    issues.Add($"{label}: empty in the current file but has {old} rows in the comparison file — every one is being reported as deleted.");
+                else if (old == 0 && cur > 0)
+                    issues.Add($"{label}: empty in the comparison file but has {cur} rows in the current file — every one is being reported as new.");
+            }
+            if (!issues.Any()) return;
+
+            var box = new Paragraph()
+                .SetMarginTop(10)
+                .SetPadding(8)
+                .SetBorder(new SolidBorder(Red, 1f))
+                .SetBackgroundColor(new DeviceRgb(255, 235, 235));
+            box.Add(T("⚠ Data integrity warning — this report may be inaccurate\n", _b, 11).SetFontColor(Red));
+            box.Add(T("One or more source files are missing an entire table. This usually means an MDB was exported or uploaded incompletely; re-generate the source file(s) before relying on this report.\n\n", _r, 9));
+            foreach (var msg in issues)
+            {
+                box.Add(T("• " + msg, _r, 9));
+                box.Add(T("\n", _r, 9));
             }
             doc.Add(box);
         }
