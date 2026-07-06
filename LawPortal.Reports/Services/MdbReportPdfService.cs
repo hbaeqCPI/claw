@@ -34,6 +34,14 @@ namespace LawPortal.Reports.Services
         // Detected from the release name in GenerateReport.
         private bool _isR8Plus;
 
+        // True once any leading section (report notes, data-integrity warning,
+        // Manual Updates / Standard Goods, or Structural changes) has actually
+        // rendered content under the top title. When it stays false the top
+        // title is the only thing on page 1, so Country Law Added/Modified
+        // reuses that page instead of forcing a break to a fresh title —
+        // otherwise page 1 is left blank but for the title.
+        private bool _leadingContent;
+
         public byte[] GenerateReport(MdbComparisonResult comp, string name, string year, string qtr,
             Dictionary<string, string>? cn = null, Dictionary<string, string>? ctd = null,
             string? reportNotes = null)
@@ -41,6 +49,7 @@ namespace LawPortal.Reports.Services
             _cn = cn ?? new();
             _ctd = ctd ?? new();
             _orphanBreakAdded = false;
+            _leadingContent = false;
             _isR8Plus = IsR8PlusName(name);
 
             using var ms = new MemoryStream();
@@ -110,6 +119,7 @@ namespace LawPortal.Reports.Services
         private void WriteReportNotes(Document doc, string? notes)
         {
             if (string.IsNullOrWhiteSpace(notes)) return;
+            _leadingContent = true;
             var box = new Paragraph()
                 .SetMarginTop(10)
                 .SetPadding(8)
@@ -155,6 +165,7 @@ namespace LawPortal.Reports.Services
                     issues.Add($"{label}: empty in the comparison file but has {cur} rows in the current file — every one is being reported as new.");
             }
             if (!issues.Any()) return;
+            _leadingContent = true;
 
             var box = new Paragraph()
                 .SetMarginTop(10)
@@ -186,6 +197,7 @@ namespace LawPortal.Reports.Services
             if (!H(comp, sgT)) return;
             var diff = comp.TableDiffs[sgT];
             if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
+            _leadingContent = true;
 
             // Inline with Manual Updates + structural — no forced page break.
             doc.Add(P(16).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(10)
@@ -340,6 +352,7 @@ namespace LawPortal.Reports.Services
             if (!H(comp, atT)) return;
             var diff = comp.TableDiffs[atT];
             if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
+            _leadingContent = true;
 
             doc.Add(P(18).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(20)
                 .Add(T("Manual Updates", _r, 18)));
@@ -754,8 +767,14 @@ namespace LawPortal.Reports.Services
             doc.Add(tbl);
         }
 
-        private void SectionHeader(Document doc, string text) =>
+        // Every structural sub-section (Area Countries, Case Types, Designations)
+        // opens with a SectionHeader, and SectionHeader is used nowhere else, so
+        // this is the single choke point for "structural content was rendered".
+        private void SectionHeader(Document doc, string text)
+        {
+            _leadingContent = true;
             doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T(text, _b, 11)));
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // COUNTRY LAW ADDED/MODIFIED — one page per country/case-type.
@@ -769,8 +788,14 @@ namespace LawPortal.Reports.Services
             var fullBlockKeys = CountryLawBlockKeys(comp, clT, expT, expDelT);
             if (!fullBlockKeys.Any()) return;
 
-            doc.Add(new AreaBreak());
-            WriteTitle(doc, year, qtr);
+            // Country blocks normally start on a fresh page with their own title.
+            // But when no leading section rendered, page 1 holds only the top
+            // title — so reuse it instead of breaking to an otherwise-blank page.
+            if (_leadingContent)
+            {
+                doc.Add(new AreaBreak());
+                WriteTitle(doc, year, qtr);
+            }
             doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(6)
                 .Add(T("Country Law Added/Modified", _b, 11)));
 
