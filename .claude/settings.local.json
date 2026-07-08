@@ -123,7 +123,9 @@
       "Bash(xargs -I{} cat {})",
       "Bash(git checkout *)",
       "Bash(mv \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Documents/\"*.mdb \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Searchable/Documents/\")",
-      "Bash(mv \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Documents/\"*.pdf \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Searchable/Documents/\")"
+      "Bash(mv \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Documents/\"*.pdf \"D:/Projects/Claw/Claw-Claude/LawPortal.Web/UserFiles/Searchable/Documents/\")",
+      "PowerShell(sqlcmd -S \"\\(local\\)\" -d LawPortalCPiR10 -E -i \"C:\\\\Users\\\\hbaeq\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projects-Claw-Claw-Claude\\\\e164197e-cd80-4ff3-9daf-9b471c3c9c2a\\\\scratchpad\\\\populate_lawupdates.sql\" 2>&1)",
+      "Bash(sqlcmd -S '\\(local\\)' -d WebUpdates -E -Q ' *)"
     ]
   }
 }

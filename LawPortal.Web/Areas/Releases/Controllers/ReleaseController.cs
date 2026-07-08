@@ -1335,7 +1335,7 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
         }
 
         [HttpPost]
-        public async Task<IActionResult> GenerateReport(int releaseId, int docId, int compareDocId)
+        public async Task<IActionResult> GenerateReport(int releaseId, int docId, int compareDocId, int compareReleaseId = 0)
         {
             try
             {
@@ -1369,6 +1369,26 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                     env.WebRootPath,
                     HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Reports.Services.MdbComparisonService>>());
                 var diff = await comparisonService.CompareMdbFiles(currentMdbPath, compareMdbPath);
+
+                // Action Types and Action Parameters are sourced from the DATABASE,
+                // not the MDB files: the current live table is the "current" data and
+                // the locked quarter snapshot is the "older" data. Older MDB exports
+                // frequently omit these tables, which silently drops the entire Manual
+                // Updates section — the DB is the reliable source. Everything else in
+                // the report still comes from the two MDB files.
+                var cmpLogger = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Reports.Services.MdbComparisonService>>();
+                var compareRelease = compareReleaseId > 0
+                    ? await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == compareReleaseId)
+                    : null;
+                if (compareRelease != null)
+                    await ApplyDbActionTypeDiffs(diff, isPat, release, compareRelease, comparisonService, cmpLogger);
+                else
+                    cmpLogger.LogInformation("Report DB-diff: no compare release resolved (compareReleaseId={Id}); ActionType/ActionParameter stay MDB-derived.", compareReleaseId);
+
+                // "Show only the add": collapse any delete+add pair that is really
+                // one row re-keyed (identical apart from a key column) down to just
+                // the add. Genuine deletions (no matching add) are untouched.
+                LawPortal.Reports.Services.MdbComparisonService.ShowOnlyReKeyedAdds(diff);
 
                 // Build lookups
                 var countryNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -1624,6 +1644,121 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
             }
 
             return ($"{selectClause} FROM [{hist}] {where}", parms);
+        }
+
+        // Replace the MDB-derived ActionType / ActionParameter diffs with a
+        // DB-backed diff: current = the live tbl* table, older = the compare
+        // release's locked quarter snapshot (hist_tbl*). Both sides are scoped to
+        // the current release's Systems tags so the comparison is apples-to-apples.
+        // On any failure (missing snapshot, SQL error) the MDB-derived diff is left
+        // in place so the report still generates.
+        private async Task ApplyDbActionTypeDiffs(
+            LawPortal.Reports.Services.MdbComparisonResult diff, bool isPat,
+            Release currentRelease, Release compareRelease,
+            LawPortal.Reports.Services.MdbComparisonService svc,
+            Microsoft.Extensions.Logging.ILogger logger)
+        {
+            var pfx = isPat ? "tblPat" : "tblTmk";
+            var tables = new[] { $"{pfx}ActionType", $"{pfx}ActionParameter" };
+
+            var tags = (currentRelease.Systems ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+            if (!tags.Any() && !string.IsNullOrWhiteSpace(currentRelease.SystemType))
+                tags = new List<string> { currentRelease.SystemType.Trim() };
+
+            var connStr = _config.GetConnectionString("DefaultConnection");
+            using var conn = new SqlConnection(connStr);
+            await conn.OpenAsync();
+
+            foreach (var tbl in tables)
+            {
+                try
+                {
+                    // Live table has no SnapshotYear/Quarter — pass null so no
+                    // year/quarter filter is applied to the "current" side.
+                    var current = await ReadTableRows(conn, tbl, tags, null, null);
+                    var older = await ReadTableRows(conn, "hist_" + tbl, tags, compareRelease.Year, compareRelease.Quarter);
+
+                    if (older.Count == 0)
+                    {
+                        logger.LogInformation(
+                            "Report DB-diff {Table}: no snapshot rows for {Year} {Quarter}; keeping MDB-derived diff.",
+                            tbl, compareRelease.Year, compareRelease.Quarter);
+                        continue;
+                    }
+
+                    var td = svc.CompareObjectRows(tbl, current, older);
+                    diff.CurrentRowCounts[tbl] = current.Count;
+                    diff.OldRowCounts[tbl] = older.Count;
+                    if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
+                        diff.TableDiffs[tbl] = td;
+                    else
+                        diff.TableDiffs.Remove(tbl);
+
+                    logger.LogInformation(
+                        "Report DB-diff {Table}: live={Cur} snapshot({Year} {Quarter})={Old} | added={A} modified={M} deleted={D}",
+                        tbl, current.Count, compareRelease.Year, compareRelease.Quarter, older.Count,
+                        td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", tbl);
+                }
+            }
+        }
+
+        // Read every row of a table into plain dictionaries. When year/quarter are
+        // supplied they filter SnapshotYear/SnapshotQuarter (hist_* tables); when
+        // the table has a Systems column and tags are supplied, rows are scoped to
+        // those systems the same way BuildSnapshotQuery does.
+        private static async Task<List<Dictionary<string, object?>>> ReadTableRows(
+            SqlConnection conn, string table, List<string> sysTags, int? year, string? quarter)
+        {
+            bool hasSystems = false;
+            if (sysTags.Any())
+            {
+                using var chk = new SqlCommand(
+                    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tbl AND COLUMN_NAME = 'Systems'", conn);
+                chk.Parameters.AddWithValue("@tbl", table);
+                hasSystems = (int)(await chk.ExecuteScalarAsync())! > 0;
+            }
+
+            var parms = new List<SqlParameter>();
+            var clauses = new List<string>();
+            if (year.HasValue)
+            {
+                clauses.Add("SnapshotYear = @year");
+                parms.Add(new SqlParameter("@year", year.Value));
+            }
+            if (quarter != null)
+            {
+                clauses.Add("SnapshotQuarter = @quarter");
+                parms.Add(new SqlParameter("@quarter", (object?)quarter ?? DBNull.Value));
+            }
+            if (hasSystems && sysTags.Any())
+            {
+                var ors = sysTags.Select((t, i) =>
+                {
+                    parms.Add(new SqlParameter($"@sys{i}", t));
+                    return $"CHARINDEX(@sys{i}, [Systems]) > 0";
+                });
+                clauses.Add("(" + string.Join(" OR ", ors) + ")");
+            }
+            var where = clauses.Any() ? " WHERE " + string.Join(" AND ", clauses) : "";
+
+            var rows = new List<Dictionary<string, object?>>();
+            using var cmd = new SqlCommand($"SELECT * FROM [{table}]{where}", conn);
+            foreach (var p in parms) cmd.Parameters.Add(p);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < reader.FieldCount; i++)
+                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                rows.Add(row);
+            }
+            return rows;
         }
 
         #endregion

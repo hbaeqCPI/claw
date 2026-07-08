@@ -271,7 +271,7 @@
                                     $.get('@Url.Action("GetCompareMdbFiles")', { releaseId: releaseId, isPat: isPat }, function (mdbFiles) {
                                         sel.empty().append('<option value="">-- Select an MDB --</option>');
                                         $.each(mdbFiles, function (j, f) {
-                                            sel.append('<option value="' + f.DocId + '">' + f.Text + '</option>');
+                                            sel.append('<option value="' + f.DocId + '" data-release-id="' + f.ReleaseId + '">' + f.Text + '</option>');
                                         });
                                     });
                                 });
@@ -285,7 +285,9 @@
                             e.stopPropagation();
                             var section = $(this).closest('.report-section');
                             var docId = section.find('.currentMdbSelect').val();
-                            var compareDocId = section.find('.compareMdbSelect').val();
+                            var compareSel = section.find('.compareMdbSelect');
+                            var compareDocId = compareSel.val();
+                            var compareReleaseId = compareSel.find('option:selected').data('release-id') || 0;
                             if (!docId) {
                                 pageHelper.showErrors('Please select the current MDB to generate the report from.');
                                 return;
@@ -301,6 +303,7 @@
                             $.post('@Url.Action("GenerateReport")', {
                                 releaseId: releaseId,
                                 compareDocId: compareDocId,
+                                compareReleaseId: compareReleaseId,
                                 docId: docId,
                                 __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                             }).done(function (result) {

@@ -120,7 +120,9 @@ namespace LawPortal.Reports.Services
             // ActionType identity column and a FK link-table-ish field that varies by release
             "ActionTypeID", "ResponsibleID",
             // StandardGood identity column
-            "ClassId"
+            "ClassId",
+            // Present only on hist_* snapshot tables, never on the live table.
+            "SnapshotYear", "SnapshotQuarter"
         };
 
         public MdbComparisonService(string webRootPath, ILogger<MdbComparisonService> logger)
@@ -233,125 +235,164 @@ namespace LawPortal.Reports.Services
             return result;
         }
 
+        // MDB path: convert the JSON rows to plain object? dictionaries and diff
+        // them through the shared core, so file-sourced and DB-sourced rows go
+        // through identical add/delete/modify logic.
         private TableDiff CompareTable(string tableName, List<Dictionary<string, JsonElement>> currentRows,
             List<Dictionary<string, JsonElement>> oldRows, string[] keyColumns)
         {
+            return DiffCore(tableName,
+                currentRows.Select(ConvertRow).ToList(),
+                oldRows.Select(ConvertRow).ToList(),
+                keyColumns);
+        }
+
+        /// <summary>
+        /// Diff two sets of plain rows for a known table by its configured key.
+        /// Used to source a table from the database (current live table vs a
+        /// quarter snapshot) instead of the MDB files.
+        /// </summary>
+        public TableDiff CompareObjectRows(string tableName,
+            List<Dictionary<string, object?>> currentRows, List<Dictionary<string, object?>> oldRows)
+        {
+            var keyColumns = TableKeys.TryGetValue(tableName, out var k) ? k : new[] { "Id" };
+            return DiffCore(tableName, currentRows, oldRows, keyColumns);
+        }
+
+        // Shared add/delete/modify diff over plain rows. Keys and per-column
+        // comparison both run through NormalizeObject so a value that differs
+        // only in formatting (a date with vs without a midnight time component,
+        // 5 vs 5.0, stray whitespace) never splits one logical row into a
+        // phantom deleted+added pair.
+        private TableDiff DiffCore(string tableName, List<Dictionary<string, object?>> currentRows,
+            List<Dictionary<string, object?>> oldRows, string[] keyColumns)
+        {
             var diff = new TableDiff { TableName = tableName };
 
-            // Build the composite key with the SAME normalization used for value
-            // comparison. Otherwise a key column that differs only in formatting
-            // (a date with vs without a midnight time component, 5 vs 5.0, stray
-            // whitespace) yields two different keys and splits one logical row
-            // into a phantom deleted+added pair instead of matching it.
-            string GetKey(Dictionary<string, JsonElement> row)
-            {
-                return string.Join("|", keyColumns.Select(k =>
-                    row.ContainsKey(k) ? NormalizeValue(row[k]) : ""));
-            }
+            string Norm(Dictionary<string, object?> row, string col) =>
+                row.TryGetValue(col, out var v) ? NormalizeObject(v) : "";
+            string GetKey(Dictionary<string, object?> row) =>
+                string.Join("|", keyColumns.Select(k => Norm(row, k)));
 
-            var currentByKey = new Dictionary<string, Dictionary<string, JsonElement>>();
-            foreach (var row in currentRows)
-            {
-                var key = GetKey(row);
-                currentByKey[key] = row;
-            }
+            var currentByKey = new Dictionary<string, Dictionary<string, object?>>();
+            foreach (var row in currentRows) currentByKey[GetKey(row)] = row;
 
-            var oldByKey = new Dictionary<string, Dictionary<string, JsonElement>>();
-            foreach (var row in oldRows)
-            {
-                var key = GetKey(row);
-                oldByKey[key] = row;
-            }
+            var oldByKey = new Dictionary<string, Dictionary<string, object?>>();
+            foreach (var row in oldRows) oldByKey[GetKey(row)] = row;
 
             // Added rows (in current but not in old)
             foreach (var kvp in currentByKey)
-            {
                 if (!oldByKey.ContainsKey(kvp.Key))
-                {
                     diff.AddedRows.Add(new RowDiff
                     {
-                        Values = ConvertRow(kvp.Value),
+                        Values = kvp.Value,
                         ChangedColumns = new HashSet<string>(kvp.Value.Keys.Where(c => !IgnoreColumns.Contains(c)))
                     });
-                }
-            }
 
             // Deleted rows (in old but not in current)
             foreach (var kvp in oldByKey)
-            {
                 if (!currentByKey.ContainsKey(kvp.Key))
-                {
-                    diff.DeletedRows.Add(new RowDiff { Values = ConvertRow(kvp.Value) });
-                }
-            }
+                    diff.DeletedRows.Add(new RowDiff { Values = kvp.Value });
 
             // Modified rows (in both but with different values)
             foreach (var kvp in currentByKey)
             {
-                if (oldByKey.ContainsKey(kvp.Key))
+                if (!oldByKey.TryGetValue(kvp.Key, out var oldRow)) continue;
+                var newRow = kvp.Value;
+                var changedCols = new HashSet<string>();
+                foreach (var col in newRow.Keys)
                 {
-                    var newRow = kvp.Value;
-                    var oldRow = oldByKey[kvp.Key];
-                    var changedCols = new HashSet<string>();
-
-                    foreach (var col in newRow.Keys)
-                    {
-                        if (IgnoreColumns.Contains(col)) continue;
-                        var newVal = NormalizeValue(newRow[col]);
-                        var oldVal = oldRow.ContainsKey(col) ? NormalizeValue(oldRow[col]) : "";
-                        if (newVal != oldVal)
-                            changedCols.Add(col);
-                    }
-
-                    if (changedCols.Any())
-                    {
-                        diff.ModifiedRows.Add(new RowDiff
-                        {
-                            Values = ConvertRow(newRow),
-                            OldValues = ConvertRow(oldRow),
-                            ChangedColumns = changedCols
-                        });
-                    }
+                    if (IgnoreColumns.Contains(col)) continue;
+                    if (Norm(newRow, col) != Norm(oldRow, col))
+                        changedCols.Add(col);
                 }
+                if (changedCols.Any())
+                    diff.ModifiedRows.Add(new RowDiff
+                    {
+                        Values = newRow,
+                        OldValues = oldRow,
+                        ChangedColumns = changedCols
+                    });
             }
 
             return diff;
         }
 
         /// <summary>
-        /// Normalize a JsonElement value for comparison — handles type differences,
-        /// whitespace, date formatting, number precision, boolean casing.
+        /// "Show only the add": when a row appears as BOTH a deleted and an added
+        /// row because a KEY column changed (a re-key), drop the delete and keep
+        /// the add — the row still exists, just under a new key. A delete with no
+        /// matching add is a genuine removal and is left intact. Two rows are
+        /// considered the same entity when every non-key, non-ignored column has
+        /// identical normalized values; tables whose only columns ARE the key are
+        /// never collapsed (there is no body to prove they're the same row).
         /// </summary>
-        private string NormalizeValue(JsonElement el)
+        public static void ShowOnlyReKeyedAdds(MdbComparisonResult result)
         {
-            switch (el.ValueKind)
+            foreach (var kv in result.TableDiffs)
             {
-                case JsonValueKind.Null:
-                case JsonValueKind.Undefined:
-                    return "";
-                case JsonValueKind.True:
-                    return "true";
-                case JsonValueKind.False:
-                    return "false";
-                case JsonValueKind.Number:
-                    // Normalize all numbers to the same format
-                    if (el.TryGetInt64(out var l)) return l.ToString();
-                    return el.GetDouble().ToString("G");
-                case JsonValueKind.String:
-                    var s = el.GetString() ?? "";
-                    // Normalize dates: strip time component if it's midnight
-                    if (DateTime.TryParse(s, out var dt))
+                var diff = kv.Value;
+                if (diff.DeletedRows.Count == 0 || diff.AddedRows.Count == 0) continue;
+                var keyCols = TableKeys.TryGetValue(kv.Key, out var k) ? k : new[] { "Id" };
+                var keySet = new HashSet<string>(keyCols, StringComparer.OrdinalIgnoreCase);
+
+                bool SameBody(RowDiff a, RowDiff b)
+                {
+                    var cols = a.Values.Keys.Union(b.Values.Keys)
+                        .Where(c => !keySet.Contains(c) && !IgnoreColumns.Contains(c))
+                        .ToList();
+                    if (cols.Count == 0) return false; // key-only table: can't prove sameness
+                    foreach (var c in cols)
                     {
-                        if (dt.TimeOfDay == TimeSpan.Zero)
-                            return dt.ToString("yyyy-MM-dd");
-                        return dt.ToString("yyyy-MM-dd HH:mm:ss");
+                        var av = a.Values.TryGetValue(c, out var x) ? NormalizeObject(x) : "";
+                        var bv = b.Values.TryGetValue(c, out var y) ? NormalizeObject(y) : "";
+                        if (av != bv) return false;
                     }
-                    // Normalize whitespace: trim, collapse multiple spaces, normalize line endings
+                    return true;
+                }
+
+                diff.DeletedRows.RemoveAll(del => diff.AddedRows.Any(add => SameBody(del, add)));
+            }
+        }
+
+        /// <summary>
+        /// Normalize an already-materialized value (from a DB reader or a
+        /// converted JSON row) for comparison — handles type differences,
+        /// whitespace, date formatting, number precision, boolean casing.
+        /// This is the single source of truth for how two values are judged equal.
+        /// </summary>
+        private static string NormalizeObject(object? v)
+        {
+            switch (v)
+            {
+                case null:
+                    return "";
+                case bool b:
+                    return b ? "true" : "false";
+                case sbyte or byte or short or ushort or int or uint or long or ulong:
+                    return Convert.ToInt64(v).ToString();
+                case float or double or decimal:
+                    var d = Convert.ToDouble(v);
+                    return d == Math.Floor(d) && !double.IsInfinity(d)
+                        ? ((long)d).ToString()
+                        : d.ToString("G");
+                case DateTime dt:
+                    return dt.TimeOfDay == TimeSpan.Zero
+                        ? dt.ToString("yyyy-MM-dd")
+                        : dt.ToString("yyyy-MM-dd HH:mm:ss");
+                case string s:
+                    // Dates: strip a midnight time component so "2020-01-01" and
+                    // "2020-01-01T00:00:00" compare equal.
+                    if (DateTime.TryParse(s, out var pdt))
+                        return pdt.TimeOfDay == TimeSpan.Zero
+                            ? pdt.ToString("yyyy-MM-dd")
+                            : pdt.ToString("yyyy-MM-dd HH:mm:ss");
+                    // Whitespace: trim, collapse runs, normalize line endings.
                     s = s.Trim().Replace("\r\n", "\n").Replace("\r", "\n");
                     while (s.Contains("  ")) s = s.Replace("  ", " ");
                     return s;
                 default:
-                    return el.ToString().Trim();
+                    return v.ToString()?.Trim() ?? "";
             }
         }
 
