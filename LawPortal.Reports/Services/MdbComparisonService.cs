@@ -318,14 +318,28 @@ namespace LawPortal.Reports.Services
             return diff;
         }
 
+        // Business identity for "show only the add": the columns that say two rows
+        // are the SAME real-world thing even if the full diff key differs. A Law
+        // Action is the same deadline when Country/CaseType/ActionType/ActionDue/
+        // Indicator match — even if its BasedOn, effective dates, or term changed
+        // (all of which are either key columns or body values that a phased change
+        // legitimately alters). Tables without an entry here fall back to the
+        // stricter "identical body" test.
+        private static readonly Dictionary<string, string[]> CollapseIdentity = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["tblPatCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "Indicator" },
+            ["tblTmkCountryDue"] = new[] { "Country", "CaseType", "ActionType", "ActionDue", "Indicator" },
+        };
+
         /// <summary>
         /// "Show only the add": when a row appears as BOTH a deleted and an added
-        /// row because a KEY column changed (a re-key), drop the delete and keep
-        /// the add — the row still exists, just under a new key. A delete with no
-        /// matching add is a genuine removal and is left intact. Two rows are
-        /// considered the same entity when every non-key, non-ignored column has
-        /// identical normalized values; tables whose only columns ARE the key are
-        /// never collapsed (there is no body to prove they're the same row).
+        /// row for the same real-world entity — because a key column (or, for a
+        /// phased deadline, its dates/term) changed — drop the delete and keep the
+        /// add. A delete with no matching add is a genuine removal and is left
+        /// intact. Matching uses the table's CollapseIdentity when defined (e.g. a
+        /// Law Action's deadline identity), otherwise every non-key, non-ignored
+        /// column must be identical; tables whose only columns ARE the key are
+        /// never collapsed (there is no body to prove sameness).
         /// </summary>
         public static void ShowOnlyReKeyedAdds(MdbComparisonResult result)
         {
@@ -333,25 +347,36 @@ namespace LawPortal.Reports.Services
             {
                 var diff = kv.Value;
                 if (diff.DeletedRows.Count == 0 || diff.AddedRows.Count == 0) continue;
-                var keyCols = TableKeys.TryGetValue(kv.Key, out var k) ? k : new[] { "Id" };
-                var keySet = new HashSet<string>(keyCols, StringComparer.OrdinalIgnoreCase);
 
-                bool SameBody(RowDiff a, RowDiff b)
+                Func<RowDiff, RowDiff, bool> sameEntity;
+                if (CollapseIdentity.TryGetValue(kv.Key, out var idCols))
                 {
-                    var cols = a.Values.Keys.Union(b.Values.Keys)
-                        .Where(c => !keySet.Contains(c) && !IgnoreColumns.Contains(c))
-                        .ToList();
-                    if (cols.Count == 0) return false; // key-only table: can't prove sameness
-                    foreach (var c in cols)
+                    string Id(RowDiff r) => string.Join("|", idCols.Select(c =>
+                        r.Values.TryGetValue(c, out var v) ? NormalizeObject(v) : ""));
+                    sameEntity = (a, b) => Id(a) == Id(b);
+                }
+                else
+                {
+                    var keySet = new HashSet<string>(
+                        TableKeys.TryGetValue(kv.Key, out var k) ? k : new[] { "Id" },
+                        StringComparer.OrdinalIgnoreCase);
+                    sameEntity = (a, b) =>
                     {
-                        var av = a.Values.TryGetValue(c, out var x) ? NormalizeObject(x) : "";
-                        var bv = b.Values.TryGetValue(c, out var y) ? NormalizeObject(y) : "";
-                        if (av != bv) return false;
-                    }
-                    return true;
+                        var cols = a.Values.Keys.Union(b.Values.Keys)
+                            .Where(c => !keySet.Contains(c) && !IgnoreColumns.Contains(c))
+                            .ToList();
+                        if (cols.Count == 0) return false; // key-only table: can't prove sameness
+                        foreach (var c in cols)
+                        {
+                            var av = a.Values.TryGetValue(c, out var x) ? NormalizeObject(x) : "";
+                            var bv = b.Values.TryGetValue(c, out var y) ? NormalizeObject(y) : "";
+                            if (av != bv) return false;
+                        }
+                        return true;
+                    };
                 }
 
-                diff.DeletedRows.RemoveAll(del => diff.AddedRows.Any(add => SameBody(del, add)));
+                diff.DeletedRows.RemoveAll(del => diff.AddedRows.Any(add => sameEntity(del, add)));
             }
         }
 
