@@ -1370,20 +1370,12 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                     HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Reports.Services.MdbComparisonService>>());
                 var diff = await comparisonService.CompareMdbFiles(currentMdbPath, compareMdbPath);
 
-                // Action Types and Action Parameters are sourced from the DATABASE,
-                // not the MDB files: the current live table is the "current" data and
-                // the locked quarter snapshot is the "older" data. Older MDB exports
-                // frequently omit these tables, which silently drops the entire Manual
-                // Updates section — the DB is the reliable source. Everything else in
-                // the report still comes from the two MDB files.
+                // For ActionType / ActionParameter only, replace the current side of
+                // the diff with the live DB tables (the current MDB's copies are
+                // unreliable), keeping the old MDB as the baseline. Everything else
+                // in the report still diffs the two MDB files.
                 var cmpLogger = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Reports.Services.MdbComparisonService>>();
-                var compareRelease = compareReleaseId > 0
-                    ? await _entityService.QueryableList.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseId == compareReleaseId)
-                    : null;
-                if (compareRelease != null)
-                    await ApplyDbActionTypeDiffs(diff, isPat, release, compareRelease, comparisonService, cmpLogger);
-                else
-                    cmpLogger.LogInformation("Report DB-diff: no compare release resolved (compareReleaseId={Id}); ActionType/ActionParameter stay MDB-derived.", compareReleaseId);
+                await ApplyDbActionTypeDiffs(diff, isPat, comparisonService, cmpLogger);
 
                 // "Show only the add": collapse any delete+add pair that is really
                 // one row re-keyed (identical apart from a key column) down to just
@@ -1647,25 +1639,20 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
         }
 
         // Replace the MDB-derived ActionType / ActionParameter diffs with a
-        // DB-backed diff: current = the live tbl* table, older = the compare
-        // release's locked quarter snapshot (hist_tbl*). Both sides are scoped to
-        // the current release's Systems tags so the comparison is apples-to-apples.
-        // On any failure (missing snapshot, SQL error) the MDB-derived diff is left
-        // in place so the report still generates.
+        // DB-backed diff for ActionType / ActionParameter only: current = the live
+        // tbl* table (read unfiltered), older = that same table's rows from the OLD
+        // (comparison) MDB. The current MDB's copies of these tables are unreliable
+        // (locally-generated exports omit them), so the live DB is the source of
+        // truth for "current" while the old MDB remains the baseline. Every other
+        // table still diffs the two MDB files. On any error the MDB-derived diff is
+        // left in place so the report still generates.
         private async Task ApplyDbActionTypeDiffs(
             LawPortal.Reports.Services.MdbComparisonResult diff, bool isPat,
-            Release currentRelease, Release compareRelease,
             LawPortal.Reports.Services.MdbComparisonService svc,
             Microsoft.Extensions.Logging.ILogger logger)
         {
             var pfx = isPat ? "tblPat" : "tblTmk";
             var tables = new[] { $"{pfx}ActionType", $"{pfx}ActionParameter" };
-
-            var tags = (currentRelease.Systems ?? "")
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-            if (!tags.Any() && !string.IsNullOrWhiteSpace(currentRelease.SystemType))
-                tags = new List<string> { currentRelease.SystemType.Trim() };
 
             var connStr = _config.GetConnectionString("DefaultConnection");
             using var conn = new SqlConnection(connStr);
@@ -1675,18 +1662,12 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
             {
                 try
                 {
-                    // Live table has no SnapshotYear/Quarter — pass null so no
-                    // year/quarter filter is applied to the "current" side.
-                    var current = await ReadTableRows(conn, tbl, tags, null, null);
-                    var older = await ReadTableRows(conn, "hist_" + tbl, tags, compareRelease.Year, compareRelease.Quarter);
-
-                    if (older.Count == 0)
-                    {
-                        logger.LogInformation(
-                            "Report DB-diff {Table}: no snapshot rows for {Year} {Quarter}; keeping MDB-derived diff.",
-                            tbl, compareRelease.Year, compareRelease.Quarter);
-                        continue;
-                    }
+                    // Current: the live table, read unfiltered (these tables have no
+                    // Systems column, and no SnapshotYear/Quarter to filter on).
+                    var current = await ReadTableRows(conn, tbl, new List<string>(), null, null);
+                    // Older baseline: the same table's rows from the old (comparison) MDB.
+                    var older = diff.OldFileRows.TryGetValue(tbl, out var r)
+                        ? r : new List<Dictionary<string, object?>>();
 
                     var td = svc.CompareObjectRows(tbl, current, older);
                     diff.CurrentRowCounts[tbl] = current.Count;
@@ -1697,8 +1678,8 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                         diff.TableDiffs.Remove(tbl);
 
                     logger.LogInformation(
-                        "Report DB-diff {Table}: live={Cur} snapshot({Year} {Quarter})={Old} | added={A} modified={M} deleted={D}",
-                        tbl, current.Count, compareRelease.Year, compareRelease.Quarter, older.Count,
+                        "Report DB-diff {Table}: live={Cur} oldMdb={Old} | added={A} modified={M} deleted={D}",
+                        tbl, current.Count, older.Count,
                         td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
                 }
                 catch (Exception ex)

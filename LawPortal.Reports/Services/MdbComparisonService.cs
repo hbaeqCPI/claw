@@ -23,6 +23,13 @@ namespace LawPortal.Reports.Services
         // silently emitting a diff full of phantom adds/deletes.
         public Dictionary<string, int> CurrentRowCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, int> OldRowCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        // Raw rows of the OLD (comparison) MDB file, per table, as plain values.
+        // Lets a caller re-diff a specific table against a different "current"
+        // source (e.g. the live DB tables for ActionType/ActionParameter) while
+        // keeping the old MDB as the baseline.
+        public Dictionary<string, List<Dictionary<string, object?>>> OldFileRows { get; set; }
+            = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public class TableDiff
@@ -207,6 +214,7 @@ namespace LawPortal.Reports.Services
 
                 result.CurrentRowCounts[tableName] = currentRows.Count;
                 result.OldRowCounts[tableName] = oldRows.Count;
+                result.OldFileRows[tableName] = oldRows.Select(ConvertRow).ToList();
 
                 var keyColumns = TableKeys.ContainsKey(tableName) ? TableKeys[tableName] : new[] { "Id" };
 
