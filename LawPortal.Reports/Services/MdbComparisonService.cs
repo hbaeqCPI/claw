@@ -378,6 +378,38 @@ namespace LawPortal.Reports.Services
 
                 diff.DeletedRows.RemoveAll(del => diff.AddedRows.Any(add => sameEntity(del, add)));
             }
+
+            // Cross-table: deletions of Expiration / Tax terms are tracked in a
+            // separate companion table (…ExpDelete) rather than as DeletedRows of
+            // the main …Exp table, so the same-table pass above can't see them. An
+            // expiration rule that appears as BOTH a new companion-delete row AND a
+            // new main-table row is a phased re-date of one rule (same Type/BasedOn,
+            // new effective dates) — show only the add.
+            ReconcileDeleteTracker(result, "tblPatCountryExp", "tblPatCountryExpDelete",
+                new[] { "Country", "CaseType", "Type", "BasedOn" });
+        }
+
+        // Drop rows from a companion delete-tracker table when the same real-world
+        // entity also appears as an add/modify in its primary table — i.e. it was
+        // re-keyed, not removed. Identity is matched on idCols (which deliberately
+        // exclude the columns a phased change alters, e.g. effective dates/term).
+        // If the tracker ends up empty its section is dropped entirely.
+        private static void ReconcileDeleteTracker(MdbComparisonResult result,
+            string primary, string tracker, string[] idCols)
+        {
+            if (!result.TableDiffs.TryGetValue(tracker, out var td)) return;
+            if (td.AddedRows.Count == 0) return;
+            if (!result.TableDiffs.TryGetValue(primary, out var pd)) return;
+
+            string Id(RowDiff r) => string.Join("|", idCols.Select(c =>
+                r.Values.TryGetValue(c, out var v) ? NormalizeObject(v) : ""));
+
+            var live = new HashSet<string>(pd.AddedRows.Concat(pd.ModifiedRows).Select(Id));
+            if (live.Count == 0) return;
+
+            td.AddedRows.RemoveAll(del => live.Contains(Id(del)));
+            if (td.AddedRows.Count == 0 && td.ModifiedRows.Count == 0 && td.DeletedRows.Count == 0)
+                result.TableDiffs.Remove(tracker);
         }
 
         /// <summary>
