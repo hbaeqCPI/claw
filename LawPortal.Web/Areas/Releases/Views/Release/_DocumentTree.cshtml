@@ -79,6 +79,18 @@
             return $("#imageGridView_@(eid)_mdb").data("kendoGrid");
         }
 
+        // Resolve the dataItem for the row a grid command fired from. The
+        // View/Edit/Delete commands exist in BOTH the main grid and the
+        // companion MDB grid. Calling grid.dataItem(tr) on a grid that does NOT
+        // own the row throws inside Kendo ("Cannot read properties of undefined
+        // (reading 'className')"), so resolve the owning grid from the row's
+        // DOM ancestry rather than guessing which grid it belongs to.
+        function getRowDataItem(e) {
+            var tr = $(e.currentTarget).closest("tr");
+            var grid = tr.closest(".k-grid").data("kendoGrid");
+            return grid ? grid.dataItem(tr) : null;
+        }
+
         function getSelectedFolderId() {
             return selectedFolderId;
         }
@@ -231,10 +243,7 @@
         function deleteDocument(e) {
             e.preventDefault();
             // The delete button may live in either the main grid or the companion grid.
-            var tr = $(e.currentTarget).closest("tr");
-            var grid = getGrid();
-            var dataItem = grid ? grid.dataItem(tr) : null;
-            if (!dataItem) { grid = getCompanionGrid(); dataItem = grid ? grid.dataItem(tr) : null; }
+            var dataItem = getRowDataItem(e);
             if (!dataItem) return;
             var tc = $(treeContainerSelector);
             var content = tc.data("delete-message");
@@ -285,10 +294,7 @@
 
         function editDocument(e) {
             e.preventDefault();
-            var tr = $(e.currentTarget).closest("tr");
-            var grid = getGrid();
-            var dataItem = grid ? grid.dataItem(tr) : null;
-            if (!dataItem) { grid = getCompanionGrid(); dataItem = grid ? grid.dataItem(tr) : null; }
+            var dataItem = getRowDataItem(e);
             if (!dataItem) return;
             var url = "@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + selectedFolderId + "&docId=" + dataItem.DocId;
             $.get(url).done(function (html) {
@@ -322,10 +328,7 @@
 
         function viewDocumentFromGrid(e) {
             e.preventDefault();
-            var tr = $(e.currentTarget).closest("tr");
-            var grid = getGrid();
-            var dataItem = grid ? grid.dataItem(tr) : null;
-            if (!dataItem) { grid = getCompanionGrid(); dataItem = grid ? grid.dataItem(tr) : null; }
+            var dataItem = getRowDataItem(e);
             if (!dataItem) return;
             viewDocument(dataItem.FileId, dataItem.DocFileName);
         }
