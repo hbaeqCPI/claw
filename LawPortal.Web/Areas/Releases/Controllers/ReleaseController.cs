@@ -350,30 +350,6 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return name.Length <= maxLen ? name : name.Substring(0, maxLen);
         }
 
-        private static string GetMdbBaseName(string systemType, int year, string quarter)
-        {
-            var qNum = (quarter ?? "").TrimStart('Q');
-            if (string.IsNullOrEmpty(qNum)) qNum = "1";
-            var prefix = $"{year}_{qNum}";
-
-            if (systemType.StartsWith("Pat", StringComparison.OrdinalIgnoreCase))
-            {
-                if (systemType.Equals("PatR8-R10v2.1", StringComparison.OrdinalIgnoreCase))
-                    return $"{prefix}_patlaw10";
-                if (systemType.Equals("PatR4", StringComparison.OrdinalIgnoreCase))
-                    return $"{prefix}_Patlaw9";
-                // PatR5-7
-                return $"{prefix}_patlaw9";
-            }
-            else
-            {
-                if (systemType.Equals("TmkR9-10v2.2", StringComparison.OrdinalIgnoreCase))
-                    return $"{prefix}_TmkLaw10";
-                // TmkR4, TmkR5-8
-                return $"{prefix}_TmkLaw9";
-            }
-        }
-
         private static string GetReportBaseName(string systemType, int year, string quarter, bool isPat)
         {
             var qNum = (quarter ?? "").TrimStart('Q');
@@ -1217,9 +1193,12 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     var fileName = Path.GetFileName(filePath);
                     var fileExtension = Path.GetExtension(fileName);
                     var fileInfo = new FileInfo(filePath);
-                    var baseName = fileExtension.Equals(".mdb", StringComparison.OrdinalIgnoreCase)
-                        ? GetMdbBaseName(release.SystemType, release.Year, release.Quarter ?? "")
-                        : Path.GetFileNameWithoutExtension(fileName);
+                    // Trust the generator's filename. It already produces the correct
+                    // patent/trademark name because it knows which area was requested;
+                    // re-deriving from SystemType alone mislabels the shared R4 system
+                    // (which is neither "Pat*" nor "Tmk*") — a Patent MDB would be saved
+                    // under a TmkLaw name.
+                    var baseName = Path.GetFileNameWithoutExtension(fileName);
 
                     // If a document with this name already exists, append a number suffix
                     var existingNames = await _documentService.DocDocuments
