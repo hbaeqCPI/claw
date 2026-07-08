@@ -1671,61 +1671,42 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
             using var conn = new SqlConnection(connStr);
             await conn.OpenAsync();
 
-            // TEMPORARY: the app's own ActionType/ActionParameter tables are empty,
-            // so the "current" data for just these two tables is read from the
-            // populated AMS database instead. Same SQL instance as DefaultConnection,
-            // only the catalog differs. If it can't be opened we leave the
-            // MDB-derived diffs in place so the report still generates.
-            SqlConnection? amsConn = null;
-            try
+            foreach (var tbl in tables)
             {
-                var amsStr = new SqlConnectionStringBuilder(connStr) { InitialCatalog = ActionSourceDb }.ConnectionString;
-                amsConn = new SqlConnection(amsStr);
-                await amsConn.OpenAsync();
-            }
-            catch (Exception ex)
-            {
-                amsConn?.Dispose();
-                logger.LogWarning(ex, "Report DB-diff: cannot open {Db}; keeping MDB-derived ActionType/ActionParameter diffs.", ActionSourceDb);
-                return;
-            }
-
-            using (amsConn)
-            {
-                foreach (var tbl in tables)
+                try
                 {
-                    try
+                    // Live table has no SnapshotYear/Quarter — pass null so no
+                    // year/quarter filter is applied to the "current" side.
+                    var current = await ReadTableRows(conn, tbl, tags, null, null);
+                    var older = await ReadTableRows(conn, "hist_" + tbl, tags, compareRelease.Year, compareRelease.Quarter);
+
+                    if (older.Count == 0)
                     {
-                        // Current: the AMS database, read unfiltered so the section is
-                        // populated regardless of Systems tagging in that source.
-                        var current = await ReadTableRows(amsConn, tbl, new List<string>(), null, null);
-                        // Older baseline: the compare release's locked snapshot in the app DB.
-                        var older = await ReadTableRows(conn, "hist_" + tbl, tags, compareRelease.Year, compareRelease.Quarter);
-
-                        var td = svc.CompareObjectRows(tbl, current, older);
-                        diff.CurrentRowCounts[tbl] = current.Count;
-                        diff.OldRowCounts[tbl] = older.Count;
-                        if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
-                            diff.TableDiffs[tbl] = td;
-                        else
-                            diff.TableDiffs.Remove(tbl);
-
                         logger.LogInformation(
-                            "Report DB-diff {Table}: {Db} current={Cur} snapshot({Year} {Quarter})={Old} | added={A} modified={M} deleted={D}",
-                            tbl, ActionSourceDb, current.Count, compareRelease.Year, compareRelease.Quarter, older.Count,
-                            td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+                            "Report DB-diff {Table}: no snapshot rows for {Year} {Quarter}; keeping MDB-derived diff.",
+                            tbl, compareRelease.Year, compareRelease.Quarter);
+                        continue;
                     }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", tbl);
-                    }
+
+                    var td = svc.CompareObjectRows(tbl, current, older);
+                    diff.CurrentRowCounts[tbl] = current.Count;
+                    diff.OldRowCounts[tbl] = older.Count;
+                    if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
+                        diff.TableDiffs[tbl] = td;
+                    else
+                        diff.TableDiffs.Remove(tbl);
+
+                    logger.LogInformation(
+                        "Report DB-diff {Table}: live={Cur} snapshot({Year} {Quarter})={Old} | added={A} modified={M} deleted={D}",
+                        tbl, current.Count, compareRelease.Year, compareRelease.Quarter, older.Count,
+                        td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", tbl);
                 }
             }
         }
-
-        // TEMPORARY source database for the ActionType / ActionParameter tables only,
-        // used until the application's own copies of those tables are populated.
-        private const string ActionSourceDb = "OstaraAMSV22R10";
 
         // Read every row of a table into plain dictionaries. When year/quarter are
         // supplied they filter SnapshotYear/SnapshotQuarter (hist_* tables); when
