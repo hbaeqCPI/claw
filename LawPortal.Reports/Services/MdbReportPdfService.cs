@@ -360,7 +360,7 @@ namespace LawPortal.Reports.Services
             doc.Add(P(10).SetMarginTop(14)
                 .Add(T("Records in the Action Type table under the Auxiliary or Maintenance Menu in your system are not automatically modified. They will need to be adjusted by a person responsible for data entry.", _r, 10)));
             doc.Add(P(10).SetMarginTop(6)
-                .Add(T("Go to the Auxiliary or Maintenance Menu in your system and add, modify, or delete the Action Types below as applicable.", _r, 10)));
+                .Add(T("Go to the Auxiliary or Maintenance Menu in your system and make the changes to the Action Types below if you do not already have them.", _r, 10)));
             doc.Add(P(10).SetMarginTop(6)
                 .Add(T("Please contact CPi at ", _r, 10))
                 .Add(T("countrylaw@computerpackages.com", _r, 10).SetFontColor(ColorConstants.BLUE).SetUnderline())
