@@ -213,6 +213,23 @@ namespace LawPortal.Reports.Services
                     result.TableDiffs[tableName] = diff;
             }
 
+            // Diagnostic dump — lets us tell "no changes this quarter" apart from
+            // "source MDB is missing a table" when a section (e.g. Manual Updates)
+            // comes out unexpectedly empty. Logs raw row counts + per-table diff
+            // sizes for every table read from either file.
+            foreach (var tableName in allTableNames.OrderBy(t => t, StringComparer.OrdinalIgnoreCase))
+            {
+                int cur = result.CurrentRowCounts.TryGetValue(tableName, out var c) ? c : 0;
+                int old = result.OldRowCounts.TryGetValue(tableName, out var o) ? o : 0;
+                if (result.TableDiffs.TryGetValue(tableName, out var d))
+                    _logger.LogInformation(
+                        "MdbComparison {Table}: rows current={Cur} old={Old} | added={Add} modified={Mod} deleted={Del}",
+                        tableName, cur, old, d.AddedRows.Count, d.ModifiedRows.Count, d.DeletedRows.Count);
+                else
+                    _logger.LogInformation(
+                        "MdbComparison {Table}: rows current={Cur} old={Old} | no changes", tableName, cur, old);
+            }
+
             return result;
         }
 
@@ -221,10 +238,15 @@ namespace LawPortal.Reports.Services
         {
             var diff = new TableDiff { TableName = tableName };
 
+            // Build the composite key with the SAME normalization used for value
+            // comparison. Otherwise a key column that differs only in formatting
+            // (a date with vs without a midnight time component, 5 vs 5.0, stray
+            // whitespace) yields two different keys and splits one logical row
+            // into a phantom deleted+added pair instead of matching it.
             string GetKey(Dictionary<string, JsonElement> row)
             {
                 return string.Join("|", keyColumns.Select(k =>
-                    row.ContainsKey(k) ? row[k].ToString() : ""));
+                    row.ContainsKey(k) ? NormalizeValue(row[k]) : ""));
             }
 
             var currentByKey = new Dictionary<string, Dictionary<string, JsonElement>>();
