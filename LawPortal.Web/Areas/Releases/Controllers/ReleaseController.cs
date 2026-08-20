@@ -1725,6 +1725,11 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                 var atOlder = await ReadBaseline(atTbl);
                 StoreDiff(atTbl, atCurrent, atOlder);
 
+                // Keep the full live ActionType list so the report can render a
+                // block for an action type whose own row is unchanged but which
+                // has new/changed action parameters.
+                diff.CurrentDbRows[atTbl] = atCurrent;
+
                 // The ActionTypeID identity column is reassigned whenever the
                 // ActionType table is reloaded, so the snapshot's ids don't line up
                 // with the live ids. Build a snapshot-id → live-id remap keyed on the

@@ -302,9 +302,17 @@ namespace LawPortal.Reports.Services
         // ═══════════════════════════════════════════════════════════════
         private void WriteManualUpdates(Document doc, MdbComparisonResult comp, string atT, string dueT, string paramT)
         {
-            if (!H(comp, atT)) return;
-            var diff = comp.TableDiffs[atT];
-            if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any()) return;
+            var diff = H(comp, atT) ? comp.TableDiffs[atT] : new TableDiff { TableName = atT };
+
+            // Action types whose own row didn't change but which gained/changed/lost
+            // action parameters. The ActionType diff doesn't list them, so synthesize
+            // a "modified" block from the live ActionType row: header stays
+            // un-highlighted, only the changed action parameters (actions due) are
+            // highlighted.
+            var paramOnly = ParamOnlyActionTypes(comp, atT, paramT, diff);
+
+            if (!diff.AddedRows.Any() && !diff.ModifiedRows.Any() && !diff.DeletedRows.Any() && !paramOnly.Any())
+                return;
             _leadingContent = true;
 
             doc.Add(P(18).SetFont(_r).SetTextAlignment(TextAlignment.CENTER).SetMarginTop(20)
@@ -325,10 +333,14 @@ namespace LawPortal.Reports.Services
                 foreach (var at in diff.AddedRows.OrderBy(r => G(r, "ActionType")))
                     WriteActionTypeBlock(doc, at, comp, dueT, paramT, "new");
             }
-            if (diff.ModifiedRows.Any())
+            // Modified action types plus the param-only-changed ones, both under the
+            // same heading and rendered identically (header not highlighted, only the
+            // changed action parameters get the highlight).
+            var modified = diff.ModifiedRows.Concat(paramOnly).ToList();
+            if (modified.Any())
             {
                 doc.Add(P(11).SetFont(_b).SetUnderline().SetMarginTop(14).Add(T("Modified Actions", _b, 11)));
-                foreach (var at in diff.ModifiedRows.OrderBy(r => G(r, "ActionType")))
+                foreach (var at in modified.OrderBy(r => G(r, "ActionType")))
                     WriteActionTypeBlock(doc, at, comp, dueT, paramT, "mod");
             }
             if (diff.DeletedRows.Any())
@@ -337,6 +349,48 @@ namespace LawPortal.Reports.Services
                 foreach (var at in diff.DeletedRows.OrderBy(r => G(r, "ActionType")))
                     WriteActionTypeBlock(doc, at, comp, dueT, paramT, "del");
             }
+        }
+
+        // Action types with a genuine action-parameter change whose own ActionType
+        // row is unchanged (so they're absent from the ActionType diff). Returns a
+        // synthetic RowDiff per such type, built from the live ActionType row, so
+        // WriteManualUpdates can render it as a plain "modified" block. Returns empty
+        // when the live rows weren't captured (MDB-only path) — no behavior change.
+        private List<RowDiff> ParamOnlyActionTypes(MdbComparisonResult comp, string atT, string paramT, TableDiff atDiff)
+        {
+            if (!H(comp, paramT)) return new List<RowDiff>();
+            if (!comp.CurrentDbRows.TryGetValue(atT, out var atRows) || atRows.Count == 0)
+                return new List<RowDiff>();
+
+            // ActionTypeIDs already shown via an ActionType-diff block.
+            var covered = new HashSet<string>(
+                atDiff.AddedRows.Concat(atDiff.ModifiedRows).Concat(atDiff.DeletedRows)
+                    .Select(r => G(r, "ActionTypeID"))
+                    .Where(s => !string.IsNullOrEmpty(s)));
+
+            // A modified param only counts if a displayed column actually changed —
+            // same filter WriteActionParameterSubTable applies.
+            var displayCols = new[] { "ActionDue", "Yr", "Mo", "Dy", "Indicator" };
+            var pd = comp.TableDiffs[paramT];
+            var changedIds = pd.AddedRows
+                .Concat(pd.DeletedRows)
+                .Concat(pd.ModifiedRows.Where(r => displayCols.Any(c => r.ChangedColumns.Contains(c))))
+                .Select(r => G(r, "ActionTypeID"))
+                .Where(s => !string.IsNullOrEmpty(s) && !covered.Contains(s))
+                .Distinct();
+
+            var byId = new Dictionary<string, Dictionary<string, object?>>();
+            foreach (var row in atRows)
+            {
+                var id = row.TryGetValue("ActionTypeID", out var v) && v != null ? v.ToString()! : "";
+                if (!string.IsNullOrEmpty(id)) byId[id] = row;
+            }
+
+            var result = new List<RowDiff>();
+            foreach (var id in changedIds)
+                if (byId.TryGetValue(id, out var row))
+                    result.Add(new RowDiff { Values = row });
+            return result;
         }
 
         // Render a single Action Type block under Manual Updates.
