@@ -485,12 +485,6 @@
 
 @* === Layout from _ImageViewer.cshtml (non-SharePoint path, lines 95-128) === *@
 <div id="imageDataContainer_@eid">
-    @if (!string.IsNullOrEmpty(panelLabel))
-    {
-        <div style="padding:.4rem 1rem;background:#f8f9fa;border-bottom:1px solid #dee2e6;">
-            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6c757d;">@panelLabel</span>
-        </div>
-    }
     <div class="form-row document-viewer">
         @* LEFT: Tree — from _DocumentTree.cshtml (lines 1-58) *@
         @if (!hideTree)
