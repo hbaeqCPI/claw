@@ -78,14 +78,18 @@ namespace LawPortal.Reports.Services
             WriteTitle(doc, year, qtr);
             WriteReportNotes(doc, reportNotes);
 
+            // Countries Deleted leads the report — a country removed from the
+            // system is the highest-impact change, so it's surfaced at the top
+            // before Manual Updates / Standard Goods and the rest of the diff.
+            WriteCountriesDeleted(doc, comp, pfx);
+
             // Order differs by report type:
             //   Patent:    Manual Updates → Structural. Manual Updates (Action Type
             //              changes) must lead, right after the report notes and
             //              before every other change section.
-            //   Trademark: Standard Goods → Structural. No Manual Updates section —
-            //              trademark ActionType changes are handled via the
-            //              CountryDue-driven Law Actions tables in each country
-            //              block (and the orphan table for bare due-date edits).
+            //   Trademark: Manual Updates → Standard Goods → Structural. Trademark
+            //              also carries an Action Type table, so it gets the same
+            //              Manual Updates section as patent.
             if (comp.IsPatent)
             {
                 WriteManualUpdates(doc, comp, atT, dueT, paramT);
@@ -93,6 +97,7 @@ namespace LawPortal.Reports.Services
             }
             else
             {
+                WriteManualUpdates(doc, comp, atT, dueT, paramT);
                 WriteStandardGoods(doc, comp);
                 WriteStructural(doc, comp, pfx);
             }
@@ -102,11 +107,9 @@ namespace LawPortal.Reports.Services
             WriteCountryLawDeleted(doc, comp, clT);
 
             // Orphan changes — Country+CaseType pairs whose only edits are in
-            // CountryDue (Law Actions) or CountryExp (Expiration / Tax Terms),
-            // with no Remarks change. Each lands in its own compact table at
-            // the end of the report. They share a single page break.
+            // CountryDue (Law Actions), with no Remarks change. Lands in its own
+            // compact table at the end of the report.
             WriteOrphanLawActions(doc, comp, clT, dueT, expT, expDelT);
-            WriteOrphanExpirationChanges(doc, comp, clT, expT, expDelT);
 
             doc.Close();
             return ms.ToArray();
@@ -581,6 +584,23 @@ namespace LawPortal.Reports.Services
         };
 
         // ═══════════════════════════════════════════════════════════════
+        // COUNTRIES DELETED — a country removed from the system entirely
+        // (tblPatCountry / tblTmkCountry deleted rows). Rendered at the top of
+        // the report, red strikethrough, one country per line.
+        // ═══════════════════════════════════════════════════════════════
+        private void WriteCountriesDeleted(Document doc, MdbComparisonResult comp, string pfx)
+        {
+            var cTbl = $"{pfx}Country";
+            if (!H(comp, cTbl) || !comp.TableDiffs[cTbl].DeletedRows.Any()) return;
+
+            SectionHeader(doc, "Countries Deleted");
+            foreach (var r in comp.TableDiffs[cTbl].DeletedRows.OrderBy(r => CN(G(r, "Country"))))
+                doc.Add(P(9).SetMarginLeft(30)
+                    .Add(T($"{CN(G(r, "Country"))} ({G(r, "Country")})", _r, 9)
+                        .SetLineThrough().SetFontColor(Red)));
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         // TRADEMARK STRUCTURAL: Areas, Case Types, Designations
         // ═══════════════════════════════════════════════════════════════
         private void WriteStructural(Document doc, MdbComparisonResult c, string pfx)
@@ -1004,89 +1024,6 @@ namespace LawPortal.Reports.Services
             if (_orphanBreakAdded) return;
             doc.Add(new AreaBreak());
             _orphanBreakAdded = true;
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // ORPHAN EXPIRATION CHANGES — Country/CaseType pairs whose only change
-        // is in CountryExp / CountryExpDelete (no CountryLaw remarks change).
-        // Renders as a flat one-row-per-change table with changed cells
-        // highlighted, instead of the two-row To/From layout used inside a
-        // full country block. A single tax-term tweak isn't worth a page.
-        // ═══════════════════════════════════════════════════════════════
-        private void WriteOrphanExpirationChanges(Document doc, MdbComparisonResult comp,
-            string clT, string? expT, string? expDelT)
-        {
-            if (expT == null) return; // patent-only table; trademark has no expT
-            var fullBlockKeys = CountryLawBlockKeys(comp, clT, expT, expDelT);
-            bool IsOrphan(RowDiff r) => !fullBlockKeys.Contains((G(r, "Country"), G(r, "CaseType")));
-
-            var orphanAdd = new List<RowDiff>();
-            var orphanMod = new List<RowDiff>();
-            var orphanDel = new List<RowDiff>();
-            if (H(comp, expT))
-            {
-                var ed = comp.TableDiffs[expT];
-                orphanAdd.AddRange(ed.AddedRows.Where(IsOrphan));
-                orphanMod.AddRange(ed.ModifiedRows.Where(IsOrphan));
-            }
-            if (expDelT != null && H(comp, expDelT))
-                orphanDel.AddRange(comp.TableDiffs[expDelT].AddedRows.Where(IsOrphan));
-
-            if (!orphanAdd.Any() && !orphanMod.Any() && !orphanDel.Any()) return;
-
-            EnsureOrphanBreak(doc);
-            var orphanHdr = _isR8Plus ? "Other Expiration Term Changes" : "Other Expiration and Tax Term Changes";
-            var orphanSub = _isR8Plus
-                ? "The following expiration term changes have no corresponding Law Highlights changes."
-                : "The following expiration / tax term changes have no corresponding Law Highlights changes.";
-            doc.Add(P(12).SetFont(_b).SetUnderline().SetMarginTop(14)
-                .Add(T(orphanHdr, _b, 12)));
-            doc.Add(P(9).SetMarginTop(4)
-                .Add(T(orphanSub, _r, 9)));
-
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 15, 8, 12, 12, 10, 12, 11, 11 }))
-                .UseAllAvailableWidth().SetMarginTop(6).SetFontSize(8);
-            foreach (var h in new[] { "Country", "Case", "Type", "Based On", "Terms (y-m)", "Effective For", "from", "to" })
-                tbl.AddHeaderCell(new Cell().Add(P(8).SetFont(_b).Add(T(h, _b, 8)))
-                    .SetBackgroundColor(HdrBg).SetBorder(new SolidBorder(0.5f)).SetPadding(2));
-
-            // Same highlighting rules as the law-actions orphan table:
-            // identifier columns never yellow, data columns yellow on add or
-            // when r.ChangedColumns names them on a mod, deletes red strikethrough.
-            void Row(RowDiff r, string mode)
-            {
-                bool isAdd = mode == "add", isMod = mode == "mod", isDel = mode == "del";
-                bool Ch(params string[] cols) =>
-                    isAdd || (isMod && cols.Any(c => r.ChangedColumns.Contains(c)));
-
-                void C(string v, bool highlight)
-                {
-                    var t = T(v ?? "", _r, 8);
-                    if (isDel) t.SetLineThrough().SetFontColor(Red);
-                    var cell = new Cell().Add(P(8).Add(t))
-                        .SetBorder(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f)).SetPadding(2);
-                    if (highlight && !isDel) cell.SetBackgroundColor(Yellow);
-                    tbl.AddCell(cell);
-                }
-
-                C($"{CN(G(r, "Country"))} ({G(r, "Country")})", false);
-                C(G(r, "CaseType"), false);
-                C(G(r, "Type"), Ch("Type"));
-                C(G(r, "BasedOn"), Ch("BasedOn"));
-                C($"{G(r, "Yr")} {G(r, "Mo")}", Ch("Yr", "Mo"));
-                C(G(r, "EffBasedOn"), Ch("EffBasedOn"));
-                C(FD(r, "EffStartDate"), Ch("EffStartDate"));
-                C(FD(r, "EffEndDate"), Ch("EffEndDate"));
-            }
-
-            foreach (var r in orphanAdd.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
-                Row(r, "add");
-            foreach (var r in orphanMod.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
-                Row(r, "mod");
-            foreach (var r in orphanDel.OrderBy(r => CN(G(r, "Country"))).ThenBy(r => G(r, "CaseType")).ThenBy(r => G(r, "Type")))
-                Row(r, "del");
-
-            doc.Add(tbl);
         }
 
         // ═══════════════════════════════════════════════════════════════

@@ -1375,7 +1375,21 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                 // unreliable), keeping the old MDB as the baseline. Everything else
                 // in the report still diffs the two MDB files.
                 var cmpLogger = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LawPortal.Reports.Services.MdbComparisonService>>();
-                await ApplyDbActionTypeDiffs(diff, isPat, comparisonService, cmpLogger);
+
+                // The ActionType / ActionParameter baseline comes from the hist_
+                // snapshot at the comparison release's quarter — the comparison MDB
+                // ships these two tables empty, so diffing the live DB against it
+                // would flag every action type as new. Resolve that period from the
+                // comparison release when we have it.
+                int? cmpYear = null;
+                string? cmpQuarter = null;
+                if (compareReleaseId > 0)
+                {
+                    var cmpRelease = await _entityService.QueryableList.AsNoTracking()
+                        .FirstOrDefaultAsync(r => r.ReleaseId == compareReleaseId);
+                    if (cmpRelease != null) { cmpYear = cmpRelease.Year; cmpQuarter = cmpRelease.Quarter; }
+                }
+                await ApplyDbActionTypeDiffs(diff, isPat, comparisonService, cmpLogger, cmpYear, cmpQuarter);
 
                 // "Show only the add": collapse any delete+add pair that is really
                 // one row re-keyed (identical apart from a key column) down to just
@@ -1639,53 +1653,118 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
         }
 
         // Replace the MDB-derived ActionType / ActionParameter diffs with a
-        // DB-backed diff for ActionType / ActionParameter only: current = the live
-        // tbl* table (read unfiltered), older = that same table's rows from the OLD
-        // (comparison) MDB. The current MDB's copies of these tables are unreliable
-        // (locally-generated exports omit them), so the live DB is the source of
-        // truth for "current" while the old MDB remains the baseline. Every other
-        // table still diffs the two MDB files. On any error the MDB-derived diff is
-        // left in place so the report still generates.
+        // DB-backed diff: current = the live tbl* table (read unfiltered), older =
+        // the hist_ snapshot at the comparison release's quarter. Both the current
+        // AND the comparison MDB ship these two tables empty (locally-generated
+        // exports omit them), so the MDB is useless as either side — the live DB is
+        // "current" and the quarter snapshot is the baseline. The old MDB rows are
+        // used only as a last-resort fallback when no snapshot period is known.
+        // Every other table still diffs the two MDB files. On any error the
+        // MDB-derived diff is left in place so the report still generates.
         private async Task ApplyDbActionTypeDiffs(
             LawPortal.Reports.Services.MdbComparisonResult diff, bool isPat,
             LawPortal.Reports.Services.MdbComparisonService svc,
-            Microsoft.Extensions.Logging.ILogger logger)
+            Microsoft.Extensions.Logging.ILogger logger,
+            int? compareYear = null, string? compareQuarter = null)
         {
             var pfx = isPat ? "tblPat" : "tblTmk";
-            var tables = new[] { $"{pfx}ActionType", $"{pfx}ActionParameter" };
+            var atTbl = $"{pfx}ActionType";
+            var apTbl = $"{pfx}ActionParameter";
 
             var connStr = _config.GetConnectionString("DefaultConnection");
             using var conn = new SqlConnection(connStr);
             await conn.OpenAsync();
 
-            foreach (var tbl in tables)
+            // Baseline reader: prefer the hist_ snapshot at the comparison quarter;
+            // fall back to the old MDB rows only when no period is known or the
+            // snapshot is empty.
+            async Task<List<Dictionary<string, object?>>> ReadBaseline(string tbl)
             {
-                try
+                if (compareYear.HasValue && !string.IsNullOrWhiteSpace(compareQuarter))
                 {
-                    // Current: the live table, read unfiltered (these tables have no
-                    // Systems column, and no SnapshotYear/Quarter to filter on).
-                    var current = await ReadTableRows(conn, tbl, new List<string>(), null, null);
-                    // Older baseline: the same table's rows from the old (comparison) MDB.
-                    var older = diff.OldFileRows.TryGetValue(tbl, out var r)
-                        ? r : new List<Dictionary<string, object?>>();
-
-                    var td = svc.CompareObjectRows(tbl, current, older);
-                    diff.CurrentRowCounts[tbl] = current.Count;
-                    diff.OldRowCounts[tbl] = older.Count;
-                    if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
-                        diff.TableDiffs[tbl] = td;
-                    else
-                        diff.TableDiffs.Remove(tbl);
-
-                    logger.LogInformation(
-                        "Report DB-diff {Table}: live={Cur} oldMdb={Old} | added={A} modified={M} deleted={D}",
-                        tbl, current.Count, older.Count,
-                        td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+                    try
+                    {
+                        var snap = await ReadTableRows(conn, "hist_" + tbl, new List<string>(), compareYear, compareQuarter);
+                        if (snap.Count > 0) return snap;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Report DB-diff {Table}: hist snapshot read failed; falling back to MDB baseline.", tbl);
+                    }
                 }
-                catch (Exception ex)
+                return diff.OldFileRows.TryGetValue(tbl, out var r)
+                    ? r : new List<Dictionary<string, object?>>();
+            }
+
+            void StoreDiff(string tbl, List<Dictionary<string, object?>> current, List<Dictionary<string, object?>> older)
+            {
+                var td = svc.CompareObjectRows(tbl, current, older);
+                diff.CurrentRowCounts[tbl] = current.Count;
+                diff.OldRowCounts[tbl] = older.Count;
+                if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
+                    diff.TableDiffs[tbl] = td;
+                else
+                    diff.TableDiffs.Remove(tbl);
+
+                logger.LogInformation(
+                    "Report DB-diff {Table}: live={Cur} baseline={Old} | added={A} modified={M} deleted={D}",
+                    tbl, current.Count, older.Count,
+                    td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+            }
+
+            static string Str(Dictionary<string, object?> row, string col) =>
+                row.TryGetValue(col, out var v) && v != null ? v.ToString()!.Trim() : "";
+
+            // ── ActionType ──────────────────────────────────────────────────
+            // Keyed on (ActionType, Country), which is stable across the snapshot
+            // boundary, so this diff is directly trustworthy.
+            var snapToLiveId = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var atCurrent = await ReadTableRows(conn, atTbl, new List<string>(), null, null);
+                var atOlder = await ReadBaseline(atTbl);
+                StoreDiff(atTbl, atCurrent, atOlder);
+
+                // The ActionTypeID identity column is reassigned whenever the
+                // ActionType table is reloaded, so the snapshot's ids don't line up
+                // with the live ids. Build a snapshot-id → live-id remap keyed on the
+                // stable (ActionType, Country) pair so ActionParameter rows — which
+                // reference their parent only by ActionTypeID — can be compared and
+                // matched to the right Action Type block.
+                var liveIdByKey = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var row in atCurrent)
+                    if (row.TryGetValue("ActionTypeID", out var id) && id != null)
+                        liveIdByKey[$"{Str(row, "ActionType")}|{Str(row, "Country")}"] = id;
+                foreach (var row in atOlder)
                 {
-                    logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", tbl);
+                    if (!row.TryGetValue("ActionTypeID", out var oldId) || oldId == null) continue;
+                    if (liveIdByKey.TryGetValue($"{Str(row, "ActionType")}|{Str(row, "Country")}", out var liveId))
+                        snapToLiveId[oldId.ToString()!] = liveId;
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", atTbl);
+            }
+
+            // ── ActionParameter ─────────────────────────────────────────────
+            // Rewrite the baseline rows' ActionTypeID onto the live ids before
+            // diffing, so an unchanged parameter matches its live counterpart
+            // instead of showing as a delete+add pair from an id mismatch.
+            try
+            {
+                var apCurrent = await ReadTableRows(conn, apTbl, new List<string>(), null, null);
+                var apOlder = await ReadBaseline(apTbl);
+                if (snapToLiveId.Count > 0)
+                    foreach (var row in apOlder)
+                        if (row.TryGetValue("ActionTypeID", out var oid) && oid != null
+                            && snapToLiveId.TryGetValue(oid.ToString()!, out var nid))
+                            row["ActionTypeID"] = nid;
+                StoreDiff(apTbl, apCurrent, apOlder);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", apTbl);
             }
         }
 

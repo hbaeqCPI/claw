@@ -126,6 +126,9 @@ namespace LawPortal.Reports.Services
             "CDueId", "CExpId", "CountryLawID", "CPIPermanentID",
             // ActionType identity column and a FK link-table-ish field that varies by release
             "ActionTypeID", "ResponsibleID",
+            // ActionParameter identity column — reassigned when the table is reloaded,
+            // so it differs between the live table and a quarter snapshot.
+            "ActParamId",
             // StandardGood identity column
             "ClassId",
             // Present only on hist_* snapshot tables, never on the live table.
