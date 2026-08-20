@@ -30,13 +30,6 @@ namespace LawPortal.Reports.Services
         // keeping the old MDB as the baseline.
         public Dictionary<string, List<Dictionary<string, object?>>> OldFileRows { get; set; }
             = new(StringComparer.OrdinalIgnoreCase);
-
-        // Full CURRENT rows for tables sourced from the live DB rather than the
-        // MDB (ActionType/ActionParameter). Lets the report render a block for an
-        // action type whose own row is unchanged but which has changed action
-        // parameters — the ActionType diff alone wouldn't surface it.
-        public Dictionary<string, List<Dictionary<string, object?>>> CurrentDbRows { get; set; }
-            = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public class TableDiff
