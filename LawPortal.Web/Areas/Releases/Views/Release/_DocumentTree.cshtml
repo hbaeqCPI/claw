@@ -573,6 +573,10 @@
 
                 @* ── Main grid ── *@
                 <div style="@(hasCompanion ? "flex:1;min-width:0;overflow:auto;padding-right:8px;" : "")">
+                    @if (!string.IsNullOrEmpty(panelLabel))
+                    {
+                        <div style="padding:.3rem 0 .4rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6c757d;">@panelLabel</div>
+                    }
                     <div class="image-container">
                         @(Html.Kendo().Grid<dynamic>()
                             .Name(grid)
