@@ -129,7 +129,9 @@
                     }
                     else
                     {
-                        <button type="button" class="btn btn-warning btn-sm btnLockQuarter"
+                        @* Disabled until both pushes, Populate Tables, and Generate
+                           Script have all completed successfully (see refreshLockButton). *@
+                        <button type="button" class="btn btn-warning btn-sm btnLockQuarter" disabled
                                 data-id="@Model.DeployPasswordId"
                                 data-url="@Url.Action("LockQuarter", "Deploy", new { area = "Releases" })">
                             <i class="fal fa-lock pr-1"></i> @Localizer["Lock Quarter"]
@@ -322,6 +324,10 @@
         // attributes on each <select>. Re-fires whenever Year or Quarter changes
         // so users see fresh options without saving.
         var getDocsUrl = '@Html.Raw(getDocsUrl)';
+        var actionStatusUrl = '@Html.Raw(Url.Action("GetActionStatus", "Deploy", new { area = "Releases" }))';
+        // When the quarter is locked the record is final: all four action
+        // buttons stay disabled regardless of field completeness.
+        var isLockedState = @(Model.IsLocked ? "true" : "false");
 
         function currentYearQuarter() {
             var year = parseInt($('#Year').val(), 10) || new Date().getFullYear();
@@ -392,7 +398,7 @@
         }
 
         function refreshDeployButton() {
-            $('.btnDeploy').prop('disabled', !isDeployReady());
+            $('.btnDeploy').prop('disabled', isLockedState || !isDeployReady());
         }
 
         // Hook every input that influences ready-state. Selects bubble
@@ -419,8 +425,8 @@
             });
         }
         function refreshPushButtons() {
-            $('.btnPushPat').prop('disabled', !isPatSelectsFilled());
-            $('.btnPushTmk').prop('disabled', !isTmkSelectsFilled());
+            $('.btnPushPat').prop('disabled', isLockedState || !isPatSelectsFilled());
+            $('.btnPushTmk').prop('disabled', isLockedState || !isTmkSelectsFilled());
         }
         $('.deploy-doc-dropdown').on('change', refreshPushButtons);
         refreshPushButtons();
@@ -438,7 +444,7 @@
                 }
                 cpiConfirm.confirm(
                     '@Localizer["Push MDBs?"]',
-                    '@Localizer["This will copy the selected MDB files to the edm2016 network share. Continue?"]',
+                    '@Localizer["This will upload the selected LawDocs and MDB files to the MOVEit MFT default folder. Continue?"]',
                     function () {
                         cpiLoadingSpinner.show();
                         $btn.prop('disabled', true);
@@ -451,17 +457,60 @@
                         }).done(function (result) {
                             cpiLoadingSpinner.hide();
                             pageHelper.showSuccess(result.success || '@Localizer["Push completed."]');
+                            // Pop up the prefilled notification email for review/edit/send.
+                            if (result.emailDraft) showPushEmailModal(result.emailDraft);
                             }).fail(function (ex) {
                             cpiLoadingSpinner.hide();
                             pageHelper.showErrors(ex);
                             }).always(function () {
                             refreshPushButtons();
+                            refreshLockButton();
                         });
                     });
             });
         }
         handlePushClick($('.btnPushPat'));
         handlePushClick($('.btnPushTmk'));
+
+        // Push notification email — prefilled editable draft popup. Shown after a
+        // successful push; the user reviews/edits and sends (or cancels).
+        function showPushEmailModal(draft) {
+            var $m = $('#pushEmailModal');
+            $m.find('#pushEmailTo').val(draft.to || '');
+            $m.find('#pushEmailCc').val(draft.cc || '');
+            $m.find('#pushEmailSubject').val(draft.subject || '');
+            $m.find('#pushEmailBody').val(draft.body || '');
+            $m.modal('show');
+        }
+
+        $('#pushEmailSendBtn').off('click').on('click', function () {
+            var $m = $('#pushEmailModal');
+            var to = ($m.find('#pushEmailTo').val() || '').trim();
+            if (!to) { pageHelper.showErrors('@Localizer["At least one To recipient is required."]'); return; }
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            cpiLoadingSpinner.show();
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("SendPushNotification", "Deploy", new { area = "Releases" })',
+                data: {
+                    to: to,
+                    cc: $m.find('#pushEmailCc').val(),
+                    subject: $m.find('#pushEmailSubject').val(),
+                    body: $m.find('#pushEmailBody').val(),
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                }
+            }).done(function (result) {
+                cpiLoadingSpinner.hide();
+                pageHelper.showSuccess(result.success || '@Localizer["Notification email sent."]');
+                $m.modal('hide');
+            }).fail(function (ex) {
+                cpiLoadingSpinner.hide();
+                pageHelper.showErrors(ex);
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
 
         $('.btnDeploy').off('click').on('click', function (e) {
             e.preventDefault();
@@ -496,6 +545,7 @@
                         pageHelper.showErrors(e);
                     }).always(function () {
                         refreshDeployButton();
+                        refreshLockButton();
                     });
                 });
         });
@@ -517,7 +567,7 @@
             $.getJSON(hasDeployedDataUrl, { id: deployPasswordId })
                 .done(function (result) {
                     var ready = !!(result && (result.ready === true || result.Ready === true));
-                    $('.btnGenerateScript').toggle(ready);
+                    $('.btnGenerateScript').toggle(ready).prop('disabled', isLockedState);
                 })
                 .fail(function () {
                     $('.btnGenerateScript').hide();
@@ -525,6 +575,31 @@
         }
 
         refreshOnPremReady();
+
+        // ────────────────────────────────────────────────────────────────
+        // Lock button gating. The Lock Quarter button is enabled only once
+        // every prerequisite action has completed successfully for this
+        // record: both side pushes, Populate Tables, and Generate Script.
+        // Completion is read from the server (GetActionStatus → deploy log).
+        // Re-checked on load and after each action succeeds.
+        // ────────────────────────────────────────────────────────────────
+        function refreshLockButton() {
+            if (!deployPasswordId || deployPasswordId <= 0) {
+                $('.btnLockQuarter').prop('disabled', true);
+                return;
+            }
+            $.getJSON(actionStatusUrl, { id: deployPasswordId })
+                .done(function (s) {
+                    if (!s) { $('.btnLockQuarter').prop('disabled', true); return; }
+                    var allDone = s.pushPat && s.pushTmk && s.generateScript && s.populateTables;
+                    $('.btnLockQuarter').prop('disabled', !allDone);
+                })
+                .fail(function () {
+                    $('.btnLockQuarter').prop('disabled', true);
+                });
+        }
+
+        refreshLockButton();
 
         // ────────────────────────────────────────────────────────────────
         // Lock Quarter button — copies all tbl* tables to hist_* and sets
@@ -577,7 +652,6 @@
             }).done(function (result) {
                 cpiLoadingSpinner.hide();
                 pageHelper.showSuccess(result.success || '@Localizer["Script generated."]');
-                refreshDeployLog();
                 // Refresh the Documents tree so the new .sql file appears
                 // immediately. The tree IIFE is global on the page and the
                 // selected folder's grid will re-read after the tree reloads.
@@ -597,13 +671,48 @@
                 }
                 var grid = $('#deployImageGridView_@Model.DeployPasswordId').data('kendoGrid');
                 if (grid) grid.dataSource.read();
+                refreshLockButton();
             }).fail(function (e) {
                 cpiLoadingSpinner.hide();
                 pageHelper.showErrors(e);
-                refreshDeployLog();
             }).always(function () {
-                $btn.prop('disabled', false);
+                $btn.prop('disabled', isLockedState);
             });
         });
     });
 </script>
+
+@* Push notification email — editable draft popup shown after a successful push. *@
+<div class="modal fade" id="pushEmailModal" tabindex="-1" role="dialog" aria-labelledby="pushEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pushEmailModalLabel">@Localizer["Send Push Notification"]</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="pushEmailTo" class="small font-weight-bold mb-1">@Localizer["To"]</label>
+                    <input type="text" class="form-control form-control-sm" id="pushEmailTo" />
+                </div>
+                <div class="form-group">
+                    <label for="pushEmailCc" class="small font-weight-bold mb-1">@Localizer["Cc"]</label>
+                    <input type="text" class="form-control form-control-sm" id="pushEmailCc" />
+                </div>
+                <div class="form-group">
+                    <label for="pushEmailSubject" class="small font-weight-bold mb-1">@Localizer["Subject"]</label>
+                    <input type="text" class="form-control form-control-sm" id="pushEmailSubject" />
+                </div>
+                <div class="form-group mb-1">
+                    <label for="pushEmailBody" class="small font-weight-bold mb-1">@Localizer["Body"]</label>
+                    <textarea class="form-control form-control-sm" id="pushEmailBody" rows="6"></textarea>
+                </div>
+                <small class="text-muted">@Localizer["Separate multiple addresses with a semicolon. Sends from the CPi notifications mailbox."]</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">@Localizer["Cancel"]</button>
+                <button type="button" class="btn btn-primary btn-sm" id="pushEmailSendBtn"><i class="fal fa-paper-plane pr-1"></i> @Localizer["Send"]</button>
+            </div>
+        </div>
+    </div>
+</div>

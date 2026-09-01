@@ -38,9 +38,12 @@
                 }
             </div>
         </div>
-        @* Action Types are not country-specific — keep Country persisted as empty
-           string without exposing the field for edit. *@
-        <input type="hidden" name="Country" value="" />
+        @* Country is not exposed for edit on this screen, but the stored value must
+           round-trip via a hidden input so a full Save preserves it — same pattern
+           as ResponsibleID below. A blank value here erases a country-specific
+           action type's Country (e.g. AR-Priority Status → AR), which changes its
+           (ActionType, Country) key and makes the law-update report treat it as new. *@
+        <input type="hidden" asp-for="Country" />
         @* Responsible Attorney is read-only on this screen — preserve the stored
            ResponsibleID via a hidden input so the posted form round-trips it. *@
         <input type="hidden" asp-for="ResponsibleID" />

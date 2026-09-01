@@ -126,7 +126,16 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 var releases = _entityService.QueryableList;
 
                 if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+                {
+                    // Year is an int: handle it here (single or multi-select) and
+                    // remove it before the generic criteria builder, which only
+                    // filters string properties correctly.
+                    var years = ExtractYearFilter(mainSearchFilters);
+                    if (years.Count > 0)
+                        releases = releases.Where(r => years.Contains(r.Year));
+
                     releases = _viewModelService.AddCriteria(releases, mainSearchFilters);
+                }
 
                 var result = await _viewModelService.CreateViewModelForGrid(request, releases, "Name", "ReleaseId");
                 return Json(result);
@@ -231,6 +240,15 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 return RedirectToAction("Index");
 
             var detail = page.Detail;
+
+            // Prepopulate Year/Quarter for a new record from the current date
+            // (Jan-Mar=Q1, Apr-Jun=Q2, Jul-Sep=Q3, Oct-Dec=Q4).
+            if (detail.ReleaseId == 0)
+            {
+                detail.Year = DateTime.Now.Year;
+                detail.Quarter = "Q" + ((DateTime.Now.Month - 1) / 3 + 1);
+            }
+
             PageViewModel model = new PageViewModel()
             {
                 Page = fromSearch ? PageType.Detail : PageType.DetailContent,
@@ -626,8 +644,16 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     .ToListAsync();
 
                 // Server-side extension filter — used by the split MDB/Report panels.
+                // Accepts a comma-separated list so the Reports panel can show both
+                // the new .docx reports and any older .pdf reports (locked releases
+                // still hold .pdf reports that can no longer be regenerated).
                 if (!string.IsNullOrWhiteSpace(extFilter))
-                    docs = docs.Where(d => (d.UserFileName ?? "").EndsWith(extFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+                {
+                    var exts = extFilter.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(e => e.Trim()).Where(e => e.Length > 0).ToArray();
+                    docs = docs.Where(d => exts.Any(e =>
+                        (d.UserFileName ?? "").EndsWith(e, StringComparison.OrdinalIgnoreCase))).ToList();
+                }
 
                 var result = docs.Select(d => new
                 {
@@ -1127,6 +1153,26 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return Json(Helpers.SystemsHelper.SystemNames);
         }
 
+        // Backs the search-screen criteria combo boxes (Name, Year, Quarter,
+        // Created By, Updated By). Each combo requests distinct values for its
+        // bound property; without this action the dropdowns were empty and the
+        // search criteria appeared non-functional.
+        public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
+        {
+            // Year is a non-nullable int; the shared picklist path builds a
+            // "!= null" predicate that can't compare a value type to null, so
+            // build the distinct year list directly. Keyed as "Year" to match
+            // the combo's DataTextField/DataValueField.
+            if (string.Equals(property, "Year", StringComparison.OrdinalIgnoreCase))
+            {
+                var years = await _entityService.QueryableList.AsNoTracking()
+                    .Select(r => r.Year).Distinct().OrderByDescending(y => y).ToListAsync();
+                return Json(years.Select(y => new Dictionary<string, object> { { "Year", y } }));
+            }
+
+            return await GetPicklistData(_entityService.QueryableList, request, property, text, filterType, requiredRelation);
+        }
+
         [HttpPost]
         public async Task<IActionResult> GenerateMdb(int id, string mdbArea = "")
         {
@@ -1335,7 +1381,7 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
         }
 
         [HttpPost]
-        public async Task<IActionResult> GenerateReport(int releaseId, int docId, int compareDocId, int compareReleaseId = 0)
+        public async Task<IActionResult> GenerateReport(int releaseId, int docId, int compareDocId, int compareReleaseId = 0, bool includeActionTypes = true)
         {
             try
             {
@@ -1389,7 +1435,18 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                         .FirstOrDefaultAsync(r => r.ReleaseId == compareReleaseId);
                     if (cmpRelease != null) { cmpYear = cmpRelease.Year; cmpQuarter = cmpRelease.Quarter; }
                 }
-                await ApplyDbActionTypeDiffs(diff, isPat, comparisonService, cmpLogger, cmpYear, cmpQuarter);
+                // Only the DB-backed ActionType / ActionParameter diff feeds the
+                // Manual Updates section. When "Include Action Types" is unchecked
+                // we skip that work entirely and tell the renderer to omit the
+                // section — every other section (Structural, Country Law blocks,
+                // etc.) diffs unrelated tables and is unaffected either way.
+                if (includeActionTypes)
+                    await ApplyDbActionTypeDiffs(diff, isPat, comparisonService, cmpLogger, cmpYear, cmpQuarter);
+
+                // Standard Goods is no longer shipped in the MDB, so (for trademark)
+                // its report section diffs the live table vs the quarter snapshot —
+                // independent of the "Include Action Types" toggle.
+                await ApplyDbStandardGoodDiff(diff, isPat, comparisonService, cmpLogger, cmpYear, cmpQuarter);
 
                 // "Show only the add": collapse any delete+add pair that is really
                 // one row re-keyed (identical apart from a key column) down to just
@@ -1424,11 +1481,11 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                     }
                 }
 
-                var pdfService = new LawPortal.Reports.Services.MdbReportPdfService();
+                var reportService = new LawPortal.Reports.Services.MdbReportDocxService();
                 var notes = isPat ? release.ReportNotesPatent : release.ReportNotesTrademark;
-                var pdfBytes = pdfService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs, notes);
+                var reportBytes = reportService.GenerateReport(diff, release.Name, release.Year.ToString(), release.Quarter ?? "", countryNames, caseTypeDescs, notes, includeActionTypes);
 
-                // Store PDF
+                // Store the DOCX
                 var userName = User.GetUserName();
                 var sysType = ToDocSystemType(release.SystemType);
                 var rootFolder = await _documentService.GetFolder(sysType, "ReleaseId", releaseId, TruncateFolderName(release.Name), 0);
@@ -1448,7 +1505,7 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
 
                 var docFile = new DocFile
                 {
-                    FileExt = "pdf", UserFileName = $"{reportName}.pdf", FileSize = pdfBytes.Length,
+                    FileExt = "docx", UserFileName = $"{reportName}.docx", FileSize = reportBytes.Length,
                     IsImage = false, CreatedBy = userName, UpdatedBy = userName,
                     DateCreated = DateTime.Now, LastUpdate = DateTime.Now
                 };
@@ -1463,12 +1520,12 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                 await _documentService.UpdateDocuments(userName,
                     Enumerable.Empty<DocDocument>(), new[] { docDocument }, Enumerable.Empty<DocDocument>(), null, false);
 
-                // Save through the document helper so the PDF lands at the same canonical
+                // Save through the document helper so the file lands at the same canonical
                 // location as MDBs — Searchable/Documents/<filename> in blob (Azure mode)
                 // or <contentRoot>/UserFiles/Searchable/Documents/<filename> on disk
                 // (FileSystem mode). Was previously a direct File.WriteAllBytesAsync that
                 // worked locally but produced a blob-incompatible path in Azure mode.
-                using (var pdfStream = new MemoryStream(pdfBytes))
+                using (var reportStream = new MemoryStream(reportBytes))
                 {
                     var folderHeader = new DocFolderHeader
                     {
@@ -1476,10 +1533,10 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
                         ScreenCode = "Release",
                         ParentId = release.ReleaseId
                     };
-                    await _documentHelper.SaveDocumentFromStream(pdfStream, docFile.DocFileName, folderHeader);
+                    await _documentHelper.SaveDocumentFromStream(reportStream, docFile.DocFileName, folderHeader);
                 }
 
-                return Ok(new { success = $"Report generated: {reportName}.pdf", fileId = docFile.FileId });
+                return Ok(new { success = $"Report generated: {reportName}.docx", fileId = docFile.FileId });
             }
             catch (Exception ex)
             {
@@ -1765,6 +1822,61 @@ public async Task<IActionResult> GetMdbFiles(int releaseId)
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", apTbl);
+            }
+        }
+
+        // Standard Goods (trademark only) is no longer exported to the MDB, so its
+        // report section diffs the live tblTmkStandardGood vs the hist_ snapshot at
+        // the comparison quarter — the same current-vs-snapshot approach used for
+        // ActionType. Keyed on (Class, ClassType); ClassId is an ignored identity so
+        // there is no FK/orphan concern. On any error the MDB-derived diff is left in
+        // place so the report still generates.
+        private async Task ApplyDbStandardGoodDiff(
+            LawPortal.Reports.Services.MdbComparisonResult diff, bool isPat,
+            LawPortal.Reports.Services.MdbComparisonService svc,
+            Microsoft.Extensions.Logging.ILogger logger,
+            int? compareYear, string? compareQuarter)
+        {
+            if (isPat) return; // Standard Goods is trademark-only.
+            const string tbl = "tblTmkStandardGood";
+            try
+            {
+                var connStr = _config.GetConnectionString("DefaultConnection");
+                using var conn = new SqlConnection(connStr);
+                await conn.OpenAsync();
+
+                var current = await ReadTableRows(conn, tbl, new List<string>(), null, null);
+                List<Dictionary<string, object?>> older = new();
+                if (compareYear.HasValue && !string.IsNullOrWhiteSpace(compareQuarter))
+                {
+                    try
+                    {
+                        var snap = await ReadTableRows(conn, "hist_" + tbl, new List<string>(), compareYear, compareQuarter);
+                        if (snap.Count > 0) older = snap;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Report DB-diff {Table}: hist snapshot read failed; falling back to MDB baseline.", tbl);
+                    }
+                }
+                if (older.Count == 0 && diff.OldFileRows.TryGetValue(tbl, out var mdbOld))
+                    older = mdbOld;
+
+                var td = svc.CompareObjectRows(tbl, current, older);
+                diff.CurrentRowCounts[tbl] = current.Count;
+                diff.OldRowCounts[tbl] = older.Count;
+                if (td.AddedRows.Any() || td.DeletedRows.Any() || td.ModifiedRows.Any())
+                    diff.TableDiffs[tbl] = td;
+                else
+                    diff.TableDiffs.Remove(tbl);
+
+                logger.LogInformation(
+                    "Report DB-diff {Table}: live={Cur} baseline={Old} | added={A} modified={M} deleted={D}",
+                    tbl, current.Count, older.Count, td.AddedRows.Count, td.ModifiedRows.Count, td.DeletedRows.Count);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Report DB-diff {Table}: failed; keeping MDB-derived diff.", tbl);
             }
         }
 

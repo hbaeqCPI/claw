@@ -276,6 +276,10 @@ namespace LawPortal.Web
             services.Configure<EPOMailboxSettings>(Configuration.GetSection("MyEPO:Mailbox"));
             services.Configure<EPOOPSSettings>(Configuration.GetSection("MyEPO:OPS"));
 
+            // MOVEit MFT client used by the Deploy screen's Push button.
+            services.Configure<MoveItMftSettings>(Configuration.GetSection("MoveItMft"));
+            services.AddHttpClient<MoveItTransferClient>();
+
             //globalization
             services.AddDbContext<LocalizationModelContext>(options =>
                   options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("LawPortal.Infrastructure")),

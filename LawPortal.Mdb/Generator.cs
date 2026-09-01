@@ -95,10 +95,22 @@ public class MdbGenerator
 {
     private readonly GeneratorConfig _config;
 
+    // Author-stamp columns whose value is replaced with LawUpdateAlias when a row
+    // is exported to the MDB, so shipped MDBs never expose individual editor aliases.
+    private const string LawUpdateAlias = "LawUpdate";
+    private static readonly HashSet<string> AliasColumns =
+        new(StringComparer.OrdinalIgnoreCase) { "UserID", "CreatedBy", "UpdatedBy" };
+
+    // ActionType / ActionParameter are intentionally NOT exported to the MDB.
+    // They are "Manual Updates" — applied by hand at the customer site, never
+    // auto-imported — and their quarterly change history is tracked via the
+    // quarter snapshot (hist_* tables) that drives the law-update report, not the
+    // MDB. Shipping them also risked customers auto-loading them and orphaning the
+    // ActionParameter FK (see the report's snapshot-identity notes).
+
     // Full patent tables (used by 97, PatR5-7, PatR8-R10v2.1)
     private static readonly string[] PatentTablesFull = new[]
     {
-        "tblPatActionType", "tblPatActionParameter",
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
         "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
         "tblPatCountryExpDelete", "tblPatCountryLaw", "tblPatCountryLaw_Ext", "tblPatCountryLawUpdate",
@@ -109,20 +121,21 @@ public class MdbGenerator
     // Full trademark tables (used by 97, TmkR5-8, TmkR9-10)
     private static readonly string[] TrademarkTablesFull = new[]
     {
-        "tblTmkActionType", "tblTmkActionParameter",
+        // tblTmkActionType / tblTmkActionParameter excluded — see note above PatentTablesFull.
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseType_Ext",
         "tblTmkDesCaseTypeDelete", "tblTmkDesCaseTypeDelete_Ext",
         "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFields_Ext",
-        "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext",
-        "tblTmkStandardGood"
+        "tblTmkDesCaseTypeFieldsDelete", "tblTmkDesCaseTypeFieldsDelete_Ext"
+        // tblTmkStandardGood excluded from the MDB — its Standard Goods report
+        // section now diffs the live table vs the quarter snapshot (like ActionType).
     };
 
     // R4 patent tables (no _Ext tables)
     private static readonly string[] PatentTables2000 = new[]
     {
-        "tblPatActionType", "tblPatActionParameter",
+        // tblPatActionType / tblPatActionParameter excluded — see note above PatentTablesFull.
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
         "tblPatCaseType", "tblPatCountry", "tblPatCountryDue", "tblPatCountryExp",
         "tblPatCountryExpDelete", "tblPatCountryLaw", "tblPatCountryLawUpdate",
@@ -133,12 +146,12 @@ public class MdbGenerator
     // R4 trademark tables (no _Ext tables)
     private static readonly string[] TrademarkTables2000 = new[]
     {
-        "tblTmkActionType", "tblTmkActionParameter",
+        // tblTmkActionType / tblTmkActionParameter excluded — see note above PatentTablesFull.
         "tblTmkArea", "tblTmkAreaCountry", "tblTmkAreaCountryDelete", "tblTmkAreaDelete",
         "tblTmkCaseType", "tblTmkCountry", "tblTmkCountryDue", "tblTmkCountryLaw",
         "tblTmkCountryLawUpdate", "tblTmkDesCaseType", "tblTmkDesCaseTypeDelete",
-        "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFieldsDelete",
-        "tblTmkStandardGood"
+        "tblTmkDesCaseTypeFields", "tblTmkDesCaseTypeFieldsDelete"
+        // tblTmkStandardGood excluded from the MDB — see note in TrademarkTablesFull.
     };
 
     private static string[] GetPatentTables(string systemType) =>
@@ -177,7 +190,8 @@ public class MdbGenerator
     {
         if (systemType.Equals("TmkR9-10v2.2", StringComparison.OrdinalIgnoreCase))
             return $"{prefix}_TmkLaw10";
-        // R4, TmkR5-8
+        // R4, TmkR5-8 (same name; the push separates them into Ver9and10/ and R5/
+        // subfolders on MOVEit so both survive).
         return $"{prefix}_TmkLaw9";
     }
 
@@ -314,6 +328,15 @@ public class MdbGenerator
                     {
                         var ordinal = reader.GetOrdinal(exportColumns[i].Name);
                         object value = reader.IsDBNull(ordinal) ? DBNull.Value : reader.GetValue(ordinal);
+
+                        // Attribute every change in the shipped MDB to a single alias
+                        // ("LawUpdate") instead of the individual editor. The real editor
+                        // is still retained in SQL for the portal's own audit; only the
+                        // exported copy is anonymized. Applies to the author-stamp columns.
+                        if (value is string && AliasColumns.Contains(exportColumns[i].Name))
+                        {
+                            value = LawUpdateAlias;
+                        }
 
                         // Fix DateTime millisecond precision - Access doesn't support sub-second precision
                         // and OleDb AddWithValue infers DBTimeStamp which causes "Data type mismatch"

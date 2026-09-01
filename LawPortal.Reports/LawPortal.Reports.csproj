@@ -10,6 +10,8 @@
   <ItemGroup>
     <!-- PDF generation for Country Law Update reports -->
     <PackageReference Include="itext7" Version="7.2.3" />
+    <!-- DOCX generation for Country Law Update reports (Word output) -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.8.1" />
     <!-- Logging + configuration abstractions for service constructors -->
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />

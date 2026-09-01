@@ -1,0 +1,28 @@
+@model String
+@*
+    In-cell editor for the comma-separated "Systems" column of the CountryDue
+    (Law Actions) and CountryExp (Expiration Terms) grids. Modeled on the main
+    record's Systems control (_SystemsDropdown.cshtml): a stay-open Kendo
+    MultiSelect over the fixed system list passed in via ViewData["data"].
+
+    The MultiSelect itself is NOT bound to the model field (its name is not
+    "Systems"), because its value is an array while the field is a delimited
+    string. Instead a hidden input carries the field: it is MVVM-bound to
+    model.Systems, and the grid's "edit" handler (systemsGridEdit) seeds the
+    widget from the row value and writes the joined string back into the hidden
+    input on change. Updating the hidden input (rather than calling model.set)
+    lets Kendo commit the value without re-rendering the row mid-edit.
+    AutoClose(false) keeps the list open so several systems can be picked.
+*@
+@{
+    var data = ((IEnumerable<string>)ViewData["data"] ?? Enumerable.Empty<string>()).ToList();
+}
+<input type="hidden" name="Systems" data-bind="value: Systems" data-systems-hidden="true" />
+@(Html.Kendo().MultiSelect()
+    .Name("SystemsCellEditor")
+    .BindTo(data)
+    .AutoClose(false)
+    .Filter(FilterType.Contains)
+    .Placeholder(" ")
+    .HtmlAttributes(new { style = "width:100%", data_systems_editor = "true" })
+)

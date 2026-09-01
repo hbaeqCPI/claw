@@ -1,0 +1,46 @@
+@*
+    Defines window.systemsGridEdit, the in-cell "edit" handler that bridges the
+    Systems MultiSelect editor (SystemsMultiSelect.cshtml) and the delimited
+    string model field. Included once per grid that makes Systems editable; the
+    idempotent guard makes multiple includes on one page harmless.
+
+    Key point: we do NOT push the value into the model on every pick. Doing so
+    updates the MVVM-bound model field mid-edit, which makes the grid re-create
+    the cell editor and visibly wipe the chips until editing ends. Instead each
+    pick updates a hidden copy silently (no MVVM trigger, no re-render), and the
+    value is committed to the model once — when the picker closes / loses focus.
+*@
+<script>
+    window.systemsGridEdit = window.systemsGridEdit || function (e) {
+        var $sel = e.container.find("[data-systems-editor]");
+        if (!$sel.length) return;
+        var ms = $sel.data("kendoMultiSelect");
+        var $hidden = e.container.find("[data-systems-hidden]");
+        if (!ms || !$hidden.length) return;
+
+        // Seed the widget from the row's current comma-separated value.
+        var current = (e.model.Systems || "")
+            .split(",")
+            .map(function (s) { return s.trim(); })
+            .filter(function (s) { return s.length; });
+        ms.value(current);
+        $hidden.val(current.join(","));
+
+        var syncSilently = function () {
+            // Keep a live copy WITHOUT firing change → no MVVM update, no re-render.
+            $hidden.val(ms.value().join(","));
+        };
+        var commit = function () {
+            // Push the final value into the model (fires the bound input's change
+            // so Kendo records it). Safe now because the user is done picking.
+            $hidden.val(ms.value().join(",")).trigger("change");
+        };
+
+        ms.unbind("change");
+        ms.unbind("close");
+        ms.bind("change", syncSilently);
+        ms.bind("close", commit);
+        // Safety net in case focus leaves the cell without a popup "close".
+        ms.input.off("blur.systems").on("blur.systems", commit);
+    };
+</script>

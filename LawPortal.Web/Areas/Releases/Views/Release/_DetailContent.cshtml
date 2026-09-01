@@ -75,7 +75,7 @@
                                 new SelectListItem { Text = "Q3", Value = "Q3" },
                                 new SelectListItem { Text = "Q4", Value = "Q4" }
                             })
-                            .Value(Model.Quarter ?? "Q1")
+                            .Value(!string.IsNullOrEmpty(Model.Quarter) ? Model.Quarter : ("Q" + ((DateTime.Now.Month - 1) / 3 + 1)))
                             .HtmlAttributes(new { style = "width: 100%" })
                         )
                     }
@@ -119,7 +119,7 @@
                         <label asp-for="ReportNotesPatent"></label>
                         <textarea class="form-control form-control-sm" rows="3"
                                   asp-for="ReportNotesPatent" asp-is-readonly="@isReadOnly"
-                                  placeholder="@Localizer["Rendered at the top of the Patent report PDF"]"></textarea>
+                                  placeholder="@Localizer["Rendered at the top of the Patent report"]"></textarea>
                         <span asp-validation-for="ReportNotesPatent"></span>
                     </div>
                 </div>
@@ -136,7 +136,7 @@
                         <label asp-for="ReportNotesTrademark"></label>
                         <textarea class="form-control form-control-sm" rows="3"
                                   asp-for="ReportNotesTrademark" asp-is-readonly="@isReadOnly"
-                                  placeholder="@Localizer["Rendered at the top of the Trademark report PDF"]"></textarea>
+                                  placeholder="@Localizer["Rendered at the top of the Trademark report"]"></textarea>
                         <span asp-validation-for="ReportNotesTrademark"></span>
                     </div>
                 </div>
@@ -205,7 +205,7 @@
                 @await Html.PartialAsync("_DocumentTree", Model,
                     new ViewDataDictionary(ViewData)
                     {
-                        ["extFilter"]          = ".pdf",
+                        ["extFilter"]          = ".docx,.pdf",
                         ["panelLabel"]          = "Reports",
                         ["companionExtFilter"]  = ".mdb",
                         ["companionPanelLabel"] = "MDB Files"
@@ -213,6 +213,10 @@
             </div>
             <div class="tab-pane" id="releaseDetailReportsTabContent" role="tabpanel" aria-labelledby="releaseDetailReportsTab">
                 <div class="p-3">
+                    <label class="mb-3" style="cursor:pointer;">
+                        <input type="checkbox" id="includeActionTypes_@id" class="mr-1" checked />
+                        @Localizer["Include Action Types"]
+                    </label>
                     <div id="reportMdbList_@id"><p class="text-muted">Loading...</p></div>
                     <div id="reportStatus_@id" class="mt-2" style="display:none;"></div>
                 </div>
@@ -254,7 +258,7 @@
                                     section += '<select class="form-control form-control-sm compareMdbSelect"></select></div>';
                                     if (!releaseIsLocked) {
                                         section += '<div class="col-auto"><button type="button" class="btn btn-sm btn-primary btnGenReport">';
-                                        section += '<i class="fal fa-file-pdf pr-1"></i> Generate Report</button></div>';
+                                        section += '<i class="fal fa-file-word pr-1"></i> Generate Report</button></div>';
                                     }
                                     section += '</div></div>';
                                     return section;
@@ -301,14 +305,17 @@
                             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Generating...');
                             statusDiv.hide();
 
+                            var includeActionTypes = $('#includeActionTypes_' + releaseId).is(':checked');
+
                             $.post('@Url.Action("GenerateReport")', {
                                 releaseId: releaseId,
                                 compareDocId: compareDocId,
                                 compareReleaseId: compareReleaseId,
                                 docId: docId,
+                                includeActionTypes: includeActionTypes,
                                 __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                             }).done(function (result) {
-                                btn.prop('disabled', false).html('<i class="fal fa-file-pdf pr-1"></i> Generate Report');
+                                btn.prop('disabled', false).html('<i class="fal fa-file-word pr-1"></i> Generate Report');
                                 statusDiv.html('<div class="alert alert-success">' + (result.success || 'Report generated.') + '</div>').show();
                                 // Switch to Documents tab and refresh
                                 var docsTab = $('#releaseDetailDocumentsTab');
@@ -320,7 +327,7 @@
                                     setTimeout(function() { releaseDocTree_@(id).fallbackFolderClick(); }, 500);
                                 }
                             }).fail(function (e) {
-                                btn.prop('disabled', false).html('<i class="fal fa-file-pdf pr-1"></i> Generate Report');
+                                btn.prop('disabled', false).html('<i class="fal fa-file-word pr-1"></i> Generate Report');
                                 var msg = 'Error generating report.';
                                 try { msg = JSON.parse(e.responseText); } catch (ex) { msg = e.responseText || msg; }
                                 statusDiv.html('<div class="alert alert-danger">' + msg + '</div>').show();

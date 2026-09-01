@@ -359,6 +359,17 @@ namespace LawPortal.Reports.Services
                 var diff = kv.Value;
                 if (diff.DeletedRows.Count == 0 || diff.AddedRows.Count == 0) continue;
 
+                // ActionParameter is exempt. A parameter's deadline term
+                // (ActionDue/Yr/Mo/Dy) is part of its key, so editing it yields a
+                // delete + an add that is really ONE modified row — not a removal.
+                // The only non-key column is Indicator, so the generic
+                // "identical body" test below would match unrelated params (any two
+                // sharing a blank Indicator) and wrongly drop the delete, leaving a
+                // fully-highlighted "new" parameter. Keep both rows so the Manual
+                // Updates renderer can pair them (on ActionDue) into a single
+                // modified row that highlights only the changed cell.
+                if (kv.Key.EndsWith("ActionParameter", StringComparison.OrdinalIgnoreCase)) continue;
+
                 Func<RowDiff, RowDiff, bool> sameEntity;
                 if (CollapseIdentity.TryGetValue(kv.Key, out var idCols))
                 {

@@ -38,6 +38,49 @@ namespace LawPortal.Web.Areas
             }
         }
 
+        /// <summary>
+        /// Pulls any "Year" criteria out of the search filter list (single value
+        /// or a JSON array of values) and returns the parsed years, removing the
+        /// Year entries from the list. Year is an int, which the generic
+        /// string-oriented criteria builder can't filter, so callers apply the
+        /// returned years directly, e.g. Where(x =&gt; years.Contains(x.Year)).
+        /// </summary>
+        protected static List<int> ExtractYearFilter(List<LawPortal.Web.Areas.Shared.ViewModels.QueryFilterViewModel> filters)
+        {
+            var years = new List<int>();
+            if (filters == null) return years;
+
+            foreach (var f in filters.Where(f => string.Equals(f.Property, "Year", StringComparison.OrdinalIgnoreCase)
+                                                 && !string.IsNullOrWhiteSpace(f.Value)))
+            {
+                var v = f.Value.Trim();
+                if (v.StartsWith("[") && v.EndsWith("]"))
+                {
+                    // Multi-select posts a JSON array whose elements may be numbers
+                    // (2026) or strings ("2026") depending on the widget — handle both.
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(v);
+                        foreach (var el in doc.RootElement.EnumerateArray())
+                        {
+                            if (el.ValueKind == System.Text.Json.JsonValueKind.Number && el.TryGetInt32(out var ni))
+                                years.Add(ni);
+                            else if (el.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(el.GetString(), out var si))
+                                years.Add(si);
+                        }
+                    }
+                    catch { /* ignore malformed array */ }
+                }
+                else if (int.TryParse(v, out var y))
+                {
+                    years.Add(y);
+                }
+            }
+
+            filters.RemoveAll(f => string.Equals(f.Property, "Year", StringComparison.OrdinalIgnoreCase));
+            return years;
+        }
+
         protected void AddDefaultNavigationUrls(DetailPagePermission viewModel) 
         {
             //todo: add id to edit, copy, etc.

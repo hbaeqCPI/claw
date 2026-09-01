@@ -44,7 +44,7 @@ namespace LawPortal.Reports.Services
 
         public byte[] GenerateReport(MdbComparisonResult comp, string name, string year, string qtr,
             Dictionary<string, string>? cn = null, Dictionary<string, string>? ctd = null,
-            string? reportNotes = null)
+            string? reportNotes = null, bool includeManualUpdates = true)
         {
             _cn = cn ?? new();
             _ctd = ctd ?? new();
@@ -90,14 +90,16 @@ namespace LawPortal.Reports.Services
             //   Trademark: Manual Updates → Standard Goods → Structural. Trademark
             //              also carries an Action Type table, so it gets the same
             //              Manual Updates section as patent.
+            // The "Include Action Types" toggle suppresses ONLY the Manual
+            // Updates (Action Type) section; every other section always renders.
             if (comp.IsPatent)
             {
-                WriteManualUpdates(doc, comp, atT, dueT, paramT);
+                if (includeManualUpdates) WriteManualUpdates(doc, comp, atT, dueT, paramT);
                 WriteStructural(doc, comp, pfx);
             }
             else
             {
-                WriteManualUpdates(doc, comp, atT, dueT, paramT);
+                if (includeManualUpdates) WriteManualUpdates(doc, comp, atT, dueT, paramT);
                 WriteStandardGoods(doc, comp);
                 WriteStructural(doc, comp, pfx);
             }
@@ -448,6 +450,34 @@ namespace LawPortal.Reports.Services
                 .Where(r => displayCols.Any(c => r.ChangedColumns.Contains(c)))
                 .ToList();
             var deleted = pd.DeletedRows.Where(Matches).ToList();
+
+            // A parameter's deadline term (ActionDue/Yr/Mo/Dy) is part of the
+            // ActionParameter key, so editing it splits one edited row into a
+            // deleted row + an added row. For a MODIFIED parent action type, pair
+            // those back into a single modified row — matched on the ActionDue
+            // label, which stays stable across a term edit — so the report shows
+            // the change on one highlighted row instead of a struck-through
+            // duplicate followed by a brand-new row.
+            if (parentMode == "mod" && added.Any() && deleted.Any())
+            {
+                string Lbl(RowDiff r) => G(r, "ActionDue").Trim().ToLowerInvariant();
+                foreach (var del in deleted.ToList())
+                {
+                    var match = added.FirstOrDefault(a => Lbl(a) == Lbl(del));
+                    if (match == null) continue;
+                    var changed = new HashSet<string>(
+                        displayCols.Where(c => G(match, c).Trim() != G(del, c).Trim()));
+                    modified.Add(new RowDiff
+                    {
+                        Values = match.Values,
+                        OldValues = del.Values,
+                        ChangedColumns = changed
+                    });
+                    added.Remove(match);
+                    deleted.Remove(del);
+                }
+            }
+
             if (!added.Any() && !modified.Any() && !deleted.Any()) return;
 
             doc.Add(P(9).SetFont(_b).SetMarginLeft(50).SetMarginTop(6)
@@ -907,17 +937,23 @@ namespace LawPortal.Reports.Services
         private void WriteExpTable(Document doc, List<RowDiff> rows, string mode)
         {
             bool isMod = mode == "mod", isDel = mode == "del";
-            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 20, 17, 15, 18, 15, 15 }))
+            var tbl = new Table(UnitValue.CreatePercentArray(new float[] { 12, 20, 16, 20, 16, 16 }))
                 .UseAllAvailableWidth().SetMarginTop(3).SetMarginLeft(10).SetFontSize(9);
 
-            foreach (var h in new[] { "Based On", "Terms (y-m)", "For", "Effective For", "from", "to" })
+            // Headers must line up with the data cells emitted below, which are, in
+            // order: Type, BasedOn, Terms (Yr Mo), EffBasedOn, EffStartDate, EffEndDate.
+            foreach (var h in new[] { "Type", "Based On", "Terms (y-m-d)", "Effective For", "from", "to" })
                 tbl.AddHeaderCell(new Cell().Add(P(9).SetFont(_b).Add(T(h, _b, 9))).SetBorder(Border.NO_BORDER));
 
             foreach (var row in rows.OrderBy(r => G(r, "Type")))
             {
                 var typ = G(row, "Type");
                 var bon = G(row, "BasedOn");
-                var terms = $"{G(row, "Yr")} {G(row, "Mo")}";
+                // Include Dy in the term. It's a non-key body column, so a
+                // day-only change registers as "Modified"; leaving it off the
+                // display (previously "y-m") rendered that row with no highlighted
+                // cell, making a real change look like an unchanged row.
+                var terms = $"{G(row, "Yr")} {G(row, "Mo")} {G(row, "Dy")}";
                 var eff = G(row, "EffBasedOn");
                 var from = FD(row, "EffStartDate");
                 var to = FD(row, "EffEndDate");
@@ -933,7 +969,7 @@ namespace LawPortal.Reports.Services
                     void Cell(string v, bool y) { if (y) NBCellY(tbl, v); else NBCell(tbl, v); }
                     Cell(typ, Ch("Type"));
                     Cell(bon, Ch("BasedOn"));
-                    Cell(terms, Ch("Yr", "Mo"));
+                    Cell(terms, Ch("Yr", "Mo", "Dy"));
                     Cell(eff, Ch("EffBasedOn"));
                     Cell(from, Ch("EffStartDate"));
                     Cell(to, Ch("EffEndDate"));
@@ -961,7 +997,14 @@ namespace LawPortal.Reports.Services
 
             bool IsOrphan(RowDiff r) => !fullBlockKeys.Contains((G(r, "Country"), G(r, "CaseType")));
             var orphanAdd = dd.AddedRows.Where(IsOrphan).ToList();
-            var orphanMod = dd.ModifiedRows.Where(IsOrphan).ToList();
+            // Only surface a modified row when a column this compact table actually
+            // shows changed. CountryDue also carries columns this table doesn't
+            // display (EffBasedOn, Recurring, CPIAction, Calculate, MultipleBasedOn);
+            // a change confined to those would otherwise render a row with nothing
+            // highlighted — indistinguishable from an unchanged row.
+            var orphanDisplayCols = new[] { "ActionDue", "Indicator", "BasedOn", "Yr", "Mo", "Dy" };
+            var orphanMod = dd.ModifiedRows.Where(IsOrphan)
+                .Where(r => orphanDisplayCols.Any(c => r.ChangedColumns.Contains(c))).ToList();
             var orphanDel = dd.DeletedRows.Where(IsOrphan).ToList();
             if (!orphanAdd.Any() && !orphanMod.Any() && !orphanDel.Any()) return;
 

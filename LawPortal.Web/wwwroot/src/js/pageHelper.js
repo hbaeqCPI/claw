@@ -661,7 +661,14 @@ const showDetails = function (activePage, id, afterShowHandler) {
     //get active tab info before loading the next record
     const activeTabId = activePage.infoContainer.find(".cpiDetailInfoNav .nav-link.active").attr("id");
 
-    const contentTabContainer = activePage.infoContainer.find(".page-content").siblings(".tab-content");
+    // The detail .tab-content is normally a SIBLING of .page-content, but some
+    // views (e.g. Deploy detail) nest it INSIDE .page-content. Check both so the
+    // active pane is captured either way — otherwise activeContentPaneId is
+    // undefined and restoreActiveTab restores only the nav, leaving the wrong
+    // tab/content combo after a save.
+    let contentTabContainer = activePage.infoContainer.find(".page-content").siblings(".tab-content");
+    if (contentTabContainer.length === 0)
+        contentTabContainer = activePage.infoContainer.find(".page-content").children(".tab-content");
     const activeContentPane = contentTabContainer.children(".tab-pane.active");
     const activeContentPaneId = $(activeContentPane[0]).attr("id");
 
@@ -911,6 +918,20 @@ const appendPage = function (html) {
 };
 
 const openDetailsLink = function (link) {
+    // Snapshot the current search criteria so returning to the search screen —
+    // even via a full top-bar reload — lands back on the same filtered results.
+    // Scoped to this round-trip: the next search-page load consumes it, and
+    // loading a *different* search screen discards it (see initializeSidebar),
+    // so it does not persist once the user leaves the screen entirely.
+    try {
+        if (lastActiveSearch.containerId && lastActiveSearch.criteria && lastActiveSearch.criteria.length > 0) {
+            sessionStorage.setItem(pendingSearchRestoreKey, JSON.stringify({
+                screen: lastActiveSearch.containerId,
+                criteria: lastActiveSearch.criteria
+            }));
+        }
+    } catch (e) { /* sessionStorage unavailable (e.g. private mode) — ignore */ }
+
     const url = link.attr("href");
     openLink(url);
 };
@@ -1308,10 +1329,32 @@ const initializeSidebar = function (activePage) {
 
     let screen = activePage.refineSearchContainer.replace("#", '');
     if (activePage.systemTypeCode)
-        screen = activePage.systemTypeCode + "-" + screen; 
+        screen = activePage.systemTypeCode + "-" + screen;
+
+    // Restore the criteria the user left when they drilled into a record — but
+    // only for the immediate search↔detail round-trip. The pending snapshot
+    // (written by openDetailsLink) is consumed here: applied when it belongs to
+    // THIS screen, and discarded either way, so it never resurfaces once the
+    // user has navigated to a different screen. Falls back to the saved default
+    // criteria when there is no pending snapshot for this screen.
+    let restoredLastSearch = false;
+    try {
+        const containerId = activePage.refineSearchContainer.replace("#", '');
+        const raw = sessionStorage.getItem(pendingSearchRestoreKey);
+        if (raw) {
+            sessionStorage.removeItem(pendingSearchRestoreKey); // one-shot: consume regardless of match
+            const pending = JSON.parse(raw);
+            if (pending && pending.screen === containerId && pending.criteria && pending.criteria.length > 0) {
+                $(activePage.refineSearchContainer).clearSearch();
+                loadSearchCriteria(JSON.stringify(pending.criteria), activePage);
+                restoredLastSearch = true;
+            }
+        }
+    } catch (e) { /* sessionStorage unavailable or bad payload — fall back */ }
 
     //load default search criteria
-    loadDefaultSearchCriteria(activePage.refineSearchContainer, screen, activePage);
+    if (!restoredLastSearch)
+        loadDefaultSearchCriteria(activePage.refineSearchContainer, screen, activePage);
 
     return filterCount;
 };
@@ -1864,8 +1907,22 @@ const updateRecordStamps = function (activePage) {
     });
 };
 
+// Tracks the criteria most recently applied on a search screen (in memory
+// only). Used to snapshot the search state when the user drills into a record
+// (see openDetailsLink). Persistence is deliberately scoped to that
+// search↔detail round-trip via a one-shot sessionStorage entry, so criteria
+// does NOT survive navigating out of the screen entirely.
+let lastActiveSearch = { containerId: null, criteria: null };
+const pendingSearchRestoreKey = "cpiPendingSearchRestore";
+
 const gridMainSearchFilters = function (form) {
     const data = formDataToCriteriaList($(form));
+
+    const containerId = $(form).attr("id");
+    if (containerId && data.payLoad && data.payLoad.length > 0) {
+        lastActiveSearch = { containerId: containerId, criteria: data.payLoad };
+    }
+
     return {
         mainSearchFilters: data.payLoad,
         __RequestVerificationToken: data.verificationToken

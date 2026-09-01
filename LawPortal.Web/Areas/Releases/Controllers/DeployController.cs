@@ -47,8 +47,21 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly LawPortal.Web.Services.MoveItTransferClient _moveItClient;
+        private readonly IEmailSender _emailSender;
 
         private readonly string _dataContainer = "deployDetail";
+
+        // Recipients for the "updates ready to push" notification sent after a
+        // successful MOVEit push. Kept here (not appsettings) because they're a
+        // fixed distribution list for this specific business event.
+        private const string PushNotifyTo = "cpisupport@computerpackages.com";
+        private static readonly string[] PushNotifyCc =
+        {
+            "hbaeq@computerpackages.com",
+            "fcaceres@computerpackages.com",
+            "sthomas@ComputerPackages.com"
+        };
 
         public DeployController(
             IAuthorizationService authService,
@@ -61,7 +74,9 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             IDocumentStorage documentStorage,
             IWebHostEnvironment env,
             IConfiguration config,
-            IStringLocalizer<SharedResource> localizer)
+            IStringLocalizer<SharedResource> localizer,
+            LawPortal.Web.Services.MoveItTransferClient moveItClient,
+            IEmailSender emailSender)
         {
             _authService = authService;
             _viewModelService = viewModelService;
@@ -74,6 +89,8 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             _env = env;
             _config = config;
             _localizer = localizer;
+            _moveItClient = moveItClient;
+            _emailSender = emailSender;
         }
 
         private async Task WriteDeployLog(int deployPasswordId, string action, string status, string detail, string? side = null)
@@ -222,13 +239,42 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 var deployments = _entityService.QueryableList;
 
                 if (mainSearchFilters != null && mainSearchFilters.Count > 0)
+                {
+                    // Year is an int: handle it here (single or multi-select) and
+                    // remove it before the generic criteria builder, which only
+                    // filters string properties correctly.
+                    var years = ExtractYearFilter(mainSearchFilters);
+                    if (years.Count > 0)
+                        deployments = deployments.Where(d => years.Contains(d.Year));
+
                     deployments = _viewModelService.AddCriteria(deployments, mainSearchFilters);
+                }
 
                 var result = await _viewModelService.CreateViewModelForGrid(request, deployments, "Year", "DeployPasswordId");
                 return Json(result);
             }
 
             return new JsonBadRequest(new { errors = ModelState.Errors() });
+        }
+
+        // Backs the search-screen criteria combo boxes (Year, Quarter, Patent
+        // Password, Trademark Password, Created By, Updated By). Each combo
+        // requests distinct values for its bound property; without this action
+        // the dropdowns were empty and the search criteria appeared broken.
+        public async Task<IActionResult> GetPicklistData([DataSourceRequest] DataSourceRequest request, string property, string text, FilterType filterType, string requiredRelation = "")
+        {
+            // Year is a non-nullable int; the shared picklist path builds a
+            // "!= null" predicate that can't compare a value type to null, so
+            // build the distinct year list directly. Keyed as "Year" to match
+            // the combo's DataTextField/DataValueField.
+            if (string.Equals(property, "Year", StringComparison.OrdinalIgnoreCase))
+            {
+                var years = await _entityService.QueryableList.AsNoTracking()
+                    .Select(d => d.Year).Distinct().OrderByDescending(y => y).ToListAsync();
+                return Json(years.Select(y => new Dictionary<string, object> { { "Year", y } }));
+            }
+
+            return await GetPicklistData(_entityService.QueryableList, request, property, text, filterType, requiredRelation);
         }
 
         [HttpPost()]
@@ -906,6 +952,37 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return Json(query.ToDataSourceResult(request));
         }
 
+        /// <summary>
+        /// Returns which deploy actions have completed successfully for this
+        /// record, plus its lock state. Drives the Deploy screen's Lock button,
+        /// which stays disabled until both pushes, Generate Script, and Populate
+        /// Tables have all succeeded; once locked, the four action buttons are
+        /// disabled. Completion is derived from Success rows in the deploy log.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetActionStatus(int id)
+        {
+            var record = await _entityService.GetByIdAsync(id);
+            bool isLocked = record?.IsLocked ?? false;
+
+            var done = await _deployLogService.QueryableList.AsNoTracking()
+                .Where(l => l.DeployPasswordId == id && l.Status == "Success")
+                .Select(l => new { l.Action, l.Side })
+                .ToListAsync();
+
+            bool Has(string action, string? side = null) =>
+                done.Any(l => l.Action == action && (side == null || l.Side == side));
+
+            return Json(new
+            {
+                pushPat = Has("PushMdbs", "Pat"),
+                pushTmk = Has("PushMdbs", "Tmk"),
+                generateScript = Has("GenerateScript"),
+                populateTables = Has("PopulateTables"),
+                isLocked
+            });
+        }
+
         [HttpGet]
         public async Task<IActionResult> HasDeployedData(int id)
         {
@@ -933,16 +1010,71 @@ namespace LawPortal.Web.Areas.Releases.Controllers
         }
 
         /// <summary>
-        /// Copies all 6 selected files (3 LawDocs + 3 MDBs) for the given side
-        /// ("pat" or "tmk") to the edm2016 network share. Each file lands in the
-        /// subfolder that matches its path label, e.g.:
-        ///   LawDocs/Pat/Ver9and10/ → \\edm2016\test\LawDocs\Pat\Ver9and10\
-        ///   Mdbs/Pat/R5/           → \\edm2016\test\Mdbs\Pat\R5\
-        /// Destination subfolders are expected to already exist on the share.
+        /// Publishes the selected files (LawDocs + MDBs) for the given side
+        /// ("pat" or "tmk") to the MOVEit Transfer (MFT) server via its REST API.
+        /// Logs in with the credentials in appsettings ("MoveItMft"), uploads each
+        /// file into the login's default folder keeping its generated name (nothing
+        /// is deleted), then logs out (revokes the token). If two selections share the
+        /// same name (case-insensitive) — the R4 and R5 "law9" MDBs of each side —
+        /// they are each routed into a generation subfolder ("Ver9and10", "R5") so
+        /// both are preserved instead of overwriting each other.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryModify)]
+        // Prefilled "updates ready to push" email draft, surfaced to the user in an
+        // editable popup after a successful push. Recipients come from the fixed
+        // distribution list; the user can change anything before sending.
+        private object BuildPushEmailDraft(DeployPassword record)
+        {
+            var quarter = record.Quarter ?? "";
+            var year = record.Year.ToString();
+            return new
+            {
+                to = PushNotifyTo,
+                cc = string.Join("; ", PushNotifyCc),
+                subject = $"Country Law Updates – {quarter} {year} Ready to Push",
+                body = $"The Country Law updates for {quarter} {year} are now ready to be pushed " +
+                       "to both the Edm2016 and CtryLaw folders."
+            };
+        }
+
+        // Sends the (possibly user-edited) push notification from the popup. Uses the
+        // app's configured SMTP sender (notifications@cpi.email). Body is edited as
+        // plain text in the popup; EmailSender sends HTML, so it's encoded with line
+        // breaks preserved.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendPushNotification(string to, string cc, string subject, string body)
+        {
+            List<System.Net.Mail.MailAddress> toList;
+            try { toList = ParseAddresses(to); }
+            catch (Exception ex) { return new JsonBadRequest(new { errors = new[] { "Invalid To address: " + ex.Message } }); }
+            if (toList.Count == 0)
+                return new JsonBadRequest(new { errors = new[] { "At least one To recipient is required." } });
+
+            try
+            {
+                _emailSender.Cc = ParseAddresses(cc);
+                var htmlBody = System.Net.WebUtility.HtmlEncode(body ?? "")
+                    .Replace("\r\n", "\n").Replace("\n", "<br>");
+                var result = await _emailSender.SendEmailAsync(toList, subject ?? "", htmlBody);
+                if (!result.Success)
+                    return new JsonBadRequest(new { errors = new[] { "Email failed: " + result.ErrorMessage } });
+                return Json(new { success = "Notification email sent." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonBadRequest(new { errors = new[] { "Email failed: " + ex.Message } });
+            }
+        }
+
+        // Split a "a@x.com; b@y.com" string into validated addresses (';' or ',').
+        private static List<System.Net.Mail.MailAddress> ParseAddresses(string raw) =>
+            (raw ?? "").Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(a => a.Trim()).Where(a => a.Length > 0)
+                .Select(a => new System.Net.Mail.MailAddress(a)).ToList();
+
         public async Task<IActionResult> PushMdbs(int id, string side)
         {
             try
@@ -955,10 +1087,6 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     return new JsonBadRequest(new { errors = new[] { $"Deployment {id} not found." } });
 
                 bool isPat = side.Equals("pat", StringComparison.OrdinalIgnoreCase);
-                var shareSettings = _config.GetSection("NetworkShare").Get<LawPortal.Web.Services.NetworkShareSettings>();
-                var baseShare = shareSettings?.BaseSharePath?.TrimEnd('\\');
-                if (string.IsNullOrEmpty(baseShare))
-                    return new JsonBadRequest(new { errors = new[] { "NetworkShare:BaseSharePath is not configured in appsettings." } });
 
                 // Each job: (docId, relative subfolder path matching the UI label)
                 var jobs = isPat
@@ -983,8 +1111,9 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 if (emptyCount > 0)
                     return new JsonBadRequest(new { errors = new[] { $"{emptyCount} selection(s) are empty — fill all dropdowns before pushing." } });
 
-                // Resolve files before impersonating (async not allowed inside RunImpersonated).
-                var resolvedJobs = new List<(string LocalPath, string DestFile, string SubPath)>();
+                // Resolve every selected document to a local file path (downloading
+                // from blob storage to a temp file if needed) before we hit MOVEit.
+                var resolvedJobs = new List<(string LocalPath, string FileName, string SubPath)>();
                 foreach (var (docId, subPath) in jobs)
                 {
                     var doc = await _documentService.GetDocumentById(docId!.Value);
@@ -1004,14 +1133,14 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                         ? file.UserFileName
                         : doc.DocName + (string.IsNullOrEmpty(file.FileExt) ? "" : "." + file.FileExt);
 
-                    resolvedJobs.Add((localPath, Path.Combine(baseShare, subPath, fileName), subPath));
+                    resolvedJobs.Add((localPath, fileName, subPath));
                 }
 
-                var (copied, errors) = await Task.Run(() => ConnectAndCopy(shareSettings, resolvedJobs));
+                var (copied, errors) = await _moveItClient.PushFilesAsync(resolvedJobs);
 
                 if (errors.Count > 0)
                 {
-                    var msg = $"Push completed with errors ({copied}/{jobs.Length} copied). " + string.Join(" | ", errors);
+                    var msg = $"Push completed with errors ({copied}/{jobs.Length} uploaded). " + string.Join(" | ", errors);
                     await WriteDeployLog(id, "PushMdbs", "Error", msg, isPat ? "Pat" : "Tmk");
                     return new JsonBadRequest(new { errors = new[] { msg } });
                 }
@@ -1032,9 +1161,13 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     lawUpdatesNote = $" (tblLawUpdates insert failed: {ex.Message})";
                 }
 
-                var pushSuccessMsg = $"Push completed: {copied} file(s) copied to {baseShare}.{lawUpdatesNote}";
+                var pushSuccessMsg = $"Push completed: {copied} file(s) uploaded to MOVEit MFT.{lawUpdatesNote}";
                 await WriteDeployLog(id, "PushMdbs", "Success", pushSuccessMsg, isPat ? "Pat" : "Tmk");
-                return Json(new { success = pushSuccessMsg });
+
+                // Return a prefilled "updates ready to push" email draft so the UI can
+                // pop up an editable notification the user reviews and sends (via
+                // SendPushNotification). The push itself does NOT send anything.
+                return Json(new { success = pushSuccessMsg, emailDraft = BuildPushEmailDraft(record) });
             }
             catch (Exception ex)
             {
@@ -2042,83 +2175,6 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             return viewModel;
         }
 
-        #region Network share copy
-
-        private static (int Copied, List<string> Errors) ConnectAndCopy(
-            LawPortal.Web.Services.NetworkShareSettings settings,
-            List<(string LocalPath, string DestFile, string SubPath)> jobs)
-        {
-            if (settings == null || string.IsNullOrEmpty(settings.UserName))
-                throw new InvalidOperationException("NetworkShare credentials are not configured.");
-
-            // Run each copy as a subprocess launched under the service account so it gets its
-            // own SMB logon session — avoids credential conflicts with the app pool's session.
-            var password = new System.Security.SecureString();
-            foreach (char c in settings.Password ?? "") password.AppendChar(c);
-            password.MakeReadOnly();
-
-            int copied = 0;
-            var errors = new List<string>();
-
-            foreach (var (localPath, destFile, subPath) in jobs)
-            {
-                string srcDir  = System.IO.Path.GetDirectoryName(localPath)  ?? ".";
-                string srcFile = System.IO.Path.GetFileName(localPath);
-                string dstDir  = System.IO.Path.GetDirectoryName(destFile)   ?? ".";
-
-                // /IS  – copy even if destination is identical (overwrite)
-                // /R:1 – 1 retry on failure
-                // /W:1 – 1 second wait between retries
-                // /NFL /NDL /NJH /NJS – suppress header/summary noise
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName               = "robocopy",
-                    Arguments              = $"\"{srcDir}\" \"{dstDir}\" \"{srcFile}\" /IS /R:1 /W:1 /NFL /NDL /NJH /NJS",
-                    UseShellExecute        = false,
-                    UserName               = settings.UserName,
-                    Domain                 = string.IsNullOrEmpty(settings.Domain) ? null : settings.Domain,
-                    Password               = password,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true,
-                    CreateNoWindow         = true,
-                };
-
-                try
-                {
-                    using var proc = System.Diagnostics.Process.Start(psi)
-                        ?? throw new InvalidOperationException("Failed to start robocopy process.");
-
-                    // Read both streams on background threads to avoid deadlock if either buffer fills.
-                    var stdoutTask = System.Threading.Tasks.Task.Run(() => proc.StandardOutput.ReadToEnd());
-                    var stderrTask = System.Threading.Tasks.Task.Run(() => proc.StandardError.ReadToEnd());
-                    proc.WaitForExit(60_000);
-
-                    string stdout = stdoutTask.Result;
-                    string stderr = stderrTask.Result;
-
-                    // robocopy exit codes: 0 = nothing to do, 1 = copied OK, 2–7 = warnings, 8+ = errors
-                    if (proc.ExitCode >= 8)
-                    {
-                        string detail = (stdout + " " + stderr).Trim();
-                        errors.Add($"{subPath}: robocopy exited {proc.ExitCode}" +
-                                   (string.IsNullOrEmpty(detail) ? "" : $" — {detail}"));
-                    }
-                    else
-                    {
-                        copied++;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"{subPath}: {ex.Message}");
-                }
-            }
-
-            return (copied, errors);
-        }
-
-        #endregion
-
         #region Quarter Lock
 
         internal static readonly string[] SnapshotTables = new[]
@@ -2144,6 +2200,15 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             "tblTmkDesignatedCountry", "tblTmkIndicator", "tblTmkStandardGood"
         };
 
+        // Tables whose identity column must survive snapshotting because a companion
+        // snapshot table references it by value: ActionParameter.ActionTypeID points
+        // at ActionType.ActionTypeID (a plain FK — the param table's own identity is
+        // ActParamId). If the ActionType snapshot reseeds its identity, that FK is
+        // orphaned inside the snapshot and the report's ActionType/ActionParameter
+        // diff becomes noise. These are copied verbatim via SET IDENTITY_INSERT.
+        private static readonly HashSet<string> PreserveIdentityTables =
+            new(StringComparer.OrdinalIgnoreCase) { "tblPatActionType", "tblTmkActionType" };
+
         [HttpPost, Authorize(Policy = ReleaseAuthorizationPolicy.AuxiliaryModify)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> LockQuarter(int id)
@@ -2164,15 +2229,22 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                 {
                     var hist = "hist_" + table;
 
-                    // Build explicit column list excluding identity columns so the
-                    // hist table's own identity (if any) auto-generates new values
-                    // and we don't need SET IDENTITY_INSERT.
+                    // Preserve the identity for tables a companion snapshot references
+                    // by value (ActionType ← ActionParameter); otherwise reseeding the
+                    // identity orphans that FK inside the snapshot. See
+                    // PreserveIdentityTables.
+                    bool preserveIdentity = PreserveIdentityTables.Contains(table);
+
+                    // Build explicit column list. Identity columns are normally excluded
+                    // so the hist table's own identity auto-generates fresh values; when
+                    // preserving identity we include them and copy the values verbatim
+                    // under SET IDENTITY_INSERT.
                     var cols = new List<string>();
-                    const string getColsSql = @"
+                    var getColsSql = $@"
                         SELECT COLUMN_NAME
                         FROM INFORMATION_SCHEMA.COLUMNS
                         WHERE TABLE_NAME = @tbl
-                          AND COLUMNPROPERTY(OBJECT_ID(TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 0
+                          AND ({(preserveIdentity ? "1 = 1" : "COLUMNPROPERTY(OBJECT_ID(TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 0")})
                           AND DATA_TYPE NOT IN ('timestamp', 'rowversion')
                         ORDER BY ORDINAL_POSITION";
                     using (var colCmd = new SqlCommand(getColsSql, conn))
@@ -2184,7 +2256,10 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     }
 
                     var colList = string.Join(", ", cols);
-                    var sql = $"INSERT INTO [{hist}] ({colList}, [SnapshotYear], [SnapshotQuarter]) SELECT {colList}, @year, @quarter FROM [{table}]";
+                    var insert = $"INSERT INTO [{hist}] ({colList}, [SnapshotYear], [SnapshotQuarter]) SELECT {colList}, @year, @quarter FROM [{table}]";
+                    var sql = preserveIdentity
+                        ? $"SET IDENTITY_INSERT [{hist}] ON; {insert}; SET IDENTITY_INSERT [{hist}] OFF;"
+                        : insert;
                     using var cmd = new SqlCommand(sql, conn);
                     cmd.Parameters.AddWithValue("@year", deploy.Year);
                     cmd.Parameters.AddWithValue("@quarter", (object?)deploy.Quarter ?? DBNull.Value);
