@@ -104,48 +104,75 @@ namespace LawPortal.Web.Areas.Admin.Services
             return requireChangePassword ? defaultSettings.TemporaryPasswordNotification : defaultSettings.NewPasswordNotification;
         }
 
-//        public async Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail data)
-//        {
-//            var emailMessage = await _emailTemplateService.GetEmailMessage(emailType, locale, data);
-//
-//            if (emailMessage == null)
-//                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
-//            else
-//                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
-//        }
-        // EmailTemplateService removed - stub method
+        // The DB-driven EmailTemplateService was removed, so these notifications are built in code
+        // the same way as the ones in EmailSenderExtensions.
         public async Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail data)
         {
-            return new EmailSenderResult() { ErrorMessage = "Email template service not available." };
+            if (string.IsNullOrEmpty(data?.Email))
+                return new EmailSenderResult() { ErrorMessage = "Unable to send login information: no email address." };
+
+            var defaultSettings = await _defaultSettings.GetSetting();
+            var isTemporary = string.Equals(emailType, defaultSettings.TemporaryPasswordNotification, StringComparison.OrdinalIgnoreCase);
+
+            var loginUrl = data.CallToActionUrl;
+            var body = Logo(data.LogoUrl) +
+                $"<p>{Text("Hi", locale)} {data.FirstName},</p>" +
+                $"<p>{Text("Your CPI account has been successfully setup. Please click the button below to login or copy and paste the URL to your browser's address bar:", locale)}</p>" +
+                $"<p>{EmailSenderExtensions.LinkButton(CallToAction(data.CallToAction, locale), loginUrl)}</p>" +
+                $"<p><strong>{Text("CPI URL", locale)}:</strong> {loginUrl}<br>" +
+                $"<strong>{Text("User Name", locale)}:</strong> {data.Email}<br>" +
+                $"<strong>{Text(isTemporary ? "Your temporary CPI password" : "Your CPI password", locale)}:</strong> {data.Password}</p>" +
+                (isTemporary ? $"<p>{Text("You will be asked to change your password after successfully logging in.", locale)}</p>" : "");
+
+            return await _emailSender.SendEmailAsync(data.Email, Text("CPI Login Information", locale), body);
         }
 
-//        public async Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data)
-//        {
-//            var defaultSettings = await _defaultSettings.GetSetting();
-//            var emailMessage = await _emailTemplateService.GetEmailMessage(defaultSettings.AccountApprovalNotification, locale, data);
-//
-//            if (emailMessage == null)
-//                return new EmailSenderResult() { ErrorMessage = "Email template not found. Unable to send email." };
-//            else
-//                return await _emailSender.SendEmailAsync(data.Email, emailMessage.Subject, emailMessage.Body);
-//        }
-        // EmailTemplateService removed - stub method
         public async Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data)
         {
-            return new EmailSenderResult() { ErrorMessage = "Email template service not available." };
+            if (string.IsNullOrEmpty(data?.Email))
+                return new EmailSenderResult() { ErrorMessage = "Unable to send account approval notification: no email address." };
+
+            var body = Logo(data.LogoUrl) +
+                $"<p>{Text("Hi", locale)} {data.FirstName},</p>" +
+                $"<p>{Text("Your CPI account has been approved. Please click the button below to login:", locale)}</p>" +
+                $"<p>{EmailSenderExtensions.LinkButton(CallToAction(data.CallToAction, locale), data.CallToActionUrl)}</p>" +
+                $"<p><strong>{Text("User Name", locale)}:</strong> {data.Email}</p>";
+
+            return await _emailSender.SendEmailAsync(data.Email, Text("CPI Account Approved", locale), body);
         }
 
-        // EmailTemplateService removed - stub method
+        // OutlookService was removed during debloat, so there is nothing to register or notify about.
         public Task<EmailSenderResult> SendOutlookAddInRegistration(string locale, string emailType, OutlookAddInRegistration data)
         {
-            return Task.FromResult(new EmailSenderResult() { ErrorMessage = "Email template service not available." });
+            return Task.FromResult(new EmailSenderResult() { ErrorMessage = "Outlook Add-In registration is not available." });
         }
 
-        // EmailTemplateService removed - stub method
-        public Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification data)
+        public async Task<EmailSenderResult> SendUserRegistrationNotification(UserRegistrationNotification data)
         {
-            return Task.FromResult(new EmailSenderResult() { ErrorMessage = "Email template service not available." });
+            var recipients = await _settingsManager.GetRegistrationApprovalNotificationRecipients();
+
+            if (recipients == null || !recipients.Any())
+                return new EmailSenderResult() { ErrorMessage = "No registration approval notification recipients configured." };
+
+            var locale = recipients.First().Locale;
+            var body = Logo(data.LogoUrl) +
+                $"<p>{Text("A new user has registered and is waiting for approval:", locale)}</p>" +
+                $"<p><strong>{Text("Name", locale)}:</strong> {data.UserFirstName} {data.UserLastName}<br>" +
+                $"<strong>{Text("Email", locale)}:</strong> {data.UserEmail}<br>" +
+                $"<strong>{Text("User Type", locale)}:</strong> {Text(data.UserType.ToString(), locale)}<br>" +
+                $"<strong>{Text("Status", locale)}:</strong> {Text(data.UserStatus.ToString(), locale)}</p>" +
+                $"<p>{EmailSenderExtensions.LinkButton(CallToAction(data.CallToAction, locale), data.CallToActionUrl, 240)}</p>";
+
+            return await _emailSender.SendEmailAsync(recipients.Select(r => r.MailAddress).ToList(), Text("CPI User Registration Approval", locale), body);
         }
+
+        private string Text(string text, string locale) => _localizer.GetStringWithCulture(text, locale);
+
+        private string CallToAction(string callToAction, string locale)
+            => string.IsNullOrEmpty(callToAction) ? Text("Login", locale) : callToAction;
+
+        private static string Logo(string logoUrl)
+            => string.IsNullOrEmpty(logoUrl) ? "" : $"<p><img src=\"{logoUrl}\" alt=\"Computer Packages Inc.\" style=\"max-height:60px;\"></p>";
 
         public Task<RegisterClientResult> RegisterOutlookAddInClient(string email)
         {
