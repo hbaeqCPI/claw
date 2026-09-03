@@ -104,8 +104,8 @@ namespace LawPortal.Web.Areas.Admin.Services
             return requireChangePassword ? defaultSettings.TemporaryPasswordNotification : defaultSettings.NewPasswordNotification;
         }
 
-        // The DB-driven EmailTemplateService was removed, so these notifications are built in code
-        // the same way as the ones in EmailSenderExtensions.
+        // The DB-driven EmailTemplateService was removed, so these notifications use the
+        // hardcoded bodies in EmailSenderExtensions.
         public async Task<EmailSenderResult> SendNewPassword(string locale, string emailType, UserAccountEmail data)
         {
             if (string.IsNullOrEmpty(data?.Email))
@@ -114,17 +114,9 @@ namespace LawPortal.Web.Areas.Admin.Services
             var defaultSettings = await _defaultSettings.GetSetting();
             var isTemporary = string.Equals(emailType, defaultSettings.TemporaryPasswordNotification, StringComparison.OrdinalIgnoreCase);
 
-            var loginUrl = data.CallToActionUrl;
-            var body = Logo(data.LogoUrl) +
-                $"<p>{Text("Hi", locale)} {data.FirstName},</p>" +
-                $"<p>{Text("Your CPI account has been successfully setup. Please click the button below to login or copy and paste the URL to your browser's address bar:", locale)}</p>" +
-                $"<p>{EmailSenderExtensions.LinkButton(CallToAction(data.CallToAction, locale), loginUrl)}</p>" +
-                $"<p><strong>{Text("CPI URL", locale)}:</strong> {loginUrl}<br>" +
-                $"<strong>{Text("User Name", locale)}:</strong> {data.Email}<br>" +
-                $"<strong>{Text(isTemporary ? "Your temporary CPI password" : "Your CPI password", locale)}:</strong> {data.Password}</p>" +
-                (isTemporary ? $"<p>{Text("You will be asked to change your password after successfully logging in.", locale)}</p>" : "");
-
-            return await _emailSender.SendEmailAsync(data.Email, Text("CPI Login Information", locale), body);
+            return isTemporary
+                ? await _emailSender.SendTemporaryPassword(data.Email, data.FirstName, data.Password, data.CallToActionUrl)
+                : await _emailSender.SendNewPassword(data.Email, data.FirstName, data.Password, data.CallToActionUrl);
         }
 
         public async Task<EmailSenderResult> SendApprovalNotification(string locale, UserAccountApprovalNotification data)

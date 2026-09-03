@@ -35,20 +35,31 @@ namespace LawPortal.Web.Services
 
         public static async Task<EmailSenderResult> SendTemporaryPassword(this IEmailSender emailSender, CPiUser user, string tempPassword, string loginUrl)
         {
-            return await emailSender.SendEmailAsync(user.Email, "CPI Login Information",
-                $"<p>Hi {user.FirstName},</p>" +
+            return await emailSender.SendTemporaryPassword(user.Email, user.FirstName, tempPassword, loginUrl);
+        }
+
+        public static async Task<EmailSenderResult> SendTemporaryPassword(this IEmailSender emailSender, string email, string firstName, string tempPassword, string loginUrl)
+        {
+            return await emailSender.SendEmailAsync(email, "CPI Login Information",
+                $"<p>Hi {firstName},</p>" +
                 $"<p>Your CPI account has been successfully setup. Please click the button below to login or copy and paste the URL to your browser's address bar:</p>" +
                 $"<p>" + LinkButton("Login", loginUrl) + "</p>" +
                 $"<p><strong>CPI URL:</strong> {loginUrl}<br><strong>Your temporary CPI password:</strong> {tempPassword}</p>" +
                 $"<p>You will be asked to change your password after successfully logging in.</p>");
         }
-        public static async Task<EmailSenderResult> SendNewPassword(this IEmailSender emailSender, CPiUser user, string tempPassword, string loginUrl)
+
+        public static async Task<EmailSenderResult> SendNewPassword(this IEmailSender emailSender, CPiUser user, string newPassword, string loginUrl)
         {
-            return await emailSender.SendEmailAsync(user.Email, "CPI Login Information",
-                $"<p>Hi {user.FirstName},</p>" +
+            return await emailSender.SendNewPassword(user.Email, user.FirstName, newPassword, loginUrl);
+        }
+
+        public static async Task<EmailSenderResult> SendNewPassword(this IEmailSender emailSender, string email, string firstName, string newPassword, string loginUrl)
+        {
+            return await emailSender.SendEmailAsync(email, "CPI Login Information",
+                $"<p>Hi {firstName},</p>" +
                 $"<p>Your CPI account has been successfully setup. Please click the button below to login or copy and paste the URL to your browser's address bar:</p>" +
                 $"<p>" + LinkButton("Login", loginUrl) + "</p>" +
-                $"<p><strong>CPI URL:</strong> {loginUrl}<br><strong>Your CPI password:</strong> {tempPassword}</p>");
+                $"<p><strong>CPI URL:</strong> {loginUrl}<br><strong>Your CPI password:</strong> {newPassword}</p>");
         }
 
         public static string LinkButton(string label, string url, int width = 0, int height = 0)
