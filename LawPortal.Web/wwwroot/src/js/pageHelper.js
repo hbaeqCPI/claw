@@ -655,20 +655,42 @@ const initializeDetailTabs = function (activePage) {
 };
 
 
+// Look the detail content container up again rather than trusting the cached
+// activePage.infoContainer. Pages are APPENDED to #page (see appendPage) and
+// removed again by the breadcrumbs, so the cached jQuery object can end up empty
+// or pointing at a container that has since been replaced. That matters because
+// writing a record into an empty or detached set is a silent no-op: the fetch
+// succeeds, nothing appears, and the record navigator's position still advances
+// — "the number at the bottom moves but nothing else does".
+const resolveInfoContainer = function (activePage) {
+    if (!activePage.detailContentContainer)
+        return activePage.infoContainer || $();
+
+    let container = $('[id="' + activePage.detailContentContainer + '"]');
+    if (container.length > 1)
+        container = container.last(); //newest appended page is the visible one
+
+    if (container.length)
+        activePage.infoContainer = container;
+
+    return container.length ? container : (activePage.infoContainer || $());
+};
+
 const showDetails = function (activePage, id, afterShowHandler) {
-    window.kendo.destroy(activePage.infoContainer);
+    const infoContainer = resolveInfoContainer(activePage);
+    window.kendo.destroy(infoContainer);
 
     //get active tab info before loading the next record
-    const activeTabId = activePage.infoContainer.find(".cpiDetailInfoNav .nav-link.active").attr("id");
+    const activeTabId = infoContainer.find(".cpiDetailInfoNav .nav-link.active").attr("id");
 
     // The detail .tab-content is normally a SIBLING of .page-content, but some
     // views (e.g. Deploy detail) nest it INSIDE .page-content. Check both so the
     // active pane is captured either way — otherwise activeContentPaneId is
     // undefined and restoreActiveTab restores only the nav, leaving the wrong
     // tab/content combo after a save.
-    let contentTabContainer = activePage.infoContainer.find(".page-content").siblings(".tab-content");
+    let contentTabContainer = infoContainer.find(".page-content").siblings(".tab-content");
     if (contentTabContainer.length === 0)
-        contentTabContainer = activePage.infoContainer.find(".page-content").children(".tab-content");
+        contentTabContainer = infoContainer.find(".page-content").children(".tab-content");
     const activeContentPane = contentTabContainer.children(".tab-pane.active");
     const activeContentPaneId = $(activeContentPane[0]).attr("id");
 
@@ -689,12 +711,21 @@ const showDetails = function (activePage, id, afterShowHandler) {
 const getDetails = function (activePage, id, afterGetHandler) {
     const deferred = $.Deferred();
     const detailUrl = activePage.detailUrl.replace("recid", id);
+    const container = resolveInfoContainer(activePage);
 
     cpiLoadingSpinner.show();
 
     $.get(detailUrl)
         .done(function (result) {
-            activePage.infoContainer.html(result);
+            if (!container.length) {
+                //Nowhere to put the record — say so rather than discarding it.
+                cpiLoadingSpinner.hide();
+                showErrors("Cannot display the record: the detail container (" + activePage.detailContentContainer + ") is not on the page.");
+                deferred.reject();
+                return;
+            }
+
+            container.html(result);
             //hideErrors();
 
             if (afterGetHandler)
