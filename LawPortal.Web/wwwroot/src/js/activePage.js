@@ -1,4 +1,4 @@
-import SearchPage from "./searchPage";
+﻿import SearchPage from "./searchPage";
 
 export default class ActivePage extends SearchPage {
 
@@ -103,7 +103,9 @@ export default class ActivePage extends SearchPage {
             //setup record navigator 
             if (this.recordNavigator) {
                 if (detailPage.singleRecord || detailPage.recordId == 0) {
-                    this.mainSearchRecordIds = []; //clear existing
+                    //clear existing in place, never reassign — the navigator
+                    //captures this array by reference (see searchResultGridRequestEnd)
+                    this.mainSearchRecordIds.length = 0;
                     if (detailPage.recordId > 0)
                         this.mainSearchRecordIds.push(detailPage.recordId);
                 }

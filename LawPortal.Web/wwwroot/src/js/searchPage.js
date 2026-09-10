@@ -496,13 +496,23 @@ export default class SearchPage extends BasePage {
     //sets the list of record Ids for record navigation
     searchResultGridRequestEnd = (e) => {
         cpiStatusMessage.hide();
-        this.mainSearchRecordIds = [];
+
+        // Update the array IN PLACE — never reassign it. The record navigator
+        // captures this array by reference when a detail page initializes (see
+        // ActivePage.initializeDetailPage), so replacing it here orphans the
+        // copy the navigator holds and its arrows go dead. That happens on any
+        // grid read that lands after the navigator was created, which is why it
+        // showed up once search criteria were in play: restoring criteria makes
+        // loadSearchCriteria fire a deferred dataSource.read().
+        this.mainSearchRecordIds.length = 0;
 
         if (e.response) {
             $(this.refineSearchContainer).find(".total-results-count").html(e.response.Total);
 
             if (e.response.Data.length > 0) {
-                this.mainSearchRecordIds = e.response.Ids;
+                const ids = e.response.Ids || [];
+                for (let i = 0; i < ids.length; i++)
+                    this.mainSearchRecordIds.push(ids[i]);
                 $(this.searchResultContainer).find(".no-results-hide").show();
             }
             else if (this.showNoRecordError) {
