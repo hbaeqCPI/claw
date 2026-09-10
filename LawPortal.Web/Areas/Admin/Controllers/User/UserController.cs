@@ -435,7 +435,12 @@ namespace LawPortal.Web.Areas.Admin.Controllers
         {
             var viewModel = new DetailPageViewModel<UserDetailViewModel>
             {
-                Detail = new UserDetailViewModel()
+                Detail = new UserDetailViewModel
+                {
+                    // Preselect Administrator so the form matches what Create() will
+                    // save for a new account (see the note there).
+                    UserType = (int)CPiUserType.Administrator
+                }
             };
 
             this.AddDefaultNavigationUrls(viewModel);
@@ -549,6 +554,18 @@ namespace LawPortal.Web.Areas.Admin.Controllers
                 user.FirstName = userDetail.FirstName;
                 user.LastName = userDetail.LastName;
                 user.UserType = (CPiUserType)userDetail.UserType;
+
+                // New accounts get full administrative rights, the way tempadmin has
+                // them: the Administrator user type short-circuits every role check in
+                // ClaimsPrincipalExtensions.IsInRole, so it needs no per-system roles.
+                // Left as the plain "User" type, an account instead picks up the
+                // read-only defaults in tblCPiUserTypeSystemRoles and lands on detail
+                // pages with no Add/Copy and no editable fields.
+                // Types that carry a linked entity (Inventor, Contact Person, Attorney,
+                // Docket Service) are deliberately not promoted — their access is driven
+                // by that entity, and changing the type would break the entity filter.
+                if (user.UserType == CPiUserType.User)
+                    user.UserType = CPiUserType.Administrator;
                 user.Status = (CPiUserStatus)userDetail.Status;
                 user.EntityFilterType = userDetail.EntityFilterType == 0 ? user.DefaultEntityFilterType : (CPiEntityType)userDetail.EntityFilterType;
                 user.PasswordNeverExpires = userDetail.PasswordNeverExpires;
