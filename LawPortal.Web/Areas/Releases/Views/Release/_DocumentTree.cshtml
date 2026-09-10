@@ -278,33 +278,38 @@
             return selectedFolderId;
         }
 
-        function addDocument() {
-            var fid = resolveCurrentFolderId();
-            var url = "@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + fid + "&releaseId=" + releaseId;
+        // Re-read everything a save can change: both grids (the edited row may
+        // live in either) and the selected tree node, so the saved values are
+        // visible without leaving the page.
+        function refreshAfterDocSave() {
+            var g = getGrid(); if (g) g.dataSource.read();
+            var cg = getCompanionGrid(); if (cg) cg.dataSource.read();
+            var tv = getTreeView();
+            if (tv) {
+                var sn = tv.select();
+                if (sn.length) { var item = tv.dataItem(sn); if (item) { item.loaded(false); item.load(); } }
+            }
+        }
+
+        function showDocDialog(url) {
             $.get(url).done(function (html) {
                 var container = $(".site-content .popup");
                 if (!container.length) { container = $('<div class="popup"></div>'); $(".site-content").append(container); }
                 container.empty().html(html);
-                $(document).off("releaseDocSaved.docTree").on("releaseDocSaved.docTree", function () {
-                    var g = getGrid(); if (g) g.dataSource.read();
-                    var tv = getTreeView(); if (tv) { var sn = tv.select(); if (sn.length) { var item = tv.dataItem(sn); if (item) { item.loaded(false); item.load(); } } }
-                });
+                $(document).off("releaseDocSaved.docTree").on("releaseDocSaved.docTree", refreshAfterDocSave);
             }).fail(function (e) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(e); else alert("Error loading document dialog."); });
+        }
+
+        function addDocument() {
+            var fid = resolveCurrentFolderId();
+            showDocDialog("@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + fid + "&releaseId=" + releaseId);
         }
 
         function editDocument(e) {
             e.preventDefault();
             var dataItem = getRowDataItem(e);
             if (!dataItem) return;
-            var url = "@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + selectedFolderId + "&docId=" + dataItem.DocId;
-            $.get(url).done(function (html) {
-                var container = $(".site-content .popup");
-                if (!container.length) { container = $('<div class="popup"></div>'); $(".site-content").append(container); }
-                container.empty().html(html);
-                $(document).off("releaseDocSaved.docTree").on("releaseDocSaved.docTree", function () {
-                    var g = getGrid(); if (g) g.dataSource.read();
-                });
-            }).fail(function (e) { if (typeof pageHelper !== 'undefined') pageHelper.showErrors(e); else alert("Error loading document dialog."); });
+            showDocDialog("@Url.Action("DocumentDetailDialog", "Release", new { area = "Releases" })" + "?folderId=" + selectedFolderId + "&docId=" + dataItem.DocId);
         }
 
         // Trigger a file download without opening a new tab. window.open(url, "_blank")
@@ -588,9 +593,11 @@
                             {
                                 @* Checkbox column — what "Download Selected Files" acts on. *@
                                 columns.Select().Width(40);
-                                columns.Bound("DocName").Title(Localizer["Title"].Value).Width(280);
+                                columns.Bound("DocName").Title(Localizer["Title"].Value).Width(240);
                                 columns.Bound("UserFileName").Title(Localizer["User File Name"].Value);
-                                columns.Bound("FolderName").Title(Localizer["Folder"].Value).Width(200);
+                                @* No Folder column here: both panels show one folder at a
+                                   time (the selected tree node), and the row of command
+                                   buttons needs the width more than a constant does. *@
                                 columns.Bound("DateCreated").Title(Localizer["Date"].Value)
                                     .ClientTemplate("#= (DateCreated == null) ? '' : kendo.toString(DateCreated,'dd-MMM-yyyy')#")
                                     .Width(150).Sortable(true);
@@ -601,16 +608,16 @@
                                     .HeaderHtmlAttributes(new { @class = "text-center" });
                                 columns.Command(command =>
                                 {
-                                    command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:80px;" });
+                                    command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:105px;" });
                                     if (!isReadOnly)
                                     {
-                                        command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
+                                        command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:85px;" });
                                     }
                                     if (!isReadOnly && detailPagePermission.CanDeleteRecord)
                                     {
-                                        command.Custom("Delete").Text(Localizer["Delete"]).Click($"function(e) {{ releaseDocTree_{eid}.deleteDocument(e,this) }}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { style = "width:80px;" });
+                                        command.Custom("Delete").Text(Localizer["Delete"]).Click($"function(e) {{ releaseDocTree_{eid}.deleteDocument(e,this) }}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { style = "width:85px;" });
                                     }
-                                }).Width(260);
+                                }).Width(300);
                             })
                             .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
                             .PersistSelection()
@@ -669,16 +676,16 @@
                                         .HeaderHtmlAttributes(new { @class = "text-center" });
                                     columns.Command(command =>
                                     {
-                                        command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:80px;" });
+                                        command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:105px;" });
                                         if (!isReadOnly)
                                         {
-                                            command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
+                                            command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:85px;" });
                                         }
                                         if (!isReadOnly && detailPagePermission.CanDeleteRecord)
                                         {
-                                            command.Custom("Delete").Text(Localizer["Delete"]).Click($"function(e) {{ releaseDocTree_{eid}.deleteDocument(e,this) }}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { style = "width:80px;" });
+                                            command.Custom("Delete").Text(Localizer["Delete"]).Click($"function(e) {{ releaseDocTree_{eid}.deleteDocument(e,this) }}").IconClass("k-icon fal fa-trash-alt").HtmlAttributes(new { style = "width:85px;" });
                                         }
-                                    }).Width(260);
+                                    }).Width(300);
                                 })
                                 .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
                                 .PersistSelection()

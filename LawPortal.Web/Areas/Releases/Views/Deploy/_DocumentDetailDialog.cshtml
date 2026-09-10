@@ -24,101 +24,29 @@
                 </div>
             </div>
 
-            @* Editing an existing document is limited to Name, Author and Remarks.
-               Document type, the flags and the file itself stay as they were —
-               the grids are filtered by file type, so retyping or replacing the
-               file would move the document out from under the panel it lives in. *@
-            @if (addMode)
-            {
-                @* Document Type + Author on same row.
-                   GetDocTypes lives on the Release controller and isn't
-                   Release-specific — it just returns all DocType rows.
-                   Reusing it here avoids duplicating the endpoint. *@
-                <div class="form-row">
-                    <div class="col-3">
-                        <div class="form-group float-label">
-                            <label for="DocTypeId">@Localizer["Document Type"]</label>
-                            @(Html.Kendo().DropDownList()
-                                .Name("DocTypeId")
-                                .DataTextField("DocTypeName")
-                                .DataValueField("DocTypeId")
-                                .OptionLabel(Localizer["-- Select --"].Value)
-                                .AutoWidth(true)
-                                .DataSource(source => source.Read(read =>
-                                    read.Action("GetDocTypes", "Release", new { area = "Releases" })))
-                                .Value(Model.DocTypeId?.ToString() ?? "")
-                                .HtmlAttributes(new { style = "width:100%;" })
-                            )
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="form-group float-label">
-                            <label for="Author">@Localizer["Author"]</label>
-                            <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
-                        </div>
+            @* The dialog carries only Name, Author and Remarks, for both add and
+               edit. Document type is not asked for — it is left unset on a new
+               document and untouched on an existing one — and the file itself
+               cannot be swapped here: the document grids are filtered by file
+               type, so retyping or replacing the file would move the document
+               out from under the panel it lives in. *@
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label for="Author">@Localizer["Author"]</label>
+                        <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
                     </div>
                 </div>
+            </div>
 
-                @* File upload *@
-                <div class="form-row pt-1 pb-1" style="font-size: small">
+            @* The attached file, for reference only. *@
+            @if (!addMode && !string.IsNullOrEmpty(userFileName))
+            {
+                <div class="form-row pt-1 pb-1" style="font-size:small">
                     <div class="col-12">
-                        @(Html.Kendo().Upload()
-                            .Name("UploadedFile")
-                            .Messages(m => m.Select(Localizer["Select a file to upload..."]))
-                            .Multiple(false)
-                            .Validation(validation => validation.MaxFileSize(1500000))
-                        )
+                        <span class="fal fa-file mr-1"></span> @userFileName
                     </div>
                 </div>
-
-                @* Checkboxes *@
-                <div class="form-row pt-2 pb-2">
-                    <div class="col-3">
-                        <div class="form-check">
-                            <input type="checkbox" name="IsPrintOnReport" value="true" class="mr-1" @(Model.IsPrintOnReport ? "checked" : "") />
-                            <label class="mb-0">@Localizer["Print on Reports?"]</label>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="form-check">
-                            <input type="checkbox" name="IsDefault" value="true" class="mr-1" @(Model.IsDefault ? "checked" : "") />
-                            <label class="mb-0">@Localizer["Default?"]</label>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="form-check">
-                            <input type="checkbox" name="IsPrivate" value="true" class="mr-1" @(Model.IsPrivate ? "checked" : "") />
-                            <label class="mb-0">@Localizer["Private?"]</label>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="form-check">
-                            <input type="checkbox" name="IncludeInWorkflow" value="true" class="mr-1" @(Model.IncludeInWorkflow ? "checked" : "") />
-                            <label class="mb-0 text-nowrap">@Localizer["Include in Workflow?"]</label>
-                        </div>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="form-row">
-                    <div class="col">
-                        <div class="form-group float-label">
-                            <label for="Author">@Localizer["Author"]</label>
-                            <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
-                        </div>
-                    </div>
-                </div>
-
-                @* The attached file, for reference only — it cannot be swapped here. *@
-                @if (!string.IsNullOrEmpty(userFileName))
-                {
-                    <div class="form-row pt-1 pb-1" style="font-size:small">
-                        <div class="col-12">
-                            <span class="fal fa-file mr-1"></span> @userFileName
-                        </div>
-                    </div>
-                }
             }
 
             @* Remarks *@

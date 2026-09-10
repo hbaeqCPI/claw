@@ -2591,6 +2591,27 @@ input:focus {
     .record-navigator .k-pager-wrap .k-link {
         color: var(--text-pager) !important;
     }
+
+/* Until the navigator has an id list to walk, the record total is empty — keep
+   the bar out of the way rather than show arrows that cannot move. Browsers
+   without :has() simply show it, which is the pre-existing behaviour. */
+.record-navigator .k-pager-wrap:has(.navTotalRecs:empty) {
+    display: none;
+}
+
+/* Position box sits beside the arrows. Kendo floats .k-pager-info to the right
+   for grid pagers; the record navigator reads as one control instead. */
+.record-navigator .k-pager-wrap .record-navigator-position {
+    float: none;
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+}
+
+.record-navigator .k-pager-wrap .currentRecPosition {
+    width: 60px;
+    text-align: center;
+}
 /* end detail page pager */
 
 /* begin combobox */
