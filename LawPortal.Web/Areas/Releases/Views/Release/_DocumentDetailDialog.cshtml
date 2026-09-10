@@ -24,12 +24,12 @@
                 </div>
             </div>
 
-            @* The dialog carries only Name, Author and Remarks, for both add and
-               edit. Document type is not asked for — it is left unset on a new
-               document and untouched on an existing one — and the file itself
-               cannot be swapped here: the document grids are filtered by file
-               type, so retyping or replacing the file would move the document
-               out from under the panel it lives in. *@
+            @* The dialog carries only Name, Author and Remarks. Document type is
+               not asked for — it is left unset on a new document and untouched on
+               an existing one. A new document takes its file here; an existing
+               one cannot have it swapped, because the document grids are filtered
+               by file type and a replacement of a different type would move the
+               document out from under the panel it lives in. *@
             <div class="form-row">
                 <div class="col">
                     <div class="form-group float-label">
@@ -39,9 +39,29 @@
                 </div>
             </div>
 
-            @* The attached file, for reference only. *@
-            @if (!addMode && !string.IsNullOrEmpty(userFileName))
+            @if (addMode)
             {
+                @* File for the new document: browse or drop. Plain markup rather
+                   than Html.Kendo().Upload() because Kendo only wires up dropping
+                   in async mode (_supportsDrop requires an async saveUrl), and
+                   this dialog posts the file with the rest of the form. The
+                   dropped file is assigned to the file input below, so it still
+                   arrives as UploadedFile. *@
+                <div class="form-row pt-1 pb-2">
+                    <div class="col-12">
+                        <div id="@(formId)_drop" class="doc-file-drop">
+                            <input type="file" name="UploadedFile" id="@(formId)_file" class="d-none" />
+                            <span class="fal fa-cloud-upload-alt mr-2"></span>
+                            <a href="#" onclick="return false;" class="doc-file-browse">@Localizer["Select a file"]</a>
+                            <span class="text-muted">@Localizer["or drop it here"]</span>
+                            <div class="doc-file-chosen small mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(userFileName))
+            {
+                @* The attached file, for reference only. *@
                 <div class="form-row pt-1 pb-1" style="font-size:small">
                     <div class="col-12">
                         <span class="fal fa-file mr-1"></span> @userFileName
@@ -84,6 +104,36 @@
         dialog.data("kendoWindow").center().open();
 
         var form = $("#@formId");
+
+        // File picker / drop area (add mode only). Assigning a DataTransfer's
+        // FileList to the input is what lets a dropped file post with the form.
+        var drop = $("#@(formId)_drop");
+        if (drop.length) {
+            var fileInput = document.getElementById("@(formId)_file");
+            var showChosen = function () {
+                var f = fileInput.files && fileInput.files[0];
+                drop.find(".doc-file-chosen").html(
+                    f ? '<span class="fal fa-file mr-1"></span>' + kendo.htmlEncode(f.name) : "");
+            };
+            drop.on("click", ".doc-file-browse", function () { fileInput.click(); });
+            $(fileInput).on("change", showChosen);
+            drop.on("dragenter dragover", function (e) {
+                e.preventDefault(); e.stopPropagation();
+                drop.addClass("doc-file-drop-over");
+            });
+            drop.on("dragleave dragend", function () { drop.removeClass("doc-file-drop-over"); });
+            drop.on("drop", function (e) {
+                e.preventDefault(); e.stopPropagation();
+                drop.removeClass("doc-file-drop-over");
+                var dropped = e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files;
+                if (!dropped || !dropped.length) return;
+                // Keep the first file only — a document holds one file.
+                var dt = new DataTransfer();
+                dt.items.add(dropped[0]);
+                fileInput.files = dt.files;
+                showChosen();
+            });
+        }
         form.on("submit", function (e) {
             e.preventDefault();
             var formData = new FormData(form[0]);

@@ -315,8 +315,6 @@
             });
         }
 
-        function searchDocuments() { }
-
         function fallbackFolderClick() {
             var tv = getTreeView();
             if (tv) {
@@ -400,7 +398,7 @@
             treeMenuOpen: treeMenuOpen, treeMenuSelect: treeMenuSelect, getSelectedFolderId: getSelectedFolderId,
             deleteDocument: deleteDocument, addDocument: addDocument, editDocument: editDocument,
             viewDocument: viewDocument, viewDocumentFromGrid: viewDocumentFromGrid,
-            downloadSelected: downloadSelected, searchDocuments: searchDocuments, fallbackFolderClick: fallbackFolderClick,
+            downloadSelected: downloadSelected, fallbackFolderClick: fallbackFolderClick,
             onUploadStart: onUploadStart, onUploadDocFail: onUploadDocFail, refreshFolderAfterUpload: refreshFolderAfterUpload,
             onTreeDataBound: onTreeDataBound
         };
@@ -523,7 +521,6 @@
                             toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"].ToString()).HtmlAttributes(new { onclick = $"deployDocTree_{id}.addDocument()" });
                         }
                         toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"deployDocTree_{id}.downloadSelected()" });
-                        toolbar.Custom().Name("DocumentsSearch").IconClass("k-icon fal fa-search").Text(Localizer["Search"].ToString()).HtmlAttributes(new { onclick = $"deployDocTree_{id}.searchDocuments()" });
                     })
                     .AutoBind(false)
                     .HtmlAttributes(new { @class = "imageGridView kendo-Grid" })

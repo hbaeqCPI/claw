@@ -356,8 +356,6 @@
             });
         }
 
-        function searchDocuments() { }
-
         function fallbackFolderClick() {
             // Try to get folderId from tree data source if loaded
             var tv = getTreeView();
@@ -491,7 +489,7 @@
             treeMenuOpen: treeMenuOpen, treeMenuSelect: treeMenuSelect, getSelectedFolderId: getSelectedFolderId,
             deleteDocument: deleteDocument, addDocument: addDocument, editDocument: editDocument,
             viewDocument: viewDocument, viewDocumentFromGrid: viewDocumentFromGrid,
-            downloadSelected: downloadSelected, searchDocuments: searchDocuments, fallbackFolderClick: fallbackFolderClick,
+            downloadSelected: downloadSelected, fallbackFolderClick: fallbackFolderClick,
             onUploadStart: onUploadStart, onUploadDocFail: onUploadDocFail, refreshFolderAfterUpload: refreshFolderAfterUpload,
             onTreeDataBound: onTreeDataBound
         };
@@ -601,7 +599,6 @@
                                 columns.Bound("DateCreated").Title(Localizer["Date"].Value)
                                     .ClientTemplate("#= (DateCreated == null) ? '' : kendo.toString(DateCreated,'dd-MMM-yyyy')#")
                                     .Width(150).Sortable(true);
-                                columns.Bound("DocTypeName").Title(Localizer["Type"].Value).Width(100);
                                 columns.Bound("IconClass").Title(Localizer["Image"].Value).Width(75)
                                     .ClientTemplate($"# if (data.IsDocViewable) {{ #<a role='button' href='javascript:void(0)' onclick='releaseDocTree_{eid}.viewDocument(#=data.FileId#, \"#=data.DocFileName#\")'><span class='#=data.IconClass#'></span></a># }} else {{ #<span class='#=data.IconClass#'></span># }} #")
                                     .HtmlAttributes(new { @class = "text-center" })
@@ -629,7 +626,6 @@
                                     toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.addDocument()" });
                                 }
                                 toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.downloadSelected(this)" });
-                                toolbar.Custom().Name("DocumentsSearch").IconClass("k-icon fal fa-search").Text(Localizer["Search"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.searchDocuments()" });
                             })
                             .AutoBind(false)
                             .HtmlAttributes(new { @class = "imageGridView kendo-Grid" })

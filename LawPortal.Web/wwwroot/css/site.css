@@ -2592,6 +2592,26 @@ input:focus {
         color: var(--text-pager) !important;
     }
 
+/* begin document detail dialog file drop */
+.doc-file-drop {
+    border: 1px dashed var(--separator);
+    border-radius: 3px;
+    padding: 14px;
+    text-align: center;
+    font-size: small;
+}
+
+.doc-file-drop.doc-file-drop-over {
+    border-color: var(--btn-primary);
+    border-style: solid;
+}
+
+.doc-file-drop .doc-file-browse {
+    cursor: pointer;
+    text-decoration: underline;
+}
+/* end document detail dialog file drop */
+
 /* Until the navigator has an id list to walk, the record total is empty — keep
    the bar out of the way rather than show arrows that cannot move. Browsers
    without :has() simply show it, which is the pre-existing behaviour. */
