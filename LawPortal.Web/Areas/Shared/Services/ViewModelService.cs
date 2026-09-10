@@ -97,6 +97,52 @@ namespace LawPortal.Web.Services
         }
 
 
+        // Keyed variants: same result, plus one RecordNavigationKey per row so the
+        // detail-page record navigator can walk screens whose records are not keyed on
+        // a single int. keyProperties are read off each row and double as the query
+        // names the screen's Detail action binds from, so they have to match its
+        // parameter names (model binding is case-insensitive).
+        public virtual async Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<T> list, string? defaultSortOrder, string? idProperty, params string[] keyProperties)
+        {
+            if (request.Sorts != null && request.Sorts.Any())
+                list = list.ApplySorting(request.Sorts);
+            else
+                list = list.OrderBy(ExpressionHelper.GetPropertyExpression<T>(defaultSortOrder));
+
+            // Read the key columns for every row, in result order, before paging.
+            var keyRows = await list.Select<T>(RecordNavigationKey.PropertyNames(keyProperties)).ToListAsync();
+            var keys = RecordNavigationKey.BuildAll(keyRows, keyProperties);
+
+            return new CPiDataSourceResult()
+            {
+                Data = await list.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
+                Total = keys.Length,
+                Ids = Array.Empty<int>(),
+                Keys = keys
+            };
+        }
+
+        public virtual async Task<CPiDataSourceResult> CreateViewModelForGrid<T2>(DataSourceRequest request, IQueryable<T> list, string? defaultSortOrder, string? idProperty, params string[] keyProperties)
+        {
+            var listVM = list.ProjectTo<T2>();
+
+            if (request.Sorts != null && request.Sorts.Any())
+                listVM = listVM.ApplySorting(request.Sorts);
+            else
+                listVM = listVM.OrderBy(ExpressionHelper.GetPropertyExpression<T2>(defaultSortOrder));
+
+            var keyRows = await listVM.Select<T2>(RecordNavigationKey.PropertyNames(keyProperties)).ToListAsync();
+            var keys = RecordNavigationKey.BuildAll(keyRows, keyProperties);
+
+            return new CPiDataSourceResult()
+            {
+                Data = await listVM.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
+                Total = keys.Length,
+                Ids = Array.Empty<int>(),
+                Keys = keys
+            };
+        }
+
         public virtual async Task<T> GetEntityByCode(string? property, string? value)
         {
             var predicate = ExpressionHelper.BuildPredicate<T>(property, value, false);

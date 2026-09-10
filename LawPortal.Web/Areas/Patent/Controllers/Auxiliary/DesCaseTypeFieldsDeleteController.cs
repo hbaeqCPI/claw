@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -76,7 +76,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 .Distinct()
                 .OrderBy(d => d.DesCaseType).ThenBy(d => d.Systems)
                 .ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "desCaseType:DesCaseType", "systems:Systems"));
         }
 
         public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType = "", string systems = "")
@@ -159,6 +159,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Delete Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("desCaseType", desCaseType), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

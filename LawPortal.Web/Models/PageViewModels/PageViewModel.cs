@@ -14,6 +14,13 @@ namespace LawPortal.Web.Models.PageViewModels
         public string Title { get; set; }
         public bool CanAddRecord { get; set; }
         public int RecordId { get; set; }
+
+        /// <summary>
+        /// Key of the record on screen, for the record navigator, on screens whose
+        /// records are not keyed on a single int (RecordId is a sentinel there).
+        /// Must be built with RecordNavigationKey so it matches the grid's Keys.
+        /// </summary>
+        public string RecordKey { get; set; }
         public bool SingleRecord { get; set; }
         public bool FromSearch { get; set; }
         public string ActiveTab { get; set; }

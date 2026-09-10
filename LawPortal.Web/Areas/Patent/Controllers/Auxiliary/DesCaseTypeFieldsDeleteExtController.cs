@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -73,7 +73,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "desCaseType:DesCaseType", "fromField:FromField", "toField:ToField", "desCaseTypeNew:DesCaseTypeNew", "fromFieldNew:FromFieldNew", "toFieldNew:ToFieldNew", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(string desCaseType = "", string fromField = "", string toField = "", string desCaseTypeNew = "", string fromFieldNew = "", string toFieldNew = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -98,6 +98,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Delete Ext Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("desCaseType", desCaseType), ("fromField", fromField), ("toField", toField), ("desCaseTypeNew", desCaseTypeNew), ("fromFieldNew", fromFieldNew), ("toFieldNew", toFieldNew), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

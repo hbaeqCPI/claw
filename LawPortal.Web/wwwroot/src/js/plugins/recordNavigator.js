@@ -43,11 +43,21 @@
                 }
             };
 
+            // A record is identified by an int id on most screens, but by a
+            // RecordNavigationKey string on those keyed on a composite (Country Law,
+            // Des Case Type, the Area Country pairs). Test for "has a value" rather
+            // than "> 0" so keys are not rejected.
+            const hasRecord = function (record) {
+                return record !== undefined && record !== null && record !== "" && record !== 0;
+            };
+
             const gotoPosition = function (pos) {
                 if (pos > 0 && pos <= options.recordIds.length) {
                     const newCurrentId = options.recordIds[pos - 1];
-                    options.navigateHandler(newCurrentId);
-                    updateState(newCurrentId);
+                    if (hasRecord(newCurrentId)) {
+                        options.navigateHandler(newCurrentId);
+                        updateState(newCurrentId);
+                    }
                 }
             };
 
@@ -71,7 +81,7 @@
                         newCurrentId = options.recordIds[options.recordIds.length - 1];
                         break;
                 }
-                if (newCurrentId > 0) {
+                if (hasRecord(newCurrentId)) {
                     options.navigateHandler(newCurrentId);
                     updateState(newCurrentId);
                 }

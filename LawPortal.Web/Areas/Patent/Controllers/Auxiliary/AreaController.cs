@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -122,7 +122,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 }
                 areas = _viewModelService.AddCriteria(areas, mainSearchFilters);
 
-                var result = await _viewModelService.CreateViewModelForGrid(request, areas, "Area", "Area");
+                var result = await _viewModelService.CreateViewModelForGrid(request, areas, "Area", "Area", "id:Area", "systems:Systems");
                 return Json(result);
             }
 
@@ -176,6 +176,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                     PageId = page.Container,
                     Title = _localizer["Area Detail"].ToString(),
                     RecordId = 1, // non-zero sentinel for string-keyed entity
+                    RecordKey = RecordNavigationKey.Build(("id", id), ("systems", systems)),
                     SingleRecord = singleRecord || !Request.IsAjax(),
                     ActiveTab = tab,
                     PagePermission = page,

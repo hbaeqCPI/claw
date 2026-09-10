@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -75,7 +75,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "country:Country", "caseType:CaseType", "systems:Systems"));
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
@@ -124,6 +124,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Country Law Ext Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("country", country), ("caseType", caseType), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

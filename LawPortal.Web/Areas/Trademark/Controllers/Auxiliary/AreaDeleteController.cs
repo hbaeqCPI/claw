@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -61,7 +61,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 data = data.BuildCriteria(mainSearchFilters);
             }
 
-            var result = await data.ToDataSourceResultAsync(request);
+            var result = await data.ToNavigableDataSourceResultAsync(request, "areaCode:Area", "areaNewCode:AreaNew", "systems:Systems");
             return Json(result);
         }
 
@@ -122,6 +122,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Area Delete Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("areaCode", areaCode), ("areaNewCode", areaNewCode), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

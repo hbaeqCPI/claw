@@ -14,6 +14,12 @@ namespace LawPortal.Web.Interfaces
     {
         Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<T> list, string defaultSortOrder, string idProperty);
         Task<CPiDataSourceResult> CreateViewModelForGrid<T2>(DataSourceRequest request, IQueryable<T> list, string defaultSortOrder, string idProperty);
+
+        //Overloads that also emit RecordNavigationKey keys, for screens whose records
+        //are not keyed on a single int. keyProperties are read off each row and double
+        //as the query names the Detail action binds from.
+        Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<T> list, string defaultSortOrder, string idProperty, params string[] keyProperties);
+        Task<CPiDataSourceResult> CreateViewModelForGrid<T2>(DataSourceRequest request, IQueryable<T> list, string defaultSortOrder, string idProperty, params string[] keyProperties);
         IQueryable<T> AddCriteria(List<QueryFilterViewModel> mainSearchFilters);
         IQueryable<T> AddCriteria(IQueryable<T> list, List<QueryFilterViewModel> mainSearchFilters);
         Task<T> GetEntityByCode(string property, string value);

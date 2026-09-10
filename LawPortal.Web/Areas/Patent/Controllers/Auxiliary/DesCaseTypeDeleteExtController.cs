@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -67,7 +67,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "intlCode:IntlCode", "caseType:CaseType", "desCountry:DesCountry", "desCaseType:DesCaseType", "intlCodeNew:IntlCodeNew", "caseTypeNew:CaseTypeNew", "desCountryNew:DesCountryNew", "desCaseTypeNew:DesCaseTypeNew", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(string intlCode = "", string caseType = "", string desCountry = "", string desCaseType = "", string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -92,6 +92,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Delete Ext Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("intlCode", intlCode), ("caseType", caseType), ("desCountry", desCountry), ("desCaseType", desCaseType), ("intlCodeNew", intlCodeNew), ("caseTypeNew", caseTypeNew), ("desCountryNew", desCountryNew), ("desCaseTypeNew", desCaseTypeNew), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

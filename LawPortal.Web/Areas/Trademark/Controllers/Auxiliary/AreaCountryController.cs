@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -62,7 +62,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 }
             }
 
-            var result = await data.ToDataSourceResultAsync(request);
+            var result = await data.ToNavigableDataSourceResultAsync(request, "areaCode:Area", "country:Country", "systems:Systems");
             return Json(result);
         }
 
@@ -121,6 +121,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Area Country Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("areaCode", areaCode), ("country", country), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

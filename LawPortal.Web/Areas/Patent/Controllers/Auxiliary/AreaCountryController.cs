@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -63,7 +63,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "areaCode:Area", "country:Country", "systems:Systems"));
         }
 
         private async Task<DetailPagePermission> GetPermission()
@@ -121,6 +121,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Area Country Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("areaCode", areaCode), ("country", country), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

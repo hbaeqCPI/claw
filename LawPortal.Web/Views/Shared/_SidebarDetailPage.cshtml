@@ -19,6 +19,7 @@
                 searchUrl: "@Url.Action("Index")",
                 title: "@Html.Raw(Model.Title)",
                 recordId: @Model.RecordId,
+                recordKey: "@Html.Raw(Model.RecordKey)",   @* Raw: the key is a query fragment, and Razor would encode its & as &amp; — the grid's keys are not encoded, so it would never match. Values are already percent-encoded by RecordNavigationKey, so there is nothing here to break out of the string. *@
                 singleRecord: @(Model.SingleRecord ? "true" : "false"),
                 recordNavigateHandler: @(ViewBag.ActivePage).recordNavigateHandler
             });

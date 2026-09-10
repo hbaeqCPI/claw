@@ -12,6 +12,10 @@ export default class SearchPage extends BasePage {
         this.refineSearchContainer = "";
         this.showNoRecordError = true;
         this.mainSearchRecordIds = [];
+        //Record navigator keys, for screens whose records are not keyed on a single
+        //int (see RecordNavigationKey). Kept separate from mainSearchRecordIds, which
+        //other features — the print "all search results" option — expect to be ids.
+        this.mainSearchRecordKeys = [];
     }
 
 
@@ -505,6 +509,7 @@ export default class SearchPage extends BasePage {
         // showed up once search criteria were in play: restoring criteria makes
         // loadSearchCriteria fire a deferred dataSource.read().
         this.mainSearchRecordIds.length = 0;
+        this.mainSearchRecordKeys.length = 0;
 
         if (e.response) {
             $(this.refineSearchContainer).find(".total-results-count").html(e.response.Total);
@@ -513,6 +518,10 @@ export default class SearchPage extends BasePage {
                 const ids = e.response.Ids || [];
                 for (let i = 0; i < ids.length; i++)
                     this.mainSearchRecordIds.push(ids[i]);
+
+                const keys = e.response.Keys || [];
+                for (let i = 0; i < keys.length; i++)
+                    this.mainSearchRecordKeys.push(keys[i]);
                 $(this.searchResultContainer).find(".no-results-hide").show();
             }
             else if (this.showNoRecordError) {

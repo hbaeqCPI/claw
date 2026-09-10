@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -74,7 +74,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "areaCode:Area", "areaNewCode:AreaNew", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(string areaCode, string areaNewCode = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -98,6 +98,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Area Delete Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("areaCode", areaCode), ("areaNewCode", areaNewCode), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

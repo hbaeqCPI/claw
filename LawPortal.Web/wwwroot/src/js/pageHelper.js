@@ -695,7 +695,10 @@ const showDetails = function (activePage, id, afterShowHandler) {
     const activeContentPaneId = $(activeContentPane[0]).attr("id");
 
     //$(document).ready(function () {
-    if (isNaN(id))
+    // Unwrap a save result ({ id: n }). Test the type rather than isNaN: a record can
+    // also be identified by a RecordNavigationKey string, and isNaN is true for those
+    // — reading .id off one yields undefined and the navigation goes nowhere.
+    if (id && typeof id === "object")
         id = id.id;
 
     return getDetails(activePage, id, function () {
@@ -720,6 +723,17 @@ const showDetails = function (activePage, id, afterShowHandler) {
 const buildDetailUrl = function (template, id) {
     if (!template)
         return "";
+
+    // A RecordNavigationKey rather than an id: a query fragment naming the record
+    // ("Country=US&CaseType=PAT&Systems=R4"), used by screens keyed on a composite.
+    // Strip the template down to the Detail path — dropping the recid placeholder or
+    // a trailing id segment and any existing query — and hand the fragment over as
+    // the query, which is what the screen's Detail action binds from.
+    if (typeof id === "string" && id.indexOf("=") > -1) {
+        let path = template.split("?")[0];
+        path = path.replace(/\/recid$/, "").replace(/\/\d+$/, "").replace(/\/+$/, "");
+        return path + "?" + id;
+    }
 
     if (template.indexOf("recid") > -1)
         return template.replace("recid", id);
@@ -1777,7 +1791,8 @@ const cpiDateTimeFormatToSave = function (dateValue) {
 //refreshes record detail display after add, update the record navigator 
 const afterInsert = function (activePage, id) {
     if (activePage.recordNavigator && activePage.recordNavigator.length > 0) {
-        if (isNaN(id))
+        //see the note in showDetails — keys are strings, so test the type
+        if (id && typeof id === "object")
             id = id.id;
 
         activePage.recordNavigator.addRecordId(id);

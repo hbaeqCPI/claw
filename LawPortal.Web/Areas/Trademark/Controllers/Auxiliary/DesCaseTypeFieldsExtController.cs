@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -68,7 +68,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "desCaseType:DesCaseType", "fromField:FromField", "toField:ToField", "systems:Systems"));
         }
 
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
@@ -125,6 +125,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Ext Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("desCaseType", desCaseType), ("fromField", fromField), ("toField", toField), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

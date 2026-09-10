@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -169,6 +169,8 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = page.Container,
                 Title = _localizer["Country Law Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(
+                    ("Country", country), ("CaseType", caseType), ("Systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -1249,13 +1251,24 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             else
                 model = model.OrderBy(c => c.Country).ThenBy(c => c.CaseType);
 
-            var total = await model.CountAsync();
+            // Keys for the detail-page record navigator. A country law record is keyed
+            // on (Country, CaseType, Systems) — the same three values the search
+            // grid's row link passes to Detail — so there is no int id to navigate by.
+            var keyRows = await model
+                .Select(m => new { m.Country, m.CaseType, m.Systems })
+                .ToListAsync();
+
+            var keys = keyRows
+                .Select(r => RecordNavigationKey.Build(
+                    ("Country", r.Country), ("CaseType", r.CaseType), ("Systems", r.Systems)))
+                .ToArray();
 
             return new CPiDataSourceResult()
             {
                 Data = await model.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
-                Total = total,
-                Ids = new int[0]
+                Total = keys.Length,
+                Ids = new int[0],
+                Keys = keys
             };
         }
     }

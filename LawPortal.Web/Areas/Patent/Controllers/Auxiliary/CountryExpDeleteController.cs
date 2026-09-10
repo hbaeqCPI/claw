@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -90,7 +90,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
-            return Json(data.ToDataSourceResult(request));
+            return Json(data.ToNavigableDataSourceResult(request, "cExpId:CExpId", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(int cExpId, string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -114,6 +114,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 PageId = _dataContainer,
                 Title = _localizer["Country Exp Delete Detail"].ToString(),
                 RecordId = 1,
+                RecordKey = RecordNavigationKey.Build(("cExpId", cExpId), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,
                 PagePermission = perm

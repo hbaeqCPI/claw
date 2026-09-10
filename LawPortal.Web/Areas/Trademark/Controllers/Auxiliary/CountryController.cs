@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -110,7 +110,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 }
                 tmkCountries = _viewModelService.AddCriteria(tmkCountries, mainSearchFilters);
 
-                var result = await _viewModelService.CreateViewModelForGrid(request, tmkCountries, "Country", "Country");
+                var result = await _viewModelService.CreateViewModelForGrid(request, tmkCountries, "Country", "Country", "id:Country", "systems:Systems");
                 return Json(result);
             }
             return new JsonBadRequest(new { errors = ModelState.Errors() });
@@ -140,6 +140,8 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = page.Container,
                 Title = _localizer["Country Detail"].ToString(),
+                RecordId = 1, // non-zero sentinel for string-keyed entity
+                RecordKey = RecordNavigationKey.Build(("id", id), ("systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,

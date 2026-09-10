@@ -100,19 +100,26 @@ export default class ActivePage extends SearchPage {
             this.initializeInfoContainer();
             this.recordNavigator = $(`#${detailPage.recordNavigatorContainer}`);
 
-            //setup record navigator 
+            //setup record navigator
             if (this.recordNavigator) {
+                // Screens whose records are not keyed on a single int report keys
+                // instead of ids (see RecordNavigationKey); RecordId is only a
+                // sentinel there, so navigate by key when the search reported them.
+                const navigateByKey = this.mainSearchRecordKeys.length > 0 || !!detailPage.recordKey;
+                const navigationList = navigateByKey ? this.mainSearchRecordKeys : this.mainSearchRecordIds;
+                const currentRecord = navigateByKey ? detailPage.recordKey : detailPage.recordId;
+
                 if (detailPage.singleRecord || detailPage.recordId == 0) {
                     //clear existing in place, never reassign — the navigator
                     //captures this array by reference (see searchResultGridRequestEnd)
-                    this.mainSearchRecordIds.length = 0;
-                    if (detailPage.recordId > 0)
-                        this.mainSearchRecordIds.push(detailPage.recordId);
+                    navigationList.length = 0;
+                    if (currentRecord)
+                        navigationList.push(currentRecord);
                 }
 
                 this.recordNavigator.cpiRecordNavigator({
-                    recordIds: this.mainSearchRecordIds,
-                    currentId: detailPage.recordId,
+                    recordIds: navigationList,
+                    currentId: currentRecord,
                     navigateHandler: detailPage.recordNavigateHandler
                         ? detailPage.recordNavigateHandler
                         : this.showDetails
