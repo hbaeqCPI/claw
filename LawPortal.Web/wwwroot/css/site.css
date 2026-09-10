@@ -2591,6 +2591,15 @@ input:focus {
     .record-navigator .k-pager-wrap .k-link {
         color: var(--text-pager) !important;
     }
+
+/* Hide the bar when there is no record list to walk. The search grid can only
+   report row ids for INT-keyed records (CreateViewModelForGrid ->
+   GetIntPropertyExpression), so string- and composite-keyed screens send none
+   and the plugin leaves the total empty. Showing arrows there offers navigation
+   that cannot work. Browsers without :has() just show it, as before. */
+.record-navigator .k-pager-wrap:has(.navTotalRecs:empty) {
+    display: none;
+}
 /* end detail page pager */
 
 /* begin document detail dialog file drop */
