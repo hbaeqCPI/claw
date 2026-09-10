@@ -1,4 +1,4 @@
-@model PatDesCaseTypeFields
+﻿@model PatDesCaseTypeFields
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -115,11 +115,6 @@ else
 
 <script>
     patDesCaseTypeFieldsPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patDesCaseTypeFieldsPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

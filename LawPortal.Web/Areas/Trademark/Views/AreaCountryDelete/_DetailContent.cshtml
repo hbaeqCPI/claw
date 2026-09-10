@@ -1,4 +1,4 @@
-@model TmkAreaCountryDelete
+﻿@model TmkAreaCountryDelete
 @using LawPortal.Core.Entities.Trademark
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -99,11 +99,6 @@
 
 <script>
     tmkAreaCountryDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkAreaCountryDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

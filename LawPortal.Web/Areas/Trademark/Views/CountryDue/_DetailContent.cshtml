@@ -1,4 +1,4 @@
-@using LawPortal.Core.Entities.Trademark
+﻿@using LawPortal.Core.Entities.Trademark
 @model TmkCountryDue
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -292,11 +292,6 @@
 
 <script>
     tmkCountryDuePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkCountryDuePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

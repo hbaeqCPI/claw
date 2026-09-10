@@ -1,4 +1,4 @@
-@model TmkDesCaseType
+﻿@model TmkDesCaseType
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var addMode = Model.IsNewRecord || string.IsNullOrEmpty(Model.IntlCode);
@@ -136,11 +136,6 @@
 
 <script>
     tmkDesCaseTypePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkDesCaseTypePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

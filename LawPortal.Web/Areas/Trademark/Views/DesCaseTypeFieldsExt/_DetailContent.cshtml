@@ -1,4 +1,4 @@
-@model TmkDesCaseTypeFieldsExt
+﻿@model TmkDesCaseTypeFieldsExt
 @using LawPortal.Core.Entities.Trademark
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -90,11 +90,6 @@
 
 <script>
     tmkDesCaseTypeFieldsExtPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkDesCaseTypeFieldsExtPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

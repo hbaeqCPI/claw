@@ -1,4 +1,4 @@
-@model TmkCaseType
+﻿@model TmkCaseType
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.CaseType;
@@ -62,11 +62,6 @@
 
 <script>
     tmkCaseTypePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkCaseTypePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

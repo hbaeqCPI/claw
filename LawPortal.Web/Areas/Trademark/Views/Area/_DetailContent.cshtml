@@ -1,4 +1,4 @@
-@model TmkArea
+﻿@model TmkArea
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.Area;
@@ -73,11 +73,6 @@
 
 <script>
     tmkAreaPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkAreaPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

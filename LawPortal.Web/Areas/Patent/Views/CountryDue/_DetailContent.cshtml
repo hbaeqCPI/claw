@@ -1,4 +1,4 @@
-@model PatCountryDue
+﻿@model PatCountryDue
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.CDueId;
@@ -296,11 +296,6 @@
 
 <script>
     patCountryDuePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCountryDuePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

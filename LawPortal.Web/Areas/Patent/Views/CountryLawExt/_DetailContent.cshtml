@@ -1,4 +1,4 @@
-@model PatCountryLawExt
+﻿@model PatCountryLawExt
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -90,11 +90,6 @@
 
 <script>
     patCountryLawExtPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCountryLawExtPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

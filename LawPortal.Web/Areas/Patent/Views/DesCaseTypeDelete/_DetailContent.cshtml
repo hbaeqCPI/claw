@@ -1,4 +1,4 @@
-@model PatDesCaseTypeDelete
+﻿@model PatDesCaseTypeDelete
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -149,11 +149,6 @@
         $(document).on('change', '[name=DesCaseType], [name=DesCaseType_input]', syncNewFields);
     });
     patDesCaseTypeDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patDesCaseTypeDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

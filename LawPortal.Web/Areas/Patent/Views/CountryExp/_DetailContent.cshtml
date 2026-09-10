@@ -1,4 +1,4 @@
-@model PatCountryExp
+﻿@model PatCountryExp
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.CExpId;
@@ -192,11 +192,6 @@
 
 <script>
     patCountryExpPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCountryExpPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

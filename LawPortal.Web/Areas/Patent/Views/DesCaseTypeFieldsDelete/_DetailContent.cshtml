@@ -1,4 +1,4 @@
-@model PatDesCaseTypeFieldsDelete
+﻿@model PatDesCaseTypeFieldsDelete
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -109,11 +109,6 @@ else
 
 <script>
     patDesCaseTypeFieldsDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patDesCaseTypeFieldsDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

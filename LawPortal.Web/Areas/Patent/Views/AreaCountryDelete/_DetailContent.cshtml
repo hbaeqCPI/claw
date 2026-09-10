@@ -1,4 +1,4 @@
-@model PatAreaCountryDelete
+﻿@model PatAreaCountryDelete
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -100,11 +100,6 @@
         $(document).on('change', '[name=Country], [name=Country_input]', syncNewFields);
     });
     patAreaCountryDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patAreaCountryDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

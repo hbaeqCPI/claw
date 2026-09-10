@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -159,7 +159,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             if (genAppFilter == "true") combined = combined.Where(x => x.GenApp == true);
             else if (genAppFilter == "false") combined = combined.Where(x => x.GenApp == false);
 
-            return Json(combined.ToList().ToDataSourceResult(request));
+            return Json(combined.ToList().ToNavigableDataSourceResult(request, "intlCode:IntlCode", "caseType:CaseType", "desCountry:DesCountry", "desCaseType:DesCaseType", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(string intlCode, string caseType, string desCountry, string desCaseType, string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -190,6 +190,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Designation Case Type Detail"].ToString(),
+                RecordKey = RecordNavigationKey.Build(("intlCode", intlCode), ("caseType", caseType), ("desCountry", desCountry), ("desCaseType", desCaseType), ("systems", systems)),
                 RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,

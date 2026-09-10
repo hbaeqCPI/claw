@@ -1,4 +1,4 @@
-@model PatCaseType
+﻿@model PatCaseType
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.CaseType;
@@ -62,11 +62,6 @@
 
 <script>
     patCaseTypePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCaseTypePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

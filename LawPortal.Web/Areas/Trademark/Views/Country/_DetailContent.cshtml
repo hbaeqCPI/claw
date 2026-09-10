@@ -1,4 +1,4 @@
-@model TmkCountry
+﻿@model TmkCountry
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
     var id = Model.Country;
@@ -84,11 +84,6 @@
 
 <script>
     tmkCountryPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkCountryPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

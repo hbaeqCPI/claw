@@ -1,4 +1,4 @@
-@model TmkAreaCountry
+﻿@model TmkAreaCountry
 @using LawPortal.Core.Entities.Trademark
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -76,11 +76,6 @@
 
 <script>
     tmkAreaCountryPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkAreaCountryPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

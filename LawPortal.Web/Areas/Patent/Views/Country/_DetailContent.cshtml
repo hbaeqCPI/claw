@@ -1,4 +1,4 @@
-@model PatCountry
+﻿@model PatCountry
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
     var id = Model.Country;
@@ -93,11 +93,6 @@
 
 <script>
     patCountryPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCountryPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

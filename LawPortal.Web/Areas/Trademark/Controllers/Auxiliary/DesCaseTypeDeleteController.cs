@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -115,7 +115,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             if (defFilter == "true") combined = combined.Where(x => x.Default);
             else if (defFilter == "false") combined = combined.Where(x => !x.Default);
 
-            return Json(combined.ToList().ToDataSourceResult(request));
+            return Json(combined.ToList().ToNavigableDataSourceResult(request, "intlCode:IntlCode", "caseType:CaseType", "desCountry:DesCountry", "desCaseType:DesCaseType", "intlCodeNew:IntlCodeNew", "caseTypeNew:CaseTypeNew", "desCountryNew:DesCountryNew", "desCaseTypeNew:DesCaseTypeNew", "systems:Systems"));
         }
 
         public async Task<IActionResult> Detail(string intlCode, string caseType, string desCountry, string desCaseType, string intlCodeNew = "", string caseTypeNew = "", string desCountryNew = "", string desCaseTypeNew = "", string systems = "", bool singleRecord = false, bool fromSearch = false)
@@ -139,6 +139,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Delete Detail"].ToString(),
+                RecordKey = RecordNavigationKey.Build(("intlCode", intlCode), ("caseType", caseType), ("desCountry", desCountry), ("desCaseType", desCaseType), ("intlCodeNew", intlCodeNew), ("caseTypeNew", caseTypeNew), ("desCountryNew", desCountryNew), ("desCaseTypeNew", desCaseTypeNew), ("systems", systems)),
                 RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,

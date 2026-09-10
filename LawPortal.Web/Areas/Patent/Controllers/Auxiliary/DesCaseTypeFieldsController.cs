@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -113,7 +113,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             if (inUseFilter == "true") combined = combined.Where(x => x.InUse == true);
             else if (inUseFilter == "false") combined = combined.Where(x => x.InUse == false);
 
-            return Json(combined.OrderBy(x => x.DesCaseType).ToList().ToDataSourceResult(request));
+            return Json(combined.OrderBy(x => x.DesCaseType).ToList().ToNavigableDataSourceResult(request, "desCaseType:DesCaseType"));
         }
 
         public async Task<IActionResult> FieldsRead([DataSourceRequest] DataSourceRequest request, string desCaseType, string systems = "")
@@ -286,6 +286,7 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 Page = PageType.Detail,
                 PageId = _dataContainer,
                 Title = _localizer["Des Case Type Fields Detail"].ToString(),
+                RecordKey = RecordNavigationKey.Build(("desCaseType", desCaseType)),
                 RecordId = 1,
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 Data = detail,

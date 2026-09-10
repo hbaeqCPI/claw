@@ -1,4 +1,4 @@
-@model PatCountryExpDelete
+﻿@model PatCountryExpDelete
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -195,11 +195,6 @@
 
 <script>
     patCountryExpDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patCountryExpDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

@@ -1,4 +1,4 @@
-@model PatDesCaseTypeFieldsDeleteExt
+﻿@model PatDesCaseTypeFieldsDeleteExt
 @using LawPortal.Core.Entities.Patent
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -125,11 +125,6 @@
         $(document).on('change', '[name=ToField], [name=ToField_input]', syncNewFields);
     });
     patDesCaseTypeFieldsDeleteExtPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    patDesCaseTypeFieldsDeleteExtPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

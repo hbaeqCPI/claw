@@ -1,4 +1,4 @@
-@model PatArea
+﻿@model PatArea
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     var id = Model.Area;
@@ -73,12 +73,6 @@
 
 <script>
     patAreaPage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    // Override edit mode afterSubmit to handle systems change redirect
-    patAreaPage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }

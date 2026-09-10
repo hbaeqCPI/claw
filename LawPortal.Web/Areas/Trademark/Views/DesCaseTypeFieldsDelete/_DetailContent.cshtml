@@ -1,4 +1,4 @@
-@model TmkDesCaseTypeFieldsDelete
+﻿@model TmkDesCaseTypeFieldsDelete
 @using LawPortal.Core.Entities.Trademark
 @inject IStringLocalizer<SharedResource> Localizer
 @{
@@ -109,11 +109,6 @@ else
 
 <script>
     tmkDesCaseTypeFieldsDeletePage.afterInsert = function(result) {
-        if (result && result.redirectUrl) {
-            pageHelper.openLink(result.redirectUrl, true);
-        }
-    };
-    tmkDesCaseTypeFieldsDeletePage.showDetails = function(result) {
         if (result && result.redirectUrl) {
             pageHelper.openLink(result.redirectUrl, true);
         }
