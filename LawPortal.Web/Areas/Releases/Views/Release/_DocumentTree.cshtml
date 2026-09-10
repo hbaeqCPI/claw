@@ -333,12 +333,22 @@
             viewDocument(dataItem.FileId, dataItem.DocFileName);
         }
 
-        function downloadSelected() {
-            var grid = getGrid(); if (!grid) return;
-            var rows = grid.select();
-            if (rows.length === 0) { alert("@Localizer["Please select files to download."]"); return; }
+        // el is the toolbar button that was clicked. The button exists in both the
+        // main grid and the companion MDB grid, so resolve the owning grid from the
+        // DOM rather than always reaching for the main one.
+        function downloadSelected(el) {
+            var grid = el ? $(el).closest(".k-grid").data("kendoGrid") : null;
+            if (!grid) grid = getGrid();
+            if (!grid) return;
+            // Selection persists across pages, so read the persisted row keys
+            // (DocId) instead of only the rows currently rendered.
+            var docIds = grid.selectedKeyNames ? grid.selectedKeyNames() : [];
+            if (!docIds.length) { alert("@Localizer["Please select files to download."]"); return; }
             var url = $(treeContainerSelector).data("download-url");
-            rows.each(function () { var d = grid.dataItem(this); if (d && d.FileId) downloadFile(url + "?fileId=" + d.FileId); });
+            // Stagger the requests — browsers drop downloads fired in the same tick.
+            docIds.forEach(function (docId, i) {
+                setTimeout(function () { downloadFile(url + "?docId=" + docId); }, i * 300);
+            });
         }
 
         function searchDocuments() { }
@@ -576,6 +586,8 @@
                             .Name(grid)
                             .Columns(columns =>
                             {
+                                @* Checkbox column — what "Download Selected Files" acts on. *@
+                                columns.Select().Width(40);
                                 columns.Bound("DocName").Title(Localizer["Title"].Value).Width(280);
                                 columns.Bound("UserFileName").Title(Localizer["User File Name"].Value);
                                 columns.Bound("FolderName").Title(Localizer["Folder"].Value).Width(200);
@@ -589,7 +601,7 @@
                                     .HeaderHtmlAttributes(new { @class = "text-center" });
                                 columns.Command(command =>
                                 {
-                                    command.Custom("View").Text(Localizer["View"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-search-plus").HtmlAttributes(new { style = "width:80px;" });
+                                    command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:80px;" });
                                     if (!isReadOnly)
                                     {
                                         command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
@@ -600,6 +612,7 @@
                                     }
                                 }).Width(260);
                             })
+                            .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
                             .PersistSelection()
                             .Sortable(sort => sort.AllowUnsort(false))
                             .ToolBar(toolbar =>
@@ -608,7 +621,7 @@
                                 {
                                     toolbar.Custom().Name("Add").IconClass("k-icon fal fa-plus").Text(Localizer["Add"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.addDocument()" });
                                 }
-                                toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.downloadSelected()" });
+                                toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.downloadSelected(this)" });
                                 toolbar.Custom().Name("DocumentsSearch").IconClass("k-icon fal fa-search").Text(Localizer["Search"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.searchDocuments()" });
                             })
                             .AutoBind(false)
@@ -619,6 +632,8 @@
                                 .Read(read => read
                                     .Action("DocumentGridRead", "Release", new { area = "Releases" })
                                     .Data($"function() {{ return {{ folderId: releaseDocTree_{eid}.getSelectedFolderId(), extFilter: '{extFilter}' }}; }}"))
+                                @* Row key — makes checkbox selection persist across pages. *@
+                                .Model(model => model.Id("DocId"))
                                 .Sort(sort => sort.Add("DocName").Ascending())
                                 .Events(events => events.Error("pageHelper.onGridError"))
                             )
@@ -641,6 +656,8 @@
                                 .Name(companionGrid)
                                 .Columns(columns =>
                                 {
+                                    @* Checkbox column — what "Download Selected Files" acts on. *@
+                                    columns.Select().Width(40);
                                     columns.Bound("DocName").Title(Localizer["Title"].Value).Width(200);
                                     columns.Bound("UserFileName").Title(Localizer["User File Name"].Value);
                                     columns.Bound("DateCreated").Title(Localizer["Date"].Value)
@@ -652,7 +669,7 @@
                                         .HeaderHtmlAttributes(new { @class = "text-center" });
                                     columns.Command(command =>
                                     {
-                                        command.Custom("View").Text(Localizer["View"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-search-plus").HtmlAttributes(new { style = "width:80px;" });
+                                        command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ releaseDocTree_{eid}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:80px;" });
                                         if (!isReadOnly)
                                         {
                                             command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ releaseDocTree_{eid}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
@@ -663,11 +680,12 @@
                                         }
                                     }).Width(260);
                                 })
+                                .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
                                 .PersistSelection()
                                 .Sortable(sort => sort.AllowUnsort(false))
                                 .ToolBar(toolbar =>
                                 {
-                                    toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.downloadSelected()" });
+                                    toolbar.Custom().Name("Download").IconClass("k-icon fal fa-file-download").Text(Localizer["Download Selected Files"].ToString()).HtmlAttributes(new { onclick = $"releaseDocTree_{eid}.downloadSelected(this)" });
                                 })
                                 .AutoBind(false)
                                 .HtmlAttributes(new { @class = "imageGridView kendo-Grid" })
@@ -677,6 +695,8 @@
                                     .Read(read => read
                                         .Action("DocumentGridRead", "Release", new { area = "Releases" })
                                         .Data($"function() {{ return {{ folderId: releaseDocTree_{eid}.getSelectedFolderId(), extFilter: '{companionExtFilter}' }}; }}"))
+                                    @* Row key — makes checkbox selection persist across pages. *@
+                                    .Model(model => model.Id("DocId"))
                                     .Sort(sort => sort.Add("DocName").Ascending())
                                     .Events(events => events.Error("pageHelper.onGridError"))
                                 )

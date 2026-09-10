@@ -24,132 +24,122 @@
                 </div>
             </div>
 
-            @* Details / Tags tabs *@
-            <ul class="nav nav-tabs detail cpiDetailInfoNav nav-tabs-horizontal mt-1" id="docDetailTab" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="docDetailDetailsTab" data-toggle="tab" role="tab" href="#docDetailDetailsContent" aria-selected="true">@Localizer["Details"]</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="docDetailTagsTab" data-toggle="tab" role="tab" href="#docDetailTagsContent" aria-selected="false">@Localizer["Tags"]</a>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                @* Details tab *@
-                <div class="tab-pane show active pt-2" id="docDetailDetailsContent" role="tabpanel">
-                    @* Document Type + Author on same row *@
-                    <div class="form-row">
-                        <div class="col-3">
-                            <div class="form-group float-label">
-                                <label for="DocTypeId">@Localizer["Document Type"]</label>
-                                @(Html.Kendo().DropDownList()
-                                    .Name("DocTypeId")
-                                    .DataTextField("DocTypeName")
-                                    .DataValueField("DocTypeId")
-                                    .OptionLabel(Localizer["-- Select --"].Value)
-                                    .AutoWidth(true)
-                                    .DataSource(source => source.Read(read =>
-                                        read.Action("GetDocTypes", "Release", new { area = "Releases" })))
-                                    .Value(Model.DocTypeId?.ToString() ?? "")
-                                    .HtmlAttributes(new { style = "width:100%;" })
-                                )
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="form-group float-label">
-                                <label for="Author">@Localizer["Author"]</label>
-                                <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
-                            </div>
+            @* Editing an existing document is limited to Name, Author and Remarks.
+               Document type, the flags and the file itself stay as they were —
+               the grids are filtered by file type, so retyping or replacing the
+               file would move the document out from under the panel it lives in. *@
+            @if (addMode)
+            {
+                @* Document Type + Author on same row *@
+                <div class="form-row">
+                    <div class="col-3">
+                        <div class="form-group float-label">
+                            <label for="DocTypeId">@Localizer["Document Type"]</label>
+                            @(Html.Kendo().DropDownList()
+                                .Name("DocTypeId")
+                                .DataTextField("DocTypeName")
+                                .DataValueField("DocTypeId")
+                                .OptionLabel(Localizer["-- Select --"].Value)
+                                .AutoWidth(true)
+                                .DataSource(source => source.Read(read =>
+                                    read.Action("GetDocTypes", "Release", new { area = "Releases" })))
+                                .Value(Model.DocTypeId?.ToString() ?? "")
+                                .HtmlAttributes(new { style = "width:100%;" })
+                            )
                         </div>
                     </div>
-
-                    @* File upload *@
-                    @if (addMode || Model.FileId == null || Model.FileId == 0)
-                    {
-                        <div class="form-row pt-1 pb-1" style="font-size: small">
-                            <div class="col-12">
-                                @(Html.Kendo().Upload()
-                                    .Name("UploadedFile")
-                                    .Messages(m => m.Select(Localizer["Select a file to upload..."]))
-                                    .Multiple(false)
-                                    .Validation(validation => validation.MaxFileSize(1500000))
-                                )
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="form-row pt-1 pb-1" style="font-size:small">
-                            <div class="col-12">
-                                <span class="fal fa-file mr-1"></span> @userFileName
-                            </div>
-                        </div>
-                    }
-
-                    @* Checkboxes — all 4 on one row *@
-                    <div class="form-row pt-2 pb-2">
-                        <div class="col-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="IsPrintOnReport" value="true" class="mr-1" @(Model.IsPrintOnReport ? "checked" : "") />
-                                <label class="mb-0">@Localizer["Print on Reports?"]</label>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="IsDefault" value="true" class="mr-1" @(Model.IsDefault ? "checked" : "") />
-                                <label class="mb-0">@Localizer["Default?"]</label>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="IsPrivate" value="true" class="mr-1" @(Model.IsPrivate ? "checked" : "") />
-                                <label class="mb-0">@Localizer["Private?"]</label>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="IncludeInWorkflow" value="true" class="mr-1" @(Model.IncludeInWorkflow ? "checked" : "") />
-                                <label class="mb-0 text-nowrap">@Localizer["Include in Workflow?"]</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    @* Responsible (Docketing) + Responsible (Reporting) *@
-                    <div class="form-row">
-                        <div class="col-6">
-                            <div class="form-group float-label">
-                                <label for="ResponsibleDocketing">@Localizer["Responsible (Docketing)"]</label>
-                                <input type="text" class="form-control form-control-sm" name="ResponsibleDocketing" value="" />
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-group float-label">
-                                <label for="ResponsibleReporting">@Localizer["Responsible (Reporting)"]</label>
-                                <input type="text" class="form-control form-control-sm" name="ResponsibleReporting" value="" />
-                            </div>
-                        </div>
-                    </div>
-
-                    @* Remarks *@
-                    <div class="form-row">
-                        <div class="col">
-                            <div class="form-group float-label">
-                                <label for="Remarks">@Localizer["Remarks"]</label>
-                                <textarea class="form-control form-control-sm" rows="4" name="Remarks" style="padding-top:20px;">@Model.Remarks</textarea>
-                            </div>
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label for="Author">@Localizer["Author"]</label>
+                            <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
                         </div>
                     </div>
                 </div>
 
-                @* Tags tab *@
-                <div class="tab-pane pt-2" id="docDetailTagsContent" role="tabpanel">
-                    <div class="form-row">
-                        <div class="col">
-                            <div class="form-group float-label">
-                                <label for="Tags">@Localizer["Tags"]</label>
-                                <textarea class="form-control form-control-sm" rows="4" name="Tags" style="padding-top:20px;">@Model.Tags</textarea>
-                            </div>
+                @* File upload *@
+                <div class="form-row pt-1 pb-1" style="font-size: small">
+                    <div class="col-12">
+                        @(Html.Kendo().Upload()
+                            .Name("UploadedFile")
+                            .Messages(m => m.Select(Localizer["Select a file to upload..."]))
+                            .Multiple(false)
+                            .Validation(validation => validation.MaxFileSize(1500000))
+                        )
+                    </div>
+                </div>
+
+                @* Checkboxes — all 4 on one row *@
+                <div class="form-row pt-2 pb-2">
+                    <div class="col-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="IsPrintOnReport" value="true" class="mr-1" @(Model.IsPrintOnReport ? "checked" : "") />
+                            <label class="mb-0">@Localizer["Print on Reports?"]</label>
                         </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="IsDefault" value="true" class="mr-1" @(Model.IsDefault ? "checked" : "") />
+                            <label class="mb-0">@Localizer["Default?"]</label>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="IsPrivate" value="true" class="mr-1" @(Model.IsPrivate ? "checked" : "") />
+                            <label class="mb-0">@Localizer["Private?"]</label>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="IncludeInWorkflow" value="true" class="mr-1" @(Model.IncludeInWorkflow ? "checked" : "") />
+                            <label class="mb-0 text-nowrap">@Localizer["Include in Workflow?"]</label>
+                        </div>
+                    </div>
+                </div>
+
+                @* Responsible (Docketing) + Responsible (Reporting) *@
+                <div class="form-row">
+                    <div class="col-6">
+                        <div class="form-group float-label">
+                            <label for="ResponsibleDocketing">@Localizer["Responsible (Docketing)"]</label>
+                            <input type="text" class="form-control form-control-sm" name="ResponsibleDocketing" value="" />
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group float-label">
+                            <label for="ResponsibleReporting">@Localizer["Responsible (Reporting)"]</label>
+                            <input type="text" class="form-control form-control-sm" name="ResponsibleReporting" value="" />
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group float-label">
+                            <label for="Author">@Localizer["Author"]</label>
+                            <input type="text" class="form-control form-control-sm" name="Author" value="@Model.Author" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                @* The attached file, for reference only — it cannot be swapped here. *@
+                @if (!string.IsNullOrEmpty(userFileName))
+                {
+                    <div class="form-row pt-1 pb-1" style="font-size:small">
+                        <div class="col-12">
+                            <span class="fal fa-file mr-1"></span> @userFileName
+                        </div>
+                    </div>
+                }
+            }
+
+            @* Remarks *@
+            <div class="form-row">
+                <div class="col">
+                    <div class="form-group float-label">
+                        <label for="Remarks">@Localizer["Remarks"]</label>
+                        <textarea class="form-control form-control-sm" rows="4" name="Remarks" style="padding-top:20px;">@Model.Remarks</textarea>
                     </div>
                 </div>
             </div>

@@ -1874,10 +1874,21 @@ namespace LawPortal.Web.Areas.Releases.Controllers
             }
         }
 
-        public async Task<IActionResult> DocumentDownload(int fileId)
+        // fileId downloads a specific file; docId downloads whatever file the
+        // document currently holds. The document grid keys its rows on DocId,
+        // so "Download Selected Files" can only pass document ids.
+        public async Task<IActionResult> DocumentDownload(int fileId, int docId = 0)
         {
             try
             {
+                if (fileId <= 0 && docId > 0)
+                {
+                    var doc = await _documentService.GetDocumentById(docId);
+                    if (doc?.FileId == null || doc.FileId.Value <= 0)
+                        return NotFound();
+                    fileId = doc.FileId.Value;
+                }
+
                 var docFile = await _documentService.GetFileById(fileId);
                 if (docFile == null) return NotFound();
 
@@ -1979,20 +1990,36 @@ namespace LawPortal.Web.Areas.Releases.Controllers
                     var doc = await _documentService.GetDocumentById(DocId);
                     if (doc == null) return new JsonBadRequest(new { errors = "Document not found." });
 
+                    // The edit dialog exposes only the name and remarks. Document
+                    // type, the URL and the flags are deliberately left alone so an
+                    // edit can't retype the document or clear a field it never showed.
                     doc.DocName = DocName;
-                    doc.DocTypeId = DocTypeId;
-                    doc.DocUrl = DocUrl;
-                    doc.IsPrivate = IsPrivate;
-                    doc.IsDefault = IsDefault;
-                    doc.IsPrintOnReport = IsPrintOnReport;
-                    doc.IncludeInWorkflow = IncludeInWorkflow;
                     doc.Remarks = Remarks;
                     doc.UpdatedBy = userName;
                     doc.LastUpdate = DateTime.Now;
 
+                    // Once a document holds a file its type is fixed: the document
+                    // grids are filtered by extension, so swapping in a different
+                    // type would hide the document from the panel it lives in.
                     if (UploadedFile != null && UploadedFile.Length > 0)
                     {
                         var fileExtension = Path.GetExtension(UploadedFile.FileName);
+
+                        if (doc.FileId.HasValue && doc.FileId.Value > 0)
+                        {
+                            var currentFile = await _documentService.GetFileById(doc.FileId.Value);
+                            var currentExt = currentFile?.FileExt?.TrimStart('.');
+                            var newExt = fileExtension?.TrimStart('.');
+                            if (!string.IsNullOrEmpty(currentExt) &&
+                                !string.Equals(currentExt, newExt, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new JsonBadRequest(new
+                                {
+                                    errors = $"This document holds a .{currentExt} file. A replacement must also be a .{currentExt} file."
+                                });
+                            }
+                        }
+
                         var docFile = new DocFile
                         {
                             FileExt = fileExtension?.TrimStart('.'),

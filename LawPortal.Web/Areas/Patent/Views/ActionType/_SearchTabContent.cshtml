@@ -14,17 +14,15 @@
                 </div>
             </div>
         </div>
+        @* The country picker lists code and name in two columns and filters on
+           both, so there is no separate "Country Name" criterion: PatActionType
+           holds only a country code, and tblPatCountry is now keyed on
+           (Country, Systems), so it can no longer be joined on the code alone. *@
         <div class="form-row">
             <div class="col-md-4">
                 <div class="form-group float-label">
                     <label for="Country">@Localizer["Country"]</label>
-                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.SharedCountry("Country", countryLabel, countryNameLabel, "PatActionTypes"))
-                </div>
-            </div>
-            <div class="col-md-8 col-lg-8 col-xl-6">
-                <div class="form-group float-label">
-                    <label for="PatCountry.CountryName">@Localizer["Country Name"]</label>
-                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.SharedCountryName("PatCountry.CountryName", "PatActionTypes"))
+                    @await Component.InvokeAsync("ComboBox", ComboBoxHelper.SharedCountry("Country", countryLabel, countryNameLabel))
                 </div>
             </div>
         </div>

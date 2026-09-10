@@ -108,7 +108,7 @@ public class MdbGenerator
     // MDB. Shipping them also risked customers auto-loading them and orphaning the
     // ActionParameter FK (see the report's snapshot-identity notes).
 
-    // Full patent tables (used by 97, PatR5-7, PatR8-R10v2.1)
+    // Full patent tables (used by 97, PatR5-7, PatR8-10)
     private static readonly string[] PatentTablesFull = new[]
     {
         "tblPatArea", "tblPatAreaCountry", "tblPatAreaCountryDelete", "tblPatAreaDelete",
@@ -178,7 +178,7 @@ public class MdbGenerator
 
     private static string GetPatMdbBaseName(string systemType, string prefix)
     {
-        if (systemType.Equals("PatR8-R10v2.1", StringComparison.OrdinalIgnoreCase))
+        if (systemType.Equals("PatR8-10", StringComparison.OrdinalIgnoreCase))
             return $"{prefix}_patlaw10";
         if (systemType.Equals("PatR5-7", StringComparison.OrdinalIgnoreCase))
             return $"{prefix}_patlaw9";

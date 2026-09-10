@@ -914,3 +914,30 @@ BEGIN
         ON tblDeployLog (DeployPasswordId);
 END;
 GO
+
+-- Rename the patent R8/R10 system tag from "PatR8-R10v2.1" to "PatR8-10" so the
+-- stored Systems tags match SystemsHelper.SystemNames. The tag is stored as
+-- data in every Systems column (a comma-separated list on most tables, a single
+-- tag on tblPatCountry where it is part of the primary key) and in
+-- tblRelease.SystemType, so the rename is applied to every string column named
+-- Systems or SystemType in this database. Guarded by LIKE, so re-running is a
+-- no-op. Run this against the WebUpdates database too if the upd* staging
+-- tables live in a separate one.
+DECLARE @renameSystemTag NVARCHAR(MAX) = N'';
+
+SELECT @renameSystemTag = @renameSystemTag
+     + N'UPDATE ' + QUOTENAME(c.TABLE_SCHEMA) + N'.' + QUOTENAME(c.TABLE_NAME)
+     + N' SET ' + QUOTENAME(c.COLUMN_NAME)
+     + N' = REPLACE(' + QUOTENAME(c.COLUMN_NAME) + N', ''PatR8-R10v2.1'', ''PatR8-10'')'
+     + N' WHERE ' + QUOTENAME(c.COLUMN_NAME) + N' LIKE ''%PatR8-R10v2.1%'';' + CHAR(13) + CHAR(10)
+FROM INFORMATION_SCHEMA.COLUMNS c
+JOIN INFORMATION_SCHEMA.TABLES t
+    ON  t.TABLE_SCHEMA = c.TABLE_SCHEMA
+    AND t.TABLE_NAME   = c.TABLE_NAME
+    AND t.TABLE_TYPE   = 'BASE TABLE'
+WHERE c.COLUMN_NAME IN ('Systems', 'SystemType')
+  AND c.DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar');
+
+IF LEN(@renameSystemTag) > 0
+    EXEC sp_executesql @renameSystemTag;
+GO

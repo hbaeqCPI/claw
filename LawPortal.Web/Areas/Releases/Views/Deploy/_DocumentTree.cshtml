@@ -301,10 +301,15 @@
 
         function downloadSelected() {
             var grid = getGrid(); if (!grid) return;
-            var rows = grid.select();
-            if (rows.length === 0) { alert("@Localizer["Please select files to download."]"); return; }
+            // Selection persists across pages, so read the persisted row keys
+            // (DocId) instead of only the rows currently rendered.
+            var docIds = grid.selectedKeyNames ? grid.selectedKeyNames() : [];
+            if (!docIds.length) { alert("@Localizer["Please select files to download."]"); return; }
             var url = $(treeContainerSelector).data("download-url");
-            rows.each(function () { var d = grid.dataItem(this); if (d && d.FileId) downloadFile(url + "?fileId=" + d.FileId); });
+            // Stagger the requests — browsers drop downloads fired in the same tick.
+            docIds.forEach(function (docId, i) {
+                setTimeout(function () { downloadFile(url + "?docId=" + docId); }, i * 300);
+            });
         }
 
         function searchDocuments() { }
@@ -479,6 +484,8 @@
                     .Name(grid)
                     .Columns(columns =>
                     {
+                        @* Checkbox column — what "Download Selected Files" acts on. *@
+                        columns.Select().Width(40);
                         columns.Bound("DocName").Title(Localizer["Title"].Value).Width(280);
                         columns.Bound("UserFileName").Title(Localizer["User File Name"].Value);
                         columns.Bound("FolderName").Title(Localizer["Folder"].Value).Width(200);
@@ -492,7 +499,7 @@
                             .HeaderHtmlAttributes(new { @class = "text-center" });
                         columns.Command(command =>
                         {
-                            command.Custom("View").Text(Localizer["View"]).Click($"function(e) {{ deployDocTree_{id}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-search-plus").HtmlAttributes(new { style = "width:80px;" });
+                            command.Custom("DownloadFile").Text(Localizer["Download"]).Click($"function(e) {{ deployDocTree_{id}.viewDocumentFromGrid(e,this) }}").IconClass("k-icon fal fa-file-download").HtmlAttributes(new { style = "width:80px;" });
                             if (!isReadOnly)
                             {
                                 command.Custom("Edit").Text(Localizer["Edit"]).Click($"function(e) {{ deployDocTree_{id}.editDocument(e,this) }}").IconClass("k-icon fal fa-pencil-alt").HtmlAttributes(new { style = "width:80px;" });
@@ -503,6 +510,7 @@
                             }
                         });
                     })
+                    .Selectable(selectable => selectable.Mode(GridSelectionMode.Multiple))
                     .PersistSelection()
                     .Sortable(sort => sort.AllowUnsort(false))
                     .ToolBar(toolbar =>
@@ -522,6 +530,8 @@
                         .Read(read => read
                             .Action("DocumentGridRead", "Deploy", new { area = "Releases" })
                             .Data($"function() {{ return {{ folderId: deployDocTree_{id}.getSelectedFolderId() }}; }}"))
+                        @* Row key — makes checkbox selection persist across pages. *@
+                        .Model(model => model.Id("DocId"))
                         .Sort(sort => sort.Add("DocName").Ascending())
                         .Events(events => events.Error("pageHelper.onGridError"))
                     )

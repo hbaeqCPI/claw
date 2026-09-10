@@ -85,7 +85,7 @@ internal static class Importer
         //   R4            ← 2000&Up\patlaw9.mdb  +  TmkLaw9.mdb
         //   PatR5-7       ← R5-7\patlaw9.mdb
         //   TmkR5-8       ← R5-7\TmkLaw9.mdb
-        //   PatR8-R10v2.1 ← R8&Up\2026_1_patlaw10.mdb
+        //   PatR8-10 ← R8&Up\2026_1_patlaw10.mdb
         //   TmkR9-10v2.2  ← R8&Up\2026_1_TmkLaw10.mdb
         // (PatR10v2.2 is handled separately below via SQL_R10v22.)
         var devFsBase = @"\\DevFS\CtryLaw\2026\1st_Quarter\2000&Up";
@@ -95,7 +95,7 @@ internal static class Importer
             new { Path = Path.Combine(devFsBase, "TmkLaw9.mdb"), System = "R4" },
             new { Path = Path.Combine(devFsBase, "R5-7", "patlaw9.mdb"), System = "PatR5-7" },
             new { Path = Path.Combine(devFsBase, "R5-7", "TmkLaw9.mdb"), System = "TmkR5-8" },
-            new { Path = Path.Combine(devFsBase, "R8&Up", "2026_1_patlaw10.mdb"), System = "PatR8-R10v2.1" },
+            new { Path = Path.Combine(devFsBase, "R8&Up", "2026_1_patlaw10.mdb"), System = "PatR8-10" },
             new { Path = Path.Combine(devFsBase, "R8&Up", "2026_1_TmkLaw10.mdb"), System = "TmkR9-10v2.2" },
         };
 

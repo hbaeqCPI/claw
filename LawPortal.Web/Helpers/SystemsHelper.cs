@@ -17,7 +17,7 @@ namespace LawPortal.Web.Helpers
         {
             "R4",
             "PatR5-7",
-            "PatR8-R10v2.1",
+            "PatR8-10",
             "PatR10v2.2",
             "TmkR5-8",
             "TmkR9-10v2.2"

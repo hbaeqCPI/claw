@@ -50,8 +50,8 @@ namespace LawPortal.Core.Entities
         //   Mdbs/Pat/Ver9and10/           R4 (Pat-side)
         //   LawDocs/Pat/R5/               PatR5-7
         //   Mdbs/Pat/R5/                  PatR5-7
-        //   LawDocs/Pat/R8/               PatR8-R10v2.1
-        //   Mdbs/Pat/R8/                  PatR8-R10v2.1
+        //   LawDocs/Pat/R8/               PatR8-10
+        //   Mdbs/Pat/R8/                  PatR8-10
         //   LawDocs/Tmk/Ver9and10/        R4 (Tmk-side)
         //   Mdbs/Tmk/Ver9and10/           R4 (Tmk-side)
         //   LawDocs/Tmk/R5/               TmkR5-8
