@@ -1,50 +1,16 @@
-@inject IStringLocalizer<SharedResource> Localizer
-@*
-    Record navigator for detail pages — first / previous / next / last through
-    the ids of the current search result set, with an editable position box
-    ("5 of 7957 records"; type a position and press Enter to jump).
-
-    Rendered by _DetailPage.cshtml and _SidebarDetailPage.cshtml inside
-    #{PageId}-Pager, which they hide while a record is being added.
-
-    The behaviour lives in the cpiRecordNavigator plugin
-    (wwwroot/src/js/plugins/recordNavigator.js), initialized from
-    ActivePage.initializeDetailPage with the id list the search results grid
-    reports. The plugin binds to the hooks below by class, so keep them:
-      .k-pager-nav[data-dir=top|prev|next|last]  the four buttons
-      .currentRecPosition                        position input
-      .navTotalRecs                              total record count
-    It also toggles k-state-disabled on the buttons at either end of the list.
-
-    .navTotalRecs and the position box start empty on purpose: the plugin only
-    fills them in when it has an id list, and site.css hides the whole bar while
-    the total is empty. That keeps it off pages whose records have no integer key
-    for the search grid to report (see CreateViewModelForGrid), instead of
-    showing arrows that cannot move.
-*@
-<div class="k-pager-wrap k-widget k-floatwrap">
-    <a href="#" onclick="return false;" role="button" data-dir="top"
-       class="k-link k-pager-nav k-pager-first" title="@Localizer["Go to the first record"]">
+﻿@inject IStringLocalizer<SharedResource> Localizer
+<div class="k-pager-wrap k-grid-pager k-widget k-floatwrap">
+    <a class="k-link k-pager-nav navigate" data-dir="top" tabindex="-1">
         <span class="k-icon k-i-seek-w"></span>
     </a>
-    <a href="#" onclick="return false;" role="button" data-dir="prev"
-       class="k-link k-pager-nav" title="@Localizer["Go to the previous record"]">
+    <a class="k-link k-pager-nav navigate" data-dir="prev" tabindex="-1">
         <span class="k-icon k-i-arrow-w"></span>
     </a>
-    <a href="#" onclick="return false;" role="button" data-dir="next"
-       class="k-link k-pager-nav" title="@Localizer["Go to the next record"]">
+    <a class="k-link k-pager-nav navigate" data-dir="next" tabindex="-1">
         <span class="k-icon k-i-arrow-e"></span>
     </a>
-    <a href="#" onclick="return false;" role="button" data-dir="last"
-       class="k-link k-pager-nav k-pager-last" title="@Localizer["Go to the last record"]">
+    <a class="k-link k-pager-nav navigate" data-dir="last" tabindex="-1">
         <span class="k-icon k-i-seek-e"></span>
     </a>
-    <span class="k-pager-info record-navigator-position">
-        <input type="text" class="k-textbox currentRecPosition" value=""
-               title="@Localizer["Type a record number and press Enter"]"
-               aria-label="@Localizer["Record position"]" />
-        <span class="pl-1">
-            @Localizer["of"] <span class="navTotalRecs"></span> @Localizer["records"]
-        </span>
-    </span>
+    <input type="text" style="border: 1px solid var(--control-border); width:80px;height: 80%; text-align:center;" class="currentRecPosition" />&nbsp;@Localizer["of"]&nbsp;<span class="navTotalRecs"></span>&nbsp;@Localizer["records"]
 </div>
