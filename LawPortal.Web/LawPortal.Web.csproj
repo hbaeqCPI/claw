@@ -29,13 +29,11 @@
     <Compile Remove="Areas\Patent\Controllers\Documents\**" />
     <Compile Remove="Areas\Patent\Services\Auxiliary\**" />
     <Compile Remove="Areas\Patent\Views\ApplicationStatus\**" />
-    <Compile Remove="Areas\Patent\Views\Area\**" />
     <Compile Remove="Areas\Patent\Views\AssignmentStatus\**" />
     <Compile Remove="Areas\Patent\Views\CostTracking\**" />
     <Compile Remove="Areas\Patent\Views\CostType\**" />
     <Compile Remove="Areas\Patent\Views\CountryApplication\**" />
     <Compile Remove="Areas\Patent\Views\DisclosureStatus\**" />
-    <Compile Remove="Areas\Patent\Views\Indicator\**" />
     <Compile Remove="Areas\Patent\Views\Invention\**" />
     <Compile Remove="Areas\Patent\Views\Inventor\**" />
     <Compile Remove="Areas\Patent\Views\PatDesignation\**" />
@@ -102,13 +100,11 @@
     <Content Remove="Areas\Patent\Controllers\Documents\**" />
     <Content Remove="Areas\Patent\Services\Auxiliary\**" />
     <Content Remove="Areas\Patent\Views\ApplicationStatus\**" />
-    <Content Remove="Areas\Patent\Views\Area\**" />
     <Content Remove="Areas\Patent\Views\AssignmentStatus\**" />
     <Content Remove="Areas\Patent\Views\CostTracking\**" />
     <Content Remove="Areas\Patent\Views\CostType\**" />
     <Content Remove="Areas\Patent\Views\CountryApplication\**" />
     <Content Remove="Areas\Patent\Views\DisclosureStatus\**" />
-    <Content Remove="Areas\Patent\Views\Indicator\**" />
     <Content Remove="Areas\Patent\Views\Invention\**" />
     <Content Remove="Areas\Patent\Views\Inventor\**" />
     <Content Remove="Areas\Patent\Views\PatDesignation\**" />
@@ -175,13 +171,11 @@
     <EmbeddedResource Remove="Areas\Patent\Controllers\Documents\**" />
     <EmbeddedResource Remove="Areas\Patent\Services\Auxiliary\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\ApplicationStatus\**" />
-    <EmbeddedResource Remove="Areas\Patent\Views\Area\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\AssignmentStatus\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\CostTracking\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\CostType\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\CountryApplication\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\DisclosureStatus\**" />
-    <EmbeddedResource Remove="Areas\Patent\Views\Indicator\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\Invention\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\Inventor\**" />
     <EmbeddedResource Remove="Areas\Patent\Views\PatDesignation\**" />
@@ -248,13 +242,11 @@
     <None Remove="Areas\Patent\Controllers\Documents\**" />
     <None Remove="Areas\Patent\Services\Auxiliary\**" />
     <None Remove="Areas\Patent\Views\ApplicationStatus\**" />
-    <None Remove="Areas\Patent\Views\Area\**" />
     <None Remove="Areas\Patent\Views\AssignmentStatus\**" />
     <None Remove="Areas\Patent\Views\CostTracking\**" />
     <None Remove="Areas\Patent\Views\CostType\**" />
     <None Remove="Areas\Patent\Views\CountryApplication\**" />
     <None Remove="Areas\Patent\Views\DisclosureStatus\**" />
-    <None Remove="Areas\Patent\Views\Indicator\**" />
     <None Remove="Areas\Patent\Views\Invention\**" />
     <None Remove="Areas\Patent\Views\Inventor\**" />
     <None Remove="Areas\Patent\Views\PatDesignation\**" />
@@ -458,7 +450,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Remove="Areas\Admin\Views\ErrorLog\Detail.cshtml" />
-    <Content Remove="Areas\Admin\Views\Shared\_AdminNav.cshtml" />
     <Content Remove="Areas\Patent\Views\Country\_GridAreas.cshtml" />
     <Content Remove="Areas\Patent\Views\RTSUpdate\_ActionUpdHistory.cshtml" />
     <Content Remove="Areas\Patent\Views\RTSUpdate\_UpdateActionSearch.cshtml" />
