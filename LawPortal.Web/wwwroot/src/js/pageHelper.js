@@ -708,10 +708,48 @@ const showDetails = function (activePage, id, afterShowHandler) {
     //});
 };
 
+// Point a detail URL at a specific record.
+//
+// The template normally comes from _DetailPage.cshtml as .../Detail/recid, and
+// substituting the placeholder is all that is needed. But activePage.detailUrl
+// can also hold a CONCRETE url for the record on screen — _DetailContentPage
+// renders .../Detail/5?singleRecord=False for a saved record, and getNextStep
+// sets .../{id}?step=n — in which case a plain replace("recid", id) is a no-op
+// and every navigation re-requests the record already being displayed. The
+// record navigator then advances its position over unchanging content.
+const buildDetailUrl = function (template, id) {
+    if (!template)
+        return "";
+
+    if (template.indexOf("recid") > -1)
+        return template.replace("recid", id);
+
+    const queryAt = template.indexOf("?");
+    const path = queryAt > -1 ? template.substring(0, queryAt) : template;
+    const query = queryAt > -1 ? template.substring(queryAt) : "";
+
+    // .../Detail?id=5  ->  .../Detail?id=<id>
+    if (/[?&]id=/i.test(query))
+        return path + query.replace(/([?&]id=)[^&]*/i, "$1" + id);
+
+    // .../Detail/5  ->  .../Detail/<id>
+    if (/\/\d+$/.test(path))
+        return path.replace(/\/\d+$/, "/" + id) + query;
+
+    // .../Detail  ->  .../Detail/<id>
+    return path.replace(/\/+$/, "") + "/" + id + query;
+};
+
 const getDetails = function (activePage, id, afterGetHandler) {
     const deferred = $.Deferred();
-    const detailUrl = activePage.detailUrl.replace("recid", id);
+    const detailUrl = buildDetailUrl(activePage.detailUrl, id);
     const container = resolveInfoContainer(activePage);
+
+    if (!detailUrl) {
+        showErrors("Cannot open the record: this page has no detail URL configured.");
+        deferred.reject();
+        return deferred.promise();
+    }
 
     cpiLoadingSpinner.show();
 
