@@ -210,8 +210,11 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.CountryLawModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
+            // A full-page load of Add is the browser refreshing the add screen (its url
+            // was swapped to .../Add when it opened). Render a fresh, complete add page
+            // rather than bouncing to the search screen.
             if (!Request.IsAjax() && !TempData.ContainsKey("CopyOptions"))
-                return RedirectToAction("Index");
+                fromSearch = true;
 
             var page = await PrepareAddScreen();
             if (page.Detail == null)
