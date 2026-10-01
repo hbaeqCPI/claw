@@ -871,7 +871,17 @@ const manageDetailPage = function (options) {
         }
 
         //update breadcrumbs
-        window.history.replaceState("", "", options.requestedUrl);
+        // A screen opened in place gets its own history entry, so the browser's Back
+        // returns to the screen before it (sharedLoader's popstate handler loads it).
+        // Re-showing the url already on screen (a full-page load, a save that
+        // re-requests the same record) only replaces it.
+        // historyUrl carries the query string a composite-keyed record is named by.
+        const historyUrl = options.historyUrl || options.requestedUrl;
+        const currentUrl = window.location.pathname + window.location.search;
+        if (currentUrl.toLowerCase() === historyUrl.toLowerCase())
+            window.history.replaceState("", "", historyUrl);
+        else
+            window.history.pushState("", "", historyUrl);
         window.cpiBreadCrumbs.updateNodeInfo({ name: activePage.mainDetailContainer, url: options.requestedUrl });
 
         // show active tab

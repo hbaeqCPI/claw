@@ -33,6 +33,11 @@
 
             @(ViewBag.ActivePage).initializeDetailContentPage({
                 requestedUrl: "@Context.Request.PathBase@Context.Request.Path",
+                @* The address-bar url, WITH the query string: a composite-keyed screen names
+                   its record there (Detail?country=..&caseType=..), so the path alone reloads
+                   to the search screen on refresh or Back. Kept apart from requestedUrl, which
+                   the breadcrumbs match on by path. JavaScriptEncoder keeps its & literal. *@
+                historyUrl: "@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode($"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}"))",
                 detailUrl: "@Url.Action("Detail", new { id = addMode ? "recid" : Model.RecordId.ToString(), singleRecord = Model.FromSearch || Model.SingleRecord })", //todo: singleRecord = fromSearch ???
                 searchUrl: "@Url.Action("Index")",
                 title: "@Html.Raw(Model.Title)",

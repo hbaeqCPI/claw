@@ -48,3 +48,21 @@ if (!window.fileUtility) {
 if (!window.genSearch) {
     window.genSearch = new GenSearch();
 }
+
+// Browser history. Screens open in place (ajax) and push their url (see
+// pageHelper.manageDetailPage), so Back/Forward land on an entry of THIS document:
+// the browser only changes the address bar. Load the url it landed on — a
+// full-page load of any search/add/detail url renders that screen.
+if (!window.cpiHistoryWired) {
+    window.cpiHistoryWired = true;
+
+    window.addEventListener("popstate", function () {
+        window.location.reload();
+    });
+
+    // Toolbar buttons are <a href="#">. Following that href adds a "#" history
+    // entry per click, which Back then steps through without loading anything.
+    $(document).on("click", 'a[href="#"]', function (e) {
+        e.preventDefault();
+    });
+}
