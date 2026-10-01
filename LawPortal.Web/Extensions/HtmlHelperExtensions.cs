@@ -17,6 +17,20 @@ namespace LawPortal.Web.Extensions
     {
         public static async Task<IHtmlContent> PartialPageAsync(this IHtmlHelper htmlHelper, PageType pageType, object model)
         {
+            // DetailContent is only the inner content of a detail page, meant to be
+            // swapped into a detail page that is already on screen. On a full-page load
+            // (the browser refreshing an add/detail screen, whose url was swapped to
+            // .../Add or .../Detail when it opened) there is no such page, so the content
+            // renders bare and unwired. Render the whole detail page around it instead.
+            if (pageType == PageType.DetailContent && !htmlHelper.ViewContext.HttpContext.Request.IsAjax()
+                && model is PageViewModel page)
+            {
+                pageType = PageType.Detail;
+                page.Page = PageType.Detail;
+                page.SingleRecord = true;
+                page.FromSearch = true;
+            }
+
             return await htmlHelper.PartialAsync(GetPage(pageType), model);
         }
 

@@ -218,9 +218,6 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false, string copyIntlCode = "", string copyCaseType = "", string copyDesCountry = "", string copyDesCaseType = "", string copySystems = "", bool copyDefault = false)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
-
             var entity = new TmkDesCaseType { IsNewRecord = true };
             if (!string.IsNullOrEmpty(copyIntlCode))
             {

@@ -142,9 +142,6 @@ namespace LawPortal.Web.Areas.Shared.Controllers
         [Authorize(Policy = SharedAuthorizationPolicy.FullModify)]
         public async Task<IActionResult> Add(string id, bool fromSearch = false)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
-
             var page = await PrepareAddScreen();
             if (page.Detail == null)
                 return RedirectToAction("Index");
@@ -165,7 +162,7 @@ namespace LawPortal.Web.Areas.Shared.Controllers
                 FromSearch = fromSearch
             };
 
-            return PartialView("Index", model);
+            return Request.IsAjax() ? PartialView("Index", model) : View("Index", model);
         }
 
         [HttpPost, Authorize(Policy = SharedAuthorizationPolicy.CanDelete)]

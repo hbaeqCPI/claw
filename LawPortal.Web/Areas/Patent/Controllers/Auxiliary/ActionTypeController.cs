@@ -164,9 +164,6 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.ActionTypeModify)]
         public async Task<IActionResult> Add(string actionType = "", string country = "", bool fromSearch = false)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
-
             var page = await PrepareAddScreen(actionType, country);
             if (page.Detail == null)
                 return RedirectToAction("Index");

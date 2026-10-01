@@ -224,9 +224,6 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax() && TempData.Peek("CopyOptions") == null)
-                return RedirectToAction("Index");
-
             var page = await PrepareAddScreen();
             if (page.Detail == null)
                 return RedirectToAction("Index");

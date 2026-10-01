@@ -195,9 +195,6 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
         [Authorize(Policy = TrademarkAuthorizationPolicy.AuxiliaryModify)]
         public async Task<IActionResult> Add(bool fromSearch = false)
         {
-            if (!Request.IsAjax())
-                return RedirectToAction("Index");
-
             var page = await PrepareAddScreen();
             if (page.Detail == null)
                 return RedirectToAction("Index");
