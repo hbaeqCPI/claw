@@ -133,11 +133,23 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         }
 
         [HttpGet()]
-        public IActionResult DetailLink(string country, string caseType)
+        public async Task<IActionResult> DetailLink(string country, string caseType, string systems = "")
         {
             if (!string.IsNullOrEmpty(country) && !string.IsNullOrEmpty(caseType))
             {
-                return RedirectToAction(nameof(Detail), new { country = country, caseType = caseType, singleRecord = true, fromSearch = true });
+                // Detail matches on Country AND CaseType AND Systems, and no record has
+                // Systems="" — so a caller that only knows the code pair (the combobox
+                // magnifying glass, DetailLinkCountryCaseType) has to have its Systems
+                // resolved here or the jump reports "record not found".
+                if (string.IsNullOrEmpty(systems))
+                {
+                    systems = await _countryLawService.PatCountryLaws.AsNoTracking()
+                        .Where(c => c.Country == country && c.CaseType == caseType)
+                        .Select(c => c.Systems)
+                        .FirstOrDefaultAsync() ?? "";
+                }
+
+                return RedirectToAction(nameof(Detail), new { country = country, caseType = caseType, systems = systems, singleRecord = true, fromSearch = true });
             }
             else
             {
@@ -1097,6 +1109,29 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             }
             if (countryName != null) mainSearchFilters.Remove(countryName);
 
+            // Label Tax Sched is held on tblPatCountryLaw_Ext, not tblPatCountryLaw —
+            // the main table's own column has never been populated (the WebUpdates feed
+            // only ever carries the field on the _Ext side). Correlate on
+            // (Country, CaseType), as every other related table on this screen does:
+            // Systems is NOT comparable between the two, because the Ext row covers the
+            // same record minus R4 ("R4,PatR5-7,PatR8-10" here vs "PatR5-7,PatR8-10"
+            // there), so matching on it finds almost nothing.
+            var labelTaxSched = mainSearchFilters.FirstOrDefault(f => f.Property == "LabelTaxSched");
+            if (labelTaxSched != null && !string.IsNullOrEmpty(labelTaxSched.Value))
+            {
+                var values = labelTaxSched.Value.StartsWith("[")
+                    ? Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(labelTaxSched.Value) ?? new List<string> { labelTaxSched.Value }
+                    : new List<string> { labelTaxSched.Value };
+
+                var matchingExt = _repository.PatCountryLawExts.AsNoTracking()
+                    .Where(e => values.Any(v => EF.Functions.Like(e.LabelTaxSched, v)))
+                    .Select(e => new { e.Country, e.CaseType });
+
+                countryLaws = countryLaws.Where(cl =>
+                    matchingExt.Any(m => m.Country == cl.Country && m.CaseType == cl.CaseType));
+            }
+            if (labelTaxSched != null) mainSearchFilters.Remove(labelTaxSched);
+
             countryLaws = Helpers.QueryHelper.ApplySystemsFilter(countryLaws, mainSearchFilters, a => a.Systems);
 
             // ----- Law Actions tab filters (prefix "LawAction.") -----
@@ -1237,13 +1272,21 @@ namespace LawPortal.Web.Areas.Patent.Controllers
         private async Task<CPiDataSourceResult> CreateViewModelForGrid(DataSourceRequest request, IQueryable<PatCountryLaw> countryLaws)
         {
             var countries = _patCountryService.QueryableList;
+            // Label Tax Sched comes from tblPatCountryLaw_Ext on (Country, CaseType) — see
+            // AddRelatedDataCriteria for why Systems is not part of the key. cl.LabelTaxSched
+            // is a dead column and would render this blank on every row. Correlated subquery
+            // rather than a join so a country law with no Ext row is still listed.
+            var exts = _repository.PatCountryLawExts.AsNoTracking();
             var model = countryLaws.Join(countries, cl => cl.Country, c => c.Country, (cl, c) => new PatCountryLawSearchViewModel
             {
                 Country = cl.Country,
                 CountryName = c.CountryName,
                 CaseType = cl.CaseType,
                 Systems = cl.Systems,
-                LabelTaxSched = cl.LabelTaxSched,
+                LabelTaxSched = exts
+                    .Where(e => e.Country == cl.Country && e.CaseType == cl.CaseType)
+                    .Select(e => e.LabelTaxSched)
+                    .FirstOrDefault(),
                 UserID = cl.UserID,
                 DateCreated = cl.DateCreated,
                 LastUpdate = cl.LastUpdate

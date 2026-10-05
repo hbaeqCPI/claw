@@ -24,11 +24,17 @@
                     <label asp-for="Area"></label>
                     @if (keyFieldsReadOnly)
                     {
-                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                        @* Key fields go readonly once saved, so the ComboBox and its link
+                           button are not rendered — keep the lookup on the plain input. *@
+                        <div class="cpi-combobox d-flex">
+                            <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                            <i class="btn btn-link fal fa-search-plus cpiDetailsLink" data-source="Area"
+                               data-url="@Url.Action("DetailLink", "Area", new { area = "Patent", id = "actualValue" })"></i>
+                        </div>
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.Area })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "Area", area = "Patent", action = "GetPicklistData", defaultValue = Model.Area, showLinkButton = true })
                         <span asp-validation-for="Area"></span>
                     }
                 </div>
@@ -40,11 +46,15 @@
                     <label asp-for="Country"></label>
                     @if (keyFieldsReadOnly)
                     {
-                        <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                        <div class="cpi-combobox d-flex">
+                            <input type="text" class="form-control form-control-sm" asp-for="Country" readonly />
+                            <i class="btn btn-link fal fa-search-plus cpiDetailsLink" data-source="Country"
+                               data-url="@Url.Action("DetailLink", "Country", new { area = "Patent", id = "actualValue" })"></i>
+                        </div>
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "Country", area = "Patent", action = "GetPicklistData", defaultValue = Model.Country })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "Country", area = "Patent", action = "GetPicklistData", defaultValue = Model.Country, showLinkButton = true })
                         <span asp-validation-for="Country"></span>
                     }
                 </div>

@@ -474,7 +474,9 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 if (entity == null)
                     return RedirectToAction(nameof(Add), new { id = id, fromSearch = true });
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.Country, singleRecord = true, fromSearch = true });
+                    // Pass the record's Systems — Detail matches on Country AND Systems,
+                    // and a Systems="" row never exists. See the Patent equivalent.
+                    return RedirectToAction(nameof(Detail), new { id = entity.Country, systems = entity.Systems ?? "", singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });

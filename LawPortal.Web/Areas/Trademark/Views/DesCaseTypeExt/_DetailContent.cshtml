@@ -34,7 +34,7 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType, showLinkButton = true })
                         <span asp-validation-for="CaseType"></span>
                     }
                 </div>
@@ -50,7 +50,7 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Trademark", action = "GetPicklistData", textProperty = "Country", defaultValue = Model.DesCountry })
+                        @await Component.InvokeAsync("ComboBox", new { name = "DesCountry", controller = "Country", area = "Trademark", action = "GetPicklistData", textProperty = "Country", defaultValue = Model.DesCountry, showLinkButton = true })
                         <span asp-validation-for="DesCountry"></span>
                     }
                 </div>

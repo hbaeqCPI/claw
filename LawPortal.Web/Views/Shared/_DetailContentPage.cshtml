@@ -9,6 +9,25 @@
         string controller = ViewContext.ActionDescriptor.RouteValues["controller"]?.ToString().ToLower();
         addFromOtherScreen = (!ViewContext.HttpContext.Request.IsAjax() || !referer.Contains(controller));
     }
+
+    // How to name the record on screen when reloading it (see onCancel below).
+    // Screens keyed on a composite report a RecordKey and only a sentinel RecordId,
+    // so they have to navigate by key — same choice the record navigator makes.
+    // Emitted with Html.Raw: the key is a query fragment whose & must stay literal,
+    // and RecordNavigationKey has already percent-encoded the values inside it.
+    var cancelRecordArg = string.IsNullOrEmpty(Model.RecordKey)
+        ? Model.RecordId.ToString()
+        : $"\"{Model.RecordKey}\"";
+
+    // The url that re-requests the record on screen. A screen keyed on a composite has
+    // no usable id — RecordId is only a sentinel (1) — so Url.Action("Detail", new { id
+    // = 1 }) yields .../Detail/1, which names no record at all: Detail binds empty
+    // country/caseType and redirects to Index. That is the breadcrumb "back" landing on
+    // the search screen instead of the record. Name the record with its RecordKey query
+    // fragment instead, which is what its Detail action binds from.
+    var detailUrlValue = string.IsNullOrEmpty(Model.RecordKey)
+        ? Url.Action("Detail", new { id = addMode ? "recid" : Model.RecordId.ToString(), singleRecord = Model.FromSearch || Model.SingleRecord })
+        : $"{Url.Action("Detail", new { id = (string?)null })}?{Model.RecordKey}";
 }
 
 @await Html.PartialAsync(string.IsNullOrEmpty(Model.PartialViewName) ? "_DetailContent" : Model.PartialViewName, Model.Data, new ViewDataDictionary(this.ViewData) { { "PagePermission", Model.PagePermission }, { "PageId", Model.PageId } })
@@ -38,7 +57,8 @@
                    to the search screen on refresh or Back. Kept apart from requestedUrl, which
                    the breadcrumbs match on by path. JavaScriptEncoder keeps its & literal. *@
                 historyUrl: "@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode($"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}"))",
-                detailUrl: "@Url.Action("Detail", new { id = addMode ? "recid" : Model.RecordId.ToString(), singleRecord = Model.FromSearch || Model.SingleRecord })", //todo: singleRecord = fromSearch ???
+                detailUrl: "@Html.Raw(detailUrlValue)",   @* Raw: a RecordKey's & must stay literal; its values are already percent-encoded *@
+                recordKey: "@Html.Raw(Model.RecordKey)",
                 searchUrl: "@Url.Action("Index")",
                 title: "@Html.Raw(Model.Title)",
                 recordStampsUrl: "@Url.Action("GetRecordStamps", new { id = Model.RecordId })",
@@ -75,7 +95,14 @@
                             @(ViewBag.ActivePage).showDetails(id);
                         }
                     },
-                    onCancel: function() { cpiBreadCrumbs.markLastNode({ dirty: false }); pageHelper.showSearchScreen("@Url.Action("Index")"); }
+                    // Cancelling an edit discards the pending changes and reloads the
+                    // record being edited — it must NOT leave the record for the search
+                    // screen. Re-request it the same way afterSubmit and the record
+                    // navigator do (see cancelRecordArg above).
+                    onCancel: function() {
+                        cpiBreadCrumbs.markLastNode({ dirty: false });
+                        @(ViewBag.ActivePage).showDetails(@Html.Raw(cancelRecordArg));
+                    }
                 }
             });
         };

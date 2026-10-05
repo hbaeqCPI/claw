@@ -808,7 +808,16 @@ const getDetails = function (activePage, id, afterGetHandler) {
 
 const manageDetailPage = function (options) {
     const activePage = options.activePage;
-    const mainContainer = $(`#${activePage.mainDetailContainer}`);
+    // Resolve by attribute and take the LAST match, for the same reason
+    // resolveInfoContainer does: pages are APPENDED to #page (see appendPage),
+    // so the same detail page id can be present more than once and the newest
+    // copy is the visible one. A `#id` selector always returns the FIRST match,
+    // which binds cpiEntryForm and — the visible symptom — the .cpiButtonLink /
+    // .cpiDetailsLink magnifying-glass click handler to a stale, hidden form,
+    // leaving the buttons on screen dead.
+    let mainContainer = $(`[id="${activePage.mainDetailContainer}"]`);
+    if (mainContainer.length > 1)
+        mainContainer = mainContainer.last();
 
     if (mainContainer.length > 0) {
         manageDetailPageMainButtons(mainContainer, options);  //attach handler to main buttons
@@ -835,8 +844,14 @@ const manageDetailPage = function (options) {
 
             //attach handler for link buttons
             $(entryForm).on("click", ".cpiButtonLink, .cpiDetailsLink", function () {
-                let url = $(this).data("url");
-                if (url.length > 0) {
+                let url = $(this).data("url") || "";
+                // An empty data-url means Url.Action matched no route for this link, so
+                // the button has nowhere to go. Say so instead of dying silently.
+                if (!url.length) {
+                    showErrors("This lookup button has no detail screen configured.");
+                    return;
+                }
+                {
                     cpiStatusMessage.hide();
 
                     let queryString = "";
@@ -852,16 +867,42 @@ const manageDetailPage = function (options) {
 
                     const source = $(this).data("source");
                     if (source) {
-                        const el = $(`#${source}`);
+                        // Resolve the source control INSIDE the page this button belongs
+                        // to. Ids repeat across appended pages (see appendPage) and a
+                        // `#id` selector always takes the FIRST match, which can be a
+                        // stale hidden copy — reading its value sends the wrong record
+                        // (usually an empty one) to the target screen.
+                        let el = $(this).closest("form").find(`[id="${source}"]`);
+                        if (!el.length) {
+                            el = $(`[id="${source}"]`);
+                            if (el.length > 1)
+                                el = el.last();
+                        }
+
                         let comboBox = el.data("kendoMultiColumnComboBox");
                         if (!comboBox)
                             comboBox = el.data("kendoComboBox");
+                        if (!comboBox)
+                            comboBox = el.data("kendoDropDownList");
 
                         if (comboBox) {
                             el.data("fetched", 0); //flag as not fetched
                             url = url.replace("actualValue", encodeURIComponent(comboBox.value()));
                         }
+                        else if (el.length) {
+                            //plain input rather than a Kendo widget
+                            url = url.replace("actualValue", encodeURIComponent(el.val() || ""));
+                        }
                     }
+
+                    // Never navigate with the placeholder still in it: that asks the
+                    // target screen for a record literally called "actualValue", which
+                    // lands on Add or "record not found" rather than the record.
+                    if (url.indexOf("actualValue") > -1) {
+                        showErrors("Cannot open the record: this lookup button could not read its field (" + source + ").");
+                        return;
+                    }
+
                     if ($(this).data("new-tab"))
                         window.open(url + queryString, "_blank");
                     else

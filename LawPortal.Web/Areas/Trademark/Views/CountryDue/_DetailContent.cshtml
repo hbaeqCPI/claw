@@ -51,7 +51,7 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType, showLinkButton = true })
                         <span asp-validation-for="CaseType"></span>
                     }
                 </div>
@@ -192,7 +192,8 @@
                                      action = "GetPicklistData",
                                      controller = "Indicator",
                                      textProperty = "Indicator",
-                                     defaultValue = Model.Indicator
+                                     defaultValue = Model.Indicator,
+                                     showLinkButton = true
                                  })
                         <span asp-validation-for="Indicator"></span>
                     }
@@ -261,7 +262,12 @@
                                     controller = "ActionType",
                                     defaultValue = Model.FollowupAction,
                                     textProperty = "ActionType",
-                                    data = "tmkCountryDuePage.getCountry"
+                                    data = "tmkCountryDuePage.getCountry",
+                                    // ActionType.DetailLink takes (actionType, country): the code goes in
+                                    // as the link param, and the country rides along as link data.
+                                    showLinkButton = true,
+                                    linkParamName = "actionType",
+                                    linkButtonData = "function() { return tmkCountryDuePage.getCountry(); }"
                                 })
                     }
                 </div>

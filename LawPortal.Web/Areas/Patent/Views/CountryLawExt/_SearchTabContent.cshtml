@@ -11,6 +11,14 @@
             </div>
             <div class="col-md-4">
                 <div class="form-group float-label">
+                    <label for="CountryName">@Localizer["Country Name"]</label>
+                    @await Component.InvokeAsync("ComboBox", new { name = "CountryName", action = "GetCountryList", textProperty = "CountryName", multiSelect = true })
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group float-label">
                     <label for="CaseType">@Localizer["Case Type"]</label>
                     @await Component.InvokeAsync("ComboBox", new { name = "CaseType", action = "GetCaseTypeList", multiSelect = true })
                 </div>

@@ -71,9 +71,37 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 !string.Equals(f.Property, "IsExt", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(f.Property, "Default", StringComparison.OrdinalIgnoreCase)).ToList();
 
+            // Filters that use EF.Functions.Like (BuildCriteria, ApplySystemsFilter)
+            // MUST be applied to the entity-typed IQueryable before materialising —
+            // EF.Functions.Like has no in-memory implementation, so calling it on a
+            // List.AsQueryable() throws "Like method is not supported because the
+            // query has switched to client-evaluation".
+
+            // Clone per-side because both helpers mutate the filter list
+            // (BuildCriteria sets Operator, ApplySystemsFilter removes SystemName).
+            List<QueryFilterViewModel> CloneFilters() =>
+                otherFilters?.Select(f => new QueryFilterViewModel { Property = f.Property, Operator = f.Operator, Value = f.Value }).ToList()
+                ?? new List<QueryFilterViewModel>();
+
+            var baseQuery = _repository.TmkDesCaseTypeDeletes.AsNoTracking();
+            if (otherFilters != null && otherFilters.Count > 0)
+            {
+                var baseFilters = CloneFilters();
+                baseQuery = Helpers.QueryHelper.ApplySystemsFilter(baseQuery, baseFilters, a => a.Systems);
+                baseQuery = baseQuery.BuildCriteria(baseFilters);
+            }
+
+            var extQuery = _repository.TmkDesCaseTypeDeleteExts.AsNoTracking();
+            if (otherFilters != null && otherFilters.Count > 0)
+            {
+                var extFilters = CloneFilters();
+                extQuery = Helpers.QueryHelper.ApplySystemsFilter(extQuery, extFilters, a => a.Systems);
+                extQuery = extQuery.BuildCriteria(extFilters);
+            }
+
             var baseRows = extFilter == "true"
                 ? new List<DesCaseTypeDeleteSearchItem>()
-                : await _repository.TmkDesCaseTypeDeletes.AsNoTracking()
+                : await baseQuery
                     .Select(x => new DesCaseTypeDeleteSearchItem
                     {
                         IntlCode = x.IntlCode,
@@ -91,7 +119,7 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
 
             var extRows = extFilter == "false"
                 ? new List<DesCaseTypeDeleteSearchItem>()
-                : await _repository.TmkDesCaseTypeDeleteExts.AsNoTracking()
+                : await extQuery
                     .Select(x => new DesCaseTypeDeleteSearchItem
                     {
                         IntlCode = x.IntlCode,
@@ -108,9 +136,6 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                     }).ToListAsync();
 
             var combined = baseRows.Concat(extRows).AsQueryable();
-            if (otherFilters != null && otherFilters.Count > 0)
-                combined = Helpers.QueryHelper.ApplySystemsFilter(combined, otherFilters, a => a.Systems);
-            combined = combined.BuildCriteria(otherFilters);
 
             if (defFilter == "true") combined = combined.Where(x => x.Default);
             else if (defFilter == "false") combined = combined.Where(x => !x.Default);

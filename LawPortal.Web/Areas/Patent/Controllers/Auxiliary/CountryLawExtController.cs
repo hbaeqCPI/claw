@@ -67,15 +67,39 @@ namespace LawPortal.Web.Areas.Patent.Controllers
 
             if (mainSearchFilters != null && mainSearchFilters.Count > 0)
             {
-                {
-                    entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
-                }
-
+                entities = ApplyCountryNameCriteria(entities, mainSearchFilters);
+                entities = Helpers.QueryHelper.ApplySystemsFilter(entities, mainSearchFilters, a => a.Systems);
             }
 
             entities = entities.BuildCriteria(mainSearchFilters);
             var data = await entities.ToListAsync();
             return Json(data.ToNavigableDataSourceResult(request, "country:Country", "caseType:CaseType", "systems:Systems"));
+        }
+
+        /// <summary>
+        /// Country Name is not a column on tblPatCountryLaw_Ext — it lives on tblPatCountry.
+        /// Translate the criteria into the matching country codes and filter on those, then
+        /// drop the filter so the generic criteria builder doesn't try to bind a property
+        /// the entity doesn't have.
+        /// </summary>
+        private IQueryable<PatCountryLawExt> ApplyCountryNameCriteria(IQueryable<PatCountryLawExt> entities, List<QueryFilterViewModel> mainSearchFilters)
+        {
+            var countryName = mainSearchFilters.FirstOrDefault(f => f.Property == "CountryName");
+            if (countryName != null && !string.IsNullOrEmpty(countryName.Value))
+            {
+                var values = countryName.Value.StartsWith("[")
+                    ? Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(countryName.Value) ?? new List<string> { countryName.Value }
+                    : new List<string> { countryName.Value };
+
+                var matchingCodes = _repository.PatCountries.AsNoTracking()
+                    .Where(pc => values.Any(v => EF.Functions.Like(pc.CountryName, v)))
+                    .Select(pc => pc.Country);
+
+                entities = entities.Where(c => matchingCodes.Contains(c.Country));
+            }
+            if (countryName != null) mainSearchFilters.Remove(countryName);
+
+            return entities;
         }
 
         [Authorize(Policy = PatentAuthorizationPolicy.AuxiliaryModify)]

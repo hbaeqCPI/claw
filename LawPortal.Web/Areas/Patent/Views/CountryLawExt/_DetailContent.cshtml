@@ -27,7 +27,8 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "CountryLawExt", area = "Patent", action = "GetCountryList", defaultValue = Model.Country })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "CountryLawExt", area = "Patent", action = "GetCountryList", defaultValue = Model.Country,
+                            linkButtonURL = Url.Action("DetailLink", "Country", new { area = "Patent", id = "actualValue" }) })
                         <span asp-validation-for="Country"></span>
                     }
                 </div>
@@ -43,7 +44,8 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CountryLawExt", area = "Patent", action = "GetCaseTypeList", defaultValue = Model.CaseType })
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CountryLawExt", area = "Patent", action = "GetCaseTypeList", defaultValue = Model.CaseType,
+                            linkButtonURL = Url.Action("DetailLink", "CaseType", new { area = "Patent", id = "actualValue" }) })
                         <span asp-validation-for="CaseType"></span>
                     }
                 </div>

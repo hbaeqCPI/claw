@@ -57,7 +57,7 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType })
+                        @await Component.InvokeAsync("ComboBox", new { name = "CaseType", controller = "CaseType", area = "Trademark", action = "GetPicklistData", defaultValue = Model.CaseType, showLinkButton = true })
                         <span asp-validation-for="CaseType"></span>
                     }
                 </div>
@@ -89,6 +89,7 @@
                             action = "GetCountryList",
                             textProperty = "Country",
                             defaultValue = Model.DesCountry,
+                            showLinkButton = true,
                             headerTemplate = ComboBoxHelper.GetHeaderTemplate(Localizer["Country"], Localizer["Country Name"]),
                             itemTemplate = ComboBoxHelper.GetItemTemplate("Country", "CountryName"),
                             listWidth = 400

@@ -406,7 +406,9 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 if (entity == null)
                     return new RecordDoesNotExistResult();
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.CaseType, singleRecord = true, fromSearch = true });
+                    // Pass the record's Systems — Detail matches on CaseType AND Systems,
+                    // and a Systems="" row never exists. See the Country equivalent.
+                    return RedirectToAction(nameof(Detail), new { id = entity.CaseType, systems = entity.Systems ?? "", singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });

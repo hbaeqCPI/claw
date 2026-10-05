@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lawportal",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "LawPortal.Web/LawPortal.Web.csproj",
+        "--no-build",
+        "--urls",
+        "http://localhost:5199"
+      ],
+      "port": 5199
+    }
+  ]
+}

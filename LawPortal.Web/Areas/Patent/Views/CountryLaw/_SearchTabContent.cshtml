@@ -38,7 +38,9 @@
             <div class="col-md-4 col-lg-4 col-xl-3">
                 <div class="form-group float-label">
                     <label for="LabelTaxSched">@Localizer["Label Tax Sched"]</label>
-                    @await Component.InvokeAsync("ComboBox", new { name = "LabelTaxSched", multiSelect = true })
+                    @* Values live on tblPatCountryLaw_Ext, so read the picklist from that
+                       screen's controller — CountryLaw's own column is never populated. *@
+                    @await Component.InvokeAsync("ComboBox", new { name = "LabelTaxSched", controller = "CountryLawExt", area = "Patent", multiSelect = true })
                 </div>
             </div>
         </div>

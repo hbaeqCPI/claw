@@ -261,6 +261,15 @@ namespace LawPortal.Web.Areas.Patent.Controllers
             return await GetPicklistData(_repository.PatAreaDeletes.AsNoTracking(), request, property, text, filterType, requiredRelation);
         }
 
+        public async Task<IActionResult> GetAreaList()
+        {
+            var areas = await _repository.PatAreas.AsNoTracking()
+                .OrderBy(a => a.Area)
+                .Select(a => new { a.Area, a.Description })
+                .ToListAsync();
+            return Json(areas);
+        }
+
         public IActionResult GetRecordStamps(string areaCode = "", string areaNewCode = "", string systems = "")
         {
             return ViewComponent("RecordStamps", new { createdBy = "", dateCreated = (DateTime?)null, updatedBy = "", lastUpdate = (DateTime?)null });

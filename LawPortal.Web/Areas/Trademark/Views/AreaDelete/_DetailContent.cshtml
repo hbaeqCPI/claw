@@ -24,11 +24,18 @@
                     <label asp-for="Area"></label>
                     @if (keyFieldsReadOnly)
                     {
-                        <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                        @* Key fields go readonly once saved, so the ComboBox and its link
+                           button are not rendered — keep the lookup on the plain input. *@
+                        <div class="cpi-combobox d-flex">
+                            <input type="text" class="form-control form-control-sm" asp-for="Area" readonly />
+                            <i class="btn btn-link fal fa-search-plus cpiDetailsLink" data-source="Area"
+                               data-url="@Url.Action("DetailLink", "Area", new { area = "Trademark", id = "actualValue" })"></i>
+                        </div>
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaDelete", area = "Trademark", action = "GetAreaList", defaultValue = Model.Area })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaDelete", area = "Trademark", action = "GetAreaList", defaultValue = Model.Area,
+                            linkButtonURL = Url.Action("DetailLink", "Area", new { area = "Trademark", id = "actualValue" }) })
                         <span asp-validation-for="Area"></span>
                     }
                 </div>

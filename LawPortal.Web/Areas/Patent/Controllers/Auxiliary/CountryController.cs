@@ -478,7 +478,10 @@ namespace LawPortal.Web.Areas.Patent.Controllers
                 if (entity == null)
                     return RedirectToAction(nameof(Add), new { id = id, fromSearch = true });
                 else
-                    return RedirectToAction(nameof(Detail), new { id = entity.Country, singleRecord = true, fromSearch = true });
+                    // Pass the record's Systems: Detail matches on Country AND Systems, so
+                    // omitting it looks for a Systems="" row, which never exists — every
+                    // magnifying-glass jump to a country reported "record not found".
+                    return RedirectToAction(nameof(Detail), new { id = entity.Country, systems = entity.Systems ?? "", singleRecord = true, fromSearch = true });
             }
             else
                 return RedirectToAction(nameof(Add), new { fromSearch = true });

@@ -166,9 +166,14 @@ export default class ActivePage extends SearchPage {
         detailContentContainer.find(".open-confirm").on("click", (e) => { this.openConfirm($(e.currentTarget)); });
         detailContentContainer.find(".open-popup").on("click", (e) => { this.openPopup($(e.currentTarget)); });
 
+        // Refresh by key on screens keyed on a composite: there RecordId is only a
+        // sentinel, so showDetails(1) would request .../Detail/1, which names no record
+        // and makes Detail redirect to the search screen. Same choice the record
+        // navigator and the edit-cancel handler make.
+        const refreshRecord = options.recordKey ? options.recordKey : options.id;
         const refreshDetails = () => {
-            if (options.id > 0) {
-                this.showDetails(options.id)
+            if (options.recordKey || options.id > 0) {
+                this.showDetails(refreshRecord)
             }
         }
         window.cpiBreadCrumbs.updateLastNode({

@@ -29,7 +29,9 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaCountry", area = "Patent", action = "GetAreaList", defaultValue = Model.Area })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Area", controller = "AreaCountry", area = "Patent", action = "GetAreaList", defaultValue = Model.Area,
+                            // Picklist comes from this screen, but the glass must open the Area record.
+                            linkButtonURL = Url.Action("DetailLink", "Area", new { area = "Patent", id = "actualValue" }) })
                         <span asp-validation-for="Area"></span>
                     }
                 </div>
@@ -54,7 +56,8 @@
                     }
                     else
                     {
-                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "AreaCountry", area = "Patent", action = "GetCountryList", defaultValue = Model.Country })
+                        @await Component.InvokeAsync("ComboBox", new { name = "Country", controller = "AreaCountry", area = "Patent", action = "GetCountryList", defaultValue = Model.Country,
+                            linkButtonURL = Url.Action("DetailLink", "Country", new { area = "Patent", id = "actualValue" }) })
                         <span asp-validation-for="Country"></span>
                     }
                 </div>

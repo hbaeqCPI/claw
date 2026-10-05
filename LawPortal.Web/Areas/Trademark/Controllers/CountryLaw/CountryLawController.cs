@@ -130,10 +130,22 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
         }
 
         [HttpGet()]
-        public IActionResult DetailLink(string country, string caseType, string systems = "")
+        public async Task<IActionResult> DetailLink(string country, string caseType, string systems = "")
         {
             if (!string.IsNullOrEmpty(country) && !string.IsNullOrEmpty(caseType))
             {
+                // Detail matches on Country AND CaseType AND Systems, and no record has
+                // Systems="" — so a caller that only knows the code pair (the combobox
+                // magnifying glass, DetailLinkCountryCaseType) has to have its Systems
+                // resolved here or the jump reports "record not found".
+                if (string.IsNullOrEmpty(systems))
+                {
+                    systems = await _countryLawService.TmkCountryLaws.AsNoTracking()
+                        .Where(c => c.Country == country && c.CaseType == caseType)
+                        .Select(c => c.Systems)
+                        .FirstOrDefaultAsync() ?? "";
+                }
+
                 return RedirectToAction(nameof(Detail), new { country = country, caseType = caseType, systems = systems, singleRecord = true, fromSearch = true });
             }
             else
@@ -166,6 +178,12 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
                 PageId = page.Container,
                 Title = _localizer["Country Law Detail"].ToString(),
                 RecordId = 1,
+                // Without this the detail page has only the sentinel RecordId, so
+                // _DetailContentPage builds .../Detail/1 — a url that names no record,
+                // making Detail redirect to Index. That is the breadcrumb "back" (and
+                // edit-cancel) landing on the search screen instead of the record.
+                RecordKey = RecordNavigationKey.Build(
+                    ("Country", country), ("CaseType", caseType), ("Systems", systems)),
                 SingleRecord = singleRecord || !Request.IsAjax(),
                 ActiveTab = tab,
                 PagePermission = page,
@@ -1106,13 +1124,26 @@ namespace LawPortal.Web.Areas.Trademark.Controllers
             else
                 model = model.OrderBy(c => c.Country).ThenBy(c => c.CaseType);
 
-            var total = await model.CountAsync();
+            // Keys for the detail-page record navigator. A country law record is keyed
+            // on (Country, CaseType, Systems) — the same three values the search grid's
+            // row link passes to Detail — so there is no int id to navigate by. Must be
+            // built through RecordNavigationKey in the same order as Detail above, or
+            // the navigator's indexOf never matches.
+            var keyRows = await model
+                .Select(m => new { m.Country, m.CaseType, m.Systems })
+                .ToListAsync();
+
+            var keys = keyRows
+                .Select(r => RecordNavigationKey.Build(
+                    ("Country", r.Country), ("CaseType", r.CaseType), ("Systems", r.Systems)))
+                .ToArray();
 
             return new CPiDataSourceResult()
             {
                 Data = await model.ApplyPaging(request.Page, request.PageSize).ToListAsync(),
-                Total = total,
-                Ids = new int[0]
+                Total = keys.Length,
+                Ids = new int[0],
+                Keys = keys
             };
         }
     }
