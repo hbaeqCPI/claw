@@ -54,6 +54,7 @@ namespace LawPortal.Web.Services
                 list = list.ApplySorting(request.Sorts);
             else
                 list = list.OrderBy(ExpressionHelper.GetPropertyExpression<T>(defaultSortOrder));
+            list = list.ThenByKey(idProperty);
 
             int[] ids;
             int total;
@@ -85,6 +86,7 @@ namespace LawPortal.Web.Services
                 listVM = listVM.ApplySorting(request.Sorts);
             else
                 listVM = listVM.OrderBy(ExpressionHelper.GetPropertyExpression<T2>(defaultSortOrder));
+            listVM = listVM.ThenByKey(idProperty);
 
             var ids = await listVM.Select(ExpressionHelper.GetIntPropertyExpression<T2>(idProperty)).ToArrayAsync();
 
@@ -108,6 +110,7 @@ namespace LawPortal.Web.Services
                 list = list.ApplySorting(request.Sorts);
             else
                 list = list.OrderBy(ExpressionHelper.GetPropertyExpression<T>(defaultSortOrder));
+            list = list.ThenByKey(idProperty);
 
             // Read the key columns for every row, in result order, before paging.
             var keyRows = await list.Select<T>(RecordNavigationKey.PropertyNames(keyProperties)).ToListAsync();
@@ -130,6 +133,7 @@ namespace LawPortal.Web.Services
                 listVM = listVM.ApplySorting(request.Sorts);
             else
                 listVM = listVM.OrderBy(ExpressionHelper.GetPropertyExpression<T2>(defaultSortOrder));
+            listVM = listVM.ThenByKey(idProperty);
 
             var keyRows = await listVM.Select<T2>(RecordNavigationKey.PropertyNames(keyProperties)).ToListAsync();
             var keys = RecordNavigationKey.BuildAll(keyRows, keyProperties);

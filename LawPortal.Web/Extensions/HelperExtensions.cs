@@ -629,6 +629,27 @@ namespace LawPortal.Web.Extensions
             return query.Provider.CreateQuery<T>(resultExpression);
         }
 
+        // Appends ThenBy(keyProperty) to an already ordered query so rows that tie on
+        // the sort column (e.g. many records in the same Quarter) come back in the same
+        // order from every query. Without it SQL Server may order ties differently in
+        // the record-navigator ids query and the paged grid query.
+        public static IQueryable<T> ThenByKey<T>(this IQueryable<T> query, string? keyProperty)
+        {
+            if (string.IsNullOrEmpty(keyProperty) || query.Expression.Type != typeof(IOrderedQueryable<T>))
+                return query;
+
+            var property = typeof(T).GetProperty(keyProperty);
+            if (property == null)
+                return query;
+
+            var parameter = Expression.Parameter(typeof(T), "p");
+            var keyExpression = Expression.Lambda(Expression.MakeMemberAccess(parameter, property), parameter);
+            var resultExpression = Expression.Call(typeof(Queryable), "ThenBy", new Type[] { typeof(T), property.PropertyType },
+               query.Expression, Expression.Quote(keyExpression));
+
+            return query.Provider.CreateQuery<T>(resultExpression);
+        }
+
         public static string FormatToDisplay(this DateTime? date)
         {
             return date?.ToString("dd-MMM-yyyy");
